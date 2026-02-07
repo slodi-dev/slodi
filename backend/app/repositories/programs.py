@@ -22,8 +22,6 @@ class ProgramRepository(Repository):
                 selectinload(Program.author),
                 selectinload(Program.workspace),
                 selectinload(Program.events),
-                selectinload(Program.comments),
-                selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(Program.id == program_id)
         )
@@ -46,12 +44,6 @@ class ProgramRepository(Repository):
     ) -> Sequence[Program]:
         stmt = (
             select(Program)
-            .options(
-                selectinload(Program.author),
-                selectinload(Program.workspace),
-                selectinload(Program.comments),
-                selectinload(Program.content_tags).selectinload(ContentTag.tag),
-            )
             .where(Program.workspace_id == workspace_id)
             .order_by(Program.name)
             .limit(limit)

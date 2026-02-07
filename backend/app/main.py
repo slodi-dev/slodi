@@ -25,7 +25,7 @@ from app.routers import (
 def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Backend API")
-
+    
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,

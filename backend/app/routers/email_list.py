@@ -14,17 +14,6 @@ router = APIRouter(prefix="/emaillist", tags=["emaillist"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-@router.get("/howdoiknow")
-async def test_restart():
-    """Test endpoint to verify auto-restart is working"""
-    return {
-        "message": "REMEMBER WHO YOU ARE SIMBA!",  # Change this number each deploy
-        "timestamp": datetime.now().isoformat(),
-        "status": "running",
-        "endpoint": "/emaillist/howdoiknow",
-    }
-
-
 @router.get("", response_model=list[EmailListOut])
 async def list_email_list(session: SessionDep):
     svc = EmailListService(session)

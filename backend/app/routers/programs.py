@@ -51,36 +51,33 @@ async def create_program_under_workspace(
     body: ProgramCreate,
     response: Response,
 ):
-    # Toggle this to enable/disable debug logging for program creation
-    DEBUG_PROGRAM_CREATE = True
+    assert body.content_type == ContentType.program, "Content type must be 'program'"
+    svc = ProgramService(session)
+    program = await svc.create_under_workspace(workspace_id, body)
+    response.headers["Location"] = f"/programs/{program.id}"
+    return program
 
-    if DEBUG_PROGRAM_CREATE:
-        print(f"=== CREATE PROGRAM DEBUG ===")
-        print(f"Workspace ID: {workspace_id}")
-        print(f"Current user ID: {current_user.id}")
-        print(f"Request body type: {type(body)}")
-        print(f"Request body: {body.model_dump()}")
-        print(f"Body validation errors: {body.model_validate(body.model_dump())}")
 
-    try:
-        # Override author_id with authenticated user (never trust client input)
-        body.author_id = current_user.id
-
-        svc = ProgramService(session)
-        program = await svc.create_under_workspace(workspace_id, body)
-        response.headers["Location"] = f"/programs/{program.id}"
-        return program
-    except ValidationError as e:
-        if DEBUG_PROGRAM_CREATE:
-            print(f"=== VALIDATION ERROR ===")
-            print(f"Validation errors: {e.errors()}")
-        raise
-    except Exception as e:
-        if DEBUG_PROGRAM_CREATE:
-            print(f"=== UNEXPECTED ERROR ===")
-            print(f"Error type: {type(e).__name__}")
-            print(f"Error message: {str(e)}")
-        raise
+async def copy_program_to_workspace(
+    session: SessionDep,
+    workspace_id: UUID,
+    program_id: UUID,
+    user_id: UUID,
+    response: Response,
+) -> ProgramOut:
+    svc = ProgramService(session)
+    original_program = await svc.get(program_id)
+    copied_program = ProgramCreate(
+        name=original_program.name,
+        description=original_program.description,
+        like_count=0,
+        author_id=user_id,
+        content_type=ContentType.program,
+        image=original_program.image,
+    )
+    program = await svc.create_under_workspace(workspace_id, copied_program)
+    response.headers["Location"] = f"/programs/{program.id}"
+    return program
 
 
 # ----- item endpoints -----

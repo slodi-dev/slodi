@@ -22,7 +22,7 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         return UserOut.model_validate(row)
 
-    async def get_by_auth0_id(self, auth0_id: str) -> User | None:
+    async def get_by_auth0_id(self, auth0_id: str) -> UserOut | None:
         """
         Get user by Auth0 ID.
 
@@ -32,7 +32,10 @@ class UserService:
         Returns:
             User model instance if found, None otherwise
         """
-        return await self.repo.get_by_auth0_id(auth0_id)
+        user = await self.repo.get_by_auth0_id(auth0_id)
+        if user:
+            return UserOut.model_validate(user)
+        return None
 
     async def count(self, *, q: str | None) -> int:
         return await self.repo.count(q=q)

@@ -7,20 +7,19 @@ This module provides:
 - FastAPI dependency for protecting endpoints with authentication
 """
 
-from functools import lru_cache
 import logging
+from functools import lru_cache
 
 import httpx
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_session
-from app.models.user import User
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserOut
 from app.services.users import UserService
 
 # Setup logging
@@ -30,7 +29,7 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 
-@lru_cache()
+@lru_cache
 def get_auth0_jwks() -> dict:
     """
     Fetch and cache Auth0 public keys (JWKS) for JWT verification.
@@ -83,7 +82,7 @@ def verify_auth0_token(token: str) -> dict:
 
     try:
         if DEBUG_AUTH:
-            logger.info(f"=== Token Verification Debug ===")
+            logger.info("=== Token Verification Debug ===")
             logger.info(f"Token length: {len(token)}")
             logger.info(f"Token starts with: {token[:30]}...")
 
@@ -153,7 +152,7 @@ def verify_auth0_token(token: str) -> dict:
         ) from e
     except JWTClaimsError as e:
         logger.error(f"JWT claims error: {str(e)}")
-        logger.error(f"This usually means audience or issuer mismatch")
+        logger.error("This usually means audience or issuer mismatch")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token claims: {str(e)}"
         ) from e
@@ -172,7 +171,7 @@ def verify_auth0_token(token: str) -> dict:
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     session: AsyncSession = Depends(get_session),
-) -> User:
+) -> UserOut:
     """
     FastAPI dependency that authenticates requests and returns the current user.
 
@@ -197,7 +196,7 @@ async def get_current_user(
         session: Database session automatically injected
 
     Returns:
-        User: The authenticated user object
+        UserOut: The authenticated UserOut object
 
     Raises:
         HTTPException: If authentication fails (invalid token, etc.)
@@ -251,9 +250,7 @@ async def get_current_user(
     if not user:
         # Auto-create user on first login (SAFE because token is verified)
         user_data = UserCreate(auth0_id=auth0_id, email=email, name=name)
-        user_out = await user_service.create(user_data)
-        # Get the actual User model instance
-        user = await user_service.get_by_auth0_id(auth0_id)
+        user = await user_service.create(user_data)
 
         if not user:
             raise HTTPException(
