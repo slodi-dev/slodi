@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 // Get the API base URL from environment or use default
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8000";
 
 // Type for the API health status returned by the hook
 interface ApiHealthStatus {
@@ -33,7 +33,7 @@ export function useApiHealth() {
       if (!API_BASE_URL) {
         const error = new Error("API_BASE_URL is not configured");
         console.error(
-          "API_BASE_URL is not configured! Set NEXT_PUBLIC_API_BASE_URL in .env.local",
+          "API_BASE_URL is not configured! Set API_BASE_URL in .env.local",
           "color: red; font-weight: bold; font-size: 14px;"
         );
         setStatus({ isHealthy: false, isChecking: false, error });

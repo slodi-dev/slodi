@@ -26,7 +26,7 @@ export type UserUpdateInput = {
  */
 export async function getCurrentUser(token: string): Promise<User> {
   // Toggle this to enable/disable debug logging for user fetching
-  const DEBUG_GET_USER = false;
+  const DEBUG_GET_USER = true;
 
   const url = buildApiUrl("/users/me");
 
