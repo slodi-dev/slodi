@@ -15,7 +15,7 @@ from app.services.users import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentUser = Annotated[UserOut, Depends(get_current_user)]
 
 DEFAULT_Q = Query(None, min_length=2, description="Case-insensitive search in name/email/auth0_id")
 
