@@ -5,6 +5,7 @@ import { useState } from "react";
 import styles from "./header.module.css";
 import { useUser } from "@auth0/nextjs-auth0";
 
+const GITHUB_URL = "https://github.com/halldorvalberg/slodi";
 
 export default function Header() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -29,7 +30,7 @@ export default function Header() {
             Um Slóða
           </Link>
           <a
-            href="https://github.com/halldorvalberg/slodi"
+            href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.primaryNavLink}
@@ -48,6 +49,7 @@ export default function Header() {
             <Link
               href="/auth/login"
               className={styles.primaryNavLink}
+              prefetch={false}
             >
               Innskráning
             </Link>
@@ -92,7 +94,7 @@ export default function Header() {
               Um Slóða
             </Link>
             <a
-              href="https://github.com/halldorvalberg/slodi"
+              href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.drawerNavLink}
