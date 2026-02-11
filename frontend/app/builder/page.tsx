@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import ProgramCard from "@/components/ProgramCard/ProgramCard";
+import ProgramCard from "@/app/programs/components/ProgramCard";
 import styles from "./builder.module.css";
 import usePrograms, { Program as ProgramType } from "@/hooks/usePrograms";
 

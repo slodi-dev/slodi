@@ -45,11 +45,9 @@ export default function EmailListDownloadButton({ allowed }: { allowed: boolean 
 	}
 
 	async function handleDownload() {
-		console.log("Starting email list download...");
 		setError(null);
 		setLoading(true);
 		try {
-
 			const res = await fetch("/api/emails", {
 				method: "GET",
 			});
@@ -74,7 +72,6 @@ export default function EmailListDownloadButton({ allowed }: { allowed: boolean 
 			a.remove();
 			URL.revokeObjectURL(url);
 		} catch (err: unknown) {
-			console.error("Failed to download emaillist:", err);
 			setError(err instanceof Error ? err.message : String(err));
 		} finally {
 			setLoading(false);

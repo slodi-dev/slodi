@@ -82,7 +82,7 @@ export default function ProgramCard({
       {/* Thumbnail/Hero Image */}
       <div className={styles.media}>
         {image ? (
-          <Image src={image} alt={name} className={styles.image} width={400} height={250} />
+          <img src={image} alt={name} className={styles.image} width={400} height={250} />
         ) : (
           <div className={styles.placeholder}>
             <svg

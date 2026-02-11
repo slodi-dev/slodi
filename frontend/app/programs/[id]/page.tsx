@@ -71,6 +71,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
                 name: string;
                 description?: string;
                 public: boolean;
+                image?: string;
             } = {
                 name: data.name,
                 public: data.public,
@@ -79,6 +80,11 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             // Only include description if it's not null
             if (data.description !== null && data.description !== undefined) {
                 updateData.description = data.description;
+            }
+
+            // Include image in update (only if it's a string, exclude null and undefined)
+            if (typeof data.image === 'string') {
+                updateData.image = data.image;
             }
 
             // Update program via API - pass getToken function, not token string

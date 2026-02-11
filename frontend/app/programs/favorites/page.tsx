@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { fetchPrograms, type Program } from "@/services/programs.service";
-import ProgramCard from "@/components/ProgramCard/ProgramCard";
+import ProgramCard from "@/app/programs/components/ProgramCard";
 import ProgramGrid from "../components/ProgramGrid";
 import ProgramSort, { type SortOption } from "../components/ProgramSort";
 import styles from "../program.module.css";

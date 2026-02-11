@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 import { Heart, Share2, Plus, Edit2, FileText } from "lucide-react";
 import styles from "./ProgramDetailHero.module.css";
 
@@ -45,13 +44,12 @@ export default function ProgramDetailHero({
             {/* Hero Image */}
             {program.image ? (
                 <div className={styles.imageContainer}>
-                    <Image
+                    <img
                         src={program.image}
                         alt={program.name}
                         className={styles.heroImage}
                         width={1200}
                         height={500}
-                        priority
                     />
                 </div>
             ) : (

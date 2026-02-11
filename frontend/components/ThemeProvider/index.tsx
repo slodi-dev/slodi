@@ -128,11 +128,8 @@ export default function ThemeProvider({
         setThemeState((prev) => (prev === "light" ? "dark" : "light"));
     };
 
-    // Prevent flash of unstyled content
-    if (!mounted) {
-        return <>{children}</>;
-    }
-
+    // Always render the provider to avoid context errors
+    // The mounted flag just controls when we apply theme changes to the DOM
     return (
         <ThemeContext.Provider
             value={{

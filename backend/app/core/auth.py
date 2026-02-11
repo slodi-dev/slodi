@@ -169,8 +169,8 @@ def verify_auth0_token(token: str) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    session: AsyncSession = Depends(get_session),
+    credentials: HTTPAuthorizationCredentials = Depends(security),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> UserOut:
     """
     FastAPI dependency that authenticates requests and returns the current user.

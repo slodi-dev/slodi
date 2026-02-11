@@ -6,11 +6,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.models.content import ContentType
-from app.schemas.program import ProgramCreate, ProgramOut, ProgramUpdate
+from app.models.user import User
+from app.schemas.program import ProgramCreate, ProgramCreateRequest, ProgramOut, ProgramUpdate
 from app.services.programs import ProgramService
+from app.utils import get_current_datetime
 
 router = APIRouter(tags=["programs"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -48,12 +51,20 @@ async def list_workspace_programs(
 async def create_program_under_workspace(
     session: SessionDep,
     workspace_id: UUID,
-    body: ProgramCreate,
+    body: ProgramCreateRequest,
     response: Response,
+    current_user: User = Depends(get_current_user),
 ):
-    assert body.content_type == ContentType.program, "Content type must be 'program'"
+    # Inject author_id from authenticated user and set defaults
+    program_data = ProgramCreate(
+        **body.model_dump(),
+        author_id=current_user.id,
+        like_count=0,
+        created_at=get_current_datetime(),
+    )
+
     svc = ProgramService(session)
-    program = await svc.create_under_workspace(workspace_id, body)
+    program = await svc.create_under_workspace(workspace_id, program_data)
     response.headers["Location"] = f"/programs/{program.id}"
     return program
 
@@ -83,19 +94,19 @@ async def copy_program_to_workspace(
 # ----- item endpoints -----
 
 
-@router.get("programs/{program_id}", response_model=ProgramOut)
+@router.get("/programs/{program_id}", response_model=ProgramOut)
 async def get_program(session: SessionDep, program_id: UUID):
     svc = ProgramService(session)
     return await svc.get(program_id)
 
 
-@router.patch("programs/{program_id}", response_model=ProgramOut)
+@router.patch("/programs/{program_id}", response_model=ProgramOut)
 async def update_program(session: SessionDep, program_id: UUID, body: ProgramUpdate):
     svc = ProgramService(session)
     return await svc.update(program_id, body)
 
 
-@router.delete("programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_program(session: SessionDep, program_id: UUID):
     svc = ProgramService(session)
     await svc.delete(program_id)

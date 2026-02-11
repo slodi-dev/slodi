@@ -1,3 +1,27 @@
+/* ===== LAYOUT CONTAINER ===== */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  min-width: 0; /* Prevent flex overflow */
+  overflow-y: auto;
+}
+
+.mainCollapsed {
+  /* Main content automatically adjusts via flex layout */
+  /* No additional styles needed - kept for semantic clarity */
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: calc(var(--sl-z-fixed) - 1);
+}
+
 /* ===== SIDEBAR WRAPPER ===== */
 .sidebarWrapper {
   position: relative;
