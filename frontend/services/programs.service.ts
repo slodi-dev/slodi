@@ -1,8 +1,3 @@
-/**
- * Program API Service
- * Handles all API calls related to programs
- */
-
 import { buildApiUrl, fetchAndCheck } from "@/lib/api-utils";
 import { fetchWithAuth } from "@/lib/api";
 import { findTagIdByName, addTagToContent } from "@/services/tags.service";
@@ -54,6 +49,7 @@ export interface ProgramUpdateFormData {
   name: string;
   description: string | null;
   public: boolean;
+  image: string | null;
 }
 
 export type ProgramsResponse = Program[] | { programs: Program[] };
@@ -89,35 +85,12 @@ async function assignTagsToProgram(
   tagNames: string[],
   getToken: () => Promise<string | null>
 ): Promise<void> {
-  const DEBUG = true;
-
-  if (DEBUG) {
-    console.log(`Assigning ${tagNames.length} tags to program ${programId}`);
-  }
-
-  // Assign each tag
   for (const tagName of tagNames) {
     try {
-      // Find tag ID by name
       const tagId = await findTagIdByName(tagName);
-
-      if (!tagId) {
-        console.warn(`Tag "${tagName}" not found, skipping`);
-        continue;
-      }
-
-      if (DEBUG) {
-        console.log(`Assigning tag "${tagName}" (${tagId}) to program`);
-      }
-
-      // Add tag to program
+      if (!tagId) continue;
       await addTagToContent(programId, tagId, getToken);
-
-      if (DEBUG) {
-        console.log(`Successfully assigned tag "${tagName}"`);
-      }
-    } catch (error) {
-      console.error(`Failed to assign tag "${tagName}":`, error);
+    } catch {
       // Continue with other tags even if one fails
     }
   }
@@ -142,80 +115,30 @@ export async function createProgram(
   input: ProgramCreateInput,
   getToken: () => Promise<string | null>
 ): Promise<Program> {
-  // Toggle this to enable/disable debug logging for program creation
-  const DEBUG_CREATE_PROGRAM = true;
-
-  console.log("=== CREATE PROGRAM CALLED ===");
-  console.log("DEBUG_CREATE_PROGRAM:", DEBUG_CREATE_PROGRAM);
-
-  if (DEBUG_CREATE_PROGRAM) {
-    console.log("=== CREATE PROGRAM DEBUG ===");
-    console.log("Input:", input);
-  }
-
-  // Backend expects JSON, not FormData
-  // TODO: Implement image file upload separately if needed
-  // Note: tags are NOT sent in the create payload - they're added separately after creation
   const payload = {
     name: input.name.trim(),
     description: input.description?.trim() || "",
-    public: input.public || false,
     image: input.image?.trim() || null,
     content_type: "program" as const,
   };
 
-  if (DEBUG_CREATE_PROGRAM) {
-    console.log("Payload:", JSON.stringify(payload, null, 2));
-  }
-
   const url = buildApiUrl(`/workspaces/${input.workspaceId}/programs`);
 
-  if (DEBUG_CREATE_PROGRAM) {
-    console.log("Request URL:", url);
+  const data = await fetchWithAuth<Program | Program[]>(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  }, getToken);
+
+  const program = Array.isArray(data) ? data[0] : data;
+
+  if (input.tags && input.tags.length > 0) {
+    await assignTagsToProgram(program.id, input.tags, getToken);
   }
 
-  try {
-    const data = await fetchWithAuth<Program | Program[]>(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    }, getToken);
-
-    if (DEBUG_CREATE_PROGRAM) {
-      console.log("=== CREATE PROGRAM SUCCESS ===");
-      console.log("Response data:", data);
-    }
-
-    const program = Array.isArray(data) ? data[0] : data;
-
-    // After creating the program, assign tags if provided
-    if (input.tags && input.tags.length > 0) {
-      if (DEBUG_CREATE_PROGRAM) {
-        console.log("=== ASSIGNING TAGS ===");
-        console.log("Tags to assign:", input.tags);
-      }
-
-      await assignTagsToProgram(program.id, input.tags, getToken);
-
-      if (DEBUG_CREATE_PROGRAM) {
-        console.log("Tags assigned successfully");
-      }
-    }
-
-    return program;
-  } catch (error: unknown) {
-    console.error("=== CREATE PROGRAM ERROR ===");
-    console.error("Error:", error);
-
-    // Try to parse error response for more details
-    if (error instanceof Error && error.message) {
-      console.error("Error message:", error.message);
-    }
-
-    throw error;
-  }
+  return program;
 }
 
 /**
@@ -246,18 +169,11 @@ export async function deleteProgram(
   getToken: () => Promise<string | null>
 ): Promise<void> {
   const url = buildApiUrl(`/programs/${id}`);
-
-  try {
-    await fetchWithAuth(url, {
-      method: "DELETE",
-    }, getToken);
-
-    console.log("Program deleted successfully");
-  } catch (error) {
-    console.error("Delete program error:", error);
-    throw error;
-  }
+  await fetchWithAuth(url, {
+    method: "DELETE",
+  }, getToken);
 }
+
 /**
  * Like or unlike a program
  */

@@ -8,11 +8,10 @@
 
 /* ===== SIDEBAR CONTAINER ===== */
 .sidebar {
-  position: fixed;
-  left: 0;
-  top: 0; /* Changed from var(--sl-navbar-height, 64px) to 0 */
-  bottom: 0;
-  width: 240px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%; /* Fill the wrapper */
   background: hsl(var(--sl-color-surface));
   border-right: 1px solid hsl(var(--sl-color-border));
   display: flex;

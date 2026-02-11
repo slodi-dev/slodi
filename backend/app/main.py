@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.requests import Request
-from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.logging import configure_logging
 from app.routers import (
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[
             "http://localhost:3000",
+            "http://localhost:8000",
             "https://slodi.is",
         ],  # Frontend origin # TODO MAKE THIS AN ENVIROMENT VARIABLE
         allow_credentials=True,

@@ -10,13 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.user import User
 from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app.services.users import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentUser = Annotated[UserOut, Depends(get_current_user)]
 
 DEFAULT_Q = Query(None, min_length=2, description="Case-insensitive search in name/email/auth0_id")
 

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Modal from "@/components/Modal/Modal";
 import NewProgramForm from "@/app/programs/components/NewProgramForm";
-import ProgramCard from "@/components/ProgramCard/ProgramCard";
+import ProgramCard from "@/app/programs/components/ProgramCard";
 import ProgramGrid from "./components/ProgramGrid";
 import ProgramSearch from "./components/ProgramSearch";
 import ProgramFilters from "./components/ProgramFilters";
@@ -124,8 +124,8 @@ export default function ProgramsPage() {
                             programsError
                                 ? "Villa kom upp við að sækja dagskrár"
                                 : query.trim() || selectedTags.length > 0
-                                    ? "Engar dagskrár fundust með þessari leit"
-                                    : "Engar dagskrár í boði"
+                                    ? "Engin dagskrá fannst við þessi leitarskilyrði"
+                                    : "Engin dagskrá fannst"
                         }
                     >
                         {paginatedItems.map((p) => (
@@ -133,6 +133,7 @@ export default function ProgramsPage() {
                                 key={p.id}
                                 id={p.id}
                                 name={p.name}
+                                image={p.image}
                                 description={p.description}
                                 tags={p.tags}
                             />

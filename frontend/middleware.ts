@@ -7,15 +7,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        // Match all paths except:
-        // - _next/static and _next/image
-        // - favicon.ico
-        // - robots.txt
-        // - sitemap.xml and sitemap-*.xml
-        // - api/auth (Auth0 callback/login/logout)
-        // - the home page (/)
-        // - about and optional subpaths (/about or /about/...)
-        // - api/save-email (excluded to allow unauthenticated access)
         "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap\\.xml|sitemap-.*\\.xml|api/auth|api/save-email|about(?:/.*)?|$).*)",
     ],
 };

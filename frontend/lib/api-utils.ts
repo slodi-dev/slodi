@@ -2,9 +2,19 @@
  * API utility functions for handling fetch responses and errors
  */
 
-// Use relative path for API calls to avoid browser local network permission prompt
-// In production, this will be proxied through Next.js server
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+// Get the API base URL - must be absolute URL for client-side requests
+const getApiBase = (): string => {
+  // Check if we're on the client side
+  if (typeof window !== 'undefined') {
+    // In browser, use NEXT_PUBLIC_API_URL or construct from window.location
+    return process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+  }
+
+  // On server side, use NEXT_PUBLIC_API_URL or fallback
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+};
+
+const API_BASE = getApiBase();
 
 /**
  * Validates if a fetch response is successful
@@ -145,12 +155,35 @@ export async function fetchAndCheckIs<T>(
 
 /**
  * Builds a full API URL from an endpoint path
- * @param endpoint The endpoint path (e.g., "/programs")
+ * @param endpoint The endpoint path (e.g., "/programs" or "api/programs")
  * @param baseUrl Optional base URL (defaults to API_BASE)
  * @returns The complete URL
  */
 export function buildApiUrl(endpoint: string, baseUrl: string = API_BASE): string {
-  return new URL(endpoint, baseUrl).toString();
+  // Ensure we have a valid base URL
+  if (!baseUrl || baseUrl === '/api') {
+    baseUrl = typeof window !== 'undefined'
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  }
+
+  // Remove leading slash from endpoint if present
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+
+  try {
+    const url = new URL(cleanEndpoint, baseUrl);
+    return url.toString();
+  } catch (error) {
+    console.error('Failed to build API URL:', {
+      endpoint,
+      baseUrl,
+      cleanEndpoint,
+      window: typeof window !== 'undefined' ? window.location.origin : 'N/A',
+      env: process.env.NEXT_PUBLIC_API_URL,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    throw error;
+  }
 }
 
 /**
@@ -166,6 +199,11 @@ export function handleApiError(
   if (error instanceof Error) {
     return error.message;
   }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
   return defaultMessage;
 }
 

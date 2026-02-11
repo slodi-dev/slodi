@@ -17,7 +17,7 @@ const EMAIL_LIST =
     .filter((email) => email.length > 0);
 
 async function getBaseUrl() {
-  const env = process.env.APP_BASE_URL;
+  const env = process.env.NEXT_PUBLIC_APP_BASE_URL;
   if (env) return env.replace(/\/$/, "");
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";

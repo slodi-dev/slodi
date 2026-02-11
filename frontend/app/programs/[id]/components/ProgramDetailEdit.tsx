@@ -8,13 +8,14 @@ export interface ProgramUpdateFormData {
   name: string;
   description: string | null;
   public: boolean;
+  image: string | null;
 }
 
 interface ProgramDetailEditProps {
   program: Program;
   onSave: (data: ProgramUpdateFormData) => Promise<void>;
   onCancel: () => void;
-  onDelete: () => Promise<void>; 
+  onDelete: () => Promise<void>;
   isDeleting: boolean;
 }
 
@@ -23,15 +24,17 @@ export default function ProgramDetailEdit({
   onSave,
   onCancel,
   onDelete,
-  isDeleting
+  isDeleting,
 }: ProgramDetailEditProps) {
   const [formData, setFormData] = useState<ProgramUpdateFormData>({
     name: program.name,
     description: program.description || null,
     public: program.public,
+    image: program.image || null,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,17 +49,31 @@ export default function ProgramDetailEdit({
       setError(null);
       await onSave(formData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Villa kom upp við að vista");
+      setError(
+        err instanceof Error ? err.message : "Villa kom upp við að vista"
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleImageUrlChange = (url: string) => {
+    setImageError(false);
+    setFormData({ ...formData, image: url || null });
+  };
+
+  const handleClearImage = () => {
+    setFormData({ ...formData, image: null });
+    setImageError(false);
+  };
+
   const isDisabled = isSaving || isDeleting;
+  const hasImage = formData.image && formData.image.trim().length > 0;
 
   return (
     <div className={styles.editContainer}>
       <form onSubmit={handleSubmit} className={styles.form}>
+        {/* Program name */}
         <div className={styles.formGroup}>
           <label htmlFor="name" className={styles.label}>
             Nafn dagskrár *
@@ -66,12 +83,15 @@ export default function ProgramDetailEdit({
             type="text"
             className={styles.input}
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, name: e.target.value })
+            }
             required
             disabled={isDisabled}
           />
         </div>
 
+        {/* Description */}
         <div className={styles.formGroup}>
           <label htmlFor="description" className={styles.label}>
             Lýsing
@@ -80,20 +100,82 @@ export default function ProgramDetailEdit({
             id="description"
             className={styles.textarea}
             value={formData.description || ""}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                description: e.target.value || null,
+              })
+            }
             rows={8}
             disabled={isDisabled}
             placeholder="Lýsing á dagskránni..."
           />
         </div>
 
+        {/* Image URL */}
+        <div className={styles.formGroup}>
+          <label htmlFor="image" className={styles.label}>
+            Mynd (URL)
+          </label>
+
+          {/* Image preview */}
+          {hasImage && (
+            <div className={styles.imagePreviewContainer}>
+              {!imageError ? (
+                <img
+                  src={formData.image!}
+                  alt="Forskoðun myndar"
+                  className={styles.imagePreview}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className={styles.imagePreviewError}>
+                  <span className={styles.imagePreviewErrorIcon}>⚠️</span>
+                  <span className={styles.imagePreviewErrorText}>
+                    Ekki tókst að hlaða mynd — athugaðu slóðina
+                  </span>
+                </div>
+              )}
+              <button
+                type="button"
+                className={styles.imageClearButton}
+                onClick={handleClearImage}
+                disabled={isDisabled}
+                aria-label="Fjarlægja mynd"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <input
+            id="image"
+            type="url"
+            className={styles.input}
+            value={formData.image || ""}
+            onChange={(e) => handleImageUrlChange(e.target.value)}
+            disabled={isDisabled}
+            placeholder={
+              program.image
+                ? program.image
+                : "https://example.com/mynd.jpg"
+            }
+          />
+          <p className={styles.helpText}>
+            Settu inn slóð á mynd til að sýna á dagskránni
+          </p>
+        </div>
+
+        {/* Public checkbox */}
         <div className={styles.formGroup}>
           <label className={styles.checkboxLabel}>
             <input
               type="checkbox"
               className={styles.checkbox}
               checked={formData.public}
-              onChange={(e) => setFormData({ ...formData, public: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, public: e.target.checked })
+              }
               disabled={isDisabled}
             />
             <span>Opinber dagskrá</span>
@@ -103,12 +185,10 @@ export default function ProgramDetailEdit({
           </p>
         </div>
 
-        {error && (
-          <div className={styles.error}>
-            {error}
-          </div>
-        )}
+        {/* Error message */}
+        {error && <div className={styles.error}>{error}</div>}
 
+        {/* Save / Cancel actions */}
         <div className={styles.actions}>
           <button
             type="submit"
@@ -127,7 +207,7 @@ export default function ProgramDetailEdit({
           </button>
         </div>
 
-        {/* Delete section - separated from main actions */}
+        {/* Danger zone */}
         <div className={styles.dangerZone}>
           <h3 className={styles.dangerTitle}>Hættusvæði</h3>
           <p className={styles.dangerDescription}>

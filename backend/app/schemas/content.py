@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated, TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
@@ -62,6 +62,6 @@ class ContentOut(ContentBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    author: "UserNested"
-    tags: list["TagOut"] = []
+    author: UserNested
+    tags: list[TagOut] = []
     comment_count: int = 0

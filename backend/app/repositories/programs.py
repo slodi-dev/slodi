@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.program import Program
+from app.models.tag import ContentTag
 from app.repositories.base import Repository
 
 
@@ -31,7 +32,16 @@ class ProgramRepository(Repository):
         return res.scalars().first()
 
     async def get_in_workspace(self, program_id: UUID, workspace_id: UUID) -> Program | None:
-        stmt = select(Program).where(Program.id == program_id, Program.workspace_id == workspace_id)
+        stmt = (
+            select(Program)
+            .options(
+                selectinload(Program.author),
+                selectinload(Program.workspace),
+                selectinload(Program.comments),
+                selectinload(Program.content_tags).selectinload(ContentTag.tag),
+            )
+            .where(Program.id == program_id, Program.workspace_id == workspace_id)
+        )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
