@@ -13,7 +13,6 @@ from .content import ContentCreate, ContentOut, ContentUpdate
 class TaskCreate(ContentCreate):
     content_type: Literal[ContentType.task] = ContentType.task
 
-    equipment: dict[str, Any] | None = None
     media: dict[str, Any] | None = None
     estimated_duration: int | None = None
     participant_min: int | None = None
@@ -51,7 +50,6 @@ class TaskCreate(ContentCreate):
 
 class TaskUpdate(ContentUpdate):
     event_id: UUID | None = None
-    equipment: dict[str, Any] | None = None
     media: dict[str, Any] | None = None
     estimated_duration: int | None = None
     participant_min: int | None = None
@@ -95,7 +93,6 @@ class TaskOut(ContentOut):
 
     id: UUID
     event_id: UUID
-    equipment: dict[str, Any] | None = None
     media: dict[str, Any] | None = None
     estimated_duration: int | None = None
     participant_min: int | None = None

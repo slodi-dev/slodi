@@ -6,7 +6,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
-from app.domain.content_constraints import DESC_MAX, NAME_MAX, NAME_MIN
+from app.domain.content_constraints import (
+    AGE_MAX,
+    DESC_MAX,
+    INSTRUCTIONS_MAX,
+    LOCATION_MAX,
+    NAME_MAX,
+    NAME_MIN,
+)
 from app.utils import get_current_datetime
 
 NameStr = Annotated[
@@ -16,6 +23,14 @@ NameStr = Annotated[
 DescStr = Annotated[
     str, StringConstraints(min_length=0, max_length=DESC_MAX, strip_whitespace=True)
 ]
+InstructionsStr = Annotated[
+    str,
+    StringConstraints(min_length=0, max_length=INSTRUCTIONS_MAX, strip_whitespace=True),
+]
+AgeStr = Annotated[str, StringConstraints(min_length=0, max_length=AGE_MAX, strip_whitespace=True)]
+LocationStr = Annotated[
+    str, StringConstraints(min_length=0, max_length=LOCATION_MAX, strip_whitespace=True)
+]
 
 
 class ContentBase(BaseModel):
@@ -23,6 +38,13 @@ class ContentBase(BaseModel):
 
     name: NameStr
     description: DescStr | None = None
+    equipment: list[str] | None = None
+    instructions: InstructionsStr | None = None
+    duration: int | None = None
+    age: AgeStr | None = None
+    location: LocationStr | None = None
+    count: int | None = None
+    price: int | None = None
     like_count: int = 0
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
     author_id: UUID
@@ -32,6 +54,13 @@ class ContentBase(BaseModel):
     def validate_like_count(cls, v: int) -> int:
         if v < 0:
             raise ValueError("like_count must be >= 0")
+        return v
+
+    @field_validator("duration", "count", "price")
+    @classmethod
+    def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
+        if v is not None and v < 0:
+            raise ValueError(f"{info.field_name} must be >= 0")
         return v
 
 
@@ -44,6 +73,13 @@ class ContentUpdate(BaseModel):
 
     name: NameStr | None = None
     description: DescStr | None = None
+    equipment: list[str] | None = None
+    instructions: InstructionsStr | None = None
+    duration: int | None = None
+    age: AgeStr | None = None
+    location: LocationStr | None = None
+    count: int | None = None
+    price: int | None = None
     like_count: int | None = None
 
     @field_validator("like_count")
@@ -51,6 +87,13 @@ class ContentUpdate(BaseModel):
     def validate_like_count(cls, v: int | None) -> int | None:
         if v is not None and v < 0:
             raise ValueError("like_count must be >= 0")
+        return v
+
+    @field_validator("duration", "count", "price")
+    @classmethod
+    def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
+        if v is not None and v < 0:
+            raise ValueError(f"{info.field_name} must be >= 0")
         return v
 
 

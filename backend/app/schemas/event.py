@@ -1,18 +1,14 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated, Literal
+from typing import Literal
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, StringConstraints, field_validator
-
-from app.domain.event_constraints import LOCATION_MAX
+from pydantic import ConfigDict, Field, field_validator
 from app.models.content import ContentType
 from app.utils import get_current_datetime
 
 from .content import ContentCreate, ContentOut, ContentUpdate
-
-LocationStr = Annotated[str, StringConstraints(max_length=LOCATION_MAX, strip_whitespace=True)]
 
 
 def _ensure_tzaware(value: dt.datetime, field: str) -> dt.datetime:
@@ -26,7 +22,6 @@ class EventCreate(ContentCreate):
 
     start_dt: dt.datetime = Field(default_factory=get_current_datetime)
     end_dt: dt.datetime | None = None
-    location: LocationStr | None = None
 
     @field_validator("start_dt")
     @classmethod
@@ -44,7 +39,6 @@ class EventCreate(ContentCreate):
 class EventUpdate(ContentUpdate):
     start_dt: dt.datetime | None = None
     end_dt: dt.datetime | None = None
-    location: LocationStr | None = None
     workspace_id: UUID | None = None
     program_id: UUID | None = None
 
@@ -68,6 +62,5 @@ class EventOut(ContentOut):
 
     start_dt: dt.datetime
     end_dt: dt.datetime | None = None
-    location: LocationStr | None = None
     workspace_id: UUID
     program_id: UUID | None
