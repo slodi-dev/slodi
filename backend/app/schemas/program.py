@@ -9,6 +9,8 @@ from app.domain.program_constraints import IMG_MAX
 from app.models.content import ContentType
 
 from .content import ContentCreate, ContentOut, ContentUpdate, DescStr, NameStr
+from .tag import TagOut  # Import for model rebuild
+from .user import UserNested  # Import for model rebuild
 from .workspace import WorkspaceNested  # Import for nested workspace
 
 # Rebuild model to resolve forward references

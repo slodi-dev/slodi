@@ -11,6 +11,8 @@ from app.models.content import ContentType
 from app.utils import get_current_datetime
 
 from .content import ContentCreate, ContentOut, ContentUpdate
+from .tag import TagOut  # Import for model rebuild
+from .user import UserNested  # Import for model rebuild
 from .workspace import WorkspaceNested  # Import for nested workspace
 
 # Rebuild model to resolve forward references
