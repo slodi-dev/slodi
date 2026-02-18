@@ -8,8 +8,6 @@ from pydantic import ConfigDict, field_validator, model_validator
 from app.models.content import ContentType
 
 from .content import ContentCreate, ContentOut, ContentUpdate
-from .tag import TagOut  # Import for model rebuild
-from .user import UserNested  # Import for model rebuild
 
 # Rebuild model to resolve forward references
 ContentOut.model_rebuild()
