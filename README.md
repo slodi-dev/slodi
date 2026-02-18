@@ -5,9 +5,9 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
 <!-- [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/) -->
-[![GitHub issues](https://img.shields.io/github/issues/halldorvalberg/slodi)](https://github.com/halldorvalberg/slodi/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/halldorvalberg/slodi)](https://github.com/halldorvalberg/slodi/pulls)
-[![Last commit](https://img.shields.io/github/last-commit/halldorvalberg/slodi)](https://github.com/halldorvalberg/slodi/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/pulls)
+[![Last commit](https://img.shields.io/github/last-commit/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/commits/main)
 
 Slóði er Gilwell-verkefni sem [Halldór Valberg Aðalbjargarson](https://github.com/halldorvalberg) og [Signý Kristín Sigurjónsdóttir](https://github.com/signyk) sjá um. Það er opinn hugbúnaður sem er hannaður til að auðvelda dagskrárgerð fyrir skátaforingja. Kerfið styður foringja og hópa við að búa til, deila og stjórna viðfangsefnum og tryggir um leið að skátar fái fjölbreytta og vel samsetta dagskrá.
 
@@ -100,8 +100,8 @@ Slóði er samfélagsdrifið verkefni. Framlög frá forriturum, hönnuðum og s
 
 Slóði er þróaður fyrir og með skátasamfélaginu.
 
-- Taktu þátt í umræðunum á [GitHub Discussions](https://github.com/halldorvalberg/slodi/discussions)
-- Tilkynntu villur og óskaðu eftir nýjum eiginleikum í [Issues](https://github.com/halldorvalberg/slodi/issues)
+- Taktu þátt í umræðunum á [GitHub Discussions](https://github.com/slodi-dev/slodi/discussions)
+- Tilkynntu villur og óskaðu eftir nýjum eiginleikum í [Issues](https://github.com/slodi-dev/slodi/issues)
 - Leggðu til hugmyndir, þýðingar eða dagskrárefni
 
 ## Vefsíða verkefnisins
