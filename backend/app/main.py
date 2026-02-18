@@ -2,11 +2,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
-from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.requests import Request
 
 from app.core.logging import configure_logging
 from app.routers import (
@@ -27,7 +23,7 @@ from app.routers import (
 def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Backend API")
-    
+
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -55,15 +51,6 @@ def create_app() -> FastAPI:
     @app.get("/healthz")
     async def healthz():
         return {"ok": True}
-
-    @app.get("/docs", include_in_schema=False)
-    async def custom_swagger_ui_html(req: Request):
-        root_path = req.scope.get("root_path", "").rstrip("/")
-        openapi_url = root_path + app.openapi_url
-        return get_swagger_ui_html(
-            openapi_url=openapi_url,
-            title="API",
-        )
 
     return app
 
