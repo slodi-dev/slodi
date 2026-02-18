@@ -16,6 +16,7 @@ dependencies = [
     "uvicorn[standard]>=0.37.0",
     "python-jose[cryptography]>=3.3.0",
     "httpx>=0.27.0",
+    "testcontainers[postgres]>=4.0",
 ]
 
 [dependency-groups]
@@ -28,6 +29,10 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+markers = [
+  "integration: marks tests as requiring a running Docker daemon (deselect with '-m \"not integration\"')",
+]
 filterwarnings = [
   "ignore::DeprecationWarning:pydantic.*:",
   "ignore::DeprecationWarning:sqlalchemy.*:",

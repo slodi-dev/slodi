@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.repositories.users import UserRepository
-from app.schemas.user import UserCreate, UserOut, UserUpdate
+from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin, UserUpdateSelf
 
 
 class UserService:
@@ -59,7 +59,7 @@ class UserService:
         await self.session.refresh(user)
         return UserOut.model_validate(user)
 
-    async def update(self, user_id: UUID, data: UserUpdate) -> UserOut:
+    async def update(self, user_id: UUID, data: UserUpdateSelf | UserUpdateAdmin) -> UserOut:
         row = await self.repo.get(user_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

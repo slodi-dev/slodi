@@ -3,10 +3,16 @@
 HOST ?= 127.0.0.1
 PORT ?= 8000
 ARGS ?=
-.PHONY: test lint fmt migrate makemigration downgrade run docker-build docker-run docker-stop docker-clean docker-logs docker-shell docker-db-shell
+.PHONY: test test-unit test-integration lint fmt migrate makemigration downgrade run docker-build docker-run docker-stop docker-clean docker-logs docker-shell docker-db-shell
 
 test:
-	PYTHONPATH=. uv run pytest -q
+	PYTHONPATH=. uv run pytest -q -m "not integration"
+
+test-unit:
+	PYTHONPATH=. uv run pytest -q -m "not integration"
+
+test-integration:
+	PYTHONPATH=. uv run pytest -q -m integration
 
 lint:
 	uv run ruff check .

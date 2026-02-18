@@ -65,13 +65,13 @@ class ProgramService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create program",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error creating program: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create program",
-            )
+            ) from e
 
     # item-level operations (not scoped)
     async def get(self, program_id: UUID) -> ProgramOut:

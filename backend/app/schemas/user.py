@@ -12,7 +12,7 @@ from app.domain.user_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.models.user import Pronouns
+from app.models.user import Permissions, Pronouns
 
 Auth0Id = Annotated[
     str,
@@ -35,6 +35,7 @@ class UserBase(BaseModel):
 
     name: NameStr
     pronouns: Pronouns | None = None
+    permissions: Permissions = Permissions.viewer
     preferences: dict[str, Any] | None = None
 
 
@@ -51,11 +52,12 @@ class UserCreate(UserBase):
         return v.strip().lower()
 
 
-class UserUpdate(BaseModel):
+class UserUpdateAdmin(BaseModel):
     """Payload for updating a user. All fields optional."""
 
     name: NameStr | None = None
     pronouns: Pronouns | None = None
+    permissions: Permissions | None = None
     preferences: dict[str, Any] | None = None
     email: EmailConstrained | None = None
     auth0_id: Auth0Id | None = None
@@ -64,6 +66,13 @@ class UserUpdate(BaseModel):
     @classmethod
     def _normalize_email(cls, v: str | None) -> str | None:
         return v.strip().lower() if isinstance(v, str) else v
+
+
+class UserUpdateSelf(BaseModel):
+    """Payload for updating own user profile. Only allows updating name and pronouns."""
+
+    name: NameStr | None = None
+    pronouns: Pronouns | None = None
 
 
 class UserOut(UserBase):
