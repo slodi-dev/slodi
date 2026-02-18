@@ -64,3 +64,14 @@ class WorkspaceRepository(Repository):
         stmt = delete(Workspace).where(Workspace.id == workspace_id)
         res = await self.session.execute(stmt)
         return res.rowcount or 0
+
+    async def get_user_membership(self, workspace_id: UUID, user_id: UUID) -> WorkspaceMembership | None:
+        stmt = (
+            select(WorkspaceMembership)
+            .where(
+                WorkspaceMembership.workspace_id == workspace_id,
+                WorkspaceMembership.user_id == user_id
+            )
+        )
+        res = await self.session.execute(stmt)
+        return res.scalars().first()

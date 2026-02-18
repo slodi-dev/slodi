@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.requests import Request
@@ -25,7 +27,7 @@ from app.routers import (
 def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Backend API")
-
+    
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,

@@ -11,13 +11,17 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
 
 from app.domain.content_constraints import (
+    AGE_MAX,
     DESC_MAX,
+    INSTRUCTIONS_MAX,
+    LOCATION_MAX,
     NAME_MAX,
     NAME_MIN,
 )
@@ -45,6 +49,9 @@ class Content(Base):
     }
     __table_args__ = (
         CheckConstraint("like_count >= 0", name="ck_content_like_nonneg"),
+        CheckConstraint("duration >= 0", name="ck_content_duration_nonneg"),
+        CheckConstraint("count >= 0", name="ck_content_count_nonneg"),
+        CheckConstraint("price >= 0", name="ck_content_price_nonneg"),
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_content_name_min"),
     )
 
@@ -61,6 +68,16 @@ class Content(Base):
     )
     name: Mapped[str] = mapped_column(String(NAME_MAX), nullable=False)
     description: Mapped[str | None] = mapped_column(String(DESC_MAX), nullable=True)
+    equipment: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    instructions: Mapped[str | None] = mapped_column(
+        String(INSTRUCTIONS_MAX),
+        nullable=True,
+    )
+    duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    age: Mapped[str | None] = mapped_column(String(AGE_MAX), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
+    count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    price: Mapped[int | None] = mapped_column(Integer, nullable=True)
     like_count: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
