@@ -4,6 +4,7 @@ import datetime as dt
 from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
+from backend.app.schemas.user import UserOut
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from app.domain.content_constraints import DESC_MAX, NAME_MAX, NAME_MIN
@@ -62,6 +63,6 @@ class ContentOut(ContentBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    author: UserNested
+    author: UserOut
     tags: list[TagOut] = []
     comment_count: int = 0
