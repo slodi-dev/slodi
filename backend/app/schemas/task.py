@@ -9,9 +9,6 @@ from app.models.content import ContentType
 
 from .content import ContentCreate, ContentOut, ContentUpdate
 
-# Rebuild model to resolve forward references
-ContentOut.model_rebuild()
-
 
 class TaskCreate(ContentCreate):
     content_type: Literal[ContentType.task] = ContentType.task
