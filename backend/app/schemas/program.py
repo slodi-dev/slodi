@@ -11,9 +11,6 @@ from app.models.content import ContentType
 from .content import ContentCreate, ContentOut, ContentUpdate
 from .workspace import WorkspaceNested
 
-# Rebuild model to resolve forward references
-ContentOut.model_rebuild()  # TODO: Is this needed?
-
 ImageStr = Annotated[
     str, StringConstraints(min_length=0, max_length=IMG_MAX, strip_whitespace=True)
 ]
