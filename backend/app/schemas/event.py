@@ -5,6 +5,7 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import ConfigDict, Field, field_validator
+
 from app.models.content import ContentType
 from app.utils import get_current_datetime
 

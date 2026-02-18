@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workspace import Workspace
 from app.repositories.workspaces import WorkspaceRepository
-from app.schemas.workspace import WorkspaceCreate, WorkspaceOut, WorkspaceUpdate
+from app.schemas.workspace import (
+    WorkspaceCreate,
+    WorkspaceMembershipOut,
+    WorkspaceOut,
+    WorkspaceUpdate,
+)
 
 
 class WorkspaceService:
@@ -55,3 +60,13 @@ class WorkspaceService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
         await self.repo.delete(workspace_id)
         await self.session.commit()
+
+    async def get_user_membership(
+        self, workspace_id: UUID, user_id: UUID
+    ) -> WorkspaceMembershipOut:
+        membership = await self.repo.get_user_membership(workspace_id, user_id)
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Membership not found"
+            )
+        return WorkspaceMembershipOut.model_validate(membership)

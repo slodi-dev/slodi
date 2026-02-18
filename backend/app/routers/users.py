@@ -6,9 +6,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.schemas.user import UserCreate, UserOut, UserUpdate
+from app.models.user import Permissions
+from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin, UserUpdateSelf
 from app.services.users import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -22,6 +24,7 @@ async def list_users(
     session: SessionDep,
     request: Request,
     response: Response,
+    current_user: UserOut = Depends(get_current_user),  # noqa: B008
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
@@ -40,27 +43,64 @@ async def list_users(
 
 
 @router.post("", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def create_user(session: SessionDep, body: UserCreate, response: Response):
+async def create_user(
+    session: SessionDep,
+    body: UserCreate,
+    response: Response,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
+):
     svc = UserService(session)
     user = await svc.create(body)
     response.headers["Location"] = f"/users/{user.id}"
     return user
 
 
+@router.get("/me", response_model=UserOut)
+async def get_current_user_profile(
+    current_user: UserOut = Depends(get_current_user),  # noqa: B008
+):
+    """Get the current user's own profile"""
+    return current_user
+
+
 @router.get("/{user_id}", response_model=UserOut)
-async def get_user(session: SessionDep, user_id: UUID):
+async def get_user(
+    session: SessionDep,
+    user_id: UUID,
+    current_user: UserOut = Depends(get_current_user),  # noqa: B008
+):
+    """Get any user's public profile (if allowed)"""
     svc = UserService(session)
     return await svc.get(user_id)
 
 
+@router.patch("/me", response_model=UserOut)
+async def update_current_user(
+    session: SessionDep,
+    body: UserUpdateSelf,  # Restricted schema
+    current_user: UserOut = Depends(get_current_user),  # noqa: B008
+):
+    svc = UserService(session)
+    return await svc.update(current_user.id, body)
+
+
 @router.patch("/{user_id}", response_model=UserOut)
-async def update_user(session: SessionDep, user_id: UUID, body: UserUpdate):
+async def update_user(
+    session: SessionDep,
+    user_id: UUID,
+    body: UserUpdateAdmin,  # Full schema
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
+):
     svc = UserService(session)
     return await svc.update(user_id, body)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(session: SessionDep, user_id: UUID):
+async def delete_user(
+    session: SessionDep,
+    user_id: UUID,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
+):
     svc = UserService(session)
     await svc.delete(user_id)
     return None
