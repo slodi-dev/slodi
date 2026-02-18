@@ -8,6 +8,8 @@ from fastapi import status
 
 from app.schemas.group import GroupOut
 from app.schemas.program import ProgramOut
+from app.schemas.user import UserOut
+from app.schemas.workspace import WorkspaceNested
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -19,6 +21,10 @@ def _make_program(workspace_id):
         name="Test Program",
         author_id=uuid4(),
         created_at=datetime.now(),
+        author=UserOut(
+            id=uuid4(), name="Test User", email="test_email@gmail.com", auth0_id="auth0|123"
+        ),
+        workspace=WorkspaceNested(id=workspace_id, name="Test Workspace"),
     )
 
 
