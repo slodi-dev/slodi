@@ -12,14 +12,6 @@ from app.utils import get_current_datetime
 from .content import ContentCreate, ContentOut, ContentUpdate
 from .workspace import WorkspaceNested  # Import for nested workspace
 
-<<<<<<< HEAD
-# Rebuild model to resolve forward references
-ContentOut.model_rebuild()
-
-LocationStr = Annotated[str, StringConstraints(max_length=LOCATION_MAX, strip_whitespace=True)]
-
-=======
->>>>>>> bakendi-dev
 
 def _ensure_tzaware(value: dt.datetime, field: str) -> dt.datetime:
     if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
