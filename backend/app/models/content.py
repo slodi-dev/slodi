@@ -20,6 +20,7 @@ from sqlalchemy.types import Integer
 from app.domain.content_constraints import (
     AGE_MAX,
     DESC_MAX,
+    DURATION_MAX,
     INSTRUCTIONS_MAX,
     LOCATION_MAX,
     NAME_MAX,
@@ -49,7 +50,6 @@ class Content(Base):
     }
     __table_args__ = (
         CheckConstraint("like_count >= 0", name="ck_content_like_nonneg"),
-        CheckConstraint("duration >= 0", name="ck_content_duration_nonneg"),
         CheckConstraint("count >= 0", name="ck_content_count_nonneg"),
         CheckConstraint("price >= 0", name="ck_content_price_nonneg"),
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_content_name_min"),
@@ -73,11 +73,12 @@ class Content(Base):
         String(INSTRUCTIONS_MAX),
         nullable=True,
     )
-    duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
     age: Mapped[str | None] = mapped_column(String(AGE_MAX), nullable=True)
     location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
     count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     price: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    prep_time: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
     like_count: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

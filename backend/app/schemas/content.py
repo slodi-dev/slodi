@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_vali
 from app.domain.content_constraints import (
     AGE_MAX,
     DESC_MAX,
+    DURATION_MAX,
     INSTRUCTIONS_MAX,
     LOCATION_MAX,
     NAME_MAX,
@@ -30,6 +31,9 @@ InstructionsStr = Annotated[
     StringConstraints(min_length=0, max_length=INSTRUCTIONS_MAX, strip_whitespace=True),
 ]
 AgeStr = Annotated[str, StringConstraints(min_length=0, max_length=AGE_MAX, strip_whitespace=True)]
+DurationStr = Annotated[
+    str, StringConstraints(min_length=0, max_length=DURATION_MAX, strip_whitespace=True)
+]
 LocationStr = Annotated[
     str, StringConstraints(min_length=0, max_length=LOCATION_MAX, strip_whitespace=True)
 ]
@@ -42,11 +46,12 @@ class ContentBase(BaseModel):
     description: DescStr | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
-    duration: int | None = None
+    duration: DurationStr | None = None
     age: AgeStr | None = None
     location: LocationStr | None = None
     count: int | None = None
     price: int | None = None
+    prep_time: DurationStr | None = None
     like_count: int = 0
     author_id: UUID | None = None
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
@@ -58,7 +63,7 @@ class ContentBase(BaseModel):
             raise ValueError("like_count must be >= 0")
         return v
 
-    @field_validator("duration", "count", "price")
+    @field_validator("count", "price")
     @classmethod
     def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
         if v is not None and v < 0:
@@ -77,11 +82,12 @@ class ContentUpdate(BaseModel):
     description: DescStr | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
-    duration: int | None = None
+    duration: DurationStr | None = None
     age: AgeStr | None = None
     location: LocationStr | None = None
     count: int | None = None
     price: int | None = None
+    prep_time: DurationStr | None = None
     like_count: int | None = None
 
     @field_validator("like_count")
@@ -91,7 +97,7 @@ class ContentUpdate(BaseModel):
             raise ValueError("like_count must be >= 0")
         return v
 
-    @field_validator("duration", "count", "price")
+    @field_validator("count", "price")
     @classmethod
     def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
         if v is not None and v < 0:
