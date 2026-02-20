@@ -23,6 +23,7 @@ from app.core.db import get_session_maker
 from app.models.tag import Tag
 from app.models.user import Permissions, User
 from app.models.workspace import EventInterval, Weekday, Workspace, WorkspaceMembership, WorkspaceRole
+from app.settings import settings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ WORKSPACE_NAME = "Dagskrárbankinn"
 DEFAULT_TAGS = ["Leikir", "Útivist", "Samfélagsverkefni"]
 
 OUTPUT_FILE = Path(__file__).parent / "seed_output.json"
+
+# Emails that should always be promoted to admin (from ADMIN_EMAILS in .env)
+ADMIN_EMAILS: list[str] = settings.admin_email_list
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -126,6 +130,22 @@ async def get_or_create_tags(session: AsyncSession) -> list[Tag]:
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 
+async def promote_admin_emails(session: AsyncSession) -> None:
+    """Ensure any existing users whose emails are listed in ADMIN_EMAILS have admin permissions."""
+    if not ADMIN_EMAILS:
+        return
+    result = await session.execute(
+        select(User).where(User.email.in_(ADMIN_EMAILS))
+    )
+    users = result.scalars().all()
+    for u in users:
+        if u.permissions != Permissions.admin:
+            u.permissions = Permissions.admin
+            log.info("Promoted '%s' to admin", u.email)
+        else:
+            log.info("User '%s' already admin", u.email)
+
+
 async def main() -> None:
     session_maker = get_session_maker()
 
@@ -134,6 +154,7 @@ async def main() -> None:
             user = await get_or_create_user(session)
             ws = await get_or_create_workspace(session, user)
             tags = await get_or_create_tags(session)
+            await promote_admin_emails(session)
         # transaction committed by context-manager exit
 
     output = {
