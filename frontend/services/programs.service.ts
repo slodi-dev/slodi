@@ -55,8 +55,8 @@ export interface ProgramUpdateFormData {
 export type ProgramsResponse = Program[] | { programs: Program[] };
 
 /**
- * Check if a user can edit a program
- * User can edit if they are the author of the program
+ * Check if a user can edit a program.
+ * @deprecated Use `canEditProgram` from `@/lib/permissions` with workspace role for accurate checks.
  */
 export function canEditProgram(user: User | null, program: Program): boolean {
   if (!user || !program) return false;

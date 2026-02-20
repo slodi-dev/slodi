@@ -5,6 +5,28 @@
 
 import { buildApiUrl } from "@/lib/api-utils";
 
+export type WorkspaceRole = "owner" | "admin" | "editor" | "viewer";
+
+/** Rank map — higher number means more permissions */
+export const WORKSPACE_ROLE_RANK: Record<WorkspaceRole, number> = {
+  viewer: 0,
+  editor: 1,
+  admin: 2,
+  owner: 3,
+};
+
+/** Returns true if `role` satisfies `minimum` */
+export function hasWorkspaceRole(role: WorkspaceRole | null | undefined, minimum: WorkspaceRole): boolean {
+  if (!role) return false;
+  return WORKSPACE_ROLE_RANK[role] >= WORKSPACE_ROLE_RANK[minimum];
+}
+
+export type WorkspaceMembership = {
+  workspace_id: string;
+  user_id: string;
+  role: WorkspaceRole;
+};
+
 export type Workspace = {
   id: string;
   name: string;
@@ -108,4 +130,34 @@ export async function getOrCreatePersonalWorkspace(
     },
     token
   );
+}
+
+/**
+ * Get the current user's membership/role for a workspace.
+ * Returns null if the user is not a member (404 from backend).
+ */
+export async function getMyWorkspaceRole(
+  workspaceId: string,
+  token: string
+): Promise<WorkspaceMembership | null> {
+  const url = buildApiUrl(`/workspaces/${workspaceId}/my-role`);
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    credentials: "include",
+  });
+
+  if (response.status === 404) {
+    return null; // not a member
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to get workspace role: ${response.status} - ${errorBody}`);
+  }
+
+  return response.json();
 }

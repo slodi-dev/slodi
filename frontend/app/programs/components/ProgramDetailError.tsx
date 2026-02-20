@@ -33,7 +33,7 @@ export function ProgramDetailError({ error }: ProgramDetailErrorProps) {
                         <h1 className={styles.title}>Úps!</h1>
                         <h2 className={styles.subtitle}>Eitthvað fór úrskeiðis</h2>
                         <p className={styles.message}>
-                            Tjaldbúðin datt! Við erum að laga málið.
+                            Þetta tjald hefur greinilega fokið í burtu?! Við erum að laga málið.
                         </p>
                         <p className={styles.errorDetail}>{error.message}</p>
                     </>

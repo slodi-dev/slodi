@@ -14,7 +14,9 @@ import { useProgramActions } from "@/hooks/useProgramActions";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
 import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { updateProgram, canEditProgram, ProgramUpdateFormData, deleteProgram } from "@/services/programs.service";
+import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
+import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
+import { updateProgram, ProgramUpdateFormData, deleteProgram } from "@/services/programs.service";
 import ProgramDetailEdit from "./components/ProgramDetailEdit";
 
 interface ProgramDetailPageProps {
@@ -39,14 +41,16 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     const { program, isLoading, error, setProgram } = useProgram(id);
     const { likeCount, isLiked, toggleLike } = useProgramLikes(program?.like_count || 0);
     const { handleShare, handleAddToWorkspace, handleBack } = useProgramActions(program);
+    const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
 
     // All hooks are called first, then we do conditional rendering
     if (error) return <ProgramDetailError error={error} />;
     if (isLoading) return <ProgramDetailSkeleton />;
     if (!program) notFound();
 
-    // Check if current user can edit this program
-    const canEdit = canEditProgram(user, program);
+    // Role-aware permission checks — uses workspace membership fetched above
+    const canEdit = canEditProgram(user, program, workspaceRole);
+    const canDelete = canDeleteProgram(user, program, workspaceRole);
 
     const breadcrumbItems = [
         { label: 'Heim', href: ROUTES.HOME },
@@ -100,7 +104,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     };
 
     const handleDelete = async () => {
-        if (!program) return;
+        if (!program || !canDelete) return;
 
         // Confirm deletion
         const confirmed = window.confirm("Ertu viss um að þú viljir eyða þessari dagskrá? Þetta er óafturkræft.");

@@ -13,7 +13,7 @@ from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.models.user import Permissions
 from app.models.workspace import WorkspaceRole
 from app.schemas.user import UserOut
-from app.schemas.workspace import WorkspaceCreate, WorkspaceOut, WorkspaceUpdate
+from app.schemas.workspace import WorkspaceCreate, WorkspaceMembershipOut, WorkspaceOut, WorkspaceUpdate
 from app.services.workspaces import WorkspaceService
 
 router = APIRouter(tags=["workspaces"])
@@ -74,6 +74,17 @@ async def create_user_workspace(
     workspace = await svc.create_user_workspace(user_id, body)
     response.headers["Location"] = f"/workspaces/{workspace.id}"
     return workspace
+
+
+@router.get("/workspaces/{workspace_id}/my-role", response_model=WorkspaceMembershipOut)
+async def get_my_workspace_role(
+    session: SessionDep,
+    workspace_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+):
+    """Return the current user's membership/role for a workspace, or 404 if not a member."""
+    svc = WorkspaceService(session)
+    return await svc.get_user_membership(workspace_id, current_user.id)
 
 
 @router.get("/workspaces/{workspace_id}", response_model=WorkspaceOut)
