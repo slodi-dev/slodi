@@ -40,8 +40,9 @@ DEFAULT_TAGS = ["Leikir", "Útivist", "Samfélagsverkefni"]
 
 OUTPUT_FILE = Path(__file__).parent / "seed_output.json"
 
-# Emails that should always be promoted to admin (from ADMIN_EMAILS in .env)
-ADMIN_EMAILS: list[str] = settings.admin_email_list
+# Emails that should always be promoted to admin (from ADMIN_EMAILS in .env), or if that value is not found we add halldor@svanir.is
+ADMIN_EMAILS: list[str] = settings.admin_email_list or ["halldor@svanir.is"]
+
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
