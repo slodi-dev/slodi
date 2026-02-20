@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
 
+    # Seed: emails that are always promoted to admin on `make seed`
+    admin_emails: str = Field("", alias="ADMIN_EMAILS")
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
+
     def model_post_init(self, __context):
         # Production database URL
         self.db_url = f"postgresql+psycopg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
