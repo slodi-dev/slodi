@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.logging import configure_logging
+from app.settings import settings
 from app.routers import (
     comments_router,
     email_list_router,
@@ -27,11 +28,7 @@ def create_app() -> FastAPI:
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:3000",
-            "http://localhost:8000",
-            "https://slodi.is",
-        ],  # Frontend origin # TODO MAKE THIS AN ENVIROMENT VARIABLE
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

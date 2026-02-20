@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { fetchPrograms, type Program } from "@/services/programs.service";
 import ProgramCard from "@/app/programs/components/ProgramCard";
 import ProgramGrid from "../components/ProgramGrid";
@@ -14,6 +15,7 @@ const DEFAULT_WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID || "";
 
 export default function FavoriteProgramsPage() {
   const { favorites, isLoading: favoritesLoading } = useFavorites();
+  const { getToken } = useAuth();
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [programs, setPrograms] = useState<Program[]>([]);
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
@@ -23,7 +25,8 @@ export default function FavoriteProgramsPage() {
     async function loadPrograms() {
       try {
         setIsLoadingPrograms(true);
-        const data = await fetchPrograms(DEFAULT_WORKSPACE_ID);
+        const token = await getToken();
+        const data = await fetchPrograms(DEFAULT_WORKSPACE_ID, token ?? undefined);
         setPrograms(data);
       } catch (error) {
         console.error("Failed to fetch programs:", error);
