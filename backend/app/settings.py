@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
 
+    # CORS configuration
+    cors_origins: list[str] = Field(["http://localhost:3000"], alias="CORS_ORIGINS")
+
     def model_post_init(self, __context):
         # Production database URL
         self.db_url = f"postgresql+psycopg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"

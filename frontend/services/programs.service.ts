@@ -66,10 +66,11 @@ export function canEditProgram(user: User | null, program: Program): boolean {
 /**
  * Fetch all programs for a workspace
  */
-export async function fetchPrograms(workspaceId: string): Promise<Program[]> {
+export async function fetchPrograms(workspaceId: string, token?: string): Promise<Program[]> {
   const url = buildApiUrl(`/workspaces/${workspaceId}/programs`);
   const data = await fetchAndCheck<ProgramsResponse>(url, {
     method: "GET",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     credentials: "include",
   });
 

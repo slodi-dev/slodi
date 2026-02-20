@@ -17,16 +17,18 @@ export type TagCreateInput = {
 /**
  * Fetch all tags
  * @param query Optional search query to filter tags by name
+ * @param token Bearer token for authentication
  */
-export async function fetchTags(query?: string): Promise<Tag[]> {
+export async function fetchTags(query?: string, token?: string): Promise<Tag[]> {
   const params = new URLSearchParams();
   if (query?.trim()) {
     params.append("q", query.trim());
   }
-  
+
   const url = buildApiUrl(`/tags${params.toString() ? `?${params.toString()}` : ''}`);
   return fetchAndCheck<Tag[]>(url, {
     method: "GET",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     credentials: "include",
   });
 }
