@@ -433,6 +433,183 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ACCORDION
+   ═══════════════════════════════════════════════════════════ */
+
+/* Replace .section border-bottom with per-section accordion card */
+.accordionItem {
+  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-20));
+  border-radius: var(--sl-radius-card);
+  overflow: hidden;
+}
+
+.accordionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-md);
+  width: 100%;
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-lg);
+  background: hsl(var(--sl-color-background-secondary));
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--sl-transition-fast);
+  /* Minimum tap target */
+  min-height: 3rem;
+}
+
+.accordionHeader:hover {
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.accordionHeader:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: -2px;
+}
+
+/* Filled dot when a section has data; unfilled ring otherwise */
+.accordionDot {
+  flex-shrink: 0;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--sl-radius-badge);
+  border: 2px solid hsl(var(--sl-color-border));
+  background: transparent;
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+
+.accordionDotFilled {
+  background: hsl(var(--sl-color-primary));
+  border-color: hsl(var(--sl-color-primary));
+}
+
+.accordionTitle {
+  flex: 1;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.accordionRequired {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-primitive-font-weight-medium);
+  color: hsl(var(--sl-color-error));
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-left: var(--sl-spacing-gap-xs);
+}
+
+.accordionSummary {
+  flex-shrink: 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-primitive-font-weight-medium);
+  color: hsl(var(--sl-color-text-tertiary));
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accordionChevron {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: hsl(var(--sl-color-text-tertiary));
+  transition: transform var(--sl-transition-base);
+  /* Inline chevron via CSS — a down-pointing triangle */
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accordionChevronOpen {
+  transform: rotate(180deg);
+}
+
+/*
+ * Expandable content — animated with the grid-template-rows trick.
+ * grid-template-rows: 0fr → collapsed (inner div clipped to 0 height)
+ * grid-template-rows: 1fr → expanded (inner div natural height)
+ */
+.accordionContent {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--sl-transition-base);
+}
+
+.accordionContentOpen {
+  grid-template-rows: 1fr;
+}
+
+.accordionContentInner {
+  overflow: hidden;
+}
+
+.accordionBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-md);
+  padding: var(--sl-spacing-inset-lg);
+  border-top: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-15));
+  background: hsl(var(--sl-color-surface));
+}
+
+/* Draft restore banner */
+.draftBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-gap-md);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  border: 1px solid hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-20));
+  border-radius: var(--sl-radius-input);
+}
+
+.draftBannerText {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  font-weight: var(--sl-primitive-font-weight-medium);
+}
+
+.draftBannerDiscard {
+  flex-shrink: 0;
+  padding: var(--sl-primitive-space-1) var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  background: transparent;
+  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
+  border-radius: var(--sl-radius-input);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--sl-transition-fast), color var(--sl-transition-fast);
+}
+
+.draftBannerDiscard:hover {
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+  border-color: hsl(var(--sl-color-error) / var(--sl-primitive-opacity-30));
+}
+
+.draftBannerDiscard:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════ */
 

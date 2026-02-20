@@ -129,7 +129,7 @@ export async function createProgram(
 ): Promise<Program> {
   const payload = {
     name: input.name.trim(),
-    description: input.description?.trim() || "",
+    description: input.description?.trim() || null,
     image: input.image?.trim() || null,
     instructions: input.instructions?.trim() || null,
     equipment: input.equipment && input.equipment.length > 0 ? input.equipment : null,

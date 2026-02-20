@@ -94,7 +94,19 @@ export async function fetchWithAuth<T>(
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `API error: ${response.statusText}`);
+      // Pydantic 422 returns detail as an array of {loc, msg, type} objects
+      if (Array.isArray(errorData.detail)) {
+        const messages = errorData.detail
+          .map((e: { loc?: string[]; msg?: string }) =>
+            e.loc ? `${e.loc.slice(1).join(".")}: ${e.msg}` : e.msg
+          )
+          .join("; ");
+        console.error(`[API ${response.status}]`, errorData.detail);
+        throw new Error(messages || `API error: ${response.status}`);
+      }
+      const msg = errorData.detail || errorData.message || `API error: ${response.statusText}`;
+      console.error(`[API ${response.status}]`, msg);
+      throw new Error(msg);
     }
 
     throw new Error(`API error: ${response.statusText}`);
