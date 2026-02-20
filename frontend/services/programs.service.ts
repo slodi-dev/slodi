@@ -30,9 +30,15 @@ export type Program = {
 export type ProgramCreateInput = {
   name: string;
   description?: string;
-  public?: boolean;
   image?: string;
-  imageFile?: File;
+  instructions?: string;
+  equipment?: string[];
+  duration?: string;
+  prep_time?: string;
+  age?: string;
+  location?: string;
+  count?: number;
+  price?: number;
   tags?: string[];
   workspaceId: string; // Required - workspace to create program in
 };
@@ -125,6 +131,14 @@ export async function createProgram(
     name: input.name.trim(),
     description: input.description?.trim() || "",
     image: input.image?.trim() || null,
+    instructions: input.instructions?.trim() || null,
+    equipment: input.equipment && input.equipment.length > 0 ? input.equipment : null,
+    duration: input.duration?.trim() || null,
+    prep_time: input.prep_time?.trim() || null,
+    age: input.age?.trim() || null,
+    location: input.location?.trim() || null,
+    count: input.count ?? null,
+    price: input.price ?? null,
     content_type: "program" as const,
   };
 

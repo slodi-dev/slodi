@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import styles from "./NewProgramForm.module.css";
 import type { Program } from "@/services/programs.service";
 import { createProgram } from "@/services/programs.service";
@@ -10,50 +9,112 @@ import { handleApiErrorIs } from "@/lib/api-utils";
 import { useAuth } from "@/hooks/useAuth";
 
 type Props = {
-  workspaceId: string; // User's personal workspace ID (used for private programs)
+  workspaceId: string;
   onCreated?: (program: Program) => void;
   onCancel?: () => void;
 };
 
 export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Props) {
   const { getToken } = useAuth();
+
+  // Basic fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
   const [image, setImage] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Content fields
+  const [instructions, setInstructions] = useState("");
+  const [equipmentInput, setEquipmentInput] = useState("");
+  const [equipment, setEquipment] = useState<string[]>([]);
+
+  // Metadata fields
+  const [durationMin, setDurationMin] = useState("");
+  const [durationMax, setDurationMax] = useState("");
+  const [prepTimeMin, setPrepTimeMin] = useState("");
+  const [prepTimeMax, setPrepTimeMax] = useState("");
+  const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>([]);
+  const [location, setLocation] = useState("");
+  const [countMin, setCountMin] = useState("");
+  const [countMax, setCountMax] = useState("");
+  const [price, setPrice] = useState("");
+
+  // Tags
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const imagePreviewRef = React.useRef<string | null>(null);
-
-  React.useEffect(() => {
-    imagePreviewRef.current = imagePreview;
-  }, [imagePreview]);
-
-  React.useEffect(() => {
-    return () => {
-      // Revoke object URL on unmount
-      if (imagePreviewRef.current) {
-        try { URL.revokeObjectURL(imagePreviewRef.current); } catch { /* ignore */ }
-      }
-    };
-  }, []);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get available tags
   const { tagNames: availableTags } = useTags();
-
-  // Placeholder tags for development
   const PLACEHOLDER_TAGS = ["útivist", "innileikur", "list", "sköpun", "matreiðsla", "leikur", "fræðsla", "náttúrufræði"];
+  const displayTags = availableTags && availableTags.length > 0 ? availableTags : PLACEHOLDER_TAGS;
+
+  const AGE_GROUPS = [
+    "Hrefnuskátar",
+    "Drekaskátar",
+    "Fálkaskátar",
+    "Dróttskátar",
+    "Rekkaskátar",
+    "Róverskátar",
+    "Vættaskátar",
+  ];
+
+  // ── Equipment helpers ──────────────────────────────────────────
+  const addEquipmentItem = () => {
+    const trimmed = equipmentInput.trim();
+    if (!trimmed || equipment.includes(trimmed)) return;
+    setEquipment((prev) => [...prev, trimmed]);
+    setEquipmentInput("");
+  };
+
+  const removeEquipmentItem = (item: string) => {
+    setEquipment((prev) => prev.filter((e) => e !== item));
+  };
+
+  const handleEquipmentKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addEquipmentItem();
+    }
+  };
+
+  // ── Age group helpers ──────────────────────────────────────────
+  const handleAgeGroupToggle = (group: string) => {
+    setSelectedAgeGroups((prev) =>
+      prev.includes(group) ? prev.filter((g) => g !== group) : [...prev, group]
+    );
+  };
+
+  // ── Tag helpers ────────────────────────────────────────────────
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  // ── Submit / Reset ─────────────────────────────────────────────
+  const handleReset = () => {
+    setName("");
+    setDescription("");
+    setImage("");
+    setInstructions("");
+    setEquipmentInput("");
+    setEquipment([]);
+    setDurationMin("");
+    setDurationMax("");
+    setPrepTimeMin("");
+    setPrepTimeMax("");
+    setSelectedAgeGroups([]);
+    setLocation("");
+    setCountMin("");
+    setCountMax("");
+    setPrice("");
+    setSelectedTags([]);
+    setError(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // CRITICAL: Prevent duplicate submissions
     if (loading) return;
-
     setError(null);
 
     if (!name.trim()) {
@@ -62,28 +123,30 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     }
 
     setLoading(true);
-
     try {
-      // Determine which workspace to use based on public/private
-      // If public: use the default workspace (dagskrábankinn)
-      // If private: use the user's personal workspace (passed as workspaceId prop)
-      const targetWorkspaceId = isPublic
-        ? (process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID || workspaceId)
-        : workspaceId;
-
-      const program = await createProgram({
-        name: name.trim(),
-        description: description.trim(),
-        public: isPublic,
-        image: image.trim(),
-        imageFile: imageFile || undefined,
-        tags: selectedTags.length > 0 ? selectedTags : undefined,
-        workspaceId: targetWorkspaceId,
-      }, getToken); // Pass token getter for authentication
-
-      // Reset form
+      const program = await createProgram(
+        {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          image: image.trim() || undefined,
+          instructions: instructions.trim() || undefined,
+          equipment: equipment.length > 0 ? equipment : undefined,
+          duration: (durationMin || durationMax)
+            ? [durationMin, durationMax].filter(Boolean).join("\u2013") + " mín"
+            : undefined,
+          prep_time: (prepTimeMin || prepTimeMax)
+            ? [prepTimeMin, prepTimeMax].filter(Boolean).join("\u2013") + " mín"
+            : undefined,
+          age: selectedAgeGroups.length > 0 ? selectedAgeGroups.join(", ") : undefined,
+          location: location.trim() || undefined,
+          count: countMin !== "" ? Number(countMin) : undefined,
+          price: price !== "" ? Number(price) : undefined,
+          tags: selectedTags.length > 0 ? selectedTags : undefined,
+          workspaceId,
+        },
+        getToken
+      );
       handleReset();
-
       onCreated?.(program);
     } catch (err) {
       setError(handleApiErrorIs(err));
@@ -92,250 +155,325 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     }
   };
 
-  const handleReset = () => {
-    setName("");
-    setDescription("");
-    setIsPublic(false);
-    setImage("");
-    setSelectedTags([]);
-    if (imagePreview) {
-      try { URL.revokeObjectURL(imagePreview); } catch { /* ignore */ }
-    }
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Revoke previous preview
-    if (imagePreview) {
-      try { URL.revokeObjectURL(imagePreview); } catch { /* ignore */ }
-    }
-
-    setImageFile(file);
-    const preview = URL.createObjectURL(file);
-    setImagePreview(preview);
-  };
-
-  const handleRemoveImage = () => {
-    if (imagePreview) {
-      try { URL.revokeObjectURL(imagePreview); } catch { /* ignore */ }
-    }
-    setImageFile(null);
-    setImagePreview(null);
-    setImage("");
-  };
-
-  const handleTagToggle = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
-  };
-
-  const displayTags = availableTags && availableTags.length > 0 ? availableTags : PLACEHOLDER_TAGS;
-
   return (
     <form className={styles.form} onSubmit={handleSubmit} aria-label="Ný dagskrá">
-      {/* Program Name */}
-      <div className={styles.field}>
-        <label htmlFor="program-name" className={styles.label}>
-          Heiti hugmyndar <span className={styles.required}>*</span>
-        </label>
-        <input
-          id="program-name"
-          type="text"
-          className={styles.input}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="t.d. Náttúruganga í skóginum"
-          required
-          maxLength={255}
-        />
-        <p className={styles.hint}>Stuttur og lýsandi titill á dagskrárhugmyndinni</p>
-      </div>
 
-      {/* Description */}
-      <div className={styles.field}>
-        <label htmlFor="program-description" className={styles.label}>
-          Lýsing
-        </label>
-        <textarea
-          id="program-description"
-          className={styles.textarea}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Lýstu hugmyndinni stuttlega..."
-          rows={4}
-          maxLength={1000}
-        />
-        <p className={styles.hint}>Stutt lýsing sem hjálpar öðrum að skilja verkefnið</p>
-      </div>
+      {/* ── Basic info ── */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Grunnupplýsingar</h3>
 
-      {/* Tags */}
-      <div className={styles.field}>
-        <label className={styles.label}>
-          Merkimiðar
-        </label>
-        <div className={styles.tagGrid}>
-          {displayTags.map((tag) => {
-            const isSelected = selectedTags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ''}`}
-                onClick={() => handleTagToggle(tag)}
-                aria-pressed={isSelected}
-              >
-                {tag}
-              </button>
-            );
-          })}
+        <div className={styles.field}>
+          <label htmlFor="program-name" className={styles.label}>
+            Heiti hugmyndar <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="program-name"
+            type="text"
+            className={styles.input}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="t.d. Náttúruganga í skóginum"
+            required
+            maxLength={100}
+          />
         </div>
-        {selectedTags.length > 0 && (
-          <p className={styles.hint}>{selectedTags.length} merkimiði valinn</p>
-        )}
+
+        <div className={styles.field}>
+          <label htmlFor="program-description" className={styles.label}>
+            Lýsing
+          </label>
+          <textarea
+            id="program-description"
+            className={styles.textarea}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Stutt lýsing sem hjálpar öðrum að skilja hugmyndina..."
+            rows={3}
+            maxLength={1000}
+          />
+          <p className={styles.hint}>{description.length}/1000</p>
+        </div>
       </div>
 
-      {/* Image */}
-      <div className={styles.field}>
-        <label className={styles.label}>
-          Mynd
-        </label>
+      {/* ── Metadata ── */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Upplýsingar</h3>
 
-        {imagePreview ? (
-          <div className={styles.imagePreview}>
-            <Image
-              src={imagePreview}
-              alt="Preview"
-              width={400}
-              height={250}
-              className={styles.previewImage}
+        {/* Duration + Prep time — 2-col grid */}
+        <div className={styles.fieldGrid}>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Tímalengd (mín)</label>
+            <div className={styles.rangeRow}>
+              <input
+                id="program-duration-min"
+                type="number"
+                className={styles.input}
+                value={durationMin}
+                onChange={(e) => setDurationMin(e.target.value)}
+                placeholder="Frá"
+                min={0}
+                aria-label="Lágmarkstímalengd í mínútum"
+              />
+              <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+              <input
+                id="program-duration-max"
+                type="number"
+                className={styles.input}
+                value={durationMax}
+                onChange={(e) => setDurationMax(e.target.value)}
+                placeholder="Til"
+                min={0}
+                aria-label="Tilarkstímalengd í mínútum"
+              />
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Undirbúningstími (mín)</label>
+            <div className={styles.rangeRow}>
+              <input
+                id="program-prep-min"
+                type="number"
+                className={styles.input}
+                value={prepTimeMin}
+                onChange={(e) => setPrepTimeMin(e.target.value)}
+                placeholder="Frá"
+                min={0}
+                aria-label="Lágmarks undirbúningstími í mínútum"
+              />
+              <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+              <input
+                id="program-prep-max"
+                type="number"
+                className={styles.input}
+                value={prepTimeMax}
+                onChange={(e) => setPrepTimeMax(e.target.value)}
+                placeholder="Til"
+                min={0}
+                aria-label="Hámarks undirbúningstími í mínútum"
+              />
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="program-location" className={styles.label}>Staðsetning</label>
+            <input
+              id="program-location"
+              type="text"
+              className={styles.input}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="t.d. Úti, Inni"
+              maxLength={255}
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="program-price" className={styles.label}>Kostnaður</label>
+            <select
+              id="program-price"
+              className={styles.select}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            >
+              <option value="">Veldu kostnaðarstig</option>
+              <option value="0">Kostnaðarla</option>
+              <option value="1">kr — Lítill kostnaður</option>
+              <option value="2">kr kr — Meðal kostnaður</option>
+              <option value="3">kr kr kr — Hár kostnaður</option>
+            </select>
+          </div>
+
+        </div>
+
+        {/* Participant count range — full width */}
+        <div className={styles.field}>
+          <label className={styles.label}>Fjöldi þátttakenda</label>
+          <div className={styles.rangeRow}>
+            <input
+              id="program-count-min"
+              type="number"
+              className={styles.input}
+              value={countMin}
+              onChange={(e) => setCountMin(e.target.value)}
+              placeholder="Frá"
+              min={1}
+              aria-label="Lágmarksfjöldi þátttakenda"
+            />
+            <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+            <input
+              id="program-count-max"
+              type="number"
+              className={styles.input}
+              value={countMax}
+              onChange={(e) => setCountMax(e.target.value)}
+              placeholder="Til"
+              min={1}
+              aria-label="Hámarksfjöldi þátttakenda"
+            />
+          </div>
+        </div>
+
+        {/* Age groups — checkboxes */}
+        <div className={styles.field}>
+          <p className={styles.label} id="age-groups-label">Aldurshópar</p>
+          <div
+            className={styles.checkboxGrid}
+            role="group"
+            aria-labelledby="age-groups-label"
+          >
+            {AGE_GROUPS.map((group) => (
+              <label key={group} className={styles.checkboxOption}>
+                <input
+                  type="checkbox"
+                  className={styles.checkboxInput}
+                  checked={selectedAgeGroups.includes(group)}
+                  onChange={() => handleAgeGroupToggle(group)}
+                />
+                <span className={styles.checkboxLabel}>{group}</span>
+              </label>
+            ))}
+          </div>
+          {selectedAgeGroups.length > 0 && (
+            <p className={styles.hint}>
+              {selectedAgeGroups.length === AGE_GROUPS.length
+                ? "Allir aldurshópar valdir"
+                : `${selectedAgeGroups.length} aldurshópar valdir`}
+            </p>
+          )}
+        </div>
+
+      </div>
+
+      {/* ── Equipment ── */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Gögn og búnaður</h3>
+        <div className={styles.field}>
+          <label htmlFor="program-equipment" className={styles.label}>Búnaðarlisti</label>
+          <div className={styles.equipmentInputRow}>
+            <input
+              id="program-equipment"
+              type="text"
+              className={styles.input}
+              value={equipmentInput}
+              onChange={(e) => setEquipmentInput(e.target.value)}
+              onKeyDown={handleEquipmentKeyDown}
+              placeholder="t.d. Límbandi — Enter til að bæta við"
+              maxLength={100}
             />
             <button
               type="button"
-              className={styles.removeImage}
-              onClick={handleRemoveImage}
-              aria-label="Fjarlægja mynd"
+              className={styles.addButton}
+              onClick={addEquipmentItem}
+              disabled={!equipmentInput.trim()}
             >
-              ✕
+              Bæta við
             </button>
           </div>
-        ) : (
-          <div className={styles.imageUpload}>
-            <input
-              type="file"
-              id="image-upload"
-              accept="image/*"
-              onChange={handleImageChange}
-              className={styles.fileInput}
-            />
-            <label htmlFor="image-upload" className={styles.uploadLabel}>
-              <svg className={styles.uploadIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className={styles.uploadText}>Smelltu til að velja mynd</span>
-              <span className={styles.uploadHint}>eða dragðu mynd hingað</span>
-            </label>
-          </div>
-        )}
-
-        {/* Image URL fallback */}
-        <div className={styles.orDivider}>
-          <span>eða</span>
-        </div>
-        <input
-          type="url"
-          className={styles.input}
-          value={image}
-          onChange={(e) => setImage(e.target.value)}
-          placeholder="https://example.com/mynd.jpg"
-        />
-        <p className={styles.hint}>Settu inn vefslóð á mynd</p>
-      </div>
-
-      {/* Public Toggle */}
-      <div className={styles.field}>
-        <div className={styles.visibilityToggle}>
-          <div className={styles.toggleContent}>
-            <div className={styles.toggleHeader}>
-              <svg className={styles.toggleIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isPublic ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                )}
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <div className={styles.toggleLabels}>
-                <span className={styles.toggleTitle}>Sýnileiki hugmyndar</span>
-                <span className={styles.toggleStatus}>
-                  {isPublic ? 'Opinber' : 'Einka'}
+          {equipment.length > 0 && (
+            <div className={styles.equipmentList}>
+              {equipment.map((item) => (
+                <span key={item} className={styles.equipmentTag}>
+                  {item}
+                  <button
+                    type="button"
+                    className={styles.equipmentRemove}
+                    onClick={() => removeEquipmentItem(item)}
+                    aria-label={`Fjarlægja ${item}`}
+                  >
+                    ✕
+                  </button>
                 </span>
-              </div>
+              ))}
             </div>
-            <label className={styles.switchLabel}>
-              <input
-                type="checkbox"
-                className={styles.switchInput}
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                aria-label="Gera hugmynd opinbera"
-              />
-              <span className={styles.switch}>
-                <span className={styles.switchThumb}></span>
-              </span>
-            </label>
-          </div>
-          <p className={styles.toggleHint}>
-            {isPublic
-              ? 'Þessi hugmynd verður bætt við dagskrábankann og verður sýnileg öllum'
-              : 'Þessi hugmynd verður geymd í þínu persónulega vinnusvæði'
-            }
-          </p>
+          )}
         </div>
       </div>
 
-      {/* Error Message */}
+      {/* ── Instructions ── */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Leiðbeiningar</h3>
+        <div className={styles.field}>
+          <label htmlFor="program-instructions" className={styles.label}>Framkvæmd</label>
+          <textarea
+            id="program-instructions"
+            className={styles.textarea}
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder="Skrifaðu skref-fyrir-skref leiðbeiningar..."
+            rows={6}
+            maxLength={5000}
+          />
+          <p className={styles.hint}>{instructions.length}/5000</p>
+        </div>
+      </div>
+
+      {/* ── Tags ── */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Merkimiðar</h3>
+        <div className={styles.field}>
+          <div className={styles.tagGrid}>
+            {displayTags.map((tag) => {
+              const isSelected = selectedTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
+                  onClick={() => handleTagToggle(tag)}
+                  aria-pressed={isSelected}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+          {selectedTags.length > 0 && (
+            <p className={styles.hint}>{selectedTags.length} merkimiðar valdir</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Image ── */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Mynd</h3>
+        <div className={styles.field}>
+          <label htmlFor="program-image" className={styles.label}>Vefslóð myndar</label>
+          <input
+            id="program-image"
+            type="url"
+            className={styles.input}
+            value={image}
+            onChange={(e) => setImage(e.target.value)}
+            placeholder="https://example.com/mynd.jpg"
+          />
+          <p className={styles.hint}>Slóð á mynd sem lýsir hugmyndinni</p>
+        </div>
+      </div>
+
+      {/* ── Error ── */}
       {error && (
         <div className={styles.error} role="alert">
           {error}
         </div>
       )}
 
-      {/* Form Actions */}
+      {/* ── Actions ── */}
       <div className={styles.actions}>
         {onCancel && (
-          <button
-            type="button"
-            className={styles.buttonSecondary}
-            onClick={onCancel}
-            disabled={loading}
-          >
+          <button type="button" className={styles.buttonSecondary} onClick={onCancel} disabled={loading}>
             Hætta við
           </button>
         )}
-        <button
-          type="button"
-          className={styles.buttonSecondary}
-          onClick={handleReset}
-          disabled={loading}
-        >
+        <button type="button" className={styles.buttonSecondary} onClick={handleReset} disabled={loading}>
           Hreinsa
         </button>
-        <button
-          type="submit"
-          className={styles.buttonPrimary}
-          disabled={loading || !name.trim()}
-        >
+        <button type="submit" className={styles.buttonPrimary} disabled={loading || !name.trim()}>
           {loading ? "Býr til..." : "Búa til hugmynd"}
         </button>
       </div>
     </form>
   );
 }
+
