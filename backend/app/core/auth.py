@@ -20,9 +20,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_session
+from app.models.group import GroupRole
 from app.models.user import Permissions
 from app.models.workspace import WorkspaceRole
 from app.schemas.user import UserCreate, UserOut
+from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
 
@@ -44,6 +46,13 @@ _WORKSPACE_ROLE_RANK: dict[WorkspaceRole, int] = {
     WorkspaceRole.editor: 1,
     WorkspaceRole.admin: 2,
     WorkspaceRole.owner: 3,
+}
+
+_GROUP_ROLE_RANK: dict[GroupRole, int] = {
+    GroupRole.viewer: 0,
+    GroupRole.editor: 1,
+    GroupRole.admin: 2,
+    GroupRole.owner: 3,
 }
 
 
@@ -219,6 +228,26 @@ async def check_workspace_access(
         raise HTTPException(status_code=403, detail="Not a workspace member")
 
     if _WORKSPACE_ROLE_RANK[membership.role] < _WORKSPACE_ROLE_RANK[minimum_role]:
+        raise HTTPException(status_code=403, detail=f"Requires {minimum_role.value} role")
+
+
+async def check_group_access(
+    group_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    minimum_role: GroupRole,
+) -> None:
+    """Raise 403 if user lacks required group role."""
+    if current_user.permissions == Permissions.admin:
+        return  # Platform admins bypass
+
+    g_svc = GroupService(session)
+    membership = await g_svc.get_user_membership(group_id, current_user.id)
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a group member")
+
+    if _GROUP_ROLE_RANK[membership.role] < _GROUP_ROLE_RANK[minimum_role]:
         raise HTTPException(status_code=403, detail=f"Requires {minimum_role.value} role")
 
 

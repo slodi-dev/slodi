@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.content import ContentType
 from app.schemas.content import ContentOut
 from app.schemas.tag import (
     ContentTagOut,
@@ -19,10 +18,8 @@ from app.schemas.tag import (
     TagUpdate,
 )
 from app.schemas.user import Permissions, UserOut
-from app.services.events import EventService
-from app.services.programs import ProgramService
+from app.services.content import ContentService
 from app.services.tags import TagService
-from app.services.tasks import TaskService
 
 router = APIRouter(tags=["tags"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -147,25 +144,6 @@ async def list_tagged_content(
     return items
 
 
-async def get_content_author_id(
-    session: AsyncSession,
-    content_id: UUID,
-    content_type: ContentType,
-) -> UUID:
-    """Get the author_id for any content type."""
-    if content_type == ContentType.program:
-        svc = ProgramService(session)
-    elif content_type == ContentType.event:
-        svc = EventService(session)
-    elif content_type == ContentType.task:
-        svc = TaskService(session)
-    else:
-        raise HTTPException(status_code=400, detail="Invalid content type")
-
-    content = await svc.get(content_id)
-    return content.author_id
-
-
 @router.put(
     "/content/{content_id}/tags/{tag_id}",
     response_model=ContentTagOut,
@@ -177,13 +155,8 @@ async def add_content_tag(
     tag_id: UUID,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-    content_type: ContentType = Query(
-        ..., description="Type of content (program/event/task)"
-    ),  # TODO: can we infer this from the content_id prefix instead of requiring it in the query params?
 ):
-    # Verify user is the content author
-    author_id = await get_content_author_id(session, content_id, content_type)
-
+    author_id = await ContentService(session).get_author_id(content_id)
     if author_id != current_user.id and current_user.permissions != Permissions.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -204,13 +177,8 @@ async def remove_content_tag(
     content_id: UUID,
     tag_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-    content_type: ContentType = Query(
-        ..., description="Type of content (program/event/task)"
-    ),  # TODO: can we infer this from the content_id prefix instead of requiring it in the query params?
 ):
-    # Verify user is the content author
-    author_id = await get_content_author_id(session, content_id, content_type)
-
+    author_id = await ContentService(session).get_author_id(content_id)
     if author_id != current_user.id and current_user.permissions != Permissions.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
