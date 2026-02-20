@@ -1,3 +1,4 @@
+# ruff: noqa: B008
 from __future__ import annotations
 
 from typing import Annotated
@@ -6,8 +7,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import check_group_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
+from app.models.group import GroupRole
 from app.schemas.group import (
     GroupCreate,
     GroupMemberOut,
@@ -17,6 +20,7 @@ from app.schemas.group import (
     GroupOut,
     GroupUpdate,
 )
+from app.schemas.user import Permissions, UserOut
 from app.services.groups import GroupService
 
 router = APIRouter(tags=["groups"])
@@ -32,6 +36,7 @@ async def list_groups(
     session: SessionDep,
     request: Request,
     response: Response,
+    current_user: UserOut = Depends(get_current_user),
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
@@ -50,7 +55,12 @@ async def list_groups(
 
 
 @router.post("/groups", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
-async def create_group(session: SessionDep, body: GroupCreate, response: Response):
+async def create_group(
+    session: SessionDep,
+    body: GroupCreate,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
+):
     svc = GroupService(session)
     group = await svc.create(body)
     response.headers["Location"] = f"/groups/{group.id}"
@@ -58,19 +68,34 @@ async def create_group(session: SessionDep, body: GroupCreate, response: Respons
 
 
 @router.get("/groups/{group_id}", response_model=GroupOut)
-async def get_group(session: SessionDep, group_id: UUID):
+async def get_group(
+    session: SessionDep,
+    group_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+):
     svc = GroupService(session)
     return await svc.get(group_id)
 
 
 @router.patch("/groups/{group_id}", response_model=GroupOut)
-async def update_group(session: SessionDep, group_id: UUID, body: GroupUpdate):
+async def update_group(
+    session: SessionDep,
+    group_id: UUID,
+    body: GroupUpdate,
+    current_user: UserOut = Depends(get_current_user),
+):
+    await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     return await svc.update(group_id, body)
 
 
 @router.delete("/groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_group(session: SessionDep, group_id: UUID):
+async def delete_group(
+    session: SessionDep,
+    group_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+):
+    await check_group_access(group_id, current_user, session, minimum_role=GroupRole.owner)
     svc = GroupService(session)
     await svc.delete(group_id)
     return None
@@ -85,6 +110,7 @@ async def list_group_members(
     request: Request,
     response: Response,
     group_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
 ):
@@ -107,6 +133,7 @@ async def list_user_groups(
     request: Request,
     response: Response,
     user_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
 ):
@@ -129,8 +156,13 @@ async def list_user_groups(
     status_code=status.HTTP_201_CREATED,
 )
 async def add_group_membership(
-    session: SessionDep, group_id: UUID, body: GroupMembershipCreate, response: Response
+    session: SessionDep,
+    group_id: UUID,
+    body: GroupMembershipCreate,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
 ):
+    await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     created, group_membership = await svc.add_membership(group_id, body)
     if not created:
@@ -140,7 +172,7 @@ async def add_group_membership(
 
 
 @router.patch(
-    "/{group_id}/memberships/{user_id}",
+    "/groups/{group_id}/memberships/{user_id}",
     response_model=GroupMembershipOut,
 )
 async def update_group_member(
@@ -148,16 +180,25 @@ async def update_group_member(
     group_id: UUID,
     user_id: UUID,
     body: GroupMembershipUpdate,
+    current_user: UserOut = Depends(get_current_user),
 ):
+    await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     return await svc.update_membership(group_id, user_id, body)
 
 
 @router.delete(
-    "/{group_id}/memberships/{user_id}",
+    "/groups/{group_id}/memberships/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def remove_group_member(session: SessionDep, group_id: UUID, user_id: UUID):
+async def remove_group_member(
+    session: SessionDep,
+    group_id: UUID,
+    user_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+) -> None:
+    if user_id != current_user.id and current_user.permissions != Permissions.admin:
+        await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     await svc.remove_membership(group_id, user_id)
     return None
