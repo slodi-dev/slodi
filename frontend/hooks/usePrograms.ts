@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchPrograms, extractTags, type Program } from "@/services/programs.service";
 import { handleApiError } from "@/lib/api-utils";
+import { useAuth } from "@/hooks/useAuth";
 
 type UseProgramsResult = {
   programs: Program[] | null;
@@ -13,6 +14,7 @@ type UseProgramsResult = {
 };
 
 export default function usePrograms(workspaceId: string): UseProgramsResult {
+  const { getToken } = useAuth();
   const [programs, setPrograms] = useState<Program[] | null>(null);
   const [tags, setTags] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function usePrograms(workspaceId: string): UseProgramsResult {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchPrograms(workspaceId);
+      const data = await fetchPrograms(workspaceId, getToken);
       setPrograms(data);
       setTags(extractTags(data));
     } catch (err) {
@@ -33,7 +35,7 @@ export default function usePrograms(workspaceId: string): UseProgramsResult {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, getToken]);
 
   useEffect(() => {
     loadPrograms();

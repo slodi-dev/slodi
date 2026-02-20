@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
 
+from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.main import create_app
 from app.models.base import Base
@@ -35,7 +36,19 @@ def client(mock_db_session):
     async def override_get_session():
         yield mock_db_session
 
+    async def override_get_current_user():
+        return UserOut(
+            id=uuid4(),
+            auth0_id="auth0|test",
+            email="test@example.com",
+            name="Test User",
+            pronouns=None,
+            permissions=Permissions.admin,
+            preferences=None,
+        )
+
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_current_user] = override_get_current_user
     return TestClient(app)
 
 

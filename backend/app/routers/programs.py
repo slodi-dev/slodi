@@ -65,12 +65,11 @@ async def create_program_under_workspace(
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
     )
-    program_data = ProgramCreate(
-        **body.model_dump(),
-        author_id=current_user.id,
-        like_count=0,
-        created_at=get_current_datetime(),
-    )
+    program_data = body.model_copy(update={
+        "author_id": current_user.id,
+        "like_count": 0,
+        "created_at": get_current_datetime(),
+    })
     svc = ProgramService(session)
     program = await svc.create_under_workspace(workspace_id, program_data)
     response.headers["Location"] = f"/programs/{program.id}"

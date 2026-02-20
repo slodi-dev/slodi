@@ -4,7 +4,6 @@ import datetime as dt
 from typing import Annotated
 from uuid import UUID
 
-from backend.app.schemas.user import UserOut
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from app.domain.content_constraints import (

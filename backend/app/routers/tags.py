@@ -34,7 +34,6 @@ async def list_tags(
     session: SessionDep,
     request: Request,
     response: Response,
-    current_user: UserOut = Depends(get_current_user),
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
@@ -67,7 +66,7 @@ async def create_tag(
 
 @router.get("/tags/{tag_id}", response_model=TagOut)
 async def get_tag(
-    session: SessionDep, tag_id: UUID, current_user: UserOut = Depends(get_current_user)
+    session: SessionDep, tag_id: UUID
 ):
     svc = TagService(session)
     return await svc.get(tag_id)

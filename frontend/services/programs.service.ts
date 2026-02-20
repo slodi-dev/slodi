@@ -65,13 +65,16 @@ export function canEditProgram(user: User | null, program: Program): boolean {
 
 /**
  * Fetch all programs for a workspace
+ * Requires authentication
  */
-export async function fetchPrograms(workspaceId: string): Promise<Program[]> {
+export async function fetchPrograms(
+  workspaceId: string,
+  getToken: () => Promise<string | null>
+): Promise<Program[]> {
   const url = buildApiUrl(`/workspaces/${workspaceId}/programs`);
-  const data = await fetchAndCheck<ProgramsResponse>(url, {
+  const data = await fetchWithAuth<ProgramsResponse>(url, {
     method: "GET",
-    credentials: "include",
-  });
+  }, getToken);
 
   return Array.isArray(data) ? data : data.programs || [];
 }
@@ -98,13 +101,16 @@ async function assignTagsToProgram(
 
 /**
  * Fetch a single program by ID
+ * Requires authentication
  */
-export async function fetchProgramById(id: string): Promise<Program> {
+export async function fetchProgramById(
+  id: string,
+  getToken: () => Promise<string | null>
+): Promise<Program> {
   const url = buildApiUrl(`/programs/${id}`);
-  return fetchAndCheck<Program>(url, {
+  return fetchWithAuth<Program>(url, {
     method: "GET",
-    credentials: "include",
-  });
+  }, getToken);
 }
 
 /**

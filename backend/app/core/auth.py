@@ -105,7 +105,7 @@ def verify_auth0_token(token: str) -> dict:
         HTTPException: If token is invalid, expired, or verification fails
     """
     # Toggle this to enable/disable debug logging for token verification
-    DEBUG_AUTH = False
+    DEBUG_AUTH = True
 
     try:
         if DEBUG_AUTH:

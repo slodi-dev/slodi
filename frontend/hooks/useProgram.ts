@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchProgramById, type Program } from "@/services/programs.service";
+import { useAuth } from "@/hooks/useAuth";
 
 function isValidUUID(id: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -7,6 +8,7 @@ function isValidUUID(id: string): boolean {
 }
 
 export function useProgram(id: string) {
+  const { getToken } = useAuth();
   const [program, setProgram] = useState<Program | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -23,7 +25,7 @@ export function useProgram(id: string) {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await fetchProgramById(id);
+        const data = await fetchProgramById(id, getToken);
         setProgram(data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
@@ -34,7 +36,7 @@ export function useProgram(id: string) {
     }
 
     fetchProgram();
-  }, [id]);
+  }, [id, getToken]);
 
   return { program, isLoading, error, setProgram };
 }
