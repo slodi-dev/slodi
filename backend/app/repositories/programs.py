@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.program import Program
-from app.models.tag import ContentTag
 from app.repositories.base import Repository
 
 
@@ -24,7 +23,7 @@ class ProgramRepository(Repository):
                 selectinload(Program.workspace),
                 selectinload(Program.events),
                 selectinload(Program.comments),
-                selectinload(Program.content_tags).selectinload(ContentTag.tag),
+                selectinload(Program.content_tags),
             )
             .where(Program.id == program_id)
         )
@@ -38,7 +37,7 @@ class ProgramRepository(Repository):
                 selectinload(Program.author),
                 selectinload(Program.workspace),
                 selectinload(Program.comments),
-                selectinload(Program.content_tags).selectinload(ContentTag.tag),
+                selectinload(Program.content_tags),
             )
             .where(Program.id == program_id, Program.workspace_id == workspace_id)
         )
@@ -60,7 +59,7 @@ class ProgramRepository(Repository):
                 selectinload(Program.author),
                 selectinload(Program.workspace),
                 selectinload(Program.comments),
-                selectinload(Program.content_tags).selectinload(ContentTag.tag),
+                selectinload(Program.content_tags),
             )
             .where(Program.workspace_id == workspace_id)
             .order_by(Program.name)

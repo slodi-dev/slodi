@@ -9,6 +9,7 @@ This module provides:
 
 import logging
 from functools import lru_cache
+from uuid import UUID
 
 import httpx
 from fastapi import Depends, HTTPException, status
@@ -19,14 +20,40 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_session
+from app.models.group import GroupRole
+from app.models.user import Permissions
+from app.models.workspace import WorkspaceRole
 from app.schemas.user import UserCreate, UserOut
+from app.services.groups import GroupService
 from app.services.users import UserService
+from app.services.workspaces import WorkspaceService
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
 # HTTPBearer extracts the token from Authorization: Bearer <token> header
 security = HTTPBearer()
+
+# Define permission hierarchy: higher = more privileged
+_PERMISSION_RANK: dict[Permissions, int] = {
+    Permissions.viewer: 0,
+    Permissions.member: 1,
+    Permissions.admin: 2,
+}
+
+_WORKSPACE_ROLE_RANK: dict[WorkspaceRole, int] = {
+    WorkspaceRole.viewer: 0,
+    WorkspaceRole.editor: 1,
+    WorkspaceRole.admin: 2,
+    WorkspaceRole.owner: 3,
+}
+
+_GROUP_ROLE_RANK: dict[GroupRole, int] = {
+    GroupRole.viewer: 0,
+    GroupRole.editor: 1,
+    GroupRole.admin: 2,
+    GroupRole.owner: 3,
+}
 
 
 @lru_cache
@@ -166,6 +193,62 @@ def verify_auth0_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token verification failed: {str(e)}"
         ) from e
+
+
+def require_permission(minimum: Permissions):
+    """Enforce minimum global permission level."""
+
+    async def _check(
+        current_user: UserOut = Depends(get_current_user),  # noqa: B008
+    ) -> UserOut:
+        if _PERMISSION_RANK[current_user.permissions] < _PERMISSION_RANK[minimum]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Requires '{minimum.value}' permission or higher.",
+            )
+        return current_user
+
+    return _check
+
+
+async def check_workspace_access(
+    workspace_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    minimum_role: WorkspaceRole,
+) -> None:
+    """Raise 403 if user lacks required workspace role."""
+    if current_user.permissions == Permissions.admin:
+        return  # Platform admins bypass
+
+    ws_svc = WorkspaceService(session)
+    membership = await ws_svc.get_user_membership(workspace_id, current_user.id)
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a workspace member")
+
+    if _WORKSPACE_ROLE_RANK[membership.role] < _WORKSPACE_ROLE_RANK[minimum_role]:
+        raise HTTPException(status_code=403, detail=f"Requires {minimum_role.value} role")
+
+
+async def check_group_access(
+    group_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    minimum_role: GroupRole,
+) -> None:
+    """Raise 403 if user lacks required group role."""
+    if current_user.permissions == Permissions.admin:
+        return  # Platform admins bypass
+
+    g_svc = GroupService(session)
+    membership = await g_svc.get_user_membership(group_id, current_user.id)
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a group member")
+
+    if _GROUP_ROLE_RANK[membership.role] < _GROUP_ROLE_RANK[minimum_role]:
+        raise HTTPException(status_code=403, detail=f"Requires {minimum_role.value} role")
 
 
 async def get_current_user(

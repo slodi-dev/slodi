@@ -1,11 +1,13 @@
+# ruff: noqa: B008
 from __future__ import annotations
 
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.schemas.content import ContentOut
@@ -15,6 +17,8 @@ from app.schemas.tag import (
     TagOut,
     TagUpdate,
 )
+from app.schemas.user import Permissions, UserOut
+from app.services.content import ContentService
 from app.services.tags import TagService
 
 router = APIRouter(tags=["tags"])
@@ -30,6 +34,7 @@ async def list_tags(
     session: SessionDep,
     request: Request,
     response: Response,
+    current_user: UserOut = Depends(get_current_user),
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
@@ -48,7 +53,12 @@ async def list_tags(
 
 
 @router.post("/tags", response_model=TagOut, status_code=status.HTTP_201_CREATED)
-async def create_tag(session: SessionDep, body: TagCreate, response: Response):
+async def create_tag(
+    session: SessionDep,
+    body: TagCreate,
+    response: Response,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+):
     svc = TagService(session)
     tag = await svc.create(body)
     response.headers["Location"] = f"/tags/{tag.id}"
@@ -56,19 +66,30 @@ async def create_tag(session: SessionDep, body: TagCreate, response: Response):
 
 
 @router.get("/tags/{tag_id}", response_model=TagOut)
-async def get_tag(session: SessionDep, tag_id: UUID):
+async def get_tag(
+    session: SessionDep, tag_id: UUID, current_user: UserOut = Depends(get_current_user)
+):
     svc = TagService(session)
     return await svc.get(tag_id)
 
 
 @router.patch("/tags/{tag_id}", response_model=TagOut)
-async def update_tag(session: SessionDep, tag_id: UUID, body: TagUpdate):
+async def update_tag(
+    session: SessionDep,
+    tag_id: UUID,
+    body: TagUpdate,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+):
     svc = TagService(session)
     return await svc.update(tag_id, body)
 
 
 @router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_tag(session: SessionDep, tag_id: UUID):
+async def delete_tag(
+    session: SessionDep,
+    tag_id: UUID,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+):
     svc = TagService(session)
     await svc.delete(tag_id)
     return None
@@ -83,6 +104,7 @@ async def list_content_tags(
     request: Request,
     response: Response,
     content_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
 ):
@@ -105,6 +127,7 @@ async def list_tagged_content(
     request: Request,
     response: Response,
     tag_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
 ):
@@ -126,7 +149,20 @@ async def list_tagged_content(
     response_model=ContentTagOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def add_content_tag(session: SessionDep, content_id: UUID, tag_id: UUID, response: Response):
+async def add_content_tag(
+    session: SessionDep,
+    content_id: UUID,
+    tag_id: UUID,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
+):
+    author_id = await ContentService(session).get_author_id(content_id)
+    if author_id != current_user.id and current_user.permissions != Permissions.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the content author can add tags.",
+        )
+
     svc = TagService(session)
     created, tag = await svc.add_content_tag(content_id, tag_id)
     if not created:
@@ -136,7 +172,19 @@ async def add_content_tag(session: SessionDep, content_id: UUID, tag_id: UUID, r
 
 
 @router.delete("/content/{content_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_content_tag(session: SessionDep, content_id: UUID, tag_id: UUID):
+async def remove_content_tag(
+    session: SessionDep,
+    content_id: UUID,
+    tag_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+):
+    author_id = await ContentService(session).get_author_id(content_id)
+    if author_id != current_user.id and current_user.permissions != Permissions.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the content author can remove tags.",
+        )
+
     svc = TagService(session)
     await svc.remove_content_tag(content_id, tag_id)
     return None

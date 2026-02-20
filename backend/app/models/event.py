@@ -4,12 +4,10 @@ import datetime as dt
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, ForeignKeyConstraint, String
+from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import DateTime as SADateTime
-
-from app.domain.event_constraints import LOCATION_MAX
 
 from .content import Content, ContentType
 
@@ -44,8 +42,6 @@ class Event(Content):
 
     start_dt: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
     end_dt: Mapped[dt.datetime | None] = mapped_column(SADateTime(timezone=True), nullable=True)
-
-    location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
 
     workspace_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),

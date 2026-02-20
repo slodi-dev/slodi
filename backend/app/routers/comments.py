@@ -1,14 +1,17 @@
+# ruff: noqa: B008
 from __future__ import annotations
 
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.schemas.comment import CommentCreate, CommentOut, CommentUpdate
+from app.schemas.user import Permissions, UserOut
 from app.services.comments import CommentService
 
 router = APIRouter(tags=["comments"])
@@ -23,6 +26,7 @@ async def list_content_comments(
     request: Request,
     response: Response,
     content_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
 ):
@@ -39,7 +43,7 @@ async def list_content_comments(
     return items
 
 
-# create under content (user_id is in body per schema)
+# create under content (user_id is taken from the authenticated user)
 @router.post(
     "/content/{content_id}/comments",
     response_model=CommentOut,
@@ -48,11 +52,13 @@ async def list_content_comments(
 async def create_comment_under_content(
     session: SessionDep,
     content_id: UUID,
-    body: CommentCreate,
+    body: CommentUpdate,
     response: Response,
+    current_user: UserOut = Depends(get_current_user),
 ):
     svc = CommentService(session)
-    comment = await svc.create_under_content(content_id, body)
+    comment_data = CommentCreate(body=body.body, user_id=current_user.id)
+    comment = await svc.create_under_content(content_id, comment_data)
     response.headers["Location"] = f"/comments/{comment.id}"
     return comment
 
@@ -61,19 +67,44 @@ async def create_comment_under_content(
 
 
 @router.get("/comments/{comment_id}", response_model=CommentOut)
-async def get_comment(session: SessionDep, comment_id: UUID):
+async def get_comment(
+    session: SessionDep,
+    comment_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+):
     svc = CommentService(session)
     return await svc.get(comment_id)
 
 
 @router.patch("/comments/{comment_id}", response_model=CommentOut)
-async def update_comment(session: SessionDep, comment_id: UUID, body: CommentUpdate):
+async def update_comment(
+    session: SessionDep,
+    comment_id: UUID,
+    body: CommentUpdate,
+    current_user: UserOut = Depends(get_current_user),
+):
     svc = CommentService(session)
+    comment = await svc.get(comment_id)
+    if comment.user_id != current_user.id and current_user.permissions != Permissions.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the comment author can edit this comment.",
+        )
     return await svc.update(comment_id, body)
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_comment(session: SessionDep, comment_id: UUID):
+async def delete_comment(
+    session: SessionDep,
+    comment_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+):
     svc = CommentService(session)
+    comment = await svc.get(comment_id)
+    if comment.user_id != current_user.id and current_user.permissions != Permissions.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the comment author can delete this comment.",
+        )
     await svc.delete(comment_id)
     return None

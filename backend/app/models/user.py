@@ -40,6 +40,12 @@ class Pronouns(str, Enum):
     prefer_not_to_say = "prefer not to say"
 
 
+class Permissions(str, Enum):
+    admin = "admin"
+    member = "member"
+    viewer = "viewer"
+
+
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
@@ -77,6 +83,12 @@ class User(Base):
         String(EMAIL_MAX),
         nullable=False,
         index=True,
+    )
+
+    permissions: Mapped[Permissions] = mapped_column(
+        SAEnum(Permissions, name="permissions_enum"),
+        nullable=False,
+        default=Permissions.viewer,
     )
 
     preferences: Mapped[dict[str, Any] | None] = mapped_column(

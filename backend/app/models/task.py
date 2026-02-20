@@ -26,7 +26,6 @@ class Task(Content):
         nullable=False,
     )
 
-    equipment: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     media: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     event_id: Mapped[UUID] = mapped_column(
