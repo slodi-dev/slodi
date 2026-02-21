@@ -9,13 +9,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.tag_constraints import NAME_MAX, NAME_MIN
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .content import Content
 
 
-class Tag(Base):
+class Tag(SoftDeleteMixin, Base):
     __tablename__ = "tags"
     __table_args__ = (
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_tag_name_min"),

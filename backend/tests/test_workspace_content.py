@@ -4,7 +4,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
-from fastapi import status
+from fastapi import HTTPException, status
 
 from app.schemas.group import GroupOut
 from app.schemas.program import ProgramOut
@@ -146,3 +146,78 @@ def test_create_tag(client):
         response = client.post("/tags", json=tag_data)
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["name"] == tag_data["name"]
+
+
+# ── Delete endpoints ───────────────────────────────────────────────────────────
+
+
+def test_delete_program_returns_204(client, sample_workspace):
+    sample_program = _make_program(sample_workspace.id)
+
+    with (
+        patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.services.programs.ProgramService.delete", new_callable=AsyncMock) as mock_del,
+    ):
+        mock_get.return_value = sample_program
+        mock_del.return_value = None
+
+        response = client.delete(f"/programs/{sample_program.id}")
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        mock_del.assert_called_once_with(sample_program.id)
+
+
+def test_delete_program_not_found(client):
+    with patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get:
+        mock_get.side_effect = HTTPException(status_code=404, detail="Program not found")
+
+        response = client.delete(f"/programs/{uuid4()}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_group_returns_204(client):
+    sample_group = _make_group()
+
+    with (
+        patch("app.services.groups.GroupService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.services.groups.GroupService.delete", new_callable=AsyncMock) as mock_del,
+    ):
+        mock_get.return_value = sample_group
+        mock_del.return_value = None
+
+        response = client.delete(f"/groups/{sample_group.id}")
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_get_program_not_found(client):
+    with patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get:
+        mock_get.side_effect = HTTPException(status_code=404, detail="Program not found")
+
+        response = client.get(f"/programs/{uuid4()}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_get_group_not_found(client):
+    with patch("app.services.groups.GroupService.get", new_callable=AsyncMock) as mock_get:
+        mock_get.side_effect = HTTPException(status_code=404, detail="Group not found")
+
+        response = client.get(f"/groups/{uuid4()}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_list_workspace_programs_empty(client, sample_workspace):
+    with (
+        patch(
+            "app.services.programs.ProgramService.list_for_workspace",
+            new_callable=AsyncMock,
+        ) as mock_list,
+        patch(
+            "app.services.programs.ProgramService.count_programs_for_workspace",
+            new_callable=AsyncMock,
+        ) as mock_count,
+    ):
+        mock_list.return_value = []
+        mock_count.return_value = 0
+
+        response = client.get(f"/workspaces/{sample_workspace.id}/programs")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == []

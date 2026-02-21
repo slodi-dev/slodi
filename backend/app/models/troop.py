@@ -7,14 +7,14 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .event import Event
     from .workspace import Workspace
 
 
-class Troop(Base):
+class Troop(SoftDeleteMixin, Base):
     __tablename__ = "troops"
 
     # Columns

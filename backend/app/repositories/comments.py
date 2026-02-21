@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, desc, func, select
+from sqlalchemy import desc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -22,14 +23,16 @@ class CommentRepository(Repository):
                 selectinload(Comment.user),
                 selectinload(Comment.content),
             )
-            .where(Comment.id == comment_id)
+            .where(Comment.id == comment_id, Comment.deleted_at.is_(None))
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def count_content_comments(self, content_id: UUID) -> int:
         result = await self.session.scalar(
-            select(func.count()).select_from(Comment).where(Comment.content_id == content_id)
+            select(func.count())
+            .select_from(Comment)
+            .where(Comment.content_id == content_id, Comment.deleted_at.is_(None))
         )
         return result or 0
 
@@ -42,7 +45,7 @@ class CommentRepository(Repository):
     ) -> Sequence[Comment]:
         stmt = (
             select(Comment)
-            .where(Comment.content_id == content_id)
+            .where(Comment.content_id == content_id, Comment.deleted_at.is_(None))
             .order_by(desc(Comment.created_at), Comment.id)
             .limit(limit)
             .offset(offset)
@@ -54,5 +57,10 @@ class CommentRepository(Repository):
         return comment
 
     async def delete(self, comment_id: UUID) -> int:
-        res = await self.session.execute(delete(Comment).where(Comment.id == comment_id))
+        now = dt.datetime.now(dt.timezone.utc)
+        res = await self.session.execute(
+            update(Comment)
+            .where(Comment.id == comment_id, Comment.deleted_at.is_(None))
+            .values(deleted_at=now)
+        )
         return res.rowcount or 0

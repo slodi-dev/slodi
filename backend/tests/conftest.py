@@ -29,8 +29,36 @@ def mock_db_session():
 
 
 @pytest.fixture
-def client(mock_db_session):
-    """Create a test client with mocked database dependency."""
+def admin_user():
+    """A platform admin user — bypasses all workspace/group access checks."""
+    return UserOut(
+        id=uuid4(),
+        auth0_id="auth0|admin_test",
+        email="admin@test.com",
+        name="Admin User",
+        pronouns=None,
+        permissions=Permissions.admin,
+        preferences=None,
+    )
+
+
+@pytest.fixture
+def viewer_user():
+    """A regular viewer user — useful for testing permission denials."""
+    return UserOut(
+        id=uuid4(),
+        auth0_id="auth0|viewer_test",
+        email="viewer@test.com",
+        name="Viewer User",
+        pronouns=None,
+        permissions=Permissions.viewer,
+        preferences=None,
+    )
+
+
+@pytest.fixture
+def client(mock_db_session, admin_user):
+    """Test client with mocked DB and an authenticated admin user."""
     app = create_app()
 
     async def override_get_session():

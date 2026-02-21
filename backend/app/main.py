@@ -9,6 +9,7 @@ from app.routers import (
     comments_router,
     config_router,
     email_list_router,
+    email_router,
     events_router,
     groups_router,
     likes_router,
@@ -19,6 +20,7 @@ from app.routers import (
     users_router,
     workspaces_router,
 )
+from app.settings import settings
 
 
 def create_app() -> FastAPI:
@@ -28,17 +30,14 @@ def create_app() -> FastAPI:
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:3000",
-            "http://localhost:8000",
-            "https://slodi.is",
-        ],  # Frontend origin # TODO MAKE THIS AN ENVIROMENT VARIABLE
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
     app.include_router(config_router.router)
     app.include_router(email_list_router.router)
+    app.include_router(email_router.router)
     app.include_router(users_router.router)
     app.include_router(groups_router.router)
     app.include_router(workspaces_router.router)
@@ -51,7 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(likes_router.router)
 
     @app.get("/healthz")
-    async def healthz():
+    async def healthz() -> dict[str, bool]:
         return {"ok": True}
 
     return app

@@ -33,24 +33,12 @@ def test_workspace_defaults_in_schema():
     assert isinstance(w.season_start, dt.date)
 
 
-def test_content_like_count_non_negative():
-    with pytest.raises(ValidationError):
-        s.ContentCreate(
-            name="N",
-            description=None,
-            like_count=-1,
-            created_at=get_current_datetime(),
-            author_id=uuid4(),
-        )
-
-
 def test_event_time_is_tz_aware():
     # naive -> invalid
     with pytest.raises(ValidationError):
         s.EventCreate(
             name="Camp",
             description=None,
-            like_count=0,
             created_at=get_current_datetime(),
             author_id=uuid4(),
             content_type=m.ContentType.event,
@@ -65,7 +53,6 @@ def test_task_participants_rules():
             content_type=m.ContentType.task,
             name="Knot tying",
             description=None,
-            like_count=0,
             created_at=get_current_datetime(),
             author_id=uuid4(),
             participant_min=5,
@@ -78,7 +65,6 @@ def test_task_participants_rules():
             content_type=m.ContentType.task,
             name="Game",
             description=None,
-            like_count=0,
             created_at=get_current_datetime(),
             author_id=uuid4(),
             participant_min=0,

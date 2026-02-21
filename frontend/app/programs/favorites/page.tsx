@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { fetchPrograms, type Program } from "@/services/programs.service";
 import { useAuth } from "@/hooks/useAuth";
 import ProgramCard from "@/app/programs/components/ProgramCard";
@@ -15,6 +16,7 @@ export default function FavoriteProgramsPage() {
   const { getToken } = useAuth();
   const defaultWorkspaceId = useDefaultWorkspaceId();
   const { favorites, isLoading: favoritesLoading } = useFavorites();
+  const { getToken } = useAuth();
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [programs, setPrograms] = useState<Program[]>([]);
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);

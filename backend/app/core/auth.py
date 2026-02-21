@@ -8,6 +8,7 @@ This module provides:
 """
 
 import logging
+from collections.abc import Awaitable, Callable
 from functools import lru_cache
 from uuid import UUID
 
@@ -195,7 +196,7 @@ def verify_auth0_token(token: str) -> dict:
         ) from e
 
 
-def require_permission(minimum: Permissions):
+def require_permission(minimum: Permissions) -> Callable[[UserOut], Awaitable[UserOut]]:
     """Enforce minimum global permission level."""
 
     async def _check(

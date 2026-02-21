@@ -26,11 +26,11 @@ from app.domain.content_constraints import (
     NAME_MIN,
 )
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .comment import Comment
-    from .tag import ContentTag
+    from .tag import ContentTag, Tag
     from .user import User
 
 
@@ -58,7 +58,6 @@ class Content(Base):
         "with_polymorphic": "*",
     }
     __table_args__ = (
-        CheckConstraint("like_count >= 0", name="ck_content_like_nonneg"),
         CheckConstraint("count >= 0", name="ck_content_count_nonneg"),
         CheckConstraint("price >= 0", name="ck_content_price_nonneg"),
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_content_name_min"),
@@ -91,10 +90,6 @@ class Content(Base):
     count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     price: Mapped[int | None] = mapped_column(Integer, nullable=True)
     prep_time: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
-    like_count: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
     created_at: Mapped[dt.datetime] = mapped_column(
         SADateTime(timezone=True),
         nullable=False,
@@ -116,11 +111,6 @@ class Content(Base):
 
     # Properties for serialization
     @property
-    def tags(self):
+    def tags(self) -> list[Tag]:
         """Return list of Tag objects from content_tags relationship"""
         return [ct.tag for ct in self.content_tags]
-
-    @property
-    def comment_count(self) -> int:
-        """Return count of comments for this content"""
-        return len(self.comments) if self.comments else 0

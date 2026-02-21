@@ -39,6 +39,14 @@ class Settings(BaseSettings):
         return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
     def model_post_init(self, __context):
+    # CORS configuration
+    cors_origins: list[str] = Field(["http://localhost:3000"], alias="CORS_ORIGINS")
+
+    # Resend (email) configuration
+    resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
+    resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
+
+    def model_post_init(self, __context: object) -> None:
         # Production database URL
         self.db_url = f"postgresql+psycopg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 

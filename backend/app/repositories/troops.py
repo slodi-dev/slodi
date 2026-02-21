@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, and_, delete, func, select
+from sqlalchemy import Select, and_, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -25,19 +26,25 @@ class TroopRepository(Repository):
                 selectinload(Troop.workspace),
                 selectinload(Troop.troop_participations),
             )
-            .where(Troop.id == troop_id)
+            .where(Troop.id == troop_id, Troop.deleted_at.is_(None))
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def get_in_workspace(self, troop_id: UUID, workspace_id: UUID) -> Troop | None:
-        stmt = select(Troop).where(Troop.id == troop_id, Troop.workspace_id == workspace_id)
+        stmt = select(Troop).where(
+            Troop.id == troop_id,
+            Troop.workspace_id == workspace_id,
+            Troop.deleted_at.is_(None),
+        )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def count_troops_for_workspace(self, workspace_id: UUID) -> int:
         result = await self.session.scalar(
-            select(func.count()).select_from(Troop).where(Troop.workspace_id == workspace_id)
+            select(func.count())
+            .select_from(Troop)
+            .where(Troop.workspace_id == workspace_id, Troop.deleted_at.is_(None))
         )
         return result or 0
 
@@ -46,7 +53,7 @@ class TroopRepository(Repository):
     ) -> Sequence[Troop]:
         stmt = (
             select(Troop)
-            .where(Troop.workspace_id == workspace_id)
+            .where(Troop.workspace_id == workspace_id, Troop.deleted_at.is_(None))
             .order_by(Troop.name)
             .limit(limit)
             .offset(offset)
@@ -58,7 +65,12 @@ class TroopRepository(Repository):
         return troop
 
     async def delete(self, troop_id: UUID) -> int:
-        res = await self.session.execute(delete(Troop).where(Troop.id == troop_id))
+        now = dt.datetime.now(dt.timezone.utc)
+        res = await self.session.execute(
+            update(Troop)
+            .where(Troop.id == troop_id, Troop.deleted_at.is_(None))
+            .values(deleted_at=now)
+        )
         return res.rowcount or 0
 
     # ----- participations -----
@@ -67,7 +79,8 @@ class TroopRepository(Repository):
         result = await self.session.scalar(
             select(func.count())
             .select_from(TroopParticipation)
-            .where(TroopParticipation.event_id == event_id)
+            .join(Troop, Troop.id == TroopParticipation.troop_id)
+            .where(TroopParticipation.event_id == event_id, Troop.deleted_at.is_(None))
         )
         return result or 0
 
@@ -77,7 +90,7 @@ class TroopRepository(Repository):
         stmt = (
             select(Troop)
             .join(TroopParticipation, TroopParticipation.troop_id == Troop.id)
-            .where(TroopParticipation.event_id == event_id)
+            .where(TroopParticipation.event_id == event_id, Troop.deleted_at.is_(None))
             .order_by(Troop.name)
             .limit(limit)
             .offset(offset)
@@ -98,7 +111,7 @@ class TroopRepository(Repository):
         stmt = (
             select(Event)
             .join(TroopParticipation, TroopParticipation.event_id == Event.id)
-            .where(TroopParticipation.troop_id == troop_id)
+            .where(TroopParticipation.troop_id == troop_id, Event.deleted_at.is_(None))
             .order_by(Event.start_dt)
             .limit(limit)
             .offset(offset)

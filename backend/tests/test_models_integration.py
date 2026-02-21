@@ -37,13 +37,14 @@ async def test_user_workspace_program_event_task_flow(db):
     db.add(workspace)
     await db.flush()
 
-    # 3) Program (joined-table child of content)
-    p_in = s.ProgramCreate(
+    # 3) Program (single-table child of content)
+    program = m.Program(
         name="Fall Skills",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
+        workspace_id=workspace.id,
+        content_type=m.ContentType.program,
     )
     program = m.Program(**p_in.model_dump())
     db.add(program)
@@ -54,24 +55,29 @@ async def test_user_workspace_program_event_task_flow(db):
     assert row is not None and row.content_type == m.ContentType.program
 
     # 4) Event under program
-    e_in = s.EventCreate(
+    event = m.Event(
         name="Campout",
         description="Overnight",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
+        workspace_id=workspace.id,
+        program_id=program.id,
+        content_type=m.ContentType.event,
+        start_dt=get_current_datetime(),
+        end_dt=None,
     )
     event = m.Event(**e_in.model_dump())
     db.add(event)
     await db.flush()
 
     # 5) Task under event
-    t_in = s.TaskCreate(
+    task = m.Task(
         name="Setup tents",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
+        event_id=event.id,
+        content_type=m.ContentType.task,
     )
     task = m.Task(**t_in.model_dump())
     db.add(task)
@@ -113,7 +119,6 @@ async def test_tags_and_comments_and_cascade(db):
     p = m.Program(
         name="Prog",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=u.id,
         workspace_id=ws.id,
@@ -187,7 +192,6 @@ async def test_group_membership_and_troops(db):
     p = m.Program(
         name="Prog2",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=u.id,
         workspace_id=ws.id,
@@ -196,7 +200,6 @@ async def test_group_membership_and_troops(db):
     e = m.Event(
         name="Hike",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=u.id,
         workspace_id=ws.id,

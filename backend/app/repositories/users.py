@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, delete, func, or_, select
+from sqlalchemy import Select, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,27 +20,28 @@ class UserRepository(Repository):
         stmt: Select[tuple[User]] = (
             select(User)
             .options(
-                # eager-load relationships if commonly needed; adjust as you like
                 selectinload(User.ws_memberships),
                 selectinload(User.group_memberships),
             )
-            .where(User.id == user_id)
+            .where(User.id == user_id, User.deleted_at.is_(None))
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def get_by_email(self, email: str) -> User | None:
-        stmt = select(User).where(func.lower(User.email) == email.lower())
+        stmt = select(User).where(
+            func.lower(User.email) == email.lower(), User.deleted_at.is_(None)
+        )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def get_by_auth0_id(self, auth0_id: str) -> User | None:
-        stmt = select(User).where(User.auth0_id == auth0_id)
+        stmt = select(User).where(User.auth0_id == auth0_id, User.deleted_at.is_(None))
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def count(self, *, q: str | None = None) -> int:
-        stmt = select(func.count()).select_from(User)
+        stmt = select(func.count()).select_from(User).where(User.deleted_at.is_(None))
         if q:
             ilike = f"%{q.strip()}%"
             stmt = stmt.where(
@@ -59,7 +61,7 @@ class UserRepository(Repository):
         limit: int = 50,
         offset: int = 0,
     ) -> Sequence[User]:
-        stmt = select(User).order_by(User.name.asc())
+        stmt = select(User).where(User.deleted_at.is_(None)).order_by(User.name.asc())
         if q:
             ilike = f"%{q.strip()}%"
             stmt = stmt.where(
@@ -77,5 +79,8 @@ class UserRepository(Repository):
         return user
 
     async def delete(self, user_id: UUID) -> int:
-        res = await self.session.execute(delete(User).where(User.id == user_id))
+        now = dt.datetime.now(dt.timezone.utc)
+        res = await self.session.execute(
+            update(User).where(User.id == user_id, User.deleted_at.is_(None)).values(deleted_at=now)
+        )
         return res.rowcount or 0

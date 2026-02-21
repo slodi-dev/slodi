@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    ValidationInfo,
+    field_validator,
+)
+from typing_extensions import Self
 
 from app.domain.content_constraints import (
     DESC_MAX,
@@ -51,20 +59,12 @@ class ContentBase(BaseModel):
     count: int | None = None
     price: int | None = None
     prep_time: DurationStr | None = None
-    like_count: int = 0
     author_id: UUID | None = None
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
-    @field_validator("like_count")
-    @classmethod
-    def validate_like_count(cls, v: int) -> int:
-        if v < 0:
-            raise ValueError("like_count must be >= 0")
-        return v
-
     @field_validator("count", "price")
     @classmethod
-    def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
+    def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
         if v is not None and v < 0:
             raise ValueError(f"{info.field_name} must be >= 0")
         return v
@@ -87,18 +87,10 @@ class ContentUpdate(BaseModel):
     count: int | None = None
     price: int | None = None
     prep_time: DurationStr | None = None
-    like_count: int | None = None
-
-    @field_validator("like_count")
-    @classmethod
-    def validate_like_count(cls, v: int | None) -> int | None:
-        if v is not None and v < 0:
-            raise ValueError("like_count must be >= 0")
-        return v
 
     @field_validator("count", "price")
     @classmethod
-    def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
+    def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
         if v is not None and v < 0:
             raise ValueError(f"{info.field_name} must be >= 0")
         return v
@@ -111,6 +103,12 @@ class ContentOut(ContentBase):
     author: UserOut
     tags: list[TagOut] = []
     comment_count: int = 0
+    like_count: int = 0
+    liked_by_me: bool = False
+
+    @classmethod
+    def from_row(cls, obj: Any, stats: ContentStats) -> Self:
+        return cls.model_validate(obj).model_copy(update=vars(stats))
 
 
 UserOut.model_rebuild()
