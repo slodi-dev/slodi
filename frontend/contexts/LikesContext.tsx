@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { toggleProgramLike } from '@/services/programs.service';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LikesContextValue {
   likedPrograms: Map<string, number>; // programId -> like_count
@@ -14,6 +15,7 @@ interface LikesContextValue {
 const LikesContext = createContext<LikesContextValue | undefined>(undefined);
 
 export function LikesProvider({ children }: { children: React.ReactNode }) {
+  const { getToken } = useAuth();
   const [likedPrograms, setLikedPrograms] = useState<Map<string, number>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
@@ -76,9 +78,7 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('liked-programs', JSON.stringify(Object.fromEntries(updatedMap)));
 
     try {
-      // TODO: Replace with actual API call when backend is ready
-      // POST /api/programs/:id/like
-      const data = await toggleProgramLike(programId, wasLiked ? 'unlike' : 'like');
+      const data = await toggleProgramLike(programId, wasLiked ? 'unlike' : 'like', getToken);
 
       // Update with actual count from server
       setLikedPrograms(prev => {

@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.models.content import Content
 from app.models.event import Event
 from app.models.program import Program
+from app.models.tag import ContentTag
 from app.models.task import Task
 from app.repositories.base import Repository
 from app.repositories.content import (
@@ -35,7 +36,8 @@ class ProgramRepository(Repository):
                 selectinload(Program.author),
                 selectinload(Program.workspace),
                 selectinload(Program.events),
-                selectinload(Program.content_tags),
+                selectinload(Program.comments),
+                selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(Program.id == program_id, Program.deleted_at.is_(None))
         )
@@ -55,7 +57,8 @@ class ProgramRepository(Repository):
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.content_tags),
+                selectinload(Program.comments),
+                selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(
                 Program.id == program_id,
@@ -92,7 +95,8 @@ class ProgramRepository(Repository):
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.content_tags),
+                selectinload(Program.comments),
+                selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
             .order_by(Program.name)

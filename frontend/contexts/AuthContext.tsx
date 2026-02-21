@@ -48,9 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/api/auth/token");
 
       if (response.status === 401) {
-        // Token expired or invalid - clear user state
+        // Token expired or invalid - clear user state and force re-login
         setUser(null);
         setTokenCache(null);
+        // Redirect to logout to clear the stale Auth0 session cookie
+        window.location.href = "/api/auth/logout";
         return null;
       }
 

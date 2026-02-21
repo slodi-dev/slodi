@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
 
+    # Seed: emails that are always promoted to admin on `make seed`
+    admin_emails: str = Field("", alias="ADMIN_EMAILS")
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
+
+    def model_post_init(self, __context):
     # CORS configuration
     cors_origins: list[str] = Field(["http://localhost:3000"], alias="CORS_ORIGINS")
 

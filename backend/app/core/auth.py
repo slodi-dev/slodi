@@ -232,6 +232,45 @@ async def check_workspace_access(
         raise HTTPException(status_code=403, detail=f"Requires {minimum_role.value} role")
 
 
+async def check_program_edit_access(
+    workspace_id: UUID,
+    author_id: "UUID | None",
+    current_user: UserOut,
+    session: AsyncSession,
+) -> None:
+    """
+    Raise 403 unless the user can edit the program.
+
+    Allowed when:
+    - current user is a platform admin, OR
+    - current user has at least ``admin`` workspace role, OR
+    - current user is the program's author with at least ``editor`` workspace role
+    """
+    if current_user.permissions == Permissions.admin:
+        return  # Platform admins bypass all workspace checks
+
+    ws_svc = WorkspaceService(session)
+    membership = await ws_svc.get_user_membership(workspace_id, current_user.id)
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a workspace member")
+
+    role_rank = _WORKSPACE_ROLE_RANK[membership.role]
+    is_author = author_id is not None and current_user.id == author_id
+    has_admin = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
+    has_editor = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.editor]
+
+    if has_admin:
+        return
+    if is_author and has_editor:
+        return
+
+    raise HTTPException(
+        status_code=403,
+        detail="Requires admin role, or editor role as the program's author",
+    )
+
+
 async def check_group_access(
     group_id: UUID,
     current_user: UserOut,
@@ -292,23 +331,34 @@ async def get_current_user(
 
     # Extract user info from verified token
     auth0_id = payload.get("sub")
-    email = payload.get("email")
-    name = payload.get("name")
 
     if not auth0_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing required claim (sub)"
         )
 
-    # If email is missing from token, fetch it from Auth0 userinfo endpoint
+    # Fast path: user already exists — no need to call Auth0 at all
+    user_service = UserService(session)
+    user = await user_service.get_by_auth0_id(auth0_id)
+    if user:
+        return user
+
+    # New user — we need email & name to create them.
+    # Try claims from the access token first (some Auth0 setups include these).
+    email = payload.get("email")
+    name = payload.get("name")
+
     if not email:
+        # Access tokens for API audiences don't carry email by default.
+        # Use the /userinfo endpoint to fetch it — only happens once per account.
         try:
             userinfo_url = f"https://{settings.auth0_domain}/userinfo"
-            response = httpx.get(
-                userinfo_url, headers={"Authorization": f"Bearer {token}"}, timeout=10.0
-            )
-            response.raise_for_status()
-            userinfo = response.json()
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    userinfo_url, headers={"Authorization": f"Bearer {token}"}
+                )
+                response.raise_for_status()
+                userinfo = response.json()
             email = userinfo.get("email")
             if not name:
                 name = userinfo.get("name")
@@ -323,22 +373,16 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unable to retrieve user email"
         )
 
-    # Use email as fallback for name if still not set
     if not name:
         name = email
 
-    # Get or create user
-    user_service = UserService(session)
-    user = await user_service.get_by_auth0_id(auth0_id)
+    # Auto-create user on first login (token is already verified above)
+    user_data = UserCreate(auth0_id=auth0_id, email=email, name=name)
+    user = await user_service.create(user_data)
 
     if not user:
-        # Auto-create user on first login (SAFE because token is verified)
-        user_data = UserCreate(auth0_id=auth0_id, email=email, name=name)
-        user = await user_service.create(user_data)
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user"
+        )
 
     return user

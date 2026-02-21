@@ -15,7 +15,6 @@ from pydantic import (
 from typing_extensions import Self
 
 from app.domain.content_constraints import (
-    AGE_MAX,
     DESC_MAX,
     DURATION_MAX,
     INSTRUCTIONS_MAX,
@@ -23,7 +22,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.repositories.content import ContentStats
+from app.models.content import AgeGroup
 from app.schemas.tag import TagOut
 from app.schemas.user import UserOut
 from app.utils import get_current_datetime
@@ -39,7 +38,6 @@ InstructionsStr = Annotated[
     str,
     StringConstraints(min_length=0, max_length=INSTRUCTIONS_MAX, strip_whitespace=True),
 ]
-AgeStr = Annotated[str, StringConstraints(min_length=0, max_length=AGE_MAX, strip_whitespace=True)]
 DurationStr = Annotated[
     str, StringConstraints(min_length=0, max_length=DURATION_MAX, strip_whitespace=True)
 ]
@@ -56,7 +54,7 @@ class ContentBase(BaseModel):
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
     duration: DurationStr | None = None
-    age: AgeStr | None = None
+    age: list[AgeGroup] | None = None
     location: LocationStr | None = None
     count: int | None = None
     price: int | None = None
@@ -84,7 +82,7 @@ class ContentUpdate(BaseModel):
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
     duration: DurationStr | None = None
-    age: AgeStr | None = None
+    age: list[AgeGroup] | None = None
     location: LocationStr | None = None
     count: int | None = None
     price: int | None = None

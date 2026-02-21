@@ -1,5 +1,5 @@
 import React from "react";
-import { BarChart3, Clock, Users, MapPin, User, Tag, Target, Calendar, Heart, MessageCircle, Printer, Download, Flag } from "lucide-react";
+import { BarChart3, Clock, AlarmClock, Users, MapPin, User, Tag, Target, Calendar, CircleDollarSign, Printer, Download, Flag } from "lucide-react";
 import styles from "./ProgramQuickInfo.module.css";
 import type { Program } from "@/services/programs.service";
 import { formatIcelandicDate } from "@/utils/date";
@@ -22,30 +22,52 @@ export default function ProgramQuickInfo({ program }: ProgramQuickInfoProps) {
                         <Clock className={styles.statIcon} size={18} />
                         <div className={styles.statContent}>
                             <span className={styles.statLabel}>Lengd</span>
-                            <span className={styles.statValue}>60 mínútur</span>
+                            <span className={styles.statValue}>{program.duration || "—"}</span>
                         </div>
                     </div>
+                    {program.prep_time && (
+                        <div className={styles.stat}>
+                            <AlarmClock className={styles.statIcon} size={18} />
+                            <div className={styles.statContent}>
+                                <span className={styles.statLabel}>Undirbúningur</span>
+                                <span className={styles.statValue}>{program.prep_time}</span>
+                            </div>
+                        </div>
+                    )}
                     <div className={styles.stat}>
                         <Users className={styles.statIcon} size={18} />
                         <div className={styles.statContent}>
                             <span className={styles.statLabel}>Aldur</span>
-                            <span className={styles.statValue}>9-12 ára</span>
+                            <span className={styles.statValue}>{program.age || "—"}</span>
                         </div>
                     </div>
                     <div className={styles.stat}>
                         <MapPin className={styles.statIcon} size={18} />
                         <div className={styles.statContent}>
                             <span className={styles.statLabel}>Staðsetning</span>
-                            <span className={styles.statValue}>Útisvæði</span>
+                            <span className={styles.statValue}>{program.location || "—"}</span>
                         </div>
                     </div>
                     <div className={styles.stat}>
                         <User className={styles.statIcon} size={18} />
                         <div className={styles.statContent}>
                             <span className={styles.statLabel}>Hópstærð</span>
-                            <span className={styles.statValue}>10-20</span>
+                            <span className={styles.statValue}>
+                                {program.count !== null && program.count !== undefined
+                                    ? program.count
+                                    : "—"}
+                            </span>
                         </div>
                     </div>
+                    {program.price !== null && program.price !== undefined && (
+                        <div className={styles.stat}>
+                            <CircleDollarSign className={styles.statIcon} size={18} />
+                            <div className={styles.statContent}>
+                                <span className={styles.statLabel}>Verð</span>
+                                <span className={styles.statValue}>{program.price} kr.</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
 

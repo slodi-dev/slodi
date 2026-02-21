@@ -46,6 +46,7 @@ async def test_user_workspace_program_event_task_flow(db):
         workspace_id=workspace.id,
         content_type=m.ContentType.program,
     )
+    program = m.Program(**p_in.model_dump())
     db.add(program)
     await db.flush()
 
@@ -65,6 +66,7 @@ async def test_user_workspace_program_event_task_flow(db):
         start_dt=get_current_datetime(),
         end_dt=None,
     )
+    event = m.Event(**e_in.model_dump())
     db.add(event)
     await db.flush()
 
@@ -77,6 +79,7 @@ async def test_user_workspace_program_event_task_flow(db):
         event_id=event.id,
         content_type=m.ContentType.task,
     )
+    task = m.Task(**t_in.model_dump())
     db.add(task)
     await db.commit()
 
@@ -98,6 +101,7 @@ async def test_user_workspace_program_event_task_flow(db):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_tags_and_comments_and_cascade(db):
+    # Create content program quickly
     u = m.User(name="A", auth0_id="auth0|x", email="a@x.com")
     ws = m.Workspace(
         name="WS",
@@ -132,12 +136,8 @@ async def test_tags_and_comments_and_cascade(db):
     db.add(ct)
 
     # Comment
-    comment = m.Comment(
-        body="Nice idea!",
-        created_at=get_current_datetime(),
-        user_id=u.id,
-        content_id=p.id,
-    )
+    c_in = s.CommentCreate(body="Nice idea!", user_id=u.id)
+    comment = m.Comment(**c_in.model_dump())
     db.add(comment)
     await db.commit()
 
@@ -148,25 +148,27 @@ async def test_tags_and_comments_and_cascade(db):
     comments = await db.execute(select(m.Comment).where(m.Comment.content_id == p.id))
     assert comments.scalars().one().body == "Nice idea!"
 
-    # Soft-delete the program directly (simulating what the repository does)
-    p.deleted_at = get_current_datetime()
+    # Delete CONTENT parent; ensure cascade to Program (child) via ondelete
+    content_row = await db.scalar(select(m.Content).where(m.Content.id == p.id))
+    await db.delete(content_row)
     await db.commit()
 
-    # Program should not appear in a filtered query
-    gone = await db.scalar(
-        select(m.Program).where(m.Program.id == p.id, m.Program.deleted_at.is_(None))
-    )
+    # Program should be gone
+    gone = await db.scalar(select(m.Program).where(m.Program.id == p.id))
     assert gone is None
 
-    # But the row still exists in the DB (soft delete, not hard delete)
-    still_exists = await db.scalar(select(m.Program).where(m.Program.id == p.id))
-    assert still_exists is not None
-    assert still_exists.deleted_at is not None
+    # ContentTag/comment referencing the content should also be gone (FK ondelete CASCADE)
+    tag_links = await db.execute(select(m.ContentTag).where(m.ContentTag.content_id == p.id))
+    assert tag_links.first() is None
+
+    comms = await db.execute(select(m.Comment).where(m.Comment.content_id == p.id))
+    assert comms.first() is None
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_group_membership_and_troops(db):
+    # Group, User, Workspace
     g = m.Group(name="Parents")
     u = m.User(name="B", auth0_id="auth0|2", email="b@example.com")
     ws = m.Workspace(

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLikes } from "@/contexts/LikesContext";
@@ -27,6 +27,14 @@ export interface ProgramCardProps {
   onLike?: (programId: string) => void;
   isLiked?: boolean;
   className?: string;
+  /** Show an edit option in the card action menu. */
+  canEdit?: boolean;
+  /** Show a delete option in the card action menu. */
+  canDelete?: boolean;
+  /** Called when the user selects "Edit" in the menu. */
+  onEdit?: () => void;
+  /** Called when the user selects "Delete" in the menu. */
+  onDelete?: () => void;
 }
 
 export default function ProgramCard({
@@ -38,10 +46,30 @@ export default function ProgramCard({
   tags = [],
   like_count = 0,
   className,
+  canEdit,
+  canDelete,
+  onEdit,
+  onDelete,
 }: ProgramCardProps) {
   const router = useRouter();
   const { likeCount, isLiked, toggleLike } = useLikes(id, like_count || 0);
   const { isFavorite, toggleFavorite } = useFavorite(id);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const showMenu = canEdit || canDelete;
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -79,6 +107,45 @@ export default function ProgramCard({
       aria-label={`View program: ${name}`}
       data-program-id={id}
     >
+      {/* Action menu overlay — only visible for users with edit/delete rights */}
+      {showMenu && (
+        <div className={styles.cardActions} ref={menuRef}>
+          <button
+            type="button"
+            className={`${styles.menuButton} ${menuOpen ? styles.menuButtonOpen : ""}`}
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+            aria-label="Valkostir"
+            aria-haspopup="true"
+            aria-expanded={menuOpen}
+          >
+            ···
+          </button>
+          {menuOpen && (
+            <div className={styles.menu} role="menu">
+              {canEdit && (
+                <button
+                  type="button"
+                  className={styles.menuItem}
+                  role="menuitem"
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onEdit?.(); }}
+                >
+                  Breyta
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  type="button"
+                  className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                  role="menuitem"
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete?.(); }}
+                >
+                  Eyða
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {/* Thumbnail/Hero Image */}
       <div className={styles.media}>
         {image ? (

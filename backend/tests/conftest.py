@@ -65,7 +65,15 @@ def client(mock_db_session, admin_user):
         yield mock_db_session
 
     async def override_get_current_user():
-        return admin_user
+        return UserOut(
+            id=uuid4(),
+            auth0_id="auth0|test",
+            email="test@example.com",
+            name="Test User",
+            pronouns=None,
+            permissions=Permissions.admin,
+            preferences=None,
+        )
 
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_current_user] = override_get_current_user

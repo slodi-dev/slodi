@@ -11,14 +11,13 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
 
 from app.domain.content_constraints import (
-    AGE_MAX,
     DESC_MAX,
     DURATION_MAX,
     INSTRUCTIONS_MAX,
@@ -41,7 +40,17 @@ class ContentType(str, Enum):
     task = "task"
 
 
-class Content(SoftDeleteMixin, Base):
+class AgeGroup(str, Enum):
+    hrefnuskaatar = "Hrefnuskátar"
+    drekaskaatar = "Drekaskátar"
+    falkaskaatar = "Fálkaskátar"
+    drottskaatar = "Dróttskátar"
+    rekkaskaatar = "Rekkaskátar"
+    roverskaatar = "Róverskátar"
+    vaettaskaatar = "Vættaskátar"
+
+
+class Content(Base):
     __tablename__ = "content"
     __mapper_args__ = {
         "polymorphic_on": "content_type",
@@ -73,7 +82,10 @@ class Content(SoftDeleteMixin, Base):
         nullable=True,
     )
     duration: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
-    age: Mapped[str | None] = mapped_column(String(AGE_MAX), nullable=True)
+    age: Mapped[list[AgeGroup] | None] = mapped_column(
+        ARRAY(SAEnum(AgeGroup, name="age_group_enum", create_type=False)),
+        nullable=True,
+    )
     location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
     count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     price: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -1,4 +1,4 @@
-import { buildApiUrl, fetchAndCheck } from "@/lib/api-utils";
+import { buildApiUrl } from "@/lib/api-utils";
 import { fetchWithAuth } from "@/lib/api";
 import { findTagIdByName, addTagToContent } from "@/services/tags.service";
 import { User } from "@/services/users.service";
@@ -25,38 +25,54 @@ export type Program = {
   };
   tags?: Array<{ id: string; name: string }>;
   comment_count?: number;
+  // Extended backend fields (ContentBase)
+  instructions?: string | null;
+  equipment?: string[] | null;
+  duration?: string | null;
+  prep_time?: string | null;
+  age?: string | null;
+  location?: string | null;
+  count?: number | null;
+  price?: number | null;
 };
 
 export type ProgramCreateInput = {
   name: string;
   description?: string;
-  public?: boolean;
   image?: string;
-  imageFile?: File;
+  instructions?: string;
+  equipment?: string[];
+  duration?: string;
+  prep_time?: string;
+  age?: string;
+  location?: string;
+  count?: number;
+  price?: number;
   tags?: string[];
   workspaceId: string; // Required - workspace to create program in
 };
 
 export type ProgramUpdateInput = {
   name?: string;
-  description?: string;
+  description?: string | null;
   public?: boolean;
-  image?: string;
-  tags?: string[];
+  image?: string | null;
+  instructions?: string | null;
+  equipment?: string[] | null;
+  duration?: string | null;
+  prep_time?: string | null;
+  age?: string | null;
+  location?: string | null;
+  count?: number | null;
+  price?: number | null;
+  // tags are managed via separate tag-assignment endpoints
 };
-
-export interface ProgramUpdateFormData {
-  name: string;
-  description: string | null;
-  public: boolean;
-  image: string | null;
-}
 
 export type ProgramsResponse = Program[] | { programs: Program[] };
 
 /**
- * Check if a user can edit a program
- * User can edit if they are the author of the program
+ * Check if a user can edit a program.
+ * @deprecated Use `canEditProgram` from `@/lib/permissions` with workspace role for accurate checks.
  */
 export function canEditProgram(user: User | null, program: Program): boolean {
   if (!user || !program) return false;
@@ -65,14 +81,16 @@ export function canEditProgram(user: User | null, program: Program): boolean {
 
 /**
  * Fetch all programs for a workspace
+ * Requires authentication
  */
-export async function fetchPrograms(workspaceId: string, token?: string): Promise<Program[]> {
+export async function fetchPrograms(
+  workspaceId: string,
+  getToken: () => Promise<string | null>
+): Promise<Program[]> {
   const url = buildApiUrl(`/workspaces/${workspaceId}/programs`);
-  const data = await fetchAndCheck<ProgramsResponse>(url, {
+  const data = await fetchWithAuth<ProgramsResponse>(url, {
     method: "GET",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    credentials: "include",
-  });
+  }, getToken);
 
   return Array.isArray(data) ? data : data.programs || [];
 }
@@ -99,13 +117,16 @@ async function assignTagsToProgram(
 
 /**
  * Fetch a single program by ID
+ * Requires authentication
  */
-export async function fetchProgramById(id: string): Promise<Program> {
+export async function fetchProgramById(
+  id: string,
+  getToken: () => Promise<string | null>
+): Promise<Program> {
   const url = buildApiUrl(`/programs/${id}`);
-  return fetchAndCheck<Program>(url, {
+  return fetchWithAuth<Program>(url, {
     method: "GET",
-    credentials: "include",
-  });
+  }, getToken);
 }
 
 /**
@@ -118,8 +139,16 @@ export async function createProgram(
 ): Promise<Program> {
   const payload = {
     name: input.name.trim(),
-    description: input.description?.trim() || "",
+    description: input.description?.trim() || null,
     image: input.image?.trim() || null,
+    instructions: input.instructions?.trim() || null,
+    equipment: input.equipment && input.equipment.length > 0 ? input.equipment : null,
+    duration: input.duration?.trim() || null,
+    prep_time: input.prep_time?.trim() || null,
+    age: input.age?.trim() || null,
+    location: input.location?.trim() || null,
+    count: input.count ?? null,
+    price: input.price ?? null,
     content_type: "program" as const,
   };
 
@@ -177,20 +206,21 @@ export async function deleteProgram(
 
 /**
  * Like or unlike a program
+ * Requires authentication
  */
 export async function toggleProgramLike(
   programId: string,
-  action: "like" | "unlike"
+  action: "like" | "unlike",
+  getToken: () => Promise<string | null>
 ): Promise<{ liked: boolean; likeCount: number }> {
   const url = buildApiUrl(`/programs/${programId}/like`);
-  return fetchAndCheck(url, {
+  return fetchWithAuth<{ liked: boolean; likeCount: number }>(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ action }),
-    credentials: "include",
-  });
+  }, getToken);
 }
 
 /**

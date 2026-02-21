@@ -16,7 +16,14 @@ import usePrograms from "@/hooks/usePrograms";
 import { useUserWorkspace } from "@/hooks/useUserWorkspace";
 import { useProgramFilters } from "@/hooks/useProgramFilters";
 import { usePagination } from "@/hooks/usePagination";
-import { DEFAULT_WORKSPACE_ID, PROGRAMS_PER_PAGE } from "@/constants/config";
+import { useAuth } from "@/hooks/useAuth";
+import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
+import { PROGRAMS_PER_PAGE } from "@/constants/config";
+import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
+import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
+import { updateProgram, deleteProgram, type Program, type ProgramUpdateInput } from "@/services/programs.service";
+import ProgramDetailEdit from "@/app/programs/[id]/components/ProgramDetailEdit";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
 /**
  * Programs page - displays the program bank (dagskrárbankinn) with search,
@@ -25,10 +32,57 @@ import { DEFAULT_WORKSPACE_ID, PROGRAMS_PER_PAGE } from "@/constants/config";
 export default function ProgramsPage() {
     const [showNewProgram, setShowNewProgram] = useState(false);
 
+    // Resolve the shared workspace ID — from env var (dev) or /api/config (Docker)
+    const defaultWorkspaceId = useDefaultWorkspaceId();
+
     // Fetch data
     const { tagNames: availableTags, loading: tagsLoading } = useTags();
-    const { programs, loading: programsLoading, error: programsError, refetch } = usePrograms(DEFAULT_WORKSPACE_ID);
-    const { workspaceId: userWorkspaceId, error: workspaceError } = useUserWorkspace();
+
+    // The shared program bank always reads from the default (shared) workspace.
+    const { programs, loading: programsLoading, error: programsError, refetch } = usePrograms(defaultWorkspaceId);
+
+    // User's private workspace — fetched now so it's ready for the future
+    // workspace toggle. When the toggle is added, swap postWorkspaceId between
+    // defaultWorkspaceId and userWorkspaceId based on the user's selection.
+    const { workspaceId: userWorkspaceId } = useUserWorkspace();
+
+    // ── Auth & workspace role ──────────────────────────────────────────────
+    const { user, getToken } = useAuth();
+    const { role } = useWorkspaceRole(defaultWorkspaceId);
+
+    // ── Edit / delete modal state ──────────────────────────────────────────
+    const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+    const [pendingDeleteProgram, setPendingDeleteProgram] = useState<Program | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // ── WHERE TO POST new programs ──────────────────────────────────────────
+    // Currently hardcoded to the shared bank. To allow posting to the user's
+    // private workspace instead, replace defaultWorkspaceId here with
+    // userWorkspaceId (and add a UI toggle to let the user choose).
+    const postWorkspaceId = defaultWorkspaceId ?? "";
+    void userWorkspaceId; // retained for future toggle — prevent lint unused warning
+
+    // ── Edit / delete handlers ─────────────────────────────────────────────
+    const handleEditSave = async (data: ProgramUpdateInput) => {
+        if (!editingProgram) return;
+        await updateProgram(editingProgram.id, data, getToken);
+        setEditingProgram(null);
+        await refetch();
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!pendingDeleteProgram) return;
+        try {
+            setIsDeleting(true);
+            await deleteProgram(pendingDeleteProgram.id, getToken);
+            setPendingDeleteProgram(null);
+            await refetch();
+        } catch (err) {
+            console.error("Failed to delete program:", err);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     // Apply filters and sorting
     const {
@@ -57,10 +111,6 @@ export default function ProgramsPage() {
         await refetch();
     };
 
-    // Show workspace error if it failed (non-blocking)
-    if (workspaceError) {
-        console.warn("Workspace error:", workspaceError);
-    }
 
     return (
         <section className="builder-page">
@@ -74,7 +124,7 @@ export default function ProgramsPage() {
                 title="Bæta hugmynd í bankann"
             >
                 <NewProgramForm
-                    workspaceId={userWorkspaceId || DEFAULT_WORKSPACE_ID}
+                    workspaceId={postWorkspaceId}
                     onCreated={handleProgramCreated}
                 />
             </Modal>
@@ -136,6 +186,11 @@ export default function ProgramsPage() {
                                 image={p.image}
                                 description={p.description}
                                 tags={p.tags}
+                                author={p.author}
+                                canEdit={canEditProgram(user, p, role)}
+                                canDelete={canDeleteProgram(user, p, role)}
+                                onEdit={() => setEditingProgram(p)}
+                                onDelete={() => setPendingDeleteProgram(p)}
                             />
                         ))}
                     </ProgramGrid>
@@ -152,6 +207,35 @@ export default function ProgramsPage() {
                     )}
                 </main>
             </div>
+
+            {/* Edit modal */}
+            <Modal
+                open={!!editingProgram}
+                onClose={() => setEditingProgram(null)}
+                title="Breyta dagskrá"
+            >
+                {editingProgram && (
+                    <ProgramDetailEdit
+                        program={editingProgram}
+                        onSave={handleEditSave}
+                        onCancel={() => setEditingProgram(null)}
+                        onDeleteRequest={() => {
+                            setPendingDeleteProgram(editingProgram);
+                            setEditingProgram(null);
+                        }}
+                        isDeleting={false}
+                    />
+                )}
+            </Modal>
+
+            {/* Delete confirmation modal */}
+            <DeleteConfirmModal
+                open={!!pendingDeleteProgram}
+                programName={pendingDeleteProgram?.name}
+                isDeleting={isDeleting}
+                onClose={() => setPendingDeleteProgram(null)}
+                onConfirm={handleDeleteConfirm}
+            />
         </section>
     );
 }

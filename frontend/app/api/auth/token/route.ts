@@ -16,7 +16,12 @@ export async function GET() {
       );
     }
 
-    const { token } = await auth0.getAccessToken();
+    const { token } = await auth0.getAccessToken({
+      authorizationParameters: {
+        audience: process.env.AUTH0_AUDIENCE,
+        scope: process.env.AUTH0_SCOPE ?? "openid profile email",
+      },
+    });
 
     if (!token) {
       return NextResponse.json(
@@ -29,9 +34,10 @@ export async function GET() {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Failed to get access token";
     console.error("Error getting access token:", errorMessage);
+    // Return 401 so the client clears the stale session and re-authenticates
     return NextResponse.json(
       { error: errorMessage },
-      { status: 500 }
+      { status: 401 }
     );
   }
 }

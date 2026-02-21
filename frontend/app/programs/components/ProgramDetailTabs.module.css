@@ -220,6 +220,21 @@
     border-radius: var(--radius-lg);
 }
 
+/* Prose (instructions free-text) */
+.prose {
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-text-primary);
+}
+
+.prose p {
+    margin: 0 0 var(--space-4) 0;
+}
+
+.prose p:last-child {
+    margin-bottom: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .tabNav {

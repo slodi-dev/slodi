@@ -21,7 +21,7 @@ if (missingVars.length > 0) {
 
 export const auth0 = new Auth0Client({
     authorizationParameters: {
-        scope: process.env.AUTH0_SCOPE || 'openid profile email',
-        audience: process.env.AUTH0_AUDIENCE || undefined,
+        scope: process.env.AUTH0_SCOPE ?? 'openid profile email',
+        audience: process.env.AUTH0_AUDIENCE,
     },
 });
