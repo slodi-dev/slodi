@@ -8,6 +8,7 @@ from app.core.logging import configure_logging
 from app.routers import (
     comments_router,
     email_list_router,
+    email_router,
     events_router,
     groups_router,
     likes_router,
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(email_list_router.router)
+    app.include_router(email_router.router)
     app.include_router(users_router.router)
     app.include_router(groups_router.router)
     app.include_router(workspaces_router.router)
