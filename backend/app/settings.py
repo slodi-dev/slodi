@@ -34,17 +34,16 @@ class Settings(BaseSettings):
     # Seed: emails that are always promoted to admin on `make seed`
     admin_emails: str = Field("", alias="ADMIN_EMAILS")
 
-    @property
-    def admin_email_list(self) -> list[str]:
-        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
-
-    def model_post_init(self, __context):
     # CORS configuration
     cors_origins: list[str] = Field(["http://localhost:3000"], alias="CORS_ORIGINS")
 
     # Resend (email) configuration
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
     def model_post_init(self, __context: object) -> None:
         # Production database URL

@@ -86,7 +86,7 @@ async def get_my_workspace_role(
     session: SessionDep,
     workspace_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> WorkspaceMembershipOut:
     """Return the current user's membership/role for a workspace, or 404 if not a member.
 
     Platform admins bypass all workspace membership checks in the rest of the API, so

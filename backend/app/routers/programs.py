@@ -67,8 +67,6 @@ async def create_program_under_workspace(
     program_data = body.model_copy(
         update={
             "author_id": current_user.id,
-            "like_count": 0,
-            "created_at": get_current_datetime(),
         }
     )
     svc = ProgramService(session)
@@ -139,7 +137,7 @@ async def update_program(
     svc = ProgramService(session)
     program = await svc.get(program_id)
     await check_program_edit_access(program.workspace_id, program.author_id, current_user, session)
-    return await svc.update(program_id, body)
+    return await svc.update(program_id, body, current_user.id)
 
 
 @router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)

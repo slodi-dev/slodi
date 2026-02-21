@@ -50,7 +50,7 @@ class AgeGroup(str, Enum):
     vaettaskaatar = "Vættaskátar"
 
 
-class Content(Base):
+class Content(SoftDeleteMixin, Base):
     __tablename__ = "content"
     __mapper_args__ = {
         "polymorphic_on": "content_type",
