@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class Event(Content):
     __tablename__ = "events"
     __mapper_args__ = {"polymorphic_identity": ContentType.event}
-    __table_args__ = (
+    __table_args__ = (  # type: ignore[assignment]
         ForeignKeyConstraint(
             ["workspace_id", "program_id"],
             ["programs.workspace_id", "programs.id"],

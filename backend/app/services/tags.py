@@ -83,7 +83,7 @@ class TagService:
 
     async def list_content_tags(
         self, content_id: UUID, *, limit: int = 100, offset: int = 0
-    ) -> list[TagOut]:
+    ) -> list[TagOut]:  # type: ignore[valid-type]
         rows = await self.repo.list_content_tags(content_id, limit=limit, offset=offset)
         return [TagOut.model_validate(r) for r in rows]
 
@@ -92,7 +92,7 @@ class TagService:
 
     async def list_tagged_content(
         self, tag_id: UUID, *, limit: int = 50, offset: int = 0
-    ) -> list[ContentOut]:
+    ) -> list[ContentOut]:  # type: ignore[valid-type]
         rows = await self.repo.list_tagged_content(tag_id, limit=limit, offset=offset)
         return [ContentOut.model_validate(r) for r in rows]
 

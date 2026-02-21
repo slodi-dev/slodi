@@ -31,7 +31,7 @@ async def list_workspace_programs(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[ProgramOut]:
     svc = ProgramService(session)
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
@@ -59,7 +59,7 @@ async def create_program_under_workspace(
     body: ProgramCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> ProgramOut:
     assert body.content_type == ContentType.program, "Content type must be 'program'"
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
@@ -115,7 +115,7 @@ async def copy_program_to_workspace(
 @router.get("/programs/{program_id}", response_model=ProgramOut)
 async def get_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
-):
+) -> ProgramOut:
     svc = ProgramService(session)
     program = await svc.get(program_id)
     await check_workspace_access(
@@ -130,7 +130,7 @@ async def update_program(
     program_id: UUID,
     body: ProgramUpdate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> ProgramOut:
     svc = ProgramService(session)
     program = await svc.get(program_id)
     await check_workspace_access(
@@ -142,7 +142,7 @@ async def update_program(
 @router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
-):
+) -> None:
     svc = ProgramService(session)
     program = await svc.get(program_id)
     await check_workspace_access(

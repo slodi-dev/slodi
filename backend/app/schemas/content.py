@@ -4,7 +4,14 @@ import datetime as dt
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    ValidationInfo,
+    field_validator,
+)
 
 from app.domain.content_constraints import (
     AGE_MAX,
@@ -65,7 +72,7 @@ class ContentBase(BaseModel):
 
     @field_validator("count", "price")
     @classmethod
-    def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
+    def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
         if v is not None and v < 0:
             raise ValueError(f"{info.field_name} must be >= 0")
         return v
@@ -99,7 +106,7 @@ class ContentUpdate(BaseModel):
 
     @field_validator("count", "price")
     @classmethod
-    def validate_non_negative_ints(cls, v: int | None, info) -> int | None:
+    def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
         if v is not None and v < 0:
             raise ValueError(f"{info.field_name} must be >= 0")
         return v

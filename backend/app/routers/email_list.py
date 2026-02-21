@@ -18,7 +18,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 @router.get("", response_model=list[EmailListOut])
 async def list_email_list(
     session: SessionDep, current_user: str = Depends(require_permission(Permissions.admin))
-):
+) -> list[EmailListOut]:
     svc = EmailListService(session)
     return await svc.list()
 
@@ -28,7 +28,7 @@ async def create_email_entry(
     session: SessionDep,
     body: EmailListCreate,
     current_user: str = Depends(get_current_user),
-):
+) -> EmailListOut:
     svc = EmailListService(session)
     return await svc.create(body)
 
@@ -38,7 +38,7 @@ async def delete_email_entry(
     session: SessionDep,
     email: str,
     current_user: str = Depends(require_permission(Permissions.admin)),
-):
+) -> None:
     svc = EmailListService(session)
     await svc.delete(email)
     return None

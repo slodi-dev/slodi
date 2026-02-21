@@ -31,7 +31,7 @@ from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .comment import Comment
-    from .tag import ContentTag
+    from .tag import ContentTag, Tag
     from .user import User
 
 
@@ -104,7 +104,7 @@ class Content(SoftDeleteMixin, Base):
 
     # Properties for serialization
     @property
-    def tags(self):
+    def tags(self) -> list[Tag]:
         """Return list of Tag objects from content_tags relationship"""
         return [ct.tag for ct in self.content_tags]
 

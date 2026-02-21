@@ -11,6 +11,7 @@ from app.core.auth import check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.models.workspace import WorkspaceRole
+from app.schemas.event import EventOut
 from app.schemas.troop import (
     TroopCreate,
     TroopOut,
@@ -36,7 +37,7 @@ async def list_workspace_troops(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[TroopOut]:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -64,7 +65,7 @@ async def create_workspace_troop(
     body: TroopCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> TroopOut:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -82,7 +83,7 @@ async def get_troop(
     session: SessionDep,
     troop_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> TroopOut:
     svc = TroopService(session)
     troop = await svc.get(troop_id)
 
@@ -98,7 +99,7 @@ async def update_troop(
     troop_id: UUID,
     body: TroopUpdate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> TroopOut:
     svc = TroopService(session)
     troop = await svc.get(troop_id)
     await check_workspace_access(
@@ -115,7 +116,7 @@ async def delete_troop(
     session: SessionDep,
     troop_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> None:
     svc = TroopService(session)
     troop = await svc.get(troop_id)
     await check_workspace_access(
@@ -137,7 +138,7 @@ async def list_event_troops(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[TroopOut]:
     # Get event to find its workspace
     from app.services.events import EventService
 
@@ -171,7 +172,7 @@ async def list_troop_events(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[EventOut]:
     svc = TroopService(session)
     troop = await svc.get(troop_id)
     await check_workspace_access(
@@ -200,7 +201,7 @@ async def add_participation(
     troop_id: UUID,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> TroopParticipationOut:
     svc = TroopService(session)
     troop = await svc.get(troop_id)
     await check_workspace_access(
@@ -219,7 +220,7 @@ async def remove_participation(
     event_id: UUID,
     troop_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> None:
     svc = TroopService(session)
     troop = await svc.get(troop_id)
     await check_workspace_access(

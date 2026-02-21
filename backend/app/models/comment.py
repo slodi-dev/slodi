@@ -23,8 +23,6 @@ class Comment(SoftDeleteMixin, Base):
     __table_args__ = (
         Index("ix_comments_content_id_created_at", "content_id", "created_at"),
         Index("ix_comments_user_id_created_at", "user_id", "created_at"),
-    )
-    __table_args__ = (
         CheckConstraint(f"char_length(body) >= {BODY_MIN}", name="ck_comment_body_min"),
     )
 

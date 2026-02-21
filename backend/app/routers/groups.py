@@ -40,7 +40,7 @@ async def list_groups(
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[GroupOut]:
     svc = GroupService(session)
     total = await svc.count(q=q)
     items = await svc.list(q=q, limit=limit, offset=offset)
@@ -60,7 +60,7 @@ async def create_group(
     body: GroupCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> GroupOut:
     svc = GroupService(session)
     group = await svc.create(body)
     response.headers["Location"] = f"/groups/{group.id}"
@@ -72,7 +72,7 @@ async def get_group(
     session: SessionDep,
     group_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> GroupOut:
     svc = GroupService(session)
     return await svc.get(group_id)
 
@@ -83,7 +83,7 @@ async def update_group(
     group_id: UUID,
     body: GroupUpdate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> GroupOut:
     await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     return await svc.update(group_id, body)
@@ -94,7 +94,7 @@ async def delete_group(
     session: SessionDep,
     group_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> None:
     await check_group_access(group_id, current_user, session, minimum_role=GroupRole.owner)
     svc = GroupService(session)
     await svc.delete(group_id)
@@ -113,7 +113,7 @@ async def list_group_members(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[GroupMemberOut]:
     svc = GroupService(session)
     total = await svc.count_group_members(group_id)
     items = await svc.list_group_members(group_id, limit=limit, offset=offset)
@@ -136,7 +136,7 @@ async def list_user_groups(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[GroupOut]:
     svc = GroupService(session)
     total = await svc.count_user_groups(user_id)
     items = await svc.list_user_groups(user_id, limit=limit, offset=offset)
@@ -161,7 +161,7 @@ async def add_group_membership(
     body: GroupMembershipCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> GroupMembershipOut:
     await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     created, group_membership = await svc.add_membership(group_id, body)
@@ -181,7 +181,7 @@ async def update_group_member(
     user_id: UUID,
     body: GroupMembershipUpdate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> GroupMembershipOut:
     await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     return await svc.update_membership(group_id, user_id, body)

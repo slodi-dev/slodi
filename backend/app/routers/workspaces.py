@@ -30,7 +30,7 @@ async def list_user_workspaces(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[WorkspaceOut]:
     # Check user ID in path matches current user or is admin
     if current_user.id != user_id and current_user.permissions != Permissions.admin:
         raise HTTPException(
@@ -62,7 +62,7 @@ async def create_user_workspace(
     body: WorkspaceCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> WorkspaceOut:
     # Check user ID in path matches current user or is admin
     if current_user.id != user_id and current_user.permissions != Permissions.admin:
         raise HTTPException(
@@ -81,7 +81,7 @@ async def get_workspace(
     session: SessionDep,
     workspace_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> WorkspaceOut:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -95,7 +95,7 @@ async def update_workspace(
     workspace_id: UUID,
     body: WorkspaceUpdate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> WorkspaceOut:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
     )
@@ -108,7 +108,7 @@ async def delete_workspace(
     session: SessionDep,
     workspace_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> None:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.owner
     )

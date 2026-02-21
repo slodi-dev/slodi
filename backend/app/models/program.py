@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class Program(Content):
     __tablename__ = "programs"
     __mapper_args__ = {"polymorphic_identity": ContentType.program}
-    __table_args__ = (UniqueConstraint("workspace_id", "id", name="uq_program_workspace_id_id"),)
+    __table_args__ = (UniqueConstraint("workspace_id", "id", name="uq_program_workspace_id_id"),)  # type: ignore[assignment]
 
     # Columns
     id: Mapped[UUID] = mapped_column(

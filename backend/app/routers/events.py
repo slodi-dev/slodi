@@ -37,7 +37,7 @@ async def list_workspace_events(
     date_to: dt.datetime | None = DEFAULT_DATE_TO,
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[EventOut]:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -71,7 +71,7 @@ async def list_program_events(
     date_to: dt.datetime | None = DEFAULT_DATE_TO,
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[EventOut]:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -108,7 +108,7 @@ async def create_workspace_event(
     workspace_id: UUID,
     body: EventCreate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> EventOut:
     assert body.content_type == ContentType.event, "Content type must be 'event'"
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
@@ -130,7 +130,7 @@ async def create_program_event(
     program_id: UUID,
     body: EventCreate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> EventOut:
     assert body.content_type == ContentType.event, "Content type must be 'event'"
     from app.services.programs import ProgramService  # Avoid circular import
 
@@ -151,7 +151,7 @@ async def create_program_event(
 @router.get("/events/{event_id}", response_model=EventOut)
 async def get_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
-):
+) -> EventOut:
     svc = EventService(session)
     event = await svc.get(event_id)
     await check_workspace_access(
@@ -178,7 +178,7 @@ async def update_event(
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
-):
+) -> None:
     svc = EventService(session)
     event = await svc.get(event_id)
     await check_workspace_access(

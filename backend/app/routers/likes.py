@@ -28,7 +28,7 @@ async def list_content_likes(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[LikeOut]:
     svc = LikeService(session)
     total = await svc.count_content_likes(content_id)
     items = await svc.list_for_content(content_id, limit=limit, offset=offset)
@@ -51,7 +51,7 @@ async def like_content(
     session: SessionDep,
     content_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> LikeOut:
     svc = LikeService(session)
     return await svc.like_content(user_id=current_user.id, content_id=content_id)
 

@@ -6,7 +6,7 @@ FORMAT = "%(asctime)s - %(name)s:%(levelname)s - %(message)s"
 ISO_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def configure_logging():
+def configure_logging() -> None:
     level = logging._nameToLevel.get(settings.logger_level.upper(), logging.INFO)
     logging.basicConfig(
         level=level,
