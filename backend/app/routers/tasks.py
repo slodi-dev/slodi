@@ -33,7 +33,7 @@ async def list_event_tasks(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[TaskOut]:
     svc = TaskService(session)
     event_svc = EventService(session)
     event = await event_svc.get(event_id)
@@ -63,7 +63,7 @@ async def create_event_task(
     body: TaskCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> TaskOut:
     assert body.content_type == ContentType.task, "Content type must be 'task'"
     svc = TaskService(session)
     event_svc = EventService(session)
@@ -82,7 +82,7 @@ async def create_event_task(
 @router.get("/tasks/{task_id}", response_model=TaskOut)
 async def get_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
-):
+) -> TaskOut:
     svc = TaskService(session)
     event_svc = EventService(session)
     task = await svc.get(task_id)
@@ -99,7 +99,7 @@ async def update_task(
     task_id: UUID,
     body: TaskUpdate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> TaskOut:
     svc = TaskService(session)
     event_svc = EventService(session)
     task = await svc.get(task_id)
@@ -113,7 +113,7 @@ async def update_task(
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
-):
+) -> None:
     svc = TaskService(session)
     event_svc = EventService(session)
     task = await svc.get(task_id)

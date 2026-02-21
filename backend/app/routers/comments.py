@@ -29,7 +29,7 @@ async def list_content_comments(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[CommentOut]:
     svc = CommentService(session)
     total = await svc.count_content_comments(content_id)
     items = await svc.list_for_content(content_id, limit=limit, offset=offset)
@@ -55,7 +55,7 @@ async def create_comment_under_content(
     body: CommentUpdate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> CommentOut:
     svc = CommentService(session)
     comment_data = CommentCreate(body=body.body, user_id=current_user.id)
     comment = await svc.create_under_content(content_id, comment_data)
@@ -71,7 +71,7 @@ async def get_comment(
     session: SessionDep,
     comment_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> CommentOut:
     svc = CommentService(session)
     return await svc.get(comment_id)
 
@@ -82,7 +82,7 @@ async def update_comment(
     comment_id: UUID,
     body: CommentUpdate,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> CommentOut:
     svc = CommentService(session)
     comment = await svc.get(comment_id)
     if comment.user_id != current_user.id and current_user.permissions != Permissions.admin:
@@ -98,7 +98,7 @@ async def delete_comment(
     session: SessionDep,
     comment_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> None:
     svc = CommentService(session)
     comment = await svc.get(comment_id)
     if comment.user_id != current_user.id and current_user.permissions != Permissions.admin:

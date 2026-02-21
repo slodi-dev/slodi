@@ -30,7 +30,7 @@ async def list_users(
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[UserOut]:
     svc = UserService(session)
     total = await svc.count(q=q)
     items = await svc.list(q=q, limit=limit, offset=offset)
@@ -50,7 +50,7 @@ async def create_user(
     body: UserCreate,
     response: Response,
     current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
-):
+) -> UserOut:
     svc = UserService(session)
     user = await svc.create(body)
     response.headers["Location"] = f"/users/{user.id}"
@@ -60,7 +60,7 @@ async def create_user(
 @router.get("/me", response_model=UserOut)
 async def get_current_user_info(
     current_user: UserOut = Depends(get_current_user),  # noqa: B008
-):
+) -> UserOut:
     """Get the current user's own profile"""
     return current_user
 
@@ -70,7 +70,7 @@ async def get_user(
     session: SessionDep,
     user_id: UUID,
     current_user: UserOut = Depends(get_current_user),  # noqa: B008
-):
+) -> UserOut:
     """Get any user's public profile (if allowed)"""
     svc = UserService(session)
     return await svc.get(user_id)
@@ -81,7 +81,7 @@ async def update_current_user(
     session: SessionDep,
     body: UserUpdateSelf,  # Restricted schema
     current_user: UserOut = Depends(get_current_user),  # noqa: B008
-):
+) -> UserOut:
     svc = UserService(session)
     return await svc.update(current_user.id, body)
 
@@ -92,7 +92,7 @@ async def update_user(
     user_id: UUID,
     body: UserUpdateAdmin,  # Full schema
     current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
-):
+) -> UserOut:
     svc = UserService(session)
     return await svc.update(user_id, body)
 
@@ -102,7 +102,7 @@ async def delete_user(
     session: SessionDep,
     user_id: UUID,
     current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
-):
+) -> None:
     svc = UserService(session)
     await svc.delete(user_id)
     return None

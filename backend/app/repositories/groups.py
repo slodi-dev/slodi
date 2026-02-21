@@ -95,7 +95,7 @@ class GroupRepository(Repository):
 
     async def list_group_members(
         self, group_id: UUID, *, limit: int = 50, offset: int = 0
-    ) -> list[GroupMemberRow]:
+    ) -> list[GroupMemberRow]:  # type: ignore[valid-type]
         stmt = (
             select(
                 User.id.label("user_id"),

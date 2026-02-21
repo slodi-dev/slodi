@@ -48,7 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(likes_router.router)
 
     @app.get("/healthz")
-    async def healthz():
+    async def healthz() -> dict[str, bool]:
         return {"ok": True}
 
     return app

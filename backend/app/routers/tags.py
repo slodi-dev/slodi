@@ -38,7 +38,7 @@ async def list_tags(
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[TagOut]:
     svc = TagService(session)
     total = await svc.count(q=q)
     items = await svc.list(q=q, limit=limit, offset=offset)
@@ -58,7 +58,7 @@ async def create_tag(
     body: TagCreate,
     response: Response,
     current_user: UserOut = Depends(require_permission(Permissions.admin)),
-):
+) -> TagOut:
     svc = TagService(session)
     tag = await svc.create(body)
     response.headers["Location"] = f"/tags/{tag.id}"
@@ -68,7 +68,7 @@ async def create_tag(
 @router.get("/tags/{tag_id}", response_model=TagOut)
 async def get_tag(
     session: SessionDep, tag_id: UUID, current_user: UserOut = Depends(get_current_user)
-):
+) -> TagOut:
     svc = TagService(session)
     return await svc.get(tag_id)
 
@@ -79,7 +79,7 @@ async def update_tag(
     tag_id: UUID,
     body: TagUpdate,
     current_user: UserOut = Depends(require_permission(Permissions.admin)),
-):
+) -> TagOut:
     svc = TagService(session)
     return await svc.update(tag_id, body)
 
@@ -89,7 +89,7 @@ async def delete_tag(
     session: SessionDep,
     tag_id: UUID,
     current_user: UserOut = Depends(require_permission(Permissions.admin)),
-):
+) -> None:
     svc = TagService(session)
     await svc.delete(tag_id)
     return None
@@ -107,7 +107,7 @@ async def list_content_tags(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[TagOut]:
     svc = TagService(session)
     total = await svc.count_content_tags(content_id)
     items = await svc.list_content_tags(content_id, limit=limit, offset=offset)
@@ -130,7 +130,7 @@ async def list_tagged_content(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-):
+) -> list[ContentOut]:
     svc = TagService(session)
     total = await svc.count_tagged_content(tag_id)
     items = await svc.list_tagged_content(tag_id, limit=limit, offset=offset)
@@ -155,7 +155,7 @@ async def add_content_tag(
     tag_id: UUID,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> ContentTagOut:
     author_id = await ContentService(session).get_author_id(content_id)
     if author_id != current_user.id and current_user.permissions != Permissions.admin:
         raise HTTPException(
@@ -177,7 +177,7 @@ async def remove_content_tag(
     content_id: UUID,
     tag_id: UUID,
     current_user: UserOut = Depends(get_current_user),
-):
+) -> None:
     author_id = await ContentService(session).get_author_id(content_id)
     if author_id != current_user.id and current_user.permissions != Permissions.admin:
         raise HTTPException(

@@ -87,19 +87,19 @@ class GroupService:
 
     async def list_group_members(
         self, group_id: UUID, *, limit: int = 50, offset: int = 0
-    ) -> list[GroupMemberOut]:
+    ) -> list[GroupMemberOut]:  # type: ignore[valid-type]
         # ensure group exists for better UX
         if not await self.repo.get(group_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
         rows = await self.repo.list_group_members(group_id, limit=limit, offset=offset)
-        return [GroupMemberOut.model_validate(r) for r in rows]
+        return [GroupMemberOut.model_validate(r) for r in rows]  # type: ignore[attr-defined]
 
     async def count_user_groups(self, user_id: UUID) -> int:
         return await self.repo.count_groups_for_user(user_id)
 
     async def list_user_groups(
         self, user_id: UUID, *, limit: int = 50, offset: int = 0
-    ) -> list[GroupOut]:
+    ) -> list[GroupOut]:  # type: ignore[valid-type]
         rows = await self.repo.list_groups_for_user(user_id, limit=limit, offset=offset)
         return [GroupOut.model_validate(r) for r in rows]
 

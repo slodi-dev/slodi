@@ -50,16 +50,16 @@ class ProgramService:
 
             # Retrieve the newly created program using the repository's get() method
             # This ensures proper eager loading of related data
-            program = await self.repo.get(program.id)
+            fetched = await self.repo.get(program.id)
 
-            if not program:
+            if not fetched:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to retrieve created program",
                 )
 
             # Return the created program as a ProgramOut schema
-            return ProgramOut.model_validate(program)
+            return ProgramOut.model_validate(fetched)
         except SQLAlchemyError as e:
             logger.error(f"SQLAlchemy error creating program: {e}")
             raise HTTPException(
