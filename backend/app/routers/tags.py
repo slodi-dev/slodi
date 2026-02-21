@@ -65,9 +65,7 @@ async def create_tag(
 
 
 @router.get("/tags/{tag_id}", response_model=TagOut)
-async def get_tag(
-    session: SessionDep, tag_id: UUID
-):
+async def get_tag(session: SessionDep, tag_id: UUID):
     svc = TagService(session)
     return await svc.get(tag_id)
 

@@ -39,7 +39,9 @@ export function useWorkspaceRole(workspaceId: string | null | undefined): UseWor
       setMembership(result);
       lastFetchedId.current = workspaceId;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to load workspace role"));
+        const error = err instanceof Error ? err : new Error("Failed to load workspace role");
+        console.error("[useWorkspaceRole] Failed to fetch workspace role:", error.message);
+        setError(error);
     } finally {
       setIsLoading(false);
     }
@@ -47,11 +49,10 @@ export function useWorkspaceRole(workspaceId: string | null | undefined): UseWor
 
   useEffect(() => {
     if (!authLoading) {
-      lastFetchedId.current = null; // reset cache when workspaceId changes
+        lastFetchedId.current = null; // reset cache when workspaceId or token changes
       fetch();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId, authLoading]);
+  }, [workspaceId, authLoading, fetch]);
 
   return {
     role: membership?.role ?? null,

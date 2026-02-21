@@ -118,9 +118,7 @@ class GroupService:
             ) from None
         return created, GroupMembershipOut.model_validate(gs)
 
-    async def get_user_membership(
-        self, group_id: UUID, user_id: UUID
-    ) -> GroupMembershipOut | None:
+    async def get_user_membership(self, group_id: UUID, user_id: UUID) -> GroupMembershipOut | None:
         gm = await self.repo.get_membership(group_id, user_id)
         if not gm:
             return None

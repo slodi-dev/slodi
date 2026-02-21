@@ -1,4 +1,4 @@
-import { buildApiUrl, fetchAndCheck } from "@/lib/api-utils";
+import { buildApiUrl } from "@/lib/api-utils";
 import { fetchWithAuth } from "@/lib/api";
 import { findTagIdByName, addTagToContent } from "@/services/tags.service";
 import { User } from "@/services/users.service";
@@ -25,6 +25,15 @@ export type Program = {
   };
   tags?: Array<{ id: string; name: string }>;
   comment_count?: number;
+  // Extended backend fields (ContentBase)
+  instructions?: string | null;
+  equipment?: string[] | null;
+  duration?: string | null;
+  prep_time?: string | null;
+  age?: string | null;
+  location?: string | null;
+  count?: number | null;
+  price?: number | null;
 };
 
 export type ProgramCreateInput = {
@@ -45,18 +54,19 @@ export type ProgramCreateInput = {
 
 export type ProgramUpdateInput = {
   name?: string;
-  description?: string;
+  description?: string | null;
   public?: boolean;
-  image?: string;
-  tags?: string[];
+  image?: string | null;
+  instructions?: string | null;
+  equipment?: string[] | null;
+  duration?: string | null;
+  prep_time?: string | null;
+  age?: string | null;
+  location?: string | null;
+  count?: number | null;
+  price?: number | null;
+  // tags are managed via separate tag-assignment endpoints
 };
-
-export interface ProgramUpdateFormData {
-  name: string;
-  description: string | null;
-  public: boolean;
-  image: string | null;
-}
 
 export type ProgramsResponse = Program[] | { programs: Program[] };
 
@@ -196,20 +206,21 @@ export async function deleteProgram(
 
 /**
  * Like or unlike a program
+ * Requires authentication
  */
 export async function toggleProgramLike(
   programId: string,
-  action: "like" | "unlike"
+  action: "like" | "unlike",
+  getToken: () => Promise<string | null>
 ): Promise<{ liked: boolean; likeCount: number }> {
   const url = buildApiUrl(`/programs/${programId}/like`);
-  return fetchAndCheck(url, {
+  return fetchWithAuth<{ liked: boolean; likeCount: number }>(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ action }),
-    credentials: "include",
-  });
+  }, getToken);
 }
 
 /**

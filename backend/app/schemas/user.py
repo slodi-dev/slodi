@@ -84,5 +84,3 @@ class UserOut(UserBase):
     email: EmailConstrained
     auth0_id: Auth0Id
     name: NameStr
-
-

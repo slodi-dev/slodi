@@ -231,6 +231,45 @@ async def check_workspace_access(
         raise HTTPException(status_code=403, detail=f"Requires {minimum_role.value} role")
 
 
+async def check_program_edit_access(
+    workspace_id: UUID,
+    author_id: "UUID | None",
+    current_user: UserOut,
+    session: AsyncSession,
+) -> None:
+    """
+    Raise 403 unless the user can edit the program.
+
+    Allowed when:
+    - current user is a platform admin, OR
+    - current user has at least ``admin`` workspace role, OR
+    - current user is the program's author with at least ``editor`` workspace role
+    """
+    if current_user.permissions == Permissions.admin:
+        return  # Platform admins bypass all workspace checks
+
+    ws_svc = WorkspaceService(session)
+    membership = await ws_svc.get_user_membership(workspace_id, current_user.id)
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a workspace member")
+
+    role_rank = _WORKSPACE_ROLE_RANK[membership.role]
+    is_author = author_id is not None and current_user.id == author_id
+    has_admin = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
+    has_editor = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.editor]
+
+    if has_admin:
+        return
+    if is_author and has_editor:
+        return
+
+    raise HTTPException(
+        status_code=403,
+        detail="Requires admin role, or editor role as the program's author",
+    )
+
+
 async def check_group_access(
     group_id: UUID,
     current_user: UserOut,

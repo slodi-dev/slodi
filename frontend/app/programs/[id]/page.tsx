@@ -16,8 +16,9 @@ import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSk
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import { updateProgram, ProgramUpdateFormData, deleteProgram } from "@/services/programs.service";
+import { updateProgram, deleteProgram, type ProgramUpdateInput } from "@/services/programs.service";
 import ProgramDetailEdit from "./components/ProgramDetailEdit";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
 interface ProgramDetailPageProps {
     params: Promise<{
@@ -37,6 +38,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     const { user, isAuthenticated, getToken } = useAuth();
     const [isEditMode, setIsEditMode] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const { program, isLoading, error, setProgram } = useProgram(id);
     const { likeCount, isLiked, toggleLike } = useProgramLikes(program?.like_count || 0);
@@ -66,63 +68,29 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         setIsEditMode(false);
     };
 
-    const handleSaveEdit = async (data: ProgramUpdateFormData) => {
+    const handleSaveEdit = async (data: ProgramUpdateInput) => {
         if (!program) return;
-
-        try {
-            // Transform data: convert null to undefined for API compatibility
-            const updateData: {
-                name: string;
-                description?: string;
-                public: boolean;
-                image?: string;
-            } = {
-                name: data.name,
-                public: data.public,
-            };
-
-            // Only include description if it's not null
-            if (data.description !== null && data.description !== undefined) {
-                updateData.description = data.description;
-            }
-
-            // Include image in update (only if it's a string, exclude null and undefined)
-            if (typeof data.image === 'string') {
-                updateData.image = data.image;
-            }
-
-            // Update program via API - pass getToken function, not token string
-            const updatedProgram = await updateProgram(program.id, updateData, getToken);
-
-            // Update local state
-            setProgram(updatedProgram);
-            setIsEditMode(false);
-        } catch (error) {
-            console.error("Failed to update program:", error);
-            throw error; // Re-throw to let the form component handle the error
-        }
+        const updatedProgram = await updateProgram(program.id, data, getToken);
+        setProgram(updatedProgram);
+        setIsEditMode(false);
     };
 
-    const handleDelete = async () => {
+    const handleDeleteRequest = () => {
+        if (!canDelete) return;
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDeleteConfirm = async () => {
         if (!program || !canDelete) return;
-
-        // Confirm deletion
-        const confirmed = window.confirm("Ertu viss um að þú viljir eyða þessari dagskrá? Þetta er óafturkræft.");
-
-        if (!confirmed) return;
-
         try {
             setIsDeleting(true);
             await deleteProgram(program.id, getToken);
-
             router.push(ROUTES.PROGRAMS);
-        }
-        catch (error) {
+        } catch (error) {
             console.error("Failed to delete program:", error);
-            alert("Ekki tókst að eyða dagskránni. Vinsamlegast reyndu aftur síðar.");
             setIsDeleting(false);
+            setShowDeleteConfirm(false);
         }
-
     };
 
     return (
@@ -149,7 +117,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
                             program={program}
                             onSave={handleSaveEdit}
                             onCancel={handleCancelEdit}
-                            onDelete={handleDelete}
+                            onDeleteRequest={handleDeleteRequest}
                             isDeleting={isDeleting}
                         />
                     ) : (
@@ -166,6 +134,15 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
                     ← Til baka í dagskrárlista
                 </button>
             </div>
+
+            {/* Delete confirmation modal */}
+            <DeleteConfirmModal
+                open={showDeleteConfirm}
+                programName={program.name}
+                isDeleting={isDeleting}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDeleteConfirm}
+            />
         </div>
     );
     }

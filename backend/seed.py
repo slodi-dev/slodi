@@ -22,7 +22,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session_maker
 from app.models.tag import Tag
 from app.models.user import Permissions, User
-from app.models.workspace import EventInterval, Weekday, Workspace, WorkspaceMembership, WorkspaceRole
+from app.models.workspace import (
+    EventInterval,
+    Weekday,
+    Workspace,
+    WorkspaceMembership,
+    WorkspaceRole,
+)
 from app.settings import settings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -42,7 +48,6 @@ OUTPUT_FILE = Path(__file__).parent / "seed_output.json"
 
 # Emails that should always be promoted to admin (from ADMIN_EMAILS in .env), or if that value is not found we add halldor@svanir.is
 ADMIN_EMAILS: list[str] = settings.admin_email_list or ["halldor@svanir.is"]
-
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -135,9 +140,7 @@ async def promote_admin_emails(session: AsyncSession) -> None:
     """Ensure any existing users whose emails are listed in ADMIN_EMAILS have admin permissions."""
     if not ADMIN_EMAILS:
         return
-    result = await session.execute(
-        select(User).where(User.email.in_(ADMIN_EMAILS))
-    )
+    result = await session.execute(select(User).where(User.email.in_(ADMIN_EMAILS)))
     users = result.scalars().all()
     for u in users:
         if u.permissions != Permissions.admin:
@@ -150,12 +153,11 @@ async def promote_admin_emails(session: AsyncSession) -> None:
 async def main() -> None:
     session_maker = get_session_maker()
 
-    async with session_maker() as session:
-        async with session.begin():
-            user = await get_or_create_user(session)
-            ws = await get_or_create_workspace(session, user)
-            tags = await get_or_create_tags(session)
-            await promote_admin_emails(session)
+    async with session_maker() as session, session.begin():
+        user = await get_or_create_user(session)
+        ws = await get_or_create_workspace(session, user)
+        tags = await get_or_create_tags(session)
+        await promote_admin_emails(session)
         # transaction committed by context-manager exit
 
     output = {

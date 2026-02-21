@@ -13,7 +13,12 @@ from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.models.user import Permissions
 from app.models.workspace import WorkspaceRole
 from app.schemas.user import UserOut
-from app.schemas.workspace import WorkspaceCreate, WorkspaceMembershipOut, WorkspaceOut, WorkspaceUpdate
+from app.schemas.workspace import (
+    WorkspaceCreate,
+    WorkspaceMembershipOut,
+    WorkspaceOut,
+    WorkspaceUpdate,
+)
 from app.services.workspaces import WorkspaceService
 
 router = APIRouter(tags=["workspaces"])
@@ -82,7 +87,18 @@ async def get_my_workspace_role(
     workspace_id: UUID,
     current_user: UserOut = Depends(get_current_user),
 ):
-    """Return the current user's membership/role for a workspace, or 404 if not a member."""
+    """Return the current user's membership/role for a workspace, or 404 if not a member.
+
+    Platform admins bypass all workspace membership checks in the rest of the API, so
+    they may not have a membership row. Return a synthetic owner-level membership so the
+    frontend can correctly infer their edit / delete permissions.
+    """
+    if current_user.permissions == Permissions.admin:
+        return WorkspaceMembershipOut(
+            workspace_id=workspace_id,
+            user_id=current_user.id,
+            role=WorkspaceRole.owner,
+        )
     svc = WorkspaceService(session)
     return await svc.get_user_membership(workspace_id, current_user.id)
 

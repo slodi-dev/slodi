@@ -32,6 +32,8 @@ export function canEditProgram(
   workspaceRole: WorkspaceRole | null | undefined = null
 ): boolean {
   if (!user || !program) return false;
+  // Platform admins can always edit (they bypass workspace membership entirely)
+  if (user.permissions === "admin") return true;
   // Workspace admins and owners can always edit
   if (hasWorkspaceRole(workspaceRole, "admin")) return true;
   // Authors can edit their own programs if they still have at least editor access
@@ -50,6 +52,8 @@ export function canDeleteProgram(
   workspaceRole: WorkspaceRole | null | undefined = null
 ): boolean {
   if (!user || !program) return false;
+  // Platform admins can always delete
+  if (user.permissions === "admin") return true;
   return hasWorkspaceRole(workspaceRole, "admin");
 }
 

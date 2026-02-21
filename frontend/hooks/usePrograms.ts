@@ -21,6 +21,10 @@ export default function usePrograms(workspaceId: string): UseProgramsResult {
   const [error, setError] = useState<Error | null>(null);
 
   const loadPrograms = useCallback(async () => {
+    if (!workspaceId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

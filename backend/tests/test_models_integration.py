@@ -137,9 +137,7 @@ async def test_tags_and_comments_and_cascade(db):
     await db.commit()
 
     # Verify associations exist
-    tags = await db.execute(
-        select(m.Tag).join(m.ContentTag).where(m.ContentTag.content_id == p.id)
-    )
+    tags = await db.execute(select(m.Tag).join(m.ContentTag).where(m.ContentTag.content_id == p.id))
     assert tags.scalars().one().name == "outdoors"
 
     comments = await db.execute(select(m.Comment).where(m.Comment.content_id == p.id))
