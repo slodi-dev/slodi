@@ -13,7 +13,7 @@ type UseProgramsResult = {
   refetch: () => Promise<void>;
 };
 
-export default function usePrograms(workspaceId: string): UseProgramsResult {
+export default function usePrograms(workspaceId: string | null): UseProgramsResult {
   const { getToken } = useAuth();
   const [programs, setPrograms] = useState<Program[] | null>(null);
   const [tags, setTags] = useState<string[] | null>(null);

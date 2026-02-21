@@ -18,7 +18,8 @@ import { useProgramFilters } from "@/hooks/useProgramFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
-import { DEFAULT_WORKSPACE_ID, PROGRAMS_PER_PAGE } from "@/constants/config";
+import { PROGRAMS_PER_PAGE } from "@/constants/config";
+import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
 import { updateProgram, deleteProgram, type Program, type ProgramUpdateInput } from "@/services/programs.service";
 import ProgramDetailEdit from "@/app/programs/[id]/components/ProgramDetailEdit";
@@ -31,20 +32,23 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfir
 export default function ProgramsPage() {
     const [showNewProgram, setShowNewProgram] = useState(false);
 
+    // Resolve the shared workspace ID — from env var (dev) or /api/config (Docker)
+    const defaultWorkspaceId = useDefaultWorkspaceId();
+
     // Fetch data
     const { tagNames: availableTags, loading: tagsLoading } = useTags();
 
     // The shared program bank always reads from the default (shared) workspace.
-    const { programs, loading: programsLoading, error: programsError, refetch } = usePrograms(DEFAULT_WORKSPACE_ID);
+    const { programs, loading: programsLoading, error: programsError, refetch } = usePrograms(defaultWorkspaceId);
 
     // User's private workspace — fetched now so it's ready for the future
     // workspace toggle. When the toggle is added, swap postWorkspaceId between
-    // DEFAULT_WORKSPACE_ID and userWorkspaceId based on the user's selection.
+    // defaultWorkspaceId and userWorkspaceId based on the user's selection.
     const { workspaceId: userWorkspaceId } = useUserWorkspace();
 
     // ── Auth & workspace role ──────────────────────────────────────────────
     const { user, getToken } = useAuth();
-    const { role } = useWorkspaceRole(DEFAULT_WORKSPACE_ID);
+    const { role } = useWorkspaceRole(defaultWorkspaceId);
 
     // ── Edit / delete modal state ──────────────────────────────────────────
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
@@ -53,9 +57,9 @@ export default function ProgramsPage() {
 
     // ── WHERE TO POST new programs ──────────────────────────────────────────
     // Currently hardcoded to the shared bank. To allow posting to the user's
-    // private workspace instead, replace DEFAULT_WORKSPACE_ID here with
+    // private workspace instead, replace defaultWorkspaceId here with
     // userWorkspaceId (and add a UI toggle to let the user choose).
-    const postWorkspaceId = DEFAULT_WORKSPACE_ID;
+    const postWorkspaceId = defaultWorkspaceId ?? "";
     void userWorkspaceId; // retained for future toggle — prevent lint unused warning
 
     // ── Edit / delete handlers ─────────────────────────────────────────────

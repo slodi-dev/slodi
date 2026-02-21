@@ -9,23 +9,23 @@ import ProgramCard from "@/app/programs/components/ProgramCard";
 import ProgramGrid from "../components/ProgramGrid";
 import ProgramSort, { type SortOption } from "../components/ProgramSort";
 import styles from "../program.module.css";
-
-// Default workspace ID - in production this should come from user context or URL
-const DEFAULT_WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID || "";
+import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 
 export default function FavoriteProgramsPage() {
   const { getToken } = useAuth();
+  const defaultWorkspaceId = useDefaultWorkspaceId();
   const { favorites, isLoading: favoritesLoading } = useFavorites();
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [programs, setPrograms] = useState<Program[]>([]);
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
 
-  // Fetch programs on mount
+  // Fetch programs when workspace ID is available
   useEffect(() => {
+    if (!defaultWorkspaceId) return;
     async function loadPrograms() {
       try {
         setIsLoadingPrograms(true);
-        const data = await fetchPrograms(DEFAULT_WORKSPACE_ID, getToken);
+        const data = await fetchPrograms(defaultWorkspaceId!, getToken);
         setPrograms(data);
       } catch (error) {
         console.error("Failed to fetch programs:", error);
@@ -36,7 +36,7 @@ export default function FavoriteProgramsPage() {
     }
 
     loadPrograms();
-  }, []);
+  }, [defaultWorkspaceId, getToken]);
 
   // Filter programs to only show favorites
   const favoritePrograms = useMemo(() => {

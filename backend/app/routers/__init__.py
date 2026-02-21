@@ -1,4 +1,5 @@
 from app.routers import comments as comments_router  # noqa: F401
+from app.routers import config as config_router  # noqa: F401
 from app.routers import email_list as email_list_router  # noqa: F401
 from app.routers import events as events_router  # noqa: F401
 from app.routers import groups as groups_router  # noqa: F401

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging import configure_logging
 from app.routers import (
     comments_router,
+    config_router,
     email_list_router,
     events_router,
     groups_router,
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.include_router(config_router.router)
     app.include_router(email_list_router.router)
     app.include_router(users_router.router)
     app.include_router(groups_router.router)
