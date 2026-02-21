@@ -44,7 +44,12 @@ async def list_workspace_events(
     svc = EventService(session)
     total = await svc.count_events_for_workspace(workspace_id, date_from=date_from, date_to=date_to)
     items = await svc.list_for_workspace(
-        workspace_id, date_from=date_from, date_to=date_to, limit=limit, offset=offset
+        workspace_id,
+        current_user.id,
+        date_from=date_from,
+        date_to=date_to,
+        limit=limit,
+        offset=offset,
     )
     add_pagination_headers(
         response=response,
@@ -82,6 +87,7 @@ async def list_program_events(
     items = await svc.list_for_program(
         workspace_id,
         program_id,
+        current_user.id,
         date_from=date_from,
         date_to=date_to,
         limit=limit,
@@ -135,7 +141,7 @@ async def create_program_event(
     from app.services.programs import ProgramService  # Avoid circular import
 
     prg_svc = ProgramService(session)
-    program = await prg_svc.get(program_id)
+    program = await prg_svc.get(program_id, current_user.id)
     await check_workspace_access(
         program.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
     )
@@ -153,7 +159,7 @@ async def get_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> EventOut:
     svc = EventService(session)
-    event = await svc.get(event_id)
+    event = await svc.get(event_id, current_user.id)
     await check_workspace_access(
         event.workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -168,11 +174,11 @@ async def update_event(
     current_user: UserOut = Depends(get_current_user),
 ) -> EventOut:
     svc = EventService(session)
-    event = await svc.get(event_id)
+    event = await svc.get(event_id, current_user.id)
     await check_workspace_access(
         event.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
     )
-    return await svc.update(event_id, body)
+    return await svc.update(event_id, body, current_user.id)
 
 
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -180,7 +186,7 @@ async def delete_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = EventService(session)
-    event = await svc.get(event_id)
+    event = await svc.get(event_id, current_user.id)
     await check_workspace_access(
         event.workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
     )

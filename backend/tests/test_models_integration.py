@@ -41,7 +41,6 @@ async def test_user_workspace_program_event_task_flow(db):
     program = m.Program(
         name="Fall Skills",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=workspace.id,
@@ -58,7 +57,6 @@ async def test_user_workspace_program_event_task_flow(db):
     event = m.Event(
         name="Campout",
         description="Overnight",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=workspace.id,
@@ -74,7 +72,6 @@ async def test_user_workspace_program_event_task_flow(db):
     task = m.Task(
         name="Setup tents",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         event_id=event.id,
@@ -118,7 +115,6 @@ async def test_tags_and_comments_and_cascade(db):
     p = m.Program(
         name="Prog",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=u.id,
         workspace_id=ws.id,
@@ -194,7 +190,6 @@ async def test_group_membership_and_troops(db):
     p = m.Program(
         name="Prog2",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=u.id,
         workspace_id=ws.id,
@@ -203,7 +198,6 @@ async def test_group_membership_and_troops(db):
     e = m.Event(
         name="Hike",
         description=None,
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=u.id,
         workspace_id=ws.id,

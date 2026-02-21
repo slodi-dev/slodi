@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from pydantic import (
@@ -12,6 +12,7 @@ from pydantic import (
     ValidationInfo,
     field_validator,
 )
+from typing_extensions import Self
 
 from app.domain.content_constraints import (
     AGE_MAX,
@@ -22,6 +23,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
+from app.repositories.content import ContentStats
 from app.schemas.tag import TagOut
 from app.schemas.user import UserOut
 from app.utils import get_current_datetime
@@ -59,16 +61,8 @@ class ContentBase(BaseModel):
     count: int | None = None
     price: int | None = None
     prep_time: DurationStr | None = None
-    like_count: int = 0
     author_id: UUID | None = None
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
-
-    @field_validator("like_count")
-    @classmethod
-    def validate_like_count(cls, v: int) -> int:
-        if v < 0:
-            raise ValueError("like_count must be >= 0")
-        return v
 
     @field_validator("count", "price")
     @classmethod
@@ -95,14 +89,6 @@ class ContentUpdate(BaseModel):
     count: int | None = None
     price: int | None = None
     prep_time: DurationStr | None = None
-    like_count: int | None = None
-
-    @field_validator("like_count")
-    @classmethod
-    def validate_like_count(cls, v: int | None) -> int | None:
-        if v is not None and v < 0:
-            raise ValueError("like_count must be >= 0")
-        return v
 
     @field_validator("count", "price")
     @classmethod
@@ -119,6 +105,12 @@ class ContentOut(ContentBase):
     author: UserOut
     tags: list[TagOut] = []
     comment_count: int = 0
+    like_count: int = 0
+    liked_by_me: bool = False
+
+    @classmethod
+    def from_row(cls, obj: Any, stats: ContentStats) -> Self:
+        return cls.model_validate(obj).model_copy(update=vars(stats))
 
 
 UserOut.model_rebuild()

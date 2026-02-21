@@ -33,6 +33,7 @@ class EventService:
     async def list_for_workspace(
         self,
         workspace_id: UUID,
+        current_user_id: UUID | None = None,
         *,
         date_from: dt.datetime | None = None,
         date_to: dt.datetime | None = None,
@@ -41,12 +42,13 @@ class EventService:
     ) -> list[EventOut]:
         rows = await self.repo.list_for_workspace(
             workspace_id,
+            current_user_id,
             date_from=date_from,
             date_to=date_to,
             limit=limit,
             offset=offset,
         )
-        return [EventOut.model_validate(r) for r in rows]
+        return [EventOut.from_row(event, stats) for event, stats in rows]
 
     async def count_events_for_program(
         self,
@@ -64,6 +66,7 @@ class EventService:
         self,
         workspace_id: UUID,
         program_id: UUID,
+        current_user_id: UUID | None = None,
         *,
         date_from: dt.datetime | None = None,
         date_to: dt.datetime | None = None,
@@ -73,12 +76,13 @@ class EventService:
         rows = await self.repo.list_for_program(
             workspace_id,
             program_id,
+            current_user_id,
             date_from=date_from,
             date_to=date_to,
             limit=limit,
             offset=offset,
         )
-        return [EventOut.model_validate(r) for r in rows]
+        return [EventOut.from_row(event, stats) for event, stats in rows]
 
     # ----- creation under workspace/program -----
 
@@ -86,63 +90,92 @@ class EventService:
         event = Event(workspace_id=workspace_id, program_id=None, **data.model_dump())
         await self.repo.create(event)
         await self.session.commit()
-        await self.session.refresh(event)
-        return EventOut.model_validate(event)
+        fetched = await self.repo.get(event.id)
+        if not fetched:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve created event",
+            )
+        ev, stats = fetched
+        return EventOut.from_row(ev, stats)
 
     async def create_under_program(self, program_id: UUID, data: EventCreate) -> EventOut:
-        program = await self.program_repo.get(program_id)
-        if not program:
+        prog_row = await self.program_repo.get(program_id)
+        if not prog_row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        prog, _ = prog_row
         event = Event(
-            workspace_id=program.workspace_id,
-            program_id=program.id,
+            workspace_id=prog.workspace_id,
+            program_id=prog.id,
             **data.model_dump(),
         )
         await self.repo.create(event)
         await self.session.commit()
-        await self.session.refresh(event)
-        return EventOut.model_validate(event)
+        fetched = await self.repo.get(event.id)
+        if not fetched:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve created event",
+            )
+        ev, stats = fetched
+        return EventOut.from_row(ev, stats)
 
     # ----- item operations -----
 
-    async def get(self, event_id: UUID) -> EventOut:
-        row = await self.repo.get(event_id)
+    async def get(self, event_id: UUID, current_user_id: UUID | None = None) -> EventOut:
+        row = await self.repo.get(event_id, current_user_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-        return EventOut.model_validate(row)
+        ev, stats = row
+        return EventOut.from_row(ev, stats)
 
     async def get_in_program(
-        self, event_id: UUID, program_id: UUID, workspace_id: UUID
+        self,
+        event_id: UUID,
+        program_id: UUID,
+        workspace_id: UUID,
+        current_user_id: UUID | None = None,
     ) -> EventOut:
-        row = await self.repo.get_in_program(event_id, program_id, workspace_id)
+        row = await self.repo.get_in_program(event_id, program_id, workspace_id, current_user_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-        return EventOut.model_validate(row)
+        ev, stats = row
+        return EventOut.from_row(ev, stats)
 
-    async def update(self, event_id: UUID, data: EventUpdate) -> EventOut:
+    async def update(
+        self, event_id: UUID, data: EventUpdate, current_user_id: UUID | None = None
+    ) -> EventOut:
         row = await self.repo.get(event_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+        event, _ = row
         if data.program_id is not None:
-            program = await self.program_repo.get(data.program_id)
-            if not program:
+            prog_row = await self.program_repo.get(data.program_id)
+            if not prog_row:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Program not found"
                 )
-            if program.workspace_id != row.workspace_id:
+            prog, _ = prog_row
+            if prog.workspace_id != event.workspace_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Program does not belong to the same workspace as the event",
                 )
-            row.program_id = program.id
+            event.program_id = prog.id
         elif data.program_id is None:
-            row.program_id = None
+            event.program_id = None
         patch = data.model_dump(exclude_unset=True)
         for k, v in patch.items():
-            setattr(row, k, v)
+            setattr(event, k, v)
         await self.session.commit()
-        await self.session.refresh(row)
-        return EventOut.model_validate(row)
+        updated = await self.repo.get(event_id, current_user_id)
+        if not updated:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve updated event",
+            )
+        ev, stats = updated
+        return EventOut.from_row(ev, stats)
 
     async def delete(self, event_id: UUID) -> None:
         row = await self.repo.get(event_id)

@@ -37,7 +37,7 @@ async def list_workspace_programs(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
     total = await svc.count_programs_for_workspace(workspace_id)
-    items = await svc.list_for_workspace(workspace_id, limit=limit, offset=offset)
+    items = await svc.list_for_workspace(workspace_id, current_user.id, limit=limit, offset=offset)
     add_pagination_headers(
         response=response,
         request=request,
@@ -99,7 +99,6 @@ async def copy_program_to_workspace(
         location=original_program.location,
         count=original_program.count,
         price=original_program.price,
-        like_count=0,
         author_id=user_id,
         content_type=ContentType.program,
         image=original_program.image,
@@ -117,7 +116,7 @@ async def get_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> ProgramOut:
     svc = ProgramService(session)
-    program = await svc.get(program_id)
+    program = await svc.get(program_id, current_user.id)
     await check_workspace_access(
         program.workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -132,11 +131,11 @@ async def update_program(
     current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
     svc = ProgramService(session)
-    program = await svc.get(program_id)
+    program = await svc.get(program_id, current_user.id)
     await check_workspace_access(
         program.workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
     )
-    return await svc.update(program_id, body)
+    return await svc.update(program_id, body, current_user.id)
 
 
 @router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
