@@ -12,7 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.group_constraints import IMG_MAX, NAME_MAX, NAME_MIN
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .user import User
@@ -26,7 +26,7 @@ class GroupRole(str, Enum):
     viewer = "viewer"
 
 
-class Group(Base):
+class Group(SoftDeleteMixin, Base):
     __tablename__ = "groups"
     __table_args__ = (
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_group_name_min"),

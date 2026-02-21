@@ -11,14 +11,14 @@ from sqlalchemy.types import DateTime as SADateTime
 
 from app.domain.comment_constraints import BODY_MAX, BODY_MIN
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .content import Content
     from .user import User
 
 
-class Comment(Base):
+class Comment(SoftDeleteMixin, Base):
     __tablename__ = "comments"
     __table_args__ = (
         Index("ix_comments_content_id_created_at", "content_id", "created_at"),

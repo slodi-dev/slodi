@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.content import Content
+from app.models.event import Event
 from app.models.program import Program
+from app.models.task import Task
 from app.repositories.base import Repository
 
 
@@ -25,7 +29,7 @@ class ProgramRepository(Repository):
                 selectinload(Program.comments),
                 selectinload(Program.content_tags),
             )
-            .where(Program.id == program_id)
+            .where(Program.id == program_id, Program.deleted_at.is_(None))
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
@@ -39,14 +43,20 @@ class ProgramRepository(Repository):
                 selectinload(Program.comments),
                 selectinload(Program.content_tags),
             )
-            .where(Program.id == program_id, Program.workspace_id == workspace_id)
+            .where(
+                Program.id == program_id,
+                Program.workspace_id == workspace_id,
+                Program.deleted_at.is_(None),
+            )
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def count_programs_for_workspace(self, workspace_id: UUID) -> int:
         result = await self.session.scalar(
-            select(func.count()).select_from(Program).where(Program.workspace_id == workspace_id)
+            select(func.count())
+            .select_from(Program)
+            .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
         )
         return result or 0
 
@@ -61,7 +71,7 @@ class ProgramRepository(Repository):
                 selectinload(Program.comments),
                 selectinload(Program.content_tags),
             )
-            .where(Program.workspace_id == workspace_id)
+            .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
             .order_by(Program.name)
             .limit(limit)
             .offset(offset)
@@ -73,6 +83,50 @@ class ProgramRepository(Repository):
         return program
 
     async def delete(self, program_id: UUID) -> int:
-        stmt = delete(Program).where(Program.id == program_id)
-        res = await self.session.execute(stmt)
+        now = dt.datetime.now(dt.timezone.utc)
+        # Program/Event/Task use joined-table inheritance: each has its own
+        # table (programs/events/tasks) with a FK to `content`.  deleted_at is
+        # only on `content`, so update(Task/Event) would be a cross-table SET
+        # which PostgreSQL rejects.  Strategy:
+        #   1. Use subclass mappers for SELECT only (joins are fine in SELECT).
+        #   2. Cascade via update(Content) keyed by pre-fetched IDs.
+
+        # Pre-fetch event IDs for this program
+        event_ids = list(
+            (
+                await self.session.execute(select(Event.id).where(Event.program_id == program_id))
+            ).scalars()
+        )
+
+        # Pre-fetch task IDs for those events
+        task_ids: list = []
+        if event_ids:
+            task_ids = list(
+                (
+                    await self.session.execute(select(Task.id).where(Task.event_id.in_(event_ids)))
+                ).scalars()
+            )
+
+        # Cascade: soft-delete tasks
+        if task_ids:
+            await self.session.execute(
+                update(Content)
+                .where(Content.id.in_(task_ids), Content.deleted_at.is_(None))
+                .values(deleted_at=now)
+            )
+
+        # Cascade: soft-delete events
+        if event_ids:
+            await self.session.execute(
+                update(Content)
+                .where(Content.id.in_(event_ids), Content.deleted_at.is_(None))
+                .values(deleted_at=now)
+            )
+
+        # Soft-delete the program itself
+        res = await self.session.execute(
+            update(Content)
+            .where(Content.id == program_id, Content.deleted_at.is_(None))
+            .values(deleted_at=now)
+        )
         return res.rowcount or 0

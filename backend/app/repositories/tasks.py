@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -21,19 +22,23 @@ class TaskRepository(Repository):
             .options(
                 selectinload(Task.event),
             )
-            .where(Task.id == task_id)
+            .where(Task.id == task_id, Task.deleted_at.is_(None))
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def get_in_event(self, task_id: UUID, event_id: UUID) -> Task | None:
-        stmt = select(Task).where(Task.id == task_id, Task.event_id == event_id)
+        stmt = select(Task).where(
+            Task.id == task_id, Task.event_id == event_id, Task.deleted_at.is_(None)
+        )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def count_tasks_for_event(self, event_id: UUID) -> int:
         result = await self.session.scalar(
-            select(func.count()).select_from(Task).where(Task.event_id == event_id)
+            select(func.count())
+            .select_from(Task)
+            .where(Task.event_id == event_id, Task.deleted_at.is_(None))
         )
         return result or 0
 
@@ -46,7 +51,7 @@ class TaskRepository(Repository):
     ) -> Sequence[Task]:
         stmt = (
             select(Task)
-            .where(Task.event_id == event_id)
+            .where(Task.event_id == event_id, Task.deleted_at.is_(None))
             .order_by(Task.name)
             .limit(limit)
             .offset(offset)
@@ -58,6 +63,8 @@ class TaskRepository(Repository):
         return task
 
     async def delete(self, task_id: UUID) -> int:
-        stmt = delete(Task).where(Task.id == task_id)
-        res = await self.session.execute(stmt)
+        now = dt.datetime.now(dt.timezone.utc)
+        res = await self.session.execute(
+            update(Task).where(Task.id == task_id, Task.deleted_at.is_(None)).values(deleted_at=now)
+        )
         return res.rowcount or 0

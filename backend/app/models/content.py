@@ -27,7 +27,7 @@ from app.domain.content_constraints import (
     NAME_MIN,
 )
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .comment import Comment
@@ -41,7 +41,7 @@ class ContentType(str, Enum):
     task = "task"
 
 
-class Content(Base):
+class Content(SoftDeleteMixin, Base):
     __tablename__ = "content"
     __mapper_args__ = {
         "polymorphic_on": "content_type",

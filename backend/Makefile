@@ -12,7 +12,7 @@ test-unit:
 	PYTHONPATH=. uv run pytest -q -m "not integration"
 
 test-integration:
-	PYTHONPATH=. uv run pytest -q -m integration
+	sg docker -c "PYTHONPATH=. uv run pytest -q -m integration"
 
 lint:
 	uv run ruff check .
