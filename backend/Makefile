@@ -3,7 +3,7 @@
 HOST ?= 127.0.0.1
 PORT ?= 8000
 ARGS ?=
-.PHONY: test test-unit test-integration lint fmt migrate makemigration downgrade run seed docker-build docker-run docker-stop docker-clean docker-logs docker-shell docker-db-shell
+.PHONY: test test-unit test-integration lint fmt typecheck migrate makemigration downgrade run seed docker-build docker-run docker-stop docker-clean docker-logs docker-shell docker-db-shell
 
 
 test-unit:

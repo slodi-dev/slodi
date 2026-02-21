@@ -34,6 +34,7 @@ async def list_tags(
     session: SessionDep,
     request: Request,
     response: Response,
+    current_user: UserOut = Depends(get_current_user),
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,

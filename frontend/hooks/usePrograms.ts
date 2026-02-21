@@ -19,7 +19,6 @@ export default function usePrograms(workspaceId: string | null): UseProgramsResu
   const [tags, setTags] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { getToken } = useAuth();
 
   const loadPrograms = useCallback(async () => {
     if (!workspaceId) {
