@@ -112,7 +112,7 @@ async def copy_program_to_workspace(
 # ----- item endpoints -----
 
 
-@router.get("programs/{program_id}", response_model=ProgramOut)
+@router.get("/programs/{program_id}", response_model=ProgramOut)
 async def get_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
 ):
@@ -124,7 +124,7 @@ async def get_program(
     return program
 
 
-@router.patch("programs/{program_id}", response_model=ProgramOut)
+@router.patch("/programs/{program_id}", response_model=ProgramOut)
 async def update_program(
     session: SessionDep,
     program_id: UUID,
@@ -139,7 +139,7 @@ async def update_program(
     return await svc.update(program_id, body)
 
 
-@router.delete("programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
 ):

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, and_, delete, func, select
+from sqlalchemy import Select, and_, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -25,13 +26,13 @@ class GroupRepository(Repository):
                 selectinload(Group.group_memberships),
                 selectinload(Group.workspaces),
             )
-            .where(Group.id == group_id)
+            .where(Group.id == group_id, Group.deleted_at.is_(None))
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
     async def count(self, *, q: str | None = None) -> int:
-        stmt = select(func.count()).select_from(Group)
+        stmt = select(func.count()).select_from(Group).where(Group.deleted_at.is_(None))
         if q:
             ilike = f"%{q.strip()}%"
             stmt = stmt.where(Group.name.ilike(ilike))
@@ -41,7 +42,7 @@ class GroupRepository(Repository):
     async def list(
         self, *, q: str | None = None, limit: int = 50, offset: int = 0
     ) -> Sequence[Group]:
-        stmt = select(Group).order_by(Group.name)
+        stmt = select(Group).where(Group.deleted_at.is_(None)).order_by(Group.name)
         if q:
             ilike = f"%{q.strip()}%"
             stmt = stmt.where(Group.name.ilike(ilike))
@@ -53,7 +54,12 @@ class GroupRepository(Repository):
         return group
 
     async def delete(self, group_id: UUID) -> int:
-        res = await self.session.execute(delete(Group).where(Group.id == group_id))
+        now = dt.datetime.now(dt.timezone.utc)
+        res = await self.session.execute(
+            update(Group)
+            .where(Group.id == group_id, Group.deleted_at.is_(None))
+            .values(deleted_at=now)
+        )
         return res.rowcount or 0
 
     # ----- memberships -----
@@ -61,7 +67,8 @@ class GroupRepository(Repository):
         result = await self.session.scalar(
             select(func.count())
             .select_from(GroupMembership)
-            .where(GroupMembership.user_id == user_id)
+            .join(Group, Group.id == GroupMembership.group_id)
+            .where(GroupMembership.user_id == user_id, Group.deleted_at.is_(None))
         )
         return result or 0
 
@@ -71,7 +78,7 @@ class GroupRepository(Repository):
         stmt = (
             select(Group)
             .join(GroupMembership, Group.id == GroupMembership.group_id)
-            .where(GroupMembership.user_id == user_id)
+            .where(GroupMembership.user_id == user_id, Group.deleted_at.is_(None))
             .order_by(Group.name)
             .limit(limit)
             .offset(offset)

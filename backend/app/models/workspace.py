@@ -22,7 +22,7 @@ from app.domain.workspace_constraints import (
     NAME_MIN,
 )
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .event import Event
@@ -58,7 +58,7 @@ class EventInterval(str, Enum):
     unknown = "unknown"
 
 
-class Workspace(Base):
+class Workspace(SoftDeleteMixin, Base):
     __tablename__ = "workspaces"
     __table_args__ = (
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_users_name_min"),

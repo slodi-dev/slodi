@@ -23,7 +23,7 @@ from app.domain.user_constraints import (
     NAME_MIN,
 )
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from .comment import Comment
@@ -46,7 +46,7 @@ class Permissions(str, Enum):
     viewer = "viewer"
 
 
-class User(Base):
+class User(SoftDeleteMixin, Base):
     __tablename__ = "users"
     __table_args__ = (
         UniqueConstraint("auth0_id", name="uq_users_auth0_id"),

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
 
+from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.main import create_app
 from app.models.base import Base
@@ -28,14 +29,46 @@ def mock_db_session():
 
 
 @pytest.fixture
-def client(mock_db_session):
-    """Create a test client with mocked database dependency."""
+def admin_user():
+    """A platform admin user — bypasses all workspace/group access checks."""
+    return UserOut(
+        id=uuid4(),
+        auth0_id="auth0|admin_test",
+        email="admin@test.com",
+        name="Admin User",
+        pronouns=None,
+        permissions=Permissions.admin,
+        preferences=None,
+    )
+
+
+@pytest.fixture
+def viewer_user():
+    """A regular viewer user — useful for testing permission denials."""
+    return UserOut(
+        id=uuid4(),
+        auth0_id="auth0|viewer_test",
+        email="viewer@test.com",
+        name="Viewer User",
+        pronouns=None,
+        permissions=Permissions.viewer,
+        preferences=None,
+    )
+
+
+@pytest.fixture
+def client(mock_db_session, admin_user):
+    """Test client with mocked DB and an authenticated admin user."""
     app = create_app()
 
     async def override_get_session():
         yield mock_db_session
 
+    async def override_get_current_user():
+        return admin_user
+
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_current_user] = override_get_current_user
     return TestClient(app)
 
 

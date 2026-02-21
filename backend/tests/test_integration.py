@@ -13,13 +13,28 @@ Each test rolls back to a savepoint so tests are fully isolated.
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.main import create_app
+from app.models.user import Permissions
+from app.schemas.user import UserOut
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+_ADMIN_USER = UserOut(
+    id=uuid4(),
+    auth0_id="auth0|integration_admin",
+    email="admin@integration.example.com",
+    name="Integration Admin",
+    pronouns=None,
+    permissions=Permissions.admin,
+    preferences=None,
+)
 
 
 def _make_client(db_session) -> TestClient:
@@ -29,7 +44,11 @@ def _make_client(db_session) -> TestClient:
     async def override_get_session():
         yield db_session
 
+    async def override_get_current_user():
+        return _ADMIN_USER
+
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_current_user] = override_get_current_user
     return TestClient(app)
 
 

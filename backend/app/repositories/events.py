@@ -4,11 +4,13 @@ import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, asc, delete, func, select
+from sqlalchemy import and_, asc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.content import Content
 from app.models.event import Event
+from app.models.task import Task
 from app.repositories.base import Repository
 
 
@@ -24,7 +26,7 @@ class EventRepository(Repository):
                 selectinload(Event.program),
                 selectinload(Event.tasks),
             )
-            .where(Event.id == event_id)
+            .where(Event.id == event_id, Event.deleted_at.is_(None))
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
@@ -36,6 +38,7 @@ class EventRepository(Repository):
             Event.id == event_id,
             Event.program_id == program_id,
             Event.workspace_id == workspace_id,
+            Event.deleted_at.is_(None),
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
@@ -47,7 +50,7 @@ class EventRepository(Repository):
         date_from: dt.datetime | None = None,
         date_to: dt.datetime | None = None,
     ) -> int:
-        conds = [Event.workspace_id == workspace_id]
+        conds = [Event.workspace_id == workspace_id, Event.deleted_at.is_(None)]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
         if date_to is not None:
@@ -67,7 +70,7 @@ class EventRepository(Repository):
         limit: int = 50,
         offset: int = 0,
     ) -> Sequence[Event]:
-        conds = [Event.workspace_id == workspace_id]
+        conds = [Event.workspace_id == workspace_id, Event.deleted_at.is_(None)]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
         if date_to is not None:
@@ -93,6 +96,7 @@ class EventRepository(Repository):
         conds = [
             Event.workspace_id == workspace_id,
             Event.program_id == program_id,
+            Event.deleted_at.is_(None),
         ]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
@@ -117,6 +121,7 @@ class EventRepository(Repository):
         conds = [
             Event.workspace_id == workspace_id,
             Event.program_id == program_id,
+            Event.deleted_at.is_(None),
         ]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
@@ -137,6 +142,31 @@ class EventRepository(Repository):
         return event
 
     async def delete(self, event_id: UUID) -> int:
-        stmt = delete(Event).where(Event.id == event_id)
-        res = await self.session.execute(stmt)
+        now = dt.datetime.now(dt.timezone.utc)
+        # Program/Event/Task use joined-table inheritance: each has its own
+        # table (programs/events/tasks) with a FK to `content`.  deleted_at is
+        # only on `content`, so update(Task/Event) would be a cross-table SET
+        # which PostgreSQL rejects.  We therefore:
+        #   1. Use subclass mappers (Task, Event) only for SELECT (no issue).
+        #   2. Cascade via update(Content) keyed by pre-fetched IDs (no join).
+
+        # Pre-fetch task IDs for this event
+        task_ids = list(
+            (await self.session.execute(select(Task.id).where(Task.event_id == event_id))).scalars()
+        )
+
+        # Cascade: soft-delete tasks
+        if task_ids:
+            await self.session.execute(
+                update(Content)
+                .where(Content.id.in_(task_ids), Content.deleted_at.is_(None))
+                .values(deleted_at=now)
+            )
+
+        # Soft-delete the event itself
+        res = await self.session.execute(
+            update(Content)
+            .where(Content.id == event_id, Content.deleted_at.is_(None))
+            .values(deleted_at=now)
+        )
         return res.rowcount or 0
