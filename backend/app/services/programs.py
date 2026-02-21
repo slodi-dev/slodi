@@ -19,53 +19,54 @@ class ProgramService:
         self.session = session
         self.repo = ProgramRepository(session)
 
-    # workspace-scoped reads
     async def count_programs_for_workspace(self, workspace_id: UUID) -> int:
         return await self.repo.count_programs_for_workspace(workspace_id)
 
     async def list_for_workspace(
-        self, workspace_id: UUID, *, limit: int = 50, offset: int = 0
+        self,
+        workspace_id: UUID,
+        current_user_id: UUID,
+        *,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[ProgramOut]:
-        rows = await self.repo.list_by_workspace(workspace_id, limit=limit, offset=offset)
-        return [ProgramOut.model_validate(r) for r in rows]
+        rows = await self.repo.list_by_workspace(
+            workspace_id, current_user_id, limit=limit, offset=offset
+        )
+        return [ProgramOut.from_row(prog, stats) for prog, stats in rows]
 
-    async def get_in_workspace(self, program_id: UUID, workspace_id: UUID) -> ProgramOut:
-        row = await self.repo.get_in_workspace(program_id, workspace_id)
+    async def get_in_workspace(
+        self, program_id: UUID, workspace_id: UUID, current_user_id: UUID | None = None
+    ) -> ProgramOut:
+        row = await self.repo.get_in_workspace(program_id, workspace_id, current_user_id)
         if not row:
             logger.error(f"Program {program_id} not found in workspace {workspace_id}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
-        return ProgramOut.model_validate(row)
+        prog, stats = row
+        return ProgramOut.from_row(prog, stats)
 
-    # create under a workspace
     async def create_under_workspace(self, workspace_id: UUID, data: ProgramCreate) -> ProgramOut:
         try:
-            # Create a new Program instance with the provided workspace_id and data
             program = Program(workspace_id=workspace_id, **data.model_dump())
-
-            # Save the new program to the database using the repository
             await self.repo.create(program)
-
-            # Commit the transaction to persist the changes
             await self.session.commit()
 
-            # Retrieve the newly created program using the repository's get() method
-            # This ensures proper eager loading of related data
             fetched = await self.repo.get(program.id)
-
             if not fetched:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to retrieve created program",
                 )
-
-            # Return the created program as a ProgramOut schema
-            return ProgramOut.model_validate(fetched)
+            prog, stats = fetched
+            return ProgramOut.from_row(prog, stats)
         except SQLAlchemyError as e:
             logger.error(f"SQLAlchemy error creating program: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create program",
             ) from e
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Unexpected error creating program: {e}")
             raise HTTPException(
@@ -73,25 +74,34 @@ class ProgramService:
                 detail="Failed to create program",
             ) from e
 
-    # item-level operations (not scoped)
-    async def get(self, program_id: UUID) -> ProgramOut:
-        row = await self.repo.get(program_id)
+    async def get(self, program_id: UUID, current_user_id: UUID | None = None) -> ProgramOut:
+        row = await self.repo.get(program_id, current_user_id)
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
-        return ProgramOut.model_validate(row)
+        prog, stats = row
+        return ProgramOut.from_row(prog, stats)
 
-    async def update(self, program_id: UUID, data: ProgramUpdate) -> ProgramOut:
+    async def update(
+        self, program_id: UUID, data: ProgramUpdate, current_user_id: UUID | None = None
+    ) -> ProgramOut:
         row = await self.repo.get(program_id)
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        prog, _ = row
         patch = data.model_dump(exclude_unset=True)
         for k, v in patch.items():
-            setattr(row, k, v)
+            setattr(prog, k, v)
         await self.session.commit()
-        await self.session.refresh(row)
-        return ProgramOut.model_validate(row)
+        updated = await self.repo.get(program_id, current_user_id)
+        if not updated:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve updated program",
+            )
+        prog, stats = updated
+        return ProgramOut.from_row(prog, stats)
 
     async def delete(self, program_id: UUID) -> None:
         row = await self.repo.get(program_id)

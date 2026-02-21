@@ -38,7 +38,6 @@ def _prog(workspace_id=None):
         name="Test Program",
         author_id=uuid4(),
         created_at=dt.datetime.now(dt.timezone.utc),
-        like_count=0,
         author=UserOut(id=uuid4(), name="Author", email="a@b.com", auth0_id="auth0|x"),
         workspace=WorkspaceNested(id=wid, name="WS"),
     )
@@ -262,7 +261,6 @@ async def test_soft_delete_sets_deleted_at_not_hard_delete(db):
 
     program = m.Program(
         name="Del Prog",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -308,7 +306,6 @@ async def test_workspace_soft_delete_cascade(db):
 
     program = m.Program(
         name="Cascade Prog",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -316,7 +313,6 @@ async def test_workspace_soft_delete_cascade(db):
     )
     event = m.Event(
         name="Cascade Event",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -330,7 +326,6 @@ async def test_workspace_soft_delete_cascade(db):
 
     task = m.Task(
         name="Cascade Task",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         event_id=event.id,
@@ -395,7 +390,6 @@ async def test_program_soft_delete_cascade(db):
 
     program = m.Program(
         name="Prog Casc Program",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -406,7 +400,6 @@ async def test_program_soft_delete_cascade(db):
 
     event = m.Event(
         name="Prog Casc Event",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -420,7 +413,6 @@ async def test_program_soft_delete_cascade(db):
 
     task = m.Task(
         name="Prog Casc Task",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         event_id=event.id,
@@ -469,7 +461,6 @@ async def test_event_soft_delete_cascade(db):
 
     event = m.Event(
         name="Ev Casc Event",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -482,7 +473,6 @@ async def test_event_soft_delete_cascade(db):
 
     task = m.Task(
         name="Ev Casc Task",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         event_id=event.id,
@@ -527,7 +517,6 @@ async def test_soft_deleted_rows_excluded_from_list_queries(db):
     # Create two programs
     p1 = m.Program(
         name="Active",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -535,7 +524,6 @@ async def test_soft_deleted_rows_excluded_from_list_queries(db):
     )
     p2 = m.Program(
         name="Deleted",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,
@@ -560,7 +548,8 @@ async def test_soft_deleted_rows_excluded_from_list_queries(db):
 
     listed = await repo.list_by_workspace(ws.id)
     assert len(listed) == 1
-    assert listed[0].id == p1.id
+    prog, _ = listed[0]
+    assert prog.id == p1.id
 
 
 @pytest.mark.integration
@@ -583,7 +572,6 @@ async def test_soft_delete_idempotent(db):
 
     program = m.Program(
         name="Idemp Prog",
-        like_count=0,
         created_at=get_current_datetime(),
         author_id=user.id,
         workspace_id=ws.id,

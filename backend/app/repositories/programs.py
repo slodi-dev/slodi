@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -13,34 +12,49 @@ from app.models.event import Event
 from app.models.program import Program
 from app.models.task import Task
 from app.repositories.base import Repository
+from app.repositories.content import (
+    ContentStats,
+    comment_count_subq,
+    like_count_subq,
+    liked_by_me_subq,
+)
 
 
 class ProgramRepository(Repository):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 
-    async def get(self, program_id: UUID) -> Program | None:
+    async def get(
+        self, program_id: UUID, current_user_id: UUID | None = None
+    ) -> tuple[Program, ContentStats] | None:
         stmt = (
-            select(Program)
+            select(
+                Program, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id)
+            )
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
                 selectinload(Program.events),
-                selectinload(Program.comments),
                 selectinload(Program.content_tags),
             )
             .where(Program.id == program_id, Program.deleted_at.is_(None))
         )
-        res = await self.session.execute(stmt)
-        return res.scalars().first()
+        row = (await self.session.execute(stmt)).first()
+        if row is None:
+            return None
+        prog, lc, cc, lm = row
+        return prog, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm))
 
-    async def get_in_workspace(self, program_id: UUID, workspace_id: UUID) -> Program | None:
+    async def get_in_workspace(
+        self, program_id: UUID, workspace_id: UUID, current_user_id: UUID | None = None
+    ) -> tuple[Program, ContentStats] | None:
         stmt = (
-            select(Program)
+            select(
+                Program, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id)
+            )
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.comments),
                 selectinload(Program.content_tags),
             )
             .where(
@@ -49,8 +63,11 @@ class ProgramRepository(Repository):
                 Program.deleted_at.is_(None),
             )
         )
-        res = await self.session.execute(stmt)
-        return res.scalars().first()
+        row = (await self.session.execute(stmt)).first()
+        if row is None:
+            return None
+        prog, lc, cc, lm = row
+        return prog, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm))
 
     async def count_programs_for_workspace(self, workspace_id: UUID) -> int:
         result = await self.session.scalar(
@@ -61,14 +78,20 @@ class ProgramRepository(Repository):
         return result or 0
 
     async def list_by_workspace(
-        self, workspace_id: UUID, *, limit: int = 50, offset: int = 0
-    ) -> Sequence[Program]:
+        self,
+        workspace_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[tuple[Program, ContentStats]]:
         stmt = (
-            select(Program)
+            select(
+                Program, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id)
+            )
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.comments),
                 selectinload(Program.content_tags),
             )
             .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
@@ -76,7 +99,11 @@ class ProgramRepository(Repository):
             .limit(limit)
             .offset(offset)
         )
-        return await self.scalars(stmt)
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            (prog, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm)))
+            for prog, lc, cc, lm in rows
+        ]
 
     async def create(self, program: Program) -> Program:
         await self.add(program)
