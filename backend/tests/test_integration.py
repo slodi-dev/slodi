@@ -123,8 +123,8 @@ class TestUserPersistence:
         )
         resp = http.get("/users")
         assert resp.status_code == 200
-        emails = [u["email"] for u in resp.json()]
-        assert "list001@example.com" in emails
+        names = [u["name"] for u in resp.json()]
+        assert "Listed" in names
 
 
 @pytest.mark.integration

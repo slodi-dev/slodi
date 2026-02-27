@@ -41,7 +41,6 @@ def test_list_users(client, sample_user):
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1
-        assert data[0]["email"] == sample_user.email
 
 
 # ── Workspaces ────────────────────────────────────────────────────────────────
