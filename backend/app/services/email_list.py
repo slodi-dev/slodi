@@ -18,20 +18,14 @@ class EmailListService:
         rows = await self.repo.list()
         return [EmailListOut.model_validate(r) for r in rows]
 
-    async def create(self, data: EmailListCreate) -> EmailListOut:
+    async def create(self, data: EmailListCreate) -> None:
         email_entry = EmailList(**data.model_dump())
         try:
             await self.repo.create(email_entry)
             await self.session.commit()
         except IntegrityError:
+            # Already subscribed — silently succeed so callers cannot enumerate subscribers
             await self.session.rollback()
-            # Email unique violation
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This email is already subscribed",
-            ) from None
-        await self.session.refresh(email_entry)
-        return EmailListOut.model_validate(email_entry)
 
     async def delete(self, email: str) -> None:
         deleted_count = await self.repo.delete(email)
