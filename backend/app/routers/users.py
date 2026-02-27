@@ -21,7 +21,7 @@ CurrentUser = Annotated[UserOut, Depends(get_current_user)]
 DEFAULT_Q = Query(None, min_length=2, description="Case-insensitive search in name/email/auth0_id")
 
 
-@router.get("", response_model=list[UserOut])
+@router.get("", response_model=list[UserOutLimited])
 async def list_users(
     session: SessionDep,
     request: Request,
@@ -30,7 +30,7 @@ async def list_users(
     q: str | None = DEFAULT_Q,
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[UserOut]:
+) -> list[UserOutLimited]:
     svc = UserService(session)
     total = await svc.count(q=q)
     items = await svc.list(q=q, limit=limit, offset=offset)

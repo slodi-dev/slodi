@@ -40,9 +40,11 @@ class UserService:
     async def count(self, *, q: str | None) -> int:
         return await self.repo.count(q=q)
 
-    async def list(self, *, q: str | None, limit: int = 50, offset: int = 0) -> list[UserOut]:
+    async def list(
+        self, *, q: str | None, limit: int = 50, offset: int = 0
+    ) -> list[UserOutLimited]:
         rows = await self.repo.list(q=q, limit=limit, offset=offset)
-        return [UserOut.model_validate(r) for r in rows]
+        return [UserOutLimited.model_validate(r) for r in rows]
 
     async def create(self, data: UserCreate) -> UserOut:
         user = User(**data.model_dump())
