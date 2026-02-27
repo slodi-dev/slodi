@@ -84,3 +84,12 @@ class UserOut(UserBase):
     email: EmailConstrained
     auth0_id: Auth0Id
     name: NameStr
+
+
+class UserOutLimited(BaseModel):
+    """Limited user info for cases where we don't want to expose email/auth0_id."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: NameStr

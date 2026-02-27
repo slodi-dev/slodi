@@ -11,7 +11,7 @@ from app.core.auth import get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.models.user import Permissions
-from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin, UserUpdateSelf
+from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
 from app.services.users import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -65,12 +65,12 @@ async def get_current_user_info(
     return current_user
 
 
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", response_model=UserOutLimited)
 async def get_user(
     session: SessionDep,
     user_id: UUID,
     current_user: UserOut = Depends(get_current_user),  # noqa: B008
-) -> UserOut:
+) -> UserOutLimited:
     """Get any user's public profile (if allowed)"""
     svc = UserService(session)
     return await svc.get(user_id)
@@ -95,6 +95,16 @@ async def update_user(
 ) -> UserOut:
     svc = UserService(session)
     return await svc.update(user_id, body)
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_current_user(
+    session: SessionDep,
+    current_user: UserOut = Depends(get_current_user),  # noqa: B008
+) -> None:
+    svc = UserService(session)
+    await svc.delete(current_user.id)
+    return None
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

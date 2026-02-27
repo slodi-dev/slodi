@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.content import ContentType
 from app.models.workspace import WorkspaceRole
 from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
 from app.schemas.user import UserOut
@@ -38,7 +37,11 @@ async def list_event_tasks(
     event_svc = EventService(session)
     event = await event_svc.get(event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer,
+        hide_from_non_members=True,
     )
     total = await svc.count_tasks_for_event(event_id)
     items = await svc.list_for_event(event_id, current_user.id, limit=limit, offset=offset)
@@ -64,12 +67,15 @@ async def create_event_task(
     response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> TaskOut:
-    assert body.content_type == ContentType.task, "Content type must be 'task'"
     svc = TaskService(session)
     event_svc = EventService(session)
     event = await event_svc.get(event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.editor,
+        hide_from_non_members=True,
     )
     task = await svc.create_under_event(event_id, body)
     response.headers["Location"] = f"/tasks/{task.id}"
@@ -88,7 +94,11 @@ async def get_task(
     task = await svc.get(task_id, current_user.id)
     event = await event_svc.get(task.event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.editor,
+        hide_from_non_members=True,
     )
     return task
 
@@ -105,7 +115,11 @@ async def update_task(
     task = await svc.get(task_id, current_user.id)
     event = await event_svc.get(task.event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.editor,
+        hide_from_non_members=True,
     )
     return await svc.update(task_id, body, current_user.id)
 
@@ -119,7 +133,11 @@ async def delete_task(
     task = await svc.get(task_id, current_user.id)
     event = await event_svc.get(task.event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.editor,
+        hide_from_non_members=True,
     )
     await svc.delete(task_id)
     return None
