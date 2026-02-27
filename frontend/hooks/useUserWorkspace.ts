@@ -29,7 +29,7 @@ export function useUserWorkspace() {
                 if (!token) throw new Error("No authentication token");
 
                 // Fetch or create the user's personal workspace
-                const workspace = await getOrCreatePersonalWorkspace(user.id, token);
+                const workspace = await getOrCreatePersonalWorkspace(token);
                 setWorkspaceId(workspace.id); // Store workspace ID
             } catch (err) {
                 // Log and set error state

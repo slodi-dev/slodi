@@ -51,13 +51,12 @@ export type WorkspaceCreateInput = {
 };
 
 /**
- * Get all workspaces for a user
+ * Get all workspaces for the current user
  */
 export async function getUserWorkspaces(
-  userId: string,
   token: string
 ): Promise<Workspace[]> {
-  const url = buildApiUrl(`/users/${userId}/workspaces`);
+  const url = buildApiUrl(`/users/me/workspaces`);
 
   const response = await fetch(url, {
     method: "GET",
@@ -76,14 +75,13 @@ export async function getUserWorkspaces(
 }
 
 /**
- * Create a workspace for a user
+ * Create a workspace for the current user
  */
 export async function createUserWorkspace(
-  userId: string,
   workspace: WorkspaceCreateInput,
   token: string
 ): Promise<Workspace> {
-  const url = buildApiUrl(`/users/${userId}/workspaces`);
+  const url = buildApiUrl(`/users/me/workspaces`);
 
   const response = await fetch(url, {
     method: "POST",
@@ -108,11 +106,10 @@ export async function createUserWorkspace(
  * Returns the first workspace with "Personal" in the name, or creates one
  */
 export async function getOrCreatePersonalWorkspace(
-  userId: string,
   token: string
 ): Promise<Workspace> {
-  const workspaces = await getUserWorkspaces(userId, token);
-  
+  const workspaces = await getUserWorkspaces(token);
+
   // Look for existing personal workspace
   const personalWorkspace = workspaces.find(
     (ws) => ws.name.toLowerCase().includes("personal") || ws.name.toLowerCase().includes("mitt")
@@ -124,7 +121,6 @@ export async function getOrCreatePersonalWorkspace(
 
   // Create new personal workspace
   return createUserWorkspace(
-    userId,
     {
       name: "Mitt vinnusvæði",
     },
