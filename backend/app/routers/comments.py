@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.schemas.comment import CommentCreate, CommentOut, CommentUpdate
@@ -85,11 +85,22 @@ async def update_comment(
 ) -> CommentOut:
     svc = CommentService(session)
     comment = await svc.get(comment_id)
-    if comment.user_id != current_user.id and current_user.permissions != Permissions.admin:
+    if comment.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the comment author can edit this comment.",
         )
+    return await svc.update(comment_id, body)
+
+
+@router.patch("/admin/comments/{comment_id}", response_model=CommentOut)
+async def update_comment_admin(
+    session: SessionDep,
+    comment_id: UUID,
+    body: CommentUpdate,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+) -> CommentOut:
+    svc = CommentService(session)
     return await svc.update(comment_id, body)
 
 
@@ -101,10 +112,21 @@ async def delete_comment(
 ) -> None:
     svc = CommentService(session)
     comment = await svc.get(comment_id)
-    if comment.user_id != current_user.id and current_user.permissions != Permissions.admin:
+    if comment.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the comment author can delete this comment.",
         )
+    await svc.delete(comment_id)
+    return None
+
+
+@router.delete("/admin/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_comment_admin(
+    session: SessionDep,
+    comment_id: UUID,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+) -> None:
+    svc = CommentService(session)
     await svc.delete(comment_id)
     return None

@@ -20,7 +20,7 @@ from app.schemas.group import (
     GroupOut,
     GroupUpdate,
 )
-from app.schemas.user import Permissions, UserOut
+from app.schemas.user import UserOut
 from app.services.groups import GroupService
 
 router = APIRouter(tags=["groups"])
@@ -188,6 +188,20 @@ async def update_group_member(
 
 
 @router.delete(
+    "/groups/{group_id}/memberships/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def leave_group(
+    session: SessionDep,
+    group_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+) -> None:
+    svc = GroupService(session)
+    await svc.remove_membership(group_id, current_user.id)
+    return None
+
+
+@router.delete(
     "/groups/{group_id}/memberships/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
@@ -197,8 +211,7 @@ async def remove_group_member(
     user_id: UUID,
     current_user: UserOut = Depends(get_current_user),
 ) -> None:
-    if user_id != current_user.id and current_user.permissions != Permissions.admin:
-        await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
+    await check_group_access(group_id, current_user, session, minimum_role=GroupRole.admin)
     svc = GroupService(session)
     await svc.remove_membership(group_id, user_id)
     return None
