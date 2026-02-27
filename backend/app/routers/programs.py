@@ -60,7 +60,6 @@ async def create_program_under_workspace(
     response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
-    assert body.content_type == ContentType.program, "Content type must be 'program'"
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
     )
@@ -84,7 +83,6 @@ async def copy_program_to_workspace(
     session: SessionDep,
     workspace_id: UUID,
     program_id: UUID,
-    user_id: UUID,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
@@ -103,7 +101,7 @@ async def copy_program_to_workspace(
         location=original_program.location,
         count=original_program.count,
         price=original_program.price,
-        author_id=user_id,
+        author_id=current_user.id,
         content_type=ContentType.program,
         image=original_program.image,
     )
@@ -122,7 +120,11 @@ async def get_program(
     svc = ProgramService(session)
     program = await svc.get(program_id, current_user.id)
     await check_workspace_access(
-        program.workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
+        program.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer,
+        hide_from_non_members=True,
     )
     return program
 
@@ -136,7 +138,13 @@ async def update_program(
 ) -> ProgramOut:
     svc = ProgramService(session)
     program = await svc.get(program_id)
-    await check_program_edit_access(program.workspace_id, program.author_id, current_user, session)
+    await check_program_edit_access(
+        program.workspace_id,
+        program.author_id,
+        current_user,
+        session,
+        hide_from_non_members=True,
+    )
     return await svc.update(program_id, body, current_user.id)
 
 
@@ -147,7 +155,11 @@ async def delete_program(
     svc = ProgramService(session)
     program = await svc.get(program_id)
     await check_workspace_access(
-        program.workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
+        program.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.admin,
+        hide_from_non_members=True,
     )
     await svc.delete(program_id)
     return None

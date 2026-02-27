@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     auth0_domain: str = Field(..., alias="AUTH0_DOMAIN")
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
+    auth_debug: bool = Field(False, alias="AUTH0_DEBUG")
 
     # Seed: emails that are always promoted to admin on `make seed`
     admin_emails: str = Field("", alias="ADMIN_EMAILS")

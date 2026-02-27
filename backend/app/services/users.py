@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.repositories.users import UserRepository
-from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin, UserUpdateSelf
+from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
 
 
 class UserService:
@@ -16,11 +16,11 @@ class UserService:
         self.session = session
         self.repo = UserRepository(session)
 
-    async def get(self, user_id: UUID) -> UserOut:
+    async def get(self, user_id: UUID) -> UserOutLimited:
         row = await self.repo.get(user_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-        return UserOut.model_validate(row)
+        return UserOutLimited.model_validate(row)
 
     async def get_by_auth0_id(self, auth0_id: str) -> UserOut | None:
         """
