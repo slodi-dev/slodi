@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import check_workspace_access, get_current_user
+from app.core.auth import check_workspace_access, get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.models.user import Permissions
@@ -26,23 +26,38 @@ router = APIRouter(tags=["workspaces"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-@router.get("/users/{user_id}/workspaces", response_model=list[WorkspaceOut])
-async def list_user_workspaces(
+@router.get("/users/me/workspaces", response_model=list[WorkspaceOut])
+async def list_my_workspaces(
     session: SessionDep,
     request: Request,
     response: Response,
-    user_id: UUID,
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[WorkspaceOut]:
-    # Check user ID in path matches current user or is admin
-    if current_user.id != user_id and current_user.permissions != Permissions.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only view your own workspaces.",
-        )
+    svc = WorkspaceService(session)
+    total = await svc.count_user_workspaces(current_user.id)
+    items = await svc.list_user_workspaces(current_user.id, limit=limit, offset=offset)
+    add_pagination_headers(
+        response=response,
+        request=request,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+    return items
 
+
+@router.get("/users/{user_id}/workspaces", response_model=list[WorkspaceOut])
+async def list_user_workspaces_admin(
+    session: SessionDep,
+    request: Request,
+    response: Response,
+    user_id: UUID,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    limit: Limit = 50,
+    offset: Offset = 0,
+) -> list[WorkspaceOut]:
     svc = WorkspaceService(session)
     total = await svc.count_user_workspaces(user_id)
     items = await svc.list_user_workspaces(user_id, limit=limit, offset=offset)
@@ -57,24 +72,34 @@ async def list_user_workspaces(
 
 
 @router.post(
-    "/users/{user_id}/workspaces",
+    "/users/me/workspaces",
     response_model=WorkspaceOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_user_workspace(
+async def create_my_workspace(
     session: SessionDep,
-    user_id: UUID,
     body: WorkspaceCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> WorkspaceOut:
-    # Check user ID in path matches current user or is admin
-    if current_user.id != user_id and current_user.permissions != Permissions.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only create workspaces for yourself.",
-        )
+    svc = WorkspaceService(session)
+    workspace = await svc.create_user_workspace(current_user.id, body)
+    response.headers["Location"] = f"/workspaces/{workspace.id}"
+    return workspace
 
+
+@router.post(
+    "/users/{user_id}/workspaces",
+    response_model=WorkspaceOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_user_workspace_admin(
+    session: SessionDep,
+    user_id: UUID,
+    body: WorkspaceCreate,
+    response: Response,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+) -> WorkspaceOut:
     svc = WorkspaceService(session)
     workspace = await svc.create_user_workspace(user_id, body)
     response.headers["Location"] = f"/workspaces/{workspace.id}"
