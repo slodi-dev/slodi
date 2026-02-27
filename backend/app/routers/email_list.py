@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_permission
+from app.core.auth import require_permission
 from app.core.db import get_session
+from app.core.limiter import limiter
 from app.schemas.email_list import EmailListCreate, EmailListOut
 from app.schemas.user import Permissions
 from app.services.email_list import EmailListService
@@ -23,14 +24,16 @@ async def list_email_list(
     return await svc.list()
 
 
-@router.post("", response_model=EmailListOut, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("5/minute")
 async def create_email_entry(
+    request: Request,
     session: SessionDep,
     body: EmailListCreate,
-    current_user: str = Depends(get_current_user),
-) -> EmailListOut:
+) -> None:
+    """Subscribe an email address to the mailing list. Public endpoint, no auth required."""
     svc = EmailListService(session)
-    return await svc.create(body)
+    await svc.create(body)
 
 
 @router.delete("/{email}", status_code=status.HTTP_204_NO_CONTENT)

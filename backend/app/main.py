@@ -3,7 +3,11 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
+from app.core.limiter import limiter
 from app.core.logging import configure_logging
 from app.routers import (
     comments_router,
@@ -26,6 +30,10 @@ from app.settings import settings
 def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Backend API")
+
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    app.add_middleware(SlowAPIMiddleware)
 
     # Add CORS middleware
     app.add_middleware(
