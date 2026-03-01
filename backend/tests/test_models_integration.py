@@ -46,7 +46,6 @@ async def test_user_workspace_program_event_task_flow(db):
         workspace_id=workspace.id,
         content_type=m.ContentType.program,
     )
-    program = m.Program(**p_in.model_dump())
     db.add(program)
     await db.flush()
 
@@ -66,7 +65,6 @@ async def test_user_workspace_program_event_task_flow(db):
         start_dt=get_current_datetime(),
         end_dt=None,
     )
-    event = m.Event(**e_in.model_dump())
     db.add(event)
     await db.flush()
 
@@ -79,7 +77,6 @@ async def test_user_workspace_program_event_task_flow(db):
         event_id=event.id,
         content_type=m.ContentType.task,
     )
-    task = m.Task(**t_in.model_dump())
     db.add(task)
     await db.commit()
 
@@ -137,7 +134,7 @@ async def test_tags_and_comments_and_cascade(db):
 
     # Comment
     c_in = s.CommentCreate(body="Nice idea!", user_id=u.id)
-    comment = m.Comment(**c_in.model_dump())
+    comment = m.Comment(**c_in.model_dump(), content_id=p.id)
     db.add(comment)
     await db.commit()
 
