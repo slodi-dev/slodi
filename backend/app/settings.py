@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     auth0_domain: str = Field(..., alias="AUTH0_DOMAIN")
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
+    auth_debug: bool = Field(False, alias="AUTH0_DEBUG")
+
+    # Seed: emails that are always promoted to admin on `make seed`
+    admin_emails: str = Field("", alias="ADMIN_EMAILS")
 
     # Seed: emails that are always promoted to admin on `make seed`
     admin_emails: str = Field("", alias="ADMIN_EMAILS")
@@ -45,6 +49,10 @@ class Settings(BaseSettings):
     # Resend (email) configuration
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
     def model_post_init(self, __context: object) -> None:
         # Production database URL

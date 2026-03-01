@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.content import ContentType
 from app.schemas.event import EventCreate, EventOut, EventUpdate
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
@@ -115,7 +114,6 @@ async def create_workspace_event(
     body: EventCreate,
     current_user: UserOut = Depends(get_current_user),
 ) -> EventOut:
-    assert body.content_type == ContentType.event, "Content type must be 'event'"
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
     )
@@ -137,13 +135,16 @@ async def create_program_event(
     body: EventCreate,
     current_user: UserOut = Depends(get_current_user),
 ) -> EventOut:
-    assert body.content_type == ContentType.event, "Content type must be 'event'"
     from app.services.programs import ProgramService  # Avoid circular import
 
     prg_svc = ProgramService(session)
     program = await prg_svc.get(program_id, current_user.id)
     await check_workspace_access(
-        program.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        program.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.editor,
+        hide_from_non_members=True,
     )
     svc = EventService(session)
     event = await svc.create_under_program(program_id, body)
@@ -161,7 +162,11 @@ async def get_event(
     svc = EventService(session)
     event = await svc.get(event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer,
+        hide_from_non_members=True,
     )
     return event
 
@@ -176,7 +181,11 @@ async def update_event(
     svc = EventService(session)
     event = await svc.get(event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.editor,
+        hide_from_non_members=True,
     )
     return await svc.update(event_id, body, current_user.id)
 
@@ -188,7 +197,11 @@ async def delete_event(
     svc = EventService(session)
     event = await svc.get(event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
+        event.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.admin,
+        hide_from_non_members=True,
     )
     await svc.delete(event_id)
     return None

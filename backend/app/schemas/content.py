@@ -23,6 +23,7 @@ from app.domain.content_constraints import (
     NAME_MIN,
 )
 from app.models.content import AgeGroup
+from app.repositories.content import ContentStats
 from app.schemas.tag import TagOut
 from app.schemas.user import UserOut
 from app.utils import get_current_datetime

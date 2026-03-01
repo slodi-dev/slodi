@@ -2,6 +2,7 @@
 
 No authentication required. Only exposes non-sensitive values.
 """
+
 from __future__ import annotations
 
 import json

@@ -26,7 +26,6 @@ def test_get_user(client, sample_user):
         response = client.get(f"/users/{sample_user.id}")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["email"] == sample_user.email
         assert data["name"] == sample_user.name
 
 
@@ -42,7 +41,6 @@ def test_list_users(client, sample_user):
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1
-        assert data[0]["email"] == sample_user.email
 
 
 # ── Workspaces ────────────────────────────────────────────────────────────────

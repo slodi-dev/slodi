@@ -110,12 +110,11 @@ def test_create_comment(client):
 
 def test_unlike_content_returns_204(client):
     content_id = uuid4()
-    user_id = uuid4()
 
     with patch("app.services.likes.LikeService.delete", new_callable=AsyncMock) as mock_del:
         mock_del.return_value = None
 
-        response = client.delete(f"/content/{content_id}/likes/{user_id}")
+        response = client.delete(f"/content/{content_id}/likes/me")
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
