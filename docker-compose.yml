@@ -79,6 +79,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
       args:
         # NEXT_PUBLIC_* vars are baked in at build time by Next.js
         # This pulls from frontend/.env or falls back to localhost
