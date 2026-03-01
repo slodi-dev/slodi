@@ -23,6 +23,7 @@ from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.config import settings
 from app.core.db import get_session
 from app.models.group import GroupRole
@@ -316,10 +317,16 @@ async def get_current_user(
 
     auth0_id = payload.sub
 
-    # Fast path: user already exists — most requests end here
+    # Fast path: serve from cache — eliminates a DB round-trip on most requests
+    cached_user = await user_cache.get(auth0_id)
+    if cached_user is not None:
+        return cached_user
+
+    # Cache miss: look up in DB
     user_service = UserService(session)
     user = await user_service.get_by_auth0_id(auth0_id)
     if user:
+        await user_cache.set(auth0_id, user)
         return user
 
     # New user — we need email & name to create them.
@@ -366,6 +373,7 @@ async def get_current_user(
             detail="Failed to create user",
         )
 
+    await user_cache.set(auth0_id, user)
     return user
 
 
@@ -399,6 +407,18 @@ def require_permission(minimum: Permissions) -> Callable[[UserOut], Awaitable[Us
 # ---------------------------------------------------------------------------
 
 
+async def _get_workspace_role(
+    workspace_id: UUID, user_id: UUID, session: AsyncSession
+) -> WorkspaceRole | None:
+    """Return the user's workspace role from cache, falling back to DB on miss."""
+    cached = await membership_cache.get(user_id, workspace_id)
+    if cached is not CACHE_MISS:
+        return cached  # type: ignore[return-value]  # WorkspaceRole or None (non-member)
+    role = await WorkspaceService(session).find_user_role(workspace_id, user_id)
+    await membership_cache.set(user_id, workspace_id, role)
+    return role
+
+
 async def check_workspace_access(
     workspace_id: UUID,
     current_user: UserOut,
@@ -419,15 +439,14 @@ async def check_workspace_access(
     if current_user.permissions == Permissions.admin:
         return
 
-    ws_svc = WorkspaceService(session)
-    membership = await ws_svc.get_user_membership(workspace_id, current_user.id)
+    role = await _get_workspace_role(workspace_id, current_user.id, session)
 
-    if not membership:
+    if role is None:
         if hide_from_non_members:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a workspace member")
 
-    if _WORKSPACE_ROLE_RANK[membership.role] < _WORKSPACE_ROLE_RANK[minimum_role]:
+    if _WORKSPACE_ROLE_RANK[role] < _WORKSPACE_ROLE_RANK[minimum_role]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Requires {minimum_role.value} role or higher",
@@ -457,15 +476,14 @@ async def check_program_edit_access(
     if current_user.permissions == Permissions.admin:
         return
 
-    ws_svc = WorkspaceService(session)
-    membership = await ws_svc.get_user_membership(workspace_id, current_user.id)
+    role = await _get_workspace_role(workspace_id, current_user.id, session)
 
-    if not membership:
+    if role is None:
         if hide_from_non_members:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a workspace member")
 
-    role_rank = _WORKSPACE_ROLE_RANK[membership.role]
+    role_rank = _WORKSPACE_ROLE_RANK[role]
     is_author = author_id is not None and current_user.id == author_id
     has_admin = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
     has_editor = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.editor]

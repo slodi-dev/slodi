@@ -16,6 +16,13 @@ class UserService:
         self.session = session
         self.repo = UserRepository(session)
 
+    async def get_full(self, user_id: UUID) -> UserOut:
+        """Return the full user record including auth0_id. Use for admin operations."""
+        row = await self.repo.get(user_id)
+        if not row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        return UserOut.model_validate(row)
+
     async def get(self, user_id: UUID) -> UserOutLimited:
         row = await self.repo.get(user_id)
         if not row:

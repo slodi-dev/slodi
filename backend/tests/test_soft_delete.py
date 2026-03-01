@@ -200,10 +200,10 @@ def test_delete_comment_not_found_returns_404(client):
 
 def test_delete_user_returns_204(client, sample_user):
     with (
-        patch("app.services.users.UserService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.services.users.UserService.get_full", new_callable=AsyncMock) as mock_get_full,
         patch("app.services.users.UserService.delete", new_callable=AsyncMock) as mock_del,
     ):
-        mock_get.return_value = sample_user
+        mock_get_full.return_value = sample_user
         mock_del.return_value = None
 
         resp = client.delete(f"/users/{sample_user.id}")
@@ -212,9 +212,9 @@ def test_delete_user_returns_204(client, sample_user):
 
 
 def test_delete_user_not_found_returns_404(client):
-    # Users router calls svc.delete() directly; 404 is raised inside the service
-    with patch("app.services.users.UserService.delete", new_callable=AsyncMock) as mock_del:
-        mock_del.side_effect = _not_found()
+    # Router calls get_full() first; 404 is raised there when the user doesn't exist
+    with patch("app.services.users.UserService.get_full", new_callable=AsyncMock) as mock_get_full:
+        mock_get_full.side_effect = _not_found()
 
         resp = client.delete(f"/users/{uuid4()}")
         assert resp.status_code == status.HTTP_404_NOT_FOUND
