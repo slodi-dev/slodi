@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user, require_permission
+from app.core.cache import user_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.models.user import Permissions
@@ -83,7 +84,9 @@ async def update_current_user(
     current_user: UserOut = Depends(get_current_user),  # noqa: B008
 ) -> UserOut:
     svc = UserService(session)
-    return await svc.update(current_user.id, body)
+    updated = await svc.update(current_user.id, body)
+    await user_cache.invalidate(current_user.auth0_id)
+    return updated
 
 
 @router.patch("/{user_id}", response_model=UserOut)
@@ -94,7 +97,9 @@ async def update_user(
     current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
 ) -> UserOut:
     svc = UserService(session)
-    return await svc.update(user_id, body)
+    updated = await svc.update(user_id, body)
+    await user_cache.invalidate(updated.auth0_id)
+    return updated
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
@@ -104,6 +109,7 @@ async def delete_current_user(
 ) -> None:
     svc = UserService(session)
     await svc.delete(current_user.id)
+    await user_cache.invalidate(current_user.auth0_id)
     return None
 
 
@@ -114,5 +120,7 @@ async def delete_user(
     current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
 ) -> None:
     svc = UserService(session)
+    target = await svc.get_full(user_id)  # fetch auth0_id before deletion for cache invalidation
     await svc.delete(user_id)
+    await user_cache.invalidate(target.auth0_id)
     return None

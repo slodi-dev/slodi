@@ -115,7 +115,10 @@ async def copy_program_to_workspace(
 
 @router.get("/programs/{program_id}", response_model=ProgramOut)
 async def get_program(
-    session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
+    session: SessionDep,
+    program_id: UUID,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
     svc = ProgramService(session)
     program = await svc.get(program_id, current_user.id)
@@ -126,6 +129,7 @@ async def get_program(
         minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
+    response.headers["Cache-Control"] = "private, max-age=60"
     return program
 
 
