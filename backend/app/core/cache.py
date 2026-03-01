@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from aiocache import BaseCache, RedisCache, SimpleMemoryCache
-from aiocache.serializers import PickleSerializer
+from aiocache import BaseCache, RedisCache, SimpleMemoryCache  # type: ignore[import-untyped]
+from aiocache.serializers import PickleSerializer  # type: ignore[import-untyped]
 
 from app.models.workspace import WorkspaceRole
 from app.schemas.tag import TagOut
@@ -23,14 +23,14 @@ _NON_MEMBER: object = object()
 
 def _make_cache(ttl: int, namespace: str) -> BaseCache:
     if settings.cache_backend == "redis":
-        return RedisCache(  # type: ignore[return-value]
+        return RedisCache(
             endpoint=settings.redis_host,
             port=settings.redis_port,
             ttl=ttl,
             namespace=namespace,
             serializer=PickleSerializer(),
         )
-    return SimpleMemoryCache(ttl=ttl, namespace=namespace)  # type: ignore[return-value]
+    return SimpleMemoryCache(ttl=ttl, namespace=namespace)
 
 
 class UserCache:

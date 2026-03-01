@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     cache_user_ttl_seconds: int = Field(300, alias="CACHE_USER_TTL_SECONDS")
     cache_membership_ttl_seconds: int = Field(120, alias="CACHE_MEMBERSHIP_TTL_SECONDS")
     cache_tags_ttl_seconds: int = Field(600, alias="CACHE_TAGS_TTL_SECONDS")
+    rate_limit_max_window_seconds: int = Field(3600, alias="RATE_LIMIT_MAX_WINDOW_SECONDS")
 
     @property
     def admin_email_list(self) -> list[str]:
