@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: slodi_db
       POSTGRES_USER: slodi_user
-      POSTGRES_PASSWORD: slodi_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-slodi_password}
     ports:
       - "${DB_EXPOSE_PORT:-5432}:5432"
     volumes:
@@ -98,41 +98,6 @@ services:
       - slodi-network
     restart: unless-stopped
 
-  # ── Test: Backend (only with --profile test) ──────────────
-  test-backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: test
-    container_name: slodi-test-backend
-    env_file:
-      - ./backend/.env
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: slodi_db_test
-      TESTING: "true"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - slodi-network
-    profiles:
-      - test
-
-  # ── Test: Frontend (only with --profile test) ─────────────
-  test-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: test
-    container_name: slodi-test-frontend
-    env_file:
-      - ./frontend/.env
-    networks:
-      - slodi-network
-    profiles:
-      - test
 
 volumes:
   postgres_data:
