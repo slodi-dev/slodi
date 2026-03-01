@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLikes } from "@/contexts/LikesContext";
@@ -16,16 +16,8 @@ export interface ProgramCardProps {
     id: string;
     name: string;
   };
-  workspace?: {
-    id: string;
-    name: string;
-  };
   tags?: Array<{ id: string; name: string }>;
   like_count?: number;
-  created_at?: string;
-  public?: boolean;
-  onLike?: (programId: string) => void;
-  isLiked?: boolean;
   className?: string;
   /** Show an edit option in the card action menu. */
   canEdit?: boolean;
@@ -52,10 +44,11 @@ export default function ProgramCard({
   onDelete,
 }: ProgramCardProps) {
   const router = useRouter();
-  const { likeCount, isLiked, toggleLike } = useLikes(id, like_count || 0);
+  const { likeCount, isLiked, toggleLike } = useLikes(id, like_count);
   const { isFavorite, toggleFavorite } = useFavorite(id);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const showMenu = canEdit || canDelete;
 
@@ -69,6 +62,13 @@ export default function ProgramCard({
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  // Focus first menu item when menu opens
+  useEffect(() => {
+    if (!menuOpen) return;
+    const firstItem = menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]');
+    firstItem?.focus();
   }, [menuOpen]);
 
   const handleLike = (e: React.MouseEvent) => {
@@ -90,10 +90,45 @@ export default function ProgramCard({
     router.push(`/programs/${id}`);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+  const handleMenuToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen((v) => !v);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    onEdit?.();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    onDelete?.();
+  };
+
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/programs/${id}`);
+  };
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      setMenuOpen(false);
+      menuButtonRef.current?.focus();
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      router.push(`/programs/${id}`);
+      const items = Array.from(
+        menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []
+      );
+      const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+      const nextIndex = e.key === 'ArrowDown'
+        ? (currentIndex + 1) % items.length
+        : (currentIndex - 1 + items.length) % items.length;
+      items[nextIndex]?.focus();
     }
   };
 
@@ -101,19 +136,16 @@ export default function ProgramCard({
     <article
       className={`${styles.card} ${className || ''}`}
       onClick={handleCardClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="button"
-      aria-label={`View program: ${name}`}
       data-program-id={id}
     >
       {/* Action menu overlay — only visible for users with edit/delete rights */}
       {showMenu && (
-        <div className={styles.cardActions} ref={menuRef}>
+        <div className={styles.cardActions} ref={menuRef} onKeyDown={handleMenuKeyDown}>
           <button
+            ref={menuButtonRef}
             type="button"
             className={`${styles.menuButton} ${menuOpen ? styles.menuButtonOpen : ""}`}
-            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+            onClick={handleMenuToggle}
             aria-label="Valkostir"
             aria-haspopup="true"
             aria-expanded={menuOpen}
@@ -127,7 +159,7 @@ export default function ProgramCard({
                   type="button"
                   className={styles.menuItem}
                   role="menuitem"
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onEdit?.(); }}
+                  onClick={handleEdit}
                 >
                   Breyta
                 </button>
@@ -137,7 +169,7 @@ export default function ProgramCard({
                   type="button"
                   className={`${styles.menuItem} ${styles.menuItemDanger}`}
                   role="menuitem"
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete?.(); }}
+                  onClick={handleDelete}
                 >
                   Eyða
                 </button>
@@ -149,10 +181,11 @@ export default function ProgramCard({
       {/* Thumbnail/Hero Image */}
       <div className={styles.media}>
         {image ? (
-          <img src={image} alt={name} className={styles.image} width={400} height={250} />
+          <Image src={image} alt={name} className={styles.image} width={400} height={250} />
         ) : (
           <div className={styles.placeholder}>
             <svg
+              aria-hidden="true"
               className={styles.placeholderIcon}
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -204,9 +237,11 @@ export default function ProgramCard({
       <div className={styles.footer}>
         {/* Like button */}
         <button
+          type="button"
           className={`${styles.likeButton} ${isLiked ? styles.liked : ''}`}
           onClick={handleLike}
-          aria-label={isLiked ? 'Afþakka dagskrá' : 'Þakka fyrir dagskrá'}
+          aria-label="Þakka fyrir dagskrá"
+          aria-pressed={isLiked}
           title={isLiked ? 'Afþakka' : 'Þakka fyrir'}
         >
           <svg
@@ -225,9 +260,11 @@ export default function ProgramCard({
 
         {/* Favorite button */}
         <button
+          type="button"
           className={`${styles.favoriteButton} ${isFavorite ? styles.favorited : ''}`}
           onClick={handleFavorite}
-          aria-label={isFavorite ? 'Fjarlægja úr möppu' : 'Vista í möppu'}
+          aria-label="Vista í möppu"
+          aria-pressed={isFavorite}
           title={isFavorite ? 'Fjarlægja úr möppu' : 'Vista í möppu'}
         >
           <svg
@@ -245,15 +282,14 @@ export default function ProgramCard({
 
         {/* Read more button */}
         <button
+          type="button"
           className={styles.readMore}
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push(`/programs/${id}`);
-          }}
+          onClick={handleNavigate}
           aria-label={`Lesa meira um ${name}`}
         >
           Lesa meira
           <svg
+            aria-hidden="true"
             className={styles.arrow}
             xmlns="http://www.w3.org/2000/svg"
             fill="none"

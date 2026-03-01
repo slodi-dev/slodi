@@ -83,8 +83,8 @@
 }
 
 .placeholderIcon {
-  width: 48px;
-  height: 48px;
+  width: var(--sl-primitive-icon-2xl);
+  height: var(--sl-primitive-icon-2xl);
   opacity: var(--sl-primitive-opacity-40);
 }
 
@@ -102,9 +102,9 @@
 
 .title {
   font-family: var(--sl-font-family-sans);
-  font-size: var(--sl-font-size-lg);
-  font-weight: var(--sl-font-weight-semibold);
-  line-height: var(--sl-line-height-tight);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-heading);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
   
@@ -118,19 +118,19 @@
 }
 
 .byline {
-  font-size: var(--sl-font-size-sm);
+  font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
-  line-height: var(--sl-line-height-snug);
+  line-height: var(--sl-primitive-line-height-snug);
 }
 
 .authorName {
-  font-weight: var(--sl-font-weight-medium);
+  font-weight: var(--sl-primitive-font-weight-medium);
   color: hsl(var(--sl-color-text-primary));
 }
 
 .description {
-  font-size: var(--sl-font-size-base);
+  font-size: var(--sl-text-body);
   line-height: var(--sl-line-height-relaxed);
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
@@ -150,14 +150,14 @@
 
 .tags {
   display: flex;
-  gap: var(--sl-spacing-inline-xs);
+  gap: var(--sl-spacing-gap-xs);
   flex-wrap: wrap;
   margin-top: auto;
 }
 
 .tag {
-  font-size: var(--sl-font-size-xs);
-  font-weight: var(--sl-font-weight-medium);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-primitive-font-weight-medium);
   padding: var(--sl-spacing-inset-xs);
   border-radius: var(--sl-radius-badge);
   background: hsl(var(--sl-color-primary-subtle));
@@ -173,8 +173,8 @@
 }
 
 .tagMore {
-  font-size: var(--sl-font-size-xs);
-  font-weight: var(--sl-font-weight-medium);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-primitive-font-weight-medium);
   padding: var(--sl-spacing-inset-xs);
   color: hsl(var(--sl-color-text-tertiary));
   line-height: 1;
@@ -188,7 +188,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sl-spacing-inline-md);
+  gap: var(--sl-spacing-gap-md);
   margin-top: var(--sl-spacing-stack-sm);
   padding-top: var(--sl-spacing-stack-sm);
   border-top: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
@@ -201,22 +201,22 @@
 .likeButton {
   display: inline-flex;
   align-items: center;
-  gap: var(--sl-spacing-inline-xs);
+  gap: var(--sl-spacing-gap-xs);
   padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
   background: transparent;
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
   border-radius: var(--sl-radius-button);
   color: hsl(var(--sl-color-text-secondary));
-  font-size: var(--sl-font-size-sm);
-  font-weight: var(--sl-font-weight-medium);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-primitive-font-weight-medium);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     transform var(--sl-transition-fast);
-  
+
   /* Ensure proper hit target size */
-  min-height: 32px;
+  min-height: var(--sl-primitive-height-sm);
 }
 
 .likeButton:hover {
@@ -268,16 +268,16 @@
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
   border-radius: var(--sl-radius-button);
   color: hsl(var(--sl-color-text-secondary));
-  font-size: var(--sl-font-size-base);
+  font-size: var(--sl-text-body);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     transform var(--sl-transition-fast);
-  
+
   /* Ensure proper hit target size */
-  min-height: 32px;
-  min-width: 32px;
+  min-height: var(--sl-primitive-height-sm);
+  min-width: var(--sl-primitive-height-sm);
 }
 
 .favoriteButton:hover {
@@ -301,14 +301,14 @@
 }
 
 .starIcon {
-  font-size: var(--sl-font-size-base);
+  font-size: var(--sl-text-body);
   line-height: 1;
   transition: transform var(--sl-transition-fast);
 }
 
 .bookmarkIcon {
-  width: 20px;
-  height: 20px;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
   transition: transform var(--sl-transition-fast);
 }
 
@@ -324,14 +324,14 @@
 .readMore {
   display: inline-flex;
   align-items: center;
-  gap: var(--sl-spacing-inline-xs);
+  gap: var(--sl-spacing-gap-xs);
   padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
   background: transparent;
   border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-button);
   color: hsl(var(--sl-color-text-primary));
-  font-size: var(--sl-font-size-sm);
-  font-weight: var(--sl-font-weight-medium);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-primitive-font-weight-medium);
   cursor: pointer;
   transition: 
     background-color var(--sl-transition-fast),
@@ -356,8 +356,8 @@
 }
 
 .arrow {
-  width: var(--sl-icon-sm);
-  height: var(--sl-icon-sm);
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
   transition: transform var(--sl-transition-fast);
 }
 
@@ -371,11 +371,11 @@
   }
   
   .title {
-    font-size: var(--sl-font-size-base);
+    font-size: var(--sl-text-body);
   }
-  
+
   .description {
-    font-size: var(--sl-font-size-sm);
+    font-size: var(--sl-text-body-sm);
     -webkit-line-clamp: 2;
     line-clamp: 2;
   }
@@ -402,8 +402,8 @@
   .favoriteButton,
   .readMore,
   .heartIcon,
-  .starore,
-  .heartIcon,
+  .starIcon,
+  .bookmarkIcon,
   .arrow,
   .tag {
     transition: none;
@@ -443,10 +443,10 @@
   border: 1px solid hsl(var(--sl-color-border) / 0.7);
   border-radius: var(--sl-radius-base, 0.375rem);
   color: hsl(var(--sl-color-text-secondary));
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-heading);
   line-height: 1;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
   cursor: pointer;
   backdrop-filter: blur(4px);
   transition: background-color var(--sl-transition-fast), border-color var(--sl-transition-fast);
@@ -461,15 +461,15 @@
 
 .menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + var(--sl-primitive-space-1));
   right: 0;
   min-width: 120px;
   background: hsl(var(--sl-color-surface));
   border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-base, 0.375rem);
-  box-shadow: 0 4px 12px hsl(0 0% 0% / 0.12);
+  box-shadow: var(--sl-shadow-dropdown);
   overflow: hidden;
-  z-index: 20;
+  z-index: var(--sl-primitive-z-20);
 }
 
 .menuItem {
@@ -479,7 +479,7 @@
   background: transparent;
   border: none;
   text-align: left;
-  font-size: var(--sl-font-size-sm);
+  font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-primary));
   cursor: pointer;
   transition: background-color var(--sl-transition-fast);
@@ -490,10 +490,10 @@
 }
 
 .menuItemDanger {
-  color: hsl(var(--sl-color-error, 0 70% 50%));
+  color: hsl(var(--sl-color-error));
 }
 
 .menuItemDanger:hover {
-  background: hsl(var(--sl-color-error-subtle, 0 100% 97%));
+  background: hsl(var(--sl-color-error-subtle));
 }
 
