@@ -1,40 +1,56 @@
 /* ═══════════════════════════════════════════════════════════
    PROGRAM GRID COMPONENT
    Responsive grid layout for program cards
-   Using Slóði Design Tokens
+   Using Slóði Design Tokens (--sl-* prefix only)
    ═══════════════════════════════════════════════════════════ */
 
+/* Reset list styles — the <ul> is a pure layout container */
 .grid {
   display: grid;
   gap: var(--sl-spacing-stack-lg);
   width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   GRID VIEW (Default)
-   Responsive column layout - uses auto-fill for fluid responsiveness
+   GRID VIEW (default)
+   Responsive columns:
+     ≥1024px  → 3 columns
+     ≥640px   → 2 columns
+     <640px   → 1 column
+   Using auto-fill with a min column size so the grid is
+   naturally fluid between these explicit breakpoints.
    ═══════════════════════════════════════════════════════════ */
 
+/* Double class to win specificity over .grid.list */
 .grid.grid {
-  /* Fluid grid: automatically adjusts columns based on available space */
-  /* Minimum card width: 280px, cards grow equally to fill space */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .grid.grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid.grid {
+    grid-template-columns: 1fr;
+    gap: var(--sl-spacing-stack-md);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
    LIST VIEW
-   Horizontal card layout
+   Single column; cards render horizontally (card handles
+   its own list-view layout when this class is present).
    ═══════════════════════════════════════════════════════════ */
 
 .grid.list {
   grid-template-columns: 1fr;
   gap: var(--sl-spacing-stack-md);
-}
-
-/* List view cards should have horizontal layout */
-.grid.list > * {
-  /* This would be applied to child cards in list view */
-  /* Cards need to handle their own list view styling */
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -52,8 +68,8 @@
 }
 
 .emptyIcon {
-  width: var(--sl-icon-xl);
-  height: var(--sl-icon-xl);
+  width: var(--sl-size-icon-lg);
+  height: var(--sl-size-icon-lg);
   margin-bottom: var(--sl-spacing-stack-lg);
   color: hsl(var(--sl-color-text-tertiary));
   opacity: var(--sl-primitive-opacity-40);
@@ -65,14 +81,14 @@
 }
 
 .emptyTitle {
-  font-size: var(--sl-font-size-2xl);
-  font-weight: var(--sl-font-weight-semibold);
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-emphasis);
   color: hsl(var(--sl-color-text-primary));
   margin: 0 0 var(--sl-spacing-stack-sm) 0;
 }
 
 .emptyDescription {
-  font-size: var(--sl-font-size-base);
+  font-size: var(--sl-text-body);
   color: hsl(var(--sl-color-text-secondary));
   max-width: 400px;
   margin: 0;
@@ -81,43 +97,23 @@
 
 /* ═══════════════════════════════════════════════════════════
    LOADING SKELETON
-   Animated placeholder for loading state
+   Shimmer placeholders that precisely mirror ProgramCard's
+   layout to prevent content layout shift on load.
+
+   Structure mirrors ProgramCard exactly:
+     skeletonItem (li)
+       skeleton (visual card surface)
+         skeletonMedia      — 16:9 image area
+         skeletonContent    — content area with padding
+           skeletonTitle
+           skeletonByline
+           skeletonDescription × 2
+           skeletonTags       — chip row
+           skeletonMeta       — age/duration/price row
+         skeletonFooter     — like + favorite buttons
    ═══════════════════════════════════════════════════════════ */
 
-.skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-stack-md);
-  background: hsl(var(--sl-color-surface));
-  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
-  border-radius: var(--sl-radius-card);
-  padding: var(--sl-spacing-inset-md);
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.skeletonMedia {
-  width: 100%;
-  height: 180px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary)),
-    hsl(var(--sl-color-background-secondary))
-  );
-  background-size: 200% 100%;
-  border-radius: var(--sl-radius-base);
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
+/* Shimmer gradient animation */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -127,16 +123,61 @@
   }
 }
 
+/* Shared shimmer mixin — applied via reusable class */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--sl-color-background-secondary)),
+    hsl(var(--sl-color-background-tertiary)),
+    hsl(var(--sl-color-background-secondary))
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeletonItem {
+  list-style: none;
+  display: flex;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
+  border-radius: var(--sl-radius-card);
+  overflow: hidden;
+}
+
+/* 16:9 image placeholder — matches .media in ProgramCard.module.css */
+.skeletonMedia {
+  width: 100%;
+  padding-top: 56.25%;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--sl-color-background-secondary)),
+    hsl(var(--sl-color-background-tertiary)),
+    hsl(var(--sl-color-background-secondary))
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Mirrors .content padding in ProgramCard.module.css */
 .skeletonContent {
   display: flex;
   flex-direction: column;
   gap: var(--sl-spacing-stack-sm);
   flex: 1;
+  padding: var(--sl-spacing-inset-md);
+  padding-bottom: 0;
 }
 
 .skeletonTitle {
-  width: 80%;
-  height: 24px;
+  width: 75%;
+  height: 22px;
   background: linear-gradient(
     90deg,
     hsl(var(--sl-color-background-secondary)),
@@ -144,13 +185,13 @@
     hsl(var(--sl-color-background-secondary))
   );
   background-size: 200% 100%;
-  border-radius: var(--sl-radius-sm);
+  border-radius: var(--sl-radius-button);
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
 .skeletonByline {
   width: 40%;
-  height: 16px;
+  height: 14px;
   background: linear-gradient(
     90deg,
     hsl(var(--sl-color-background-secondary)),
@@ -158,14 +199,14 @@
     hsl(var(--sl-color-background-secondary))
   );
   background-size: 200% 100%;
-  border-radius: var(--sl-radius-sm);
+  border-radius: var(--sl-radius-button);
   animation: shimmer 1.5s ease-in-out infinite;
-  animation-delay: 0.1s;
+  animation-delay: 0.08s;
 }
 
 .skeletonDescription {
   width: 100%;
-  height: 16px;
+  height: 14px;
   background: linear-gradient(
     90deg,
     hsl(var(--sl-color-background-secondary)),
@@ -173,24 +214,24 @@
     hsl(var(--sl-color-background-secondary))
   );
   background-size: 200% 100%;
-  border-radius: var(--sl-radius-sm);
+  border-radius: var(--sl-radius-button);
   animation: shimmer 1.5s ease-in-out infinite;
-  animation-delay: 0.2s;
+  animation-delay: 0.16s;
 }
 
-.skeletonDescription:last-child {
-  width: 70%;
+/* Second description line is shorter — mirrors clamped text */
+.skeletonDescriptionShort {
+  width: 65%;
 }
 
 .skeletonTags {
   display: flex;
-  gap: var(--sl-spacing-inline-xs);
-  margin-top: var(--sl-spacing-stack-sm);
+  gap: var(--sl-spacing-gap-xs);
 }
 
 .skeletonTag {
-  width: 60px;
-  height: 24px;
+  width: 56px;
+  height: 22px;
   background: linear-gradient(
     90deg,
     hsl(var(--sl-color-background-secondary)),
@@ -198,22 +239,42 @@
     hsl(var(--sl-color-background-secondary))
   );
   background-size: 200% 100%;
-  border-radius: var(--sl-radius-badge);
+  border-radius: var(--sl-radius-chip);
   animation: shimmer 1.5s ease-in-out infinite;
-  animation-delay: 0.3s;
+  animation-delay: 0.24s;
 }
 
+/* Meta row — age/duration/price/location */
+.skeletonMeta {
+  width: 80%;
+  height: 14px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--sl-color-background-secondary)),
+    hsl(var(--sl-color-background-tertiary)),
+    hsl(var(--sl-color-background-secondary))
+  );
+  background-size: 200% 100%;
+  border-radius: var(--sl-radius-button);
+  animation: shimmer 1.5s ease-in-out infinite;
+  animation-delay: 0.32s;
+  margin-top: auto;
+}
+
+/* Mirrors .footer in ProgramCard.module.css */
 .skeletonFooter {
   display: flex;
-  justify-content: space-between;
-  gap: var(--sl-spacing-inline-md);
-  padding-top: var(--sl-spacing-stack-sm);
+  align-items: center;
+  gap: var(--sl-spacing-gap-md);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
   border-top: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
+  margin-top: var(--sl-spacing-stack-sm);
 }
 
+/* Like button placeholder */
 .skeletonButton {
-  width: 80px;
-  height: 32px;
+  width: 72px;
+  height: var(--sl-primitive-height-sm);
   background: linear-gradient(
     90deg,
     hsl(var(--sl-color-background-secondary)),
@@ -226,6 +287,22 @@
   animation-delay: 0.4s;
 }
 
+/* Favorite button placeholder (square, narrower) */
+.skeletonButtonSm {
+  width: var(--sl-primitive-height-sm);
+  height: var(--sl-primitive-height-sm);
+  background: linear-gradient(
+    90deg,
+    hsl(var(--sl-color-background-secondary)),
+    hsl(var(--sl-color-background-tertiary)),
+    hsl(var(--sl-color-background-secondary))
+  );
+  background-size: 200% 100%;
+  border-radius: var(--sl-radius-button);
+  animation: shimmer 1.5s ease-in-out infinite;
+  animation-delay: 0.48s;
+}
+
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE ADJUSTMENTS
    ═══════════════════════════════════════════════════════════ */
@@ -235,22 +312,18 @@
     padding: var(--sl-spacing-stack-xl);
     min-height: 300px;
   }
-  
+
   .emptyIcon {
     width: 64px;
     height: 64px;
   }
-  
+
   .emptyTitle {
-    font-size: var(--sl-font-size-xl);
+    font-size: var(--sl-text-heading-5);
   }
-  
+
   .emptyDescription {
-    font-size: var(--sl-font-size-sm);
-  }
-  
-  .skeletonMedia {
-    height: 140px;
+    font-size: var(--sl-text-body-sm);
   }
 }
 
@@ -259,18 +332,21 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton,
   .skeletonMedia,
   .skeletonTitle,
   .skeletonByline,
   .skeletonDescription,
   .skeletonTag,
-  .skeletonButton {
+  .skeletonMeta,
+  .skeletonButton,
+  .skeletonButtonSm {
     animation: none;
+    /* Static fallback so elements remain visible without motion */
+    background: hsl(var(--sl-color-background-secondary));
   }
 }
 
-/* Screen reader only text */
+/* Screen reader only utility */
 .srOnly {
   position: absolute;
   width: 1px;

@@ -1,0 +1,830 @@
+/* ═══════════════════════════════════════════════════════════
+   PROGRAM FILTER BAR COMPONENT
+   Horizontal filter bar with URL state sync.
+   Controls: Age Group dropdown, Tags multi-select, Search input.
+   Responsive: collapses to search + "Síur" drawer on <768px.
+   Using Slóði Design Tokens exclusively.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   ROOT CONTAINER
+   ═══════════════════════════════════════════════════════════ */
+
+.filterBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONTROLS ROW
+   ═══════════════════════════════════════════════════════════ */
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-md);
+  flex-wrap: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SEARCH INPUT
+   ═══════════════════════════════════════════════════════════ */
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--sl-spacing-inset-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+  pointer-events: none;
+  flex-shrink: 0;
+  transition: color var(--sl-transition-fast);
+  z-index: 1;
+}
+
+.searchWrapper:focus-within .searchIcon {
+  color: hsl(var(--sl-color-primary));
+}
+
+.searchInput {
+  width: 100%;
+  height: var(--sl-size-input);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  padding-left: calc(var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm));
+  padding-right: calc(var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm));
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  outline: none;
+  transition:
+    border-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+  /* Remove native search styling */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchInput::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+  opacity: 1;
+}
+
+.searchInput:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+}
+
+.searchInput:focus {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-10));
+}
+
+.searchInput:disabled {
+  background: hsl(var(--sl-color-background-secondary));
+  color: hsl(var(--sl-color-text-disabled));
+  cursor: not-allowed;
+  opacity: var(--sl-opacity-disabled);
+}
+
+/* Hide native clear button on search inputs */
+.searchInput::-webkit-search-cancel-button,
+.searchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchInputActive {
+  border-color: hsl(var(--sl-color-border-hover));
+}
+
+.searchClearButton {
+  position: absolute;
+  right: var(--sl-spacing-gap-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sl-radius-button);
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+  transition: color var(--sl-transition-fast);
+  flex-shrink: 0;
+}
+
+.searchClearButton svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.searchClearButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.searchClearButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP CONTROLS WRAPPER
+   Hidden on mobile (<768px)
+   ═══════════════════════════════════════════════════════════ */
+
+.desktopControls {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-md);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DROPDOWN — shared trigger + list
+   ═══════════════════════════════════════════════════════════ */
+
+.dropdownContainer {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dropdownTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  height: var(--sl-size-input);
+  padding: 0 var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+  user-select: none;
+}
+
+.dropdownTrigger:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.dropdownTrigger:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.dropdownTrigger:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+/* Active state: a filter value is selected */
+.dropdownTriggerActive {
+  color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  border-color: hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-40));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.dropdownTriggerActive:hover:not(:disabled) {
+  background: hsl(var(--sl-color-primary-muted));
+  border-color: hsl(var(--sl-color-primary));
+}
+
+.dropdownLabel {
+  /* allow truncation on very narrow viewports */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.dropdownChevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: hsl(var(--sl-color-text-tertiary));
+  transition: transform var(--sl-transition-fast);
+}
+
+.dropdownChevronOpen {
+  transform: rotate(180deg);
+}
+
+/* Dropdown list (floating) */
+.dropdownList {
+  position: absolute;
+  top: calc(100% + var(--sl-spacing-gap-xs));
+  left: 0;
+  z-index: var(--sl-z-dropdown);
+  min-width: 160px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  box-shadow: var(--sl-shadow-dropdown);
+  list-style: none;
+  margin: 0;
+  padding: var(--sl-spacing-gap-xs);
+  outline: none;
+}
+
+/* Tags list: slightly wider to accommodate longer tag names */
+.dropdownListTags {
+  min-width: 200px;
+  max-height: 320px;
+}
+
+.dropdownOption {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-primary));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  transition: background-color var(--sl-transition-fast);
+  outline: none;
+  user-select: none;
+}
+
+.dropdownOption:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.dropdownOption:focus-visible {
+  background: hsl(var(--sl-color-surface-hover));
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: -2px;
+}
+
+.dropdownOptionSelected {
+  color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.dropdownOptionSelected:hover {
+  background: hsl(var(--sl-color-primary-muted));
+}
+
+/* Checkmark icon next to selected single-select option */
+.checkIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: hsl(var(--sl-color-primary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAG CHECKBOX (inside tags dropdown)
+   ═══════════════════════════════════════════════════════════ */
+
+.tagCheckbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 1.5px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-primitive-radius-xs);
+  background: hsl(var(--sl-color-surface));
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+
+.tagCheckbox svg {
+  width: 10px;
+  height: 10px;
+  color: hsl(var(--sl-color-text-inverse));
+  pointer-events: none;
+}
+
+.tagCheckboxChecked {
+  background: hsl(var(--sl-color-primary));
+  border-color: hsl(var(--sl-color-primary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CLEAR FILTERS BUTTON
+   ═══════════════════════════════════════════════════════════ */
+
+.clearButton {
+  display: inline-flex;
+  align-items: center;
+  height: var(--sl-size-button-sm);
+  padding: 0 var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+  background: transparent;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
+}
+
+.clearButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.clearButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   META ROW (results count + mobile clear)
+   ═══════════════════════════════════════════════════════════ */
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-gap-md);
+  min-height: 20px;
+}
+
+.resultsCount {
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-heading);
+}
+
+.resultsText {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.resultsEmpty {
+  color: hsl(var(--sl-color-text-tertiary));
+  font-style: italic;
+}
+
+.resultsLoading {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE "Síur" BUTTON
+   Visible only on <768px
+   ═══════════════════════════════════════════════════════════ */
+
+.mobileFiltersButton {
+  display: none; /* hidden on desktop */
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  height: var(--sl-size-input);
+  padding: 0 var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    border-color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
+  position: relative;
+}
+
+.mobileFiltersButton:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.mobileFiltersButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.mobileFiltersButton:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.mobileFiltersButtonActive {
+  color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  border-color: hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-40));
+}
+
+.mobileFiltersIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.mobileFiltersBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--sl-spacing-gap-xs);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-inverse));
+  background: hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-badge);
+  line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE DRAWER
+   ═══════════════════════════════════════════════════════════ */
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: hsl(var(--sl-color-overlay-base));
+  z-index: var(--sl-z-modal-backdrop);
+}
+
+.drawer {
+  position: fixed;
+  inset-block: 0;
+  right: 0;
+  width: min(360px, 100vw);
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-modal);
+  z-index: var(--sl-z-modal);
+  overflow: hidden;
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-lg);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  flex-shrink: 0;
+}
+
+.drawerTitle {
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+  color: hsl(var(--sl-color-text-primary));
+  margin: 0;
+}
+
+.drawerCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-size-button-sm);
+  height: var(--sl-size-button-sm);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sl-radius-button);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  transition: color var(--sl-transition-fast), background-color var(--sl-transition-fast);
+}
+
+.drawerCloseButton svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  pointer-events: none;
+}
+
+.drawerCloseButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.drawerCloseButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sl-spacing-inset-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-lg);
+}
+
+.drawerSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+}
+
+.drawerSectionTitle {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+  margin: 0;
+}
+
+.drawerSectionCount {
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-tertiary));
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.drawerOptionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-xs);
+}
+
+.drawerOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-primary));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  transition: background-color var(--sl-transition-fast);
+  outline: none;
+  user-select: none;
+}
+
+.drawerOption:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.drawerOption:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: -2px;
+}
+
+.drawerOptionSelected {
+  color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.drawerOptionSelected:hover {
+  background: hsl(var(--sl-color-primary-muted));
+}
+
+/* Tags chip list in drawer */
+.drawerTagList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.drawerTagOption {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+  background: hsl(var(--sl-color-background-secondary));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-chip);
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
+  outline: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.drawerTagOption:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  border-color: hsl(var(--sl-color-border-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.drawerTagOption:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.drawerTagOptionSelected {
+  color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  border-color: hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-40));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.drawerTagOptionSelected:hover {
+  background: hsl(var(--sl-color-primary-muted));
+  border-color: hsl(var(--sl-color-primary));
+}
+
+/* Drawer footer */
+.drawerFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-lg);
+  border-top: 1px solid hsl(var(--sl-color-border));
+  flex-shrink: 0;
+}
+
+.drawerClearButton {
+  width: 100%;
+  height: var(--sl-size-button-md);
+  padding: 0 var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+  background: transparent;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  transition:
+    color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
+}
+
+.drawerClearButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.drawerClearButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.drawerApplyButton {
+  width: 100%;
+  height: var(--sl-size-button-md);
+  padding: 0 var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-inverse));
+  background: hsl(var(--sl-color-primary));
+  border: 1px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+
+.drawerApplyButton:hover {
+  background: hsl(var(--sl-color-primary-hover));
+  border-color: hsl(var(--sl-color-primary-hover));
+}
+
+.drawerApplyButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — <768px: collapse to search + drawer
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .desktopControls {
+    display: none;
+  }
+
+  .mobileFiltersButton {
+    display: inline-flex;
+  }
+
+  /* On mobile show the clear button inline in the meta row only */
+  .clearButtonDesktop {
+    display: none;
+  }
+
+  .clearButtonMobile {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 769px) {
+  /* On desktop never show the mobile clear button */
+  .clearButtonMobile {
+    display: none;
+  }
+
+  .mobileFiltersButton {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY — reduced motion
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .searchIcon,
+  .searchInput,
+  .searchClearButton,
+  .dropdownTrigger,
+  .dropdownChevron,
+  .dropdownOption,
+  .tagCheckbox,
+  .clearButton,
+  .mobileFiltersButton,
+  .drawerTagOption,
+  .drawerOption,
+  .drawerClearButton,
+  .drawerApplyButton,
+  .drawerCloseButton {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY — high contrast
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-contrast: high) {
+  .searchInput,
+  .dropdownTrigger,
+  .clearButton,
+  .mobileFiltersButton,
+  .drawerClearButton,
+  .drawerApplyButton,
+  .drawerTagOption {
+    border-width: 2px;
+  }
+
+  .tagCheckbox {
+    border-width: 2px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN READER UTILITY
+   ═══════════════════════════════════════════════════════════ */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

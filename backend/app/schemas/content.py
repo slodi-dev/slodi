@@ -28,6 +28,23 @@ from app.schemas.tag import TagOut
 from app.schemas.user import UserOut
 from app.utils import get_current_datetime
 
+# Lookup maps for age group normalisation (used by validators below).
+_AGE_GROUP_BY_VALUE: dict[str, AgeGroup] = {e.value: e for e in AgeGroup}
+_AGE_GROUP_BY_NAME: dict[str, AgeGroup] = {e.name: e for e in AgeGroup}
+
+
+def _normalise_age_item(raw: object) -> AgeGroup:
+    """Accept an AgeGroup by its Icelandic *value* (preferred) or Python *name*."""
+    if isinstance(raw, AgeGroup):
+        return raw
+    s = str(raw)
+    if s in _AGE_GROUP_BY_VALUE:
+        return _AGE_GROUP_BY_VALUE[s]
+    if s in _AGE_GROUP_BY_NAME:
+        return _AGE_GROUP_BY_NAME[s]
+    valid = ", ".join(repr(v) for v in _AGE_GROUP_BY_VALUE)
+    raise ValueError(f"Invalid age group {s!r}. Valid values: {valid}")
+
 NameStr = Annotated[
     str,
     StringConstraints(min_length=NAME_MIN, max_length=NAME_MAX, strip_whitespace=True),
@@ -48,7 +65,7 @@ LocationStr = Annotated[
 
 
 class ContentBase(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr
     description: DescStr | None = None
@@ -63,6 +80,15 @@ class ContentBase(BaseModel):
     author_id: UUID | None = None
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
+    @field_validator("age", mode="before")
+    @classmethod
+    def normalise_age_groups(cls, v: object) -> list[AgeGroup] | None:
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            raise ValueError("age must be a list")
+        return [_normalise_age_item(item) for item in v]
+
     @field_validator("count", "price")
     @classmethod
     def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
@@ -76,7 +102,7 @@ class ContentCreate(ContentBase):
 
 
 class ContentUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr | None = None
     description: DescStr | None = None
@@ -88,6 +114,15 @@ class ContentUpdate(BaseModel):
     count: int | None = None
     price: int | None = None
     prep_time: DurationStr | None = None
+
+    @field_validator("age", mode="before")
+    @classmethod
+    def normalise_age_groups(cls, v: object) -> list[AgeGroup] | None:
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            raise ValueError("age must be a list")
+        return [_normalise_age_item(item) for item in v]
 
     @field_validator("count", "price")
     @classmethod

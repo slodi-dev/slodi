@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Program, ProgramUpdateInput } from "@/services/programs.service";
+import type { AgeGroup, Program, ProgramUpdateInput } from "@/services/programs.service";
 import { useTags } from "@/hooks/useTags";
 import styles from "./ProgramDetailEdit.module.css";
 
@@ -15,10 +15,13 @@ function parseDuration(val: string | null | undefined): [string, string] {
   return [(parts[0] ?? "").trim(), (parts[1] ?? "").trim()];
 }
 
-/** Parses "Hrefnuskátar, Drekaskátar" → ["Hrefnuskátar", "Drekaskátar"] */
-function parseAge(val: string | null | undefined): string[] {
-  if (!val) return [];
-  return val.split(",").map((s) => s.trim()).filter(Boolean);
+/**
+ * Normalises the age field from the Program type (AgeGroup[] | null | undefined)
+ * into a plain string[] for use in form state.
+ */
+function parseAge(val: readonly string[] | null | undefined): string[] {
+  if (!val || val.length === 0) return [];
+  return [...val];
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -173,7 +176,7 @@ export default function ProgramDetailEdit({
           : null,
       age:
         form.selectedAgeGroups.length > 0
-          ? form.selectedAgeGroups.join(", ")
+          ? (form.selectedAgeGroups as AgeGroup[])
           : null,
       location: form.location.trim() || null,
       count: form.countMin !== "" ? Number(form.countMin) : null,
@@ -543,7 +546,7 @@ export default function ProgramDetailEdit({
         </section>
 
         {/* ── Error ── */}
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <div className={styles.error} role="alert">{error}</div>}
 
         {/* ── Actions ── */}
         <div className={styles.actions}>

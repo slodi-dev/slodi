@@ -68,17 +68,23 @@
 }
 
 .panel {
-    animation: fadeIn 0.2s ease-in;
+    /* animation applied only when motion is not restricted */
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
+@media (prefers-reduced-motion: no-preference) {
+    .panel {
+        animation: fadeIn 0.2s ease-in;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 }
 
@@ -272,3 +278,18 @@
         gap: var(--space-2);
     }
 }
+
+/* ===== ACCESSIBILITY ===== */
+
+@media (prefers-contrast: high) {
+    .tabNav {
+        border-bottom-width: 3px;
+    }
+
+    .tab.active {
+        border-bottom-width: 4px;
+    }
+}
+
+/* contrast: verify tab text on --color-background-secondary meets 4.5:1 */
+/* contrast: verify active tab color on --color-background-primary meets 4.5:1 */

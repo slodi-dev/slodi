@@ -1,0 +1,309 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   PROGRAMS PAGE — two-column sidebar layout
+   Left: sticky filter sidebar (~268px). Right: program grid.
+   Uses Slóði design tokens exclusively.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Page layout wrapper ────────────────────────────────────────────────────── */
+
+/*
+ * Two-column grid:
+ *   - filterColumn: fixed-width sidebar, sticky so it stays visible while
+ *     the user scrolls through the grid.
+ *   - mainColumn: flex-grow, holds the grid + states + load more.
+ *
+ * On ≤768px the columns stack vertically (sidebar above grid).
+ */
+
+.pageLayout {
+  display: grid;
+  grid-template-columns: 268px 1fr;
+  grid-template-rows: auto;
+  align-items: start;
+  gap: var(--sl-spacing-gap-xl);
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--sl-spacing-inset-lg) var(--sl-spacing-inset-md);
+  min-height: calc(100vh - 80px);
+}
+
+/* ── Filter sidebar column ──────────────────────────────────────────────────── */
+
+.filterColumn {
+  position: sticky;
+  top: var(--sl-spacing-inset-lg);
+  max-height: calc(100vh - var(--sl-spacing-inset-lg) * 2);
+  overflow-y: auto;
+  /* Subtle scroll indicator when the sidebar content is taller than viewport */
+  overscroll-behavior: contain;
+}
+
+/* ── Main content column ────────────────────────────────────────────────────── */
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-lg);
+  min-width: 0; /* prevent grid blowout */
+}
+
+/* ── Filter bar skeleton (shown while Suspense fallback) ───────────────────── */
+
+.filterBarSkeleton {
+  height: 400px;
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface-secondary));
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ── Error state ────────────────────────────────────────────────────────────── */
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sl-spacing-stack-md);
+  padding: var(--sl-spacing-inset-xl);
+  border-radius: var(--sl-radius-card);
+  border: 1px solid hsl(var(--sl-color-error-subtle));
+  background: hsl(var(--sl-color-error-subtle));
+  text-align: center;
+}
+
+.errorMessage {
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-error-text));
+  margin: 0;
+}
+
+.retryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-lg);
+  border-radius: var(--sl-radius-button);
+  border: 1px solid hsl(var(--sl-color-error));
+  background: transparent;
+  color: hsl(var(--sl-color-error-text));
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  cursor: pointer;
+  transition: background var(--sl-transition-fast), color var(--sl-transition-fast);
+}
+
+.retryButton:hover {
+  background: hsl(var(--sl-color-error));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ── Empty state — filters active ───────────────────────────────────────────── */
+
+.emptyFiltered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sl-spacing-stack-sm);
+  padding: var(--sl-spacing-inset-xl);
+  text-align: center;
+}
+
+.emptyFilteredMessage {
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-secondary));
+  margin: 0;
+}
+
+.clearFiltersLink {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-primary));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--sl-transition-fast);
+}
+
+.clearFiltersLink:hover {
+  color: hsl(var(--sl-color-primary-hover));
+}
+
+.clearFiltersLink:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Load More row ──────────────────────────────────────────────────────────── */
+
+.loadMoreRow {
+  display: flex;
+  justify-content: center;
+  padding: var(--sl-spacing-inset-lg) 0;
+}
+
+.loadMoreButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-xl);
+  border-radius: var(--sl-radius-button);
+  border: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  cursor: pointer;
+  transition:
+    background var(--sl-transition-fast),
+    border-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+  box-shadow: var(--sl-shadow-card);
+}
+
+.loadMoreButton:hover:not(:disabled) {
+  background: hsl(var(--sl-color-surface-hover));
+  border-color: hsl(var(--sl-color-border-hover));
+  box-shadow: var(--sl-shadow-card-hover);
+}
+
+.loadMoreButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.loadMoreButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ── Appended skeleton grid (loading more) ──────────────────────────────────── */
+
+.loadMoreSkeletons {
+  margin-top: calc(-1 * var(--sl-spacing-stack-lg));
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────────── */
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.spinnerTrack {
+  opacity: 0.25;
+}
+
+.spinnerHead {
+  opacity: 0.75;
+}
+
+/* ── Screen reader only ─────────────────────────────────────────────────────── */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+
+@keyframes shimmer {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+
+/*
+ * ≥1200px — sidebar + 3-column grid (grid column count handled in ProgramGrid.module.css)
+ * ≥900px  — sidebar + 2-column grid
+ * ≤768px  — stack: sidebar above grid, full width
+ * ≤640px  — tighter padding
+ */
+
+@media (max-width: 1024px) {
+  .pageLayout {
+    grid-template-columns: 240px 1fr;
+    gap: var(--sl-spacing-gap-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  /*
+   * Collapse to single column: sidebar stacks above the grid.
+   * ProgramFilterBar hides its desktop dropdowns and shows the "Síur" drawer
+   * button at this breakpoint — the sidebar here is just its search row.
+   */
+  .pageLayout {
+    grid-template-columns: 1fr;
+    gap: var(--sl-spacing-stack-md);
+    padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-sm);
+  }
+
+  .filterColumn {
+    position: static; /* no sticky sidebar on mobile */
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .filterBarSkeleton {
+    height: 56px;
+  }
+}
+
+@media (max-width: 640px) {
+  .pageLayout {
+    padding: var(--sl-spacing-inset-sm);
+    gap: var(--sl-spacing-stack-sm);
+  }
+}
+
+/* ── Accessibility ──────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .filterBarSkeleton,
+  .spinner,
+  .loadMoreButton {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .retryButton {
+    border-width: 2px;
+  }
+
+  .loadMoreButton {
+    border-width: 2px;
+  }
+}

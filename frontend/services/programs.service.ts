@@ -3,6 +3,19 @@ import { fetchWithAuth } from "@/lib/api";
 import { findTagIdByName, addTagToContent } from "@/services/tags.service";
 import { User } from "@/services/users.service";
 
+/**
+ * All valid AgeGroup enum values as defined in the backend Content model.
+ * A program may target multiple age groups simultaneously.
+ */
+export type AgeGroup =
+  | "Hrefnuskátar"
+  | "Drekaskátar"
+  | "Fálkaskátar"
+  | "Dróttskátar"
+  | "Rekkaskátar"
+  | "Róverskátar"
+  | "Vættaskátar";
+
 export type Program = {
   id: string;
   content_type: "program";
@@ -23,16 +36,28 @@ export type Program = {
     id: string;
     name: string;
   };
-  tags?: Array<{ id: string; name: string }>;
+  /** Tags associated with this program. Each tag may carry an optional hex/hsl color. */
+  tags?: Array<{ id: string; name: string; color?: string }>;
   comment_count?: number;
   // Extended backend fields (ContentBase)
   instructions?: string | null;
   equipment?: string[] | null;
+  /** Free-text duration string, e.g. "45 mín", "2 klst". */
   duration?: string | null;
+  /** Free-text prep time string, e.g. "15 mín". */
   prep_time?: string | null;
-  age?: string | null;
+  /**
+   * Age groups this program targets. Array of AgeGroup enum values.
+   * Changed from `string | null` to `AgeGroup[] | null` to match the backend
+   * Content model where `age` is an array column.
+   */
+  age?: AgeGroup[] | null;
   location?: string | null;
+  /** Participant count / capacity. Display as "{n} þátttakendur" when present. */
   count?: number | null;
+  /**
+   * Price in ISK. Display "Frítt" when 0, "X kr." when > 0, hide when null.
+   */
   price?: number | null;
 };
 
@@ -44,7 +69,7 @@ export type ProgramCreateInput = {
   equipment?: string[];
   duration?: string;
   prep_time?: string;
-  age?: string;
+  age?: AgeGroup[];
   location?: string;
   count?: number;
   price?: number;
@@ -61,7 +86,7 @@ export type ProgramUpdateInput = {
   equipment?: string[] | null;
   duration?: string | null;
   prep_time?: string | null;
-  age?: string | null;
+  age?: AgeGroup[] | null;
   location?: string | null;
   count?: number | null;
   price?: number | null;
@@ -145,7 +170,7 @@ export async function createProgram(
     equipment: input.equipment && input.equipment.length > 0 ? input.equipment : null,
     duration: input.duration?.trim() || null,
     prep_time: input.prep_time?.trim() || null,
-    age: input.age?.trim() || null,
+    age: input.age && input.age.length > 0 ? input.age : null,
     location: input.location?.trim() || null,
     count: input.count ?? null,
     price: input.price ?? null,

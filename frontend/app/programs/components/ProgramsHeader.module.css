@@ -127,7 +127,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fab {
+  .fab,
+  .fabIcon,
+  .fabLabel {
     transition: none;
+  }
+
+  .fab:hover {
+    transform: none;
+  }
+
+  .fab:hover .fabIcon {
+    transform: none;
+  }
+
+  .fab:active {
+    transform: none;
   }
 }

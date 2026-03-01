@@ -435,6 +435,11 @@
   cursor: not-allowed;
 }
 
+.addButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
 .chipList {
   display: flex;
   flex-wrap: wrap;
@@ -520,6 +525,59 @@
   cursor: not-allowed;
 }
 
+.tagButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.saveButton:focus-visible,
+.cancelButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.deleteButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-error));
+  outline-offset: 2px;
+}
+
+.chipRemove:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .textarea,
+  .select,
+  .tagButton,
+  .addButton,
+  .chipRemove,
+  .saveButton,
+  .cancelButton,
+  .deleteButton,
+  .imageClearButton {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .input,
+  .textarea,
+  .select,
+  .saveButton,
+  .cancelButton,
+  .deleteButton,
+  .addButton,
+  .tagButton {
+    border-width: 3px;
+  }
+}
+
+/* contrast: verify --sl-color-text-primary on --sl-color-surface meets 4.5:1 */
+/* contrast: verify --sl-color-primary text on --sl-color-primary-subtle meets 4.5:1 */
 
 .form {
   display: flex;

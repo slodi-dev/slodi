@@ -1,75 +1,93 @@
 /* ═══════════════════════════════════════════════════════════
    PROGRAM CARD COMPONENT
-   Using Slóði Design Tokens
+   Using Slóði Design Tokens (--sl-* prefix only)
    ═══════════════════════════════════════════════════════════ */
 
+/* ─── List item wrapper ────────────────────────────────────
+   ProgramCard renders as <li> inside ProgramGrid's <ul>.
+   The item itself has no visual styling — the <a> inside it
+   is the visual card surface.
+   ─────────────────────────────────────────────────────────── */
+
+.item {
+  display: flex;
+  list-style: none;
+}
+
+/* ─── Card link surface ────────────────────────────────────
+   The <a> wraps the entire card so the whole surface is a
+   single keyboard-focusable, clickable target.
+   ─────────────────────────────────────────────────────────── */
+
 .card {
-  /* Layout */
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-stack-md);
   width: 100%;
-  
+  text-decoration: none;
+  color: inherit;
+
   /* Surface */
   background: hsl(var(--sl-color-surface));
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
   border-radius: var(--sl-radius-card);
-  padding: var(--sl-spacing-inset-md);
-  
+  overflow: hidden;
+
   /* Shadow */
   box-shadow: var(--sl-shadow-card);
-  
+
   /* Transitions */
-  transition: 
+  transition:
     box-shadow var(--sl-transition-base),
     transform var(--sl-transition-fast),
     border-color var(--sl-transition-fast);
-  
-  /* Interaction */
+
   cursor: pointer;
-  outline: none;
   position: relative;
 }
 
 .card:hover {
   box-shadow: var(--sl-shadow-card-hover);
-  transform: translateY(-2px);
   border-color: hsl(var(--sl-color-border-hover) / var(--sl-primitive-opacity-60));
 }
 
 .card:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary));
+  outline: 2px solid hsl(var(--sl-color-border-focus));
   outline-offset: 2px;
   box-shadow: var(--sl-shadow-card-hover);
 }
 
-.card:active {
-  transform: translateY(0);
+@media (prefers-reduced-motion: no-preference) {
+  .card:hover {
+    transform: scale(1.02);
+  }
+
+  .card:active {
+    transform: scale(1);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
    MEDIA / THUMBNAIL
+   16:9 aspect ratio enforced via padding-top trick so the
+   container always holds its shape regardless of card width.
    ═══════════════════════════════════════════════════════════ */
 
 .media {
   width: 100%;
-  height: 180px;
-  border-radius: var(--sl-radius-base);
-  overflow: hidden;
-  background: hsl(var(--sl-color-surface-secondary));
+  /* 16:9 ratio: 9/16 = 56.25% */
+  padding-top: 56.25%;
   position: relative;
+  background: hsl(var(--sl-color-surface-secondary));
   flex-shrink: 0;
 }
 
 .image {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
 }
 
 .placeholder {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,7 +97,6 @@
     hsl(var(--sl-color-background-tertiary))
   );
   color: hsl(var(--sl-color-text-tertiary));
-  padding: var(--sl-spacing-element);
 }
 
 .placeholderIcon {
@@ -98,17 +115,19 @@
   gap: var(--sl-spacing-stack-sm);
   flex: 1;
   min-height: 0;
+  padding: var(--sl-spacing-inset-md);
+  padding-bottom: 0;
 }
 
 .title {
-  font-family: var(--sl-font-family-sans);
+  font-family: var(--sl-font-family-heading);
   font-size: var(--sl-text-heading-6);
   font-weight: var(--sl-font-weight-emphasis);
   line-height: var(--sl-line-height-heading);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
-  
-  /* Limit to 2 lines with ellipsis */
+
+  /* Clamp to 2 lines */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -130,15 +149,15 @@
 }
 
 .description {
-  font-size: var(--sl-text-body);
-  line-height: var(--sl-line-height-relaxed);
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-body);
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
-  
-  /* Limit to 3 lines with ellipsis */
+
+  /* Clamp to 2 lines per spec */
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -152,33 +171,66 @@
   display: flex;
   gap: var(--sl-spacing-gap-xs);
   flex-wrap: wrap;
-  margin-top: auto;
 }
 
 .tag {
   font-size: var(--sl-text-overline);
   font-weight: var(--sl-primitive-font-weight-medium);
-  padding: var(--sl-spacing-inset-xs);
-  border-radius: var(--sl-radius-badge);
-  background: hsl(var(--sl-color-primary-subtle));
-  color: hsl(var(--sl-color-primary));
+  /* Inset: 3px top/bottom, 8px left/right — no exact token; use gap-sm for x */
+  padding: 3px var(--sl-spacing-gap-sm); /* TODO: add token for 3px vertical chip padding */
+  border-radius: var(--sl-radius-chip);
+  /*
+   * When a tag carries a custom color, the component sets --tag-bg and --tag-fg
+   * via inline style. Fall back to the primary-subtle token palette.
+   */
+  background: var(--tag-bg, hsl(var(--sl-color-primary-subtle)));
+  color: var(--tag-fg, hsl(var(--sl-color-primary)));
   border: 1px solid hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-20));
   line-height: 1;
   white-space: nowrap;
-  transition: background-color var(--sl-transition-fast);
-}
-
-.tag:hover {
-  background: hsl(var(--sl-color-primary-muted));
 }
 
 .tagMore {
   font-size: var(--sl-text-overline);
   font-weight: var(--sl-primitive-font-weight-medium);
-  padding: var(--sl-spacing-inset-xs);
+  padding: 3px var(--sl-spacing-gap-sm); /* TODO: add token for 3px vertical chip padding */
   color: hsl(var(--sl-color-text-tertiary));
   line-height: 1;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   META ROW
+   Age groups, duration, prep time, participant count,
+   price, location — displayed as a compact inline list.
+   ═══════════════════════════════════════════════════════════ */
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  line-height: var(--sl-line-height-body);
+  margin-top: auto;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  white-space: nowrap;
+}
+
+.metaDot {
+  color: hsl(var(--sl-color-text-tertiary));
+  font-weight: var(--sl-primitive-font-weight-bold);
+  /* First metaItem has no leading dot; subsequent ones use the dot separator.
+     The dot is inside metaItem and visually separates entries. */
+}
+
+/* Hide the dot on the very first meta item that carries a dot separator
+   — the first item (age group) never has a metaDot span. */
 
 /* ═══════════════════════════════════════════════════════════
    FOOTER
@@ -187,11 +239,10 @@
 .footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--sl-spacing-gap-md);
-  margin-top: var(--sl-spacing-stack-sm);
-  padding-top: var(--sl-spacing-stack-sm);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
   border-top: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
+  margin-top: var(--sl-spacing-stack-sm);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -214,14 +265,17 @@
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     transform var(--sl-transition-fast);
-
-  /* Ensure proper hit target size */
   min-height: var(--sl-primitive-height-sm);
 }
 
 .likeButton:hover {
   background: hsl(var(--sl-color-surface-hover));
   border-color: hsl(var(--sl-color-border-hover));
+}
+
+.likeButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
 }
 
 .likeButton:active {
@@ -240,8 +294,8 @@
 }
 
 .heartIcon {
-  width: 18px;
-  height: 18px;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
   transition: transform var(--sl-transition-fast);
 }
 
@@ -268,14 +322,11 @@
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
   border-radius: var(--sl-radius-button);
   color: hsl(var(--sl-color-text-secondary));
-  font-size: var(--sl-text-body);
   cursor: pointer;
   transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     transform var(--sl-transition-fast);
-
-  /* Ensure proper hit target size */
   min-height: var(--sl-primitive-height-sm);
   min-width: var(--sl-primitive-height-sm);
 }
@@ -283,6 +334,11 @@
 .favoriteButton:hover {
   background: hsl(var(--sl-color-surface-hover));
   border-color: hsl(var(--sl-color-border-hover));
+}
+
+.favoriteButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
 }
 
 .favoriteButton:active {
@@ -300,137 +356,26 @@
   border-color: hsl(var(--sl-color-warning) / var(--sl-primitive-opacity-60));
 }
 
-.starIcon {
-  font-size: var(--sl-text-body);
-  line-height: 1;
-  transition: transform var(--sl-transition-fast);
-}
-
 .bookmarkIcon {
   width: var(--sl-size-icon-sm);
   height: var(--sl-size-icon-sm);
   transition: transform var(--sl-transition-fast);
 }
 
-.favoriteButton:active .starIcon,
 .favoriteButton:active .bookmarkIcon {
   transform: scale(1.2);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   READ MORE BUTTON
-   ═══════════════════════════════════════════════════════════ */
-
-.readMore {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs);
-  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
-  background: transparent;
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-button);
-  color: hsl(var(--sl-color-text-primary));
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-primitive-font-weight-medium);
-  cursor: pointer;
-  transition: 
-    background-color var(--sl-transition-fast),
-    border-color var(--sl-transition-fast),
-    color var(--sl-transition-fast);
-  white-space: nowrap;
-}
-
-.readMore:hover {
-  background: hsl(var(--sl-color-primary));
-  border-color: hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-text-inverse));
-}
-
-.readMore:hover .arrow {
-  transform: translateX(2px);
-}
-
-.readMore:active {
-  background: hsl(var(--sl-color-primary-active));
-  border-color: hsl(var(--sl-color-primary-active));
-}
-
-.arrow {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-  transition: transform var(--sl-transition-fast);
-}
-
-/* ═══════════════════════════════════════════════════════════
-   RESPONSIVE ADJUSTMENTS
-   ═══════════════════════════════════════════════════════════ */
-
-@media (max-width: 640px) {
-  .media {
-    height: 140px;
-  }
-  
-  .title {
-    font-size: var(--sl-text-body);
-  }
-
-  .description {
-    font-size: var(--sl-text-body-sm);
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-  
-  .footer {
-    flex-direction: column;
-    gap: var(--sl-spacing-stack-sm);
-  }
-  
-  .likeButton,
-  .favoriteButton,
-  .readMore {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   ACCESSIBILITY
-   ═══════════════════════════════════════════════════════════ */
-
-@media (prefers-reduced-motion: reduce) {
-  .card,
-  .favoriteButton,
-  .readMore,
-  .heartIcon,
-  .starIcon,
-  .bookmarkIcon,
-  .arrow,
-  .tag {
-    transition: none;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .card {
-    border-width: 2px;
-  }
-  .favoriteButton,
-  .likeButton,
-  .readMore {
-    border-width: 2px;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
    CARD ACTION MENU (edit / delete)
+   Positioned absolutely over the image area.
    ═══════════════════════════════════════════════════════════ */
 
 .cardActions {
   position: absolute;
-  top: var(--sl-spacing-inset-sm, 0.5rem);
-  right: var(--sl-spacing-inset-sm, 0.5rem);
-  z-index: 2;
+  top: var(--sl-spacing-inset-sm);
+  right: var(--sl-spacing-inset-sm);
+  z-index: var(--sl-primitive-z-20);
 }
 
 .menuButton {
@@ -441,7 +386,7 @@
   height: 28px;
   background: hsl(var(--sl-color-surface) / 0.92);
   border: 1px solid hsl(var(--sl-color-border) / 0.7);
-  border-radius: var(--sl-radius-base, 0.375rem);
+  border-radius: var(--sl-radius-button);
   color: hsl(var(--sl-color-text-secondary));
   font-size: var(--sl-text-body);
   font-weight: var(--sl-font-weight-heading);
@@ -449,7 +394,9 @@
   letter-spacing: var(--sl-primitive-letter-spacing-wider);
   cursor: pointer;
   backdrop-filter: blur(4px);
-  transition: background-color var(--sl-transition-fast), border-color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
 }
 
 .menuButton:hover,
@@ -459,6 +406,11 @@
   color: hsl(var(--sl-color-text-primary));
 }
 
+.menuButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
 .menu {
   position: absolute;
   top: calc(100% + var(--sl-primitive-space-1));
@@ -466,7 +418,7 @@
   min-width: 120px;
   background: hsl(var(--sl-color-surface));
   border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-base, 0.375rem);
+  border-radius: var(--sl-radius-button);
   box-shadow: var(--sl-shadow-dropdown);
   overflow: hidden;
   z-index: var(--sl-primitive-z-20);
@@ -475,7 +427,7 @@
 .menuItem {
   display: block;
   width: 100%;
-  padding: var(--sl-spacing-inset-sm, 0.5rem) var(--sl-spacing-inset-md, 0.75rem);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
   background: transparent;
   border: none;
   text-align: left;
@@ -489,6 +441,12 @@
   background: hsl(var(--sl-color-surface-hover));
 }
 
+.menuItem:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: -2px;
+  background: hsl(var(--sl-color-surface-hover));
+}
+
 .menuItemDanger {
   color: hsl(var(--sl-color-error));
 }
@@ -497,3 +455,56 @@
   background: hsl(var(--sl-color-error-subtle));
 }
 
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE ADJUSTMENTS
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .title {
+    font-size: var(--sl-text-body);
+  }
+
+  .footer {
+    gap: var(--sl-spacing-gap-sm);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .favoriteButton,
+  .heartIcon,
+  .bookmarkIcon,
+  .likeButton,
+  .menuButton {
+    transition: none;
+  }
+
+  .likeButton:active {
+    transform: none;
+  }
+
+  .favoriteButton:active {
+    transform: none;
+  }
+
+  .likeButton:active .heartIcon,
+  .favoriteButton:active .bookmarkIcon {
+    transform: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .card {
+    border-width: 2px;
+  }
+
+  .likeButton,
+  .favoriteButton,
+  .menuButton {
+    border-width: 2px;
+  }
+}

@@ -1,0 +1,842 @@
+/* ═══════════════════════════════════════════════════════════
+   PROGRAM FILTER SIDEBAR
+   Vertical sidebar with URL state sync.
+   8 filter sections: search, age, tags, duration, prep_time,
+   location, count, price.
+   Responsive: sidebar on ≥600px, drawer on <600px.
+   All values from Slóði Design Tokens.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   SEARCH BAR — full-width, above the sidebar + grid
+   ═══════════════════════════════════════════════════════════ */
+
+.searchBarWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-md);
+  width: 100%;
+}
+
+.searchInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--sl-spacing-inset-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+  pointer-events: none;
+  flex-shrink: 0;
+  transition: color var(--sl-transition-fast);
+  z-index: 1;
+}
+
+.searchInputWrapper:focus-within .searchIcon {
+  color: hsl(var(--sl-color-primary));
+}
+
+.searchInput {
+  width: 100%;
+  height: var(--sl-size-input);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  padding-left: calc(
+    var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm)
+  );
+  padding-right: calc(
+    var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm)
+  );
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  outline: none;
+  transition:
+    border-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchInput::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+  opacity: 1;
+}
+
+.searchInput:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+}
+
+.searchInput:focus {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-10));
+}
+
+.searchInput:disabled {
+  background: hsl(var(--sl-color-background-secondary));
+  color: hsl(var(--sl-color-text-disabled));
+  cursor: not-allowed;
+  opacity: var(--sl-opacity-disabled);
+}
+
+/* Remove native clear button on search inputs */
+.searchInput::-webkit-search-cancel-button,
+.searchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchClearButton {
+  position: absolute;
+  right: var(--sl-spacing-gap-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sl-radius-button);
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+  transition: color var(--sl-transition-fast);
+  flex-shrink: 0;
+}
+
+.searchClearButton svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.searchClearButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.searchClearButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESULTS COUNT
+   ═══════════════════════════════════════════════════════════ */
+
+.resultsCount {
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-heading);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.resultsText {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.resultsEmpty {
+  color: hsl(var(--sl-color-text-tertiary));
+  font-style: italic;
+}
+
+.resultsLoading {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE "Síur" BUTTON
+   Only visible on <600px
+   ═══════════════════════════════════════════════════════════ */
+
+.mobileFiltersButton {
+  display: none; /* hidden on desktop by default */
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  height: var(--sl-size-input);
+  padding: 0 var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    border-color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
+}
+
+.mobileFiltersButton:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.mobileFiltersButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.mobileFiltersButton:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.mobileFiltersButtonActive {
+  color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  border-color: hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-40));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.mobileFiltersButtonActive:hover:not(:disabled) {
+  background: hsl(var(--sl-color-primary-muted));
+  border-color: hsl(var(--sl-color-primary));
+}
+
+.mobileFiltersIcon {
+  width: var(--sl-primitive-icon-xs);
+  height: var(--sl-primitive-icon-xs);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR CONTAINER
+   ~260-280px fixed; hidden on mobile (<600px)
+   ═══════════════════════════════════════════════════════════ */
+
+.sidebar {
+  width: 268px;
+  min-width: 268px;
+  max-width: 268px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  overflow: hidden;
+  align-self: flex-start;
+  /* Sidebar scrolls independently when viewport is shorter than content */
+  position: sticky;
+  top: var(--sl-spacing-inset-lg);
+  max-height: calc(100vh - var(--sl-spacing-inset-lg) * 2);
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-md);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  flex-shrink: 0;
+  background: hsl(var(--sl-color-surface));
+}
+
+.sidebarTitle {
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-heading);
+  color: hsl(var(--sl-color-text-primary));
+  margin: 0;
+}
+
+.clearAllButton {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+  background: transparent;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
+}
+
+.clearAllButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.clearAllButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.sidebarBody {
+  flex: 1;
+  overflow-y: auto;
+  /* Subtle scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sl-color-border)) transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILTER SECTIONS — shared between sidebar and drawer
+   ═══════════════════════════════════════════════════════════ */
+
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+  padding: var(--sl-spacing-inset-md);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.filterSection:last-child {
+  border-bottom: none;
+}
+
+.filterSectionTitle {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-heading);
+  color: hsl(var(--sl-color-text-secondary));
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+}
+
+.sectionCount {
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-primary));
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHECKBOX GROUP
+   ═══════════════════════════════════════════════════════════ */
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-xs);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  cursor: pointer;
+  padding: var(--sl-spacing-gap-xs) 0;
+  border-radius: var(--sl-radius-button);
+  transition: background-color var(--sl-transition-fast);
+  user-select: none;
+  position: relative;
+}
+
+.checkboxLabel:hover {
+  /* slight highlight on row hover */
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* Hide the native checkbox but keep it accessible */
+.checkboxInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Custom checkbox visual */
+.checkboxCustom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-primitive-icon-xs);
+  height: var(--sl-primitive-icon-xs);
+  min-width: var(--sl-primitive-icon-xs);
+  border: 1.5px solid hsl(var(--sl-color-border-hover));
+  border-radius: var(--sl-primitive-radius-sm);
+  background: hsl(var(--sl-color-surface));
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+  flex-shrink: 0;
+}
+
+/* Checked state — driven by native checkbox via sibling selector */
+.checkboxInput:checked + .checkboxCustom {
+  background: hsl(var(--sl-color-primary));
+  border-color: hsl(var(--sl-color-primary));
+}
+
+/* Checkmark via pseudo-element */
+.checkboxInput:checked + .checkboxCustom::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: 2px solid hsl(var(--sl-color-text-inverse));
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translateY(-1px);
+}
+
+/* Focus ring on the custom visual when the native input is focused */
+.checkboxInput:focus-visible + .checkboxCustom {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.checkboxInput:disabled + .checkboxCustom {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.checkboxInput:disabled ~ .checkboxText {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.checkboxText {
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  flex: 1;
+  min-width: 0;
+}
+
+/* Color dot for tags */
+.tagColorDot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: var(--sl-radius-badge);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TEXT INPUT (location)
+   ═══════════════════════════════════════════════════════════ */
+
+.textInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.textInput {
+  width: 100%;
+  height: var(--sl-size-input);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  padding-right: calc(var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm));
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  outline: none;
+  transition:
+    border-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+}
+
+.textInput::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+  opacity: 1;
+}
+
+.textInput:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+}
+
+.textInput:focus {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-10));
+}
+
+.textInput:disabled {
+  background: hsl(var(--sl-color-background-secondary));
+  color: hsl(var(--sl-color-text-disabled));
+  cursor: not-allowed;
+  opacity: var(--sl-opacity-disabled);
+}
+
+.textInputClear {
+  position: absolute;
+  right: var(--sl-spacing-gap-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sl-radius-button);
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+  transition: color var(--sl-transition-fast);
+  flex-shrink: 0;
+}
+
+.textInputClear svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.textInputClear:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.textInputClear:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COUNT MIN/MAX INPUTS
+   ═══════════════════════════════════════════════════════════ */
+
+.countInputRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.countLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-xs);
+  flex: 1;
+  cursor: default;
+}
+
+.countLabelText {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-tertiary));
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+  line-height: 1;
+}
+
+.countInput {
+  width: 100%;
+  height: var(--sl-size-button-md);
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  outline: none;
+  text-align: center;
+  transition:
+    border-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+  /* Remove number input spinners */
+  -moz-appearance: textfield;
+}
+
+.countInput::-webkit-outer-spin-button,
+.countInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.countInput::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+  opacity: 1;
+}
+
+.countInput:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+}
+
+.countInput:focus {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-10));
+}
+
+.countInput:disabled {
+  background: hsl(var(--sl-color-background-secondary));
+  color: hsl(var(--sl-color-text-disabled));
+  cursor: not-allowed;
+  opacity: var(--sl-opacity-disabled);
+}
+
+.countSeparator {
+  padding-bottom: var(--sl-spacing-gap-xs);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+  line-height: var(--sl-size-button-md);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE DRAWER
+   ═══════════════════════════════════════════════════════════ */
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: hsl(var(--sl-color-overlay-base));
+  z-index: var(--sl-z-modal-backdrop);
+}
+
+.drawer {
+  position: fixed;
+  inset-block: 0;
+  right: 0;
+  width: min(360px, 100vw);
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-modal);
+  z-index: var(--sl-z-modal);
+  overflow: hidden;
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-lg);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  flex-shrink: 0;
+}
+
+.drawerTitle {
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+  color: hsl(var(--sl-color-text-primary));
+  margin: 0;
+}
+
+.drawerTitleCount {
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-primary));
+}
+
+.drawerCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-size-button-sm);
+  height: var(--sl-size-button-sm);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sl-radius-button);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  transition:
+    color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
+}
+
+.drawerCloseButton svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  pointer-events: none;
+}
+
+.drawerCloseButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.drawerCloseButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  /* Padding is applied per-section to keep borders edge-to-edge */
+}
+
+.drawerFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-lg);
+  border-top: 1px solid hsl(var(--sl-color-border));
+  flex-shrink: 0;
+}
+
+.drawerClearButton {
+  width: 100%;
+  height: var(--sl-size-button-md);
+  padding: 0 var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+  background: transparent;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  transition:
+    color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
+}
+
+.drawerClearButton:hover {
+  color: hsl(var(--sl-color-text-primary));
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.drawerClearButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.drawerApplyButton {
+  width: 100%;
+  height: var(--sl-size-button-md);
+  padding: 0 var(--sl-spacing-inset-md);
+  font-size: var(--sl-text-body);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-inverse));
+  background: hsl(var(--sl-color-primary));
+  border: 1px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-button);
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+
+.drawerApplyButton:hover {
+  background: hsl(var(--sl-color-primary-hover));
+  border-color: hsl(var(--sl-color-primary-hover));
+}
+
+.drawerApplyButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — <600px: hide sidebar, show mobile button
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  .sidebar {
+    display: none;
+  }
+
+  .mobileFiltersButton {
+    display: inline-flex;
+  }
+
+  /* On mobile, only show results count without the sidebar count */
+  .resultsCount {
+    flex: 1;
+  }
+}
+
+@media (min-width: 601px) {
+  .mobileFiltersButton {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY — reduced motion
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .searchIcon,
+  .searchInput,
+  .searchClearButton,
+  .clearAllButton,
+  .mobileFiltersButton,
+  .checkboxCustom,
+  .textInput,
+  .textInputClear,
+  .countInput,
+  .drawerClearButton,
+  .drawerApplyButton,
+  .drawerCloseButton {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY — high contrast
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-contrast: high) {
+  .searchInput,
+  .textInput,
+  .countInput,
+  .clearAllButton,
+  .mobileFiltersButton,
+  .drawerClearButton,
+  .drawerApplyButton {
+    border-width: 2px;
+  }
+
+  .checkboxCustom {
+    border-width: 2px;
+  }
+
+  .sidebar {
+    border-width: 2px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN READER UTILITY
+   ═══════════════════════════════════════════════════════════ */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

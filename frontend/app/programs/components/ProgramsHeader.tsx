@@ -16,6 +16,7 @@ export function ProgramsHeader({ onNewProgram }: ProgramsHeaderProps) {
             </header>
 
             <button
+                type="button"
                 className={styles.fab}
                 onClick={onNewProgram}
                 aria-label="Bæta við dagskrá"
