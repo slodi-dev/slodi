@@ -1,28 +1,37 @@
 # Slóði Backend
 
-Modern FastAPI + SQLAlchemy + Pydantic backend with PostgreSQL, Alembic migrations, and a full test suite.
+FastAPI + SQLAlchemy + Pydantic backend with PostgreSQL, Alembic migrations, Auth0 authentication, and a full test suite.
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Python** ≥ 3.10
-- **FastAPI** — API framework
-- **SQLAlchemy 2.0** — ORM (async + psycopg3 driver)
+- **FastAPI** 0.117.1+ — API framework
+- **SQLAlchemy 2.0** — async ORM (psycopg3 driver)
 - **Pydantic v2** — schema validation
-- **PostgreSQL 14+** — database
+- **PostgreSQL 16** — database
 - **Alembic** — database migrations
-- **pytest + pytest-asyncio** — testing
+- **Auth0** — authentication (JWT, RS256)
+- **aiocache** — in-process TTL caching
+- **pytest + pytest-asyncio + Testcontainers** — testing
 - **uv** — dependency and environment manager
+- **Ruff** — linting and formatting
+- **mypy** — type checking
 
-## 📂 Project Layout
+## Project Layout
 
 ```
 backend/
 ├── app/
-│   ├── __init__.py
-│   ├── core/          # DB engine, settings, dependencies
+│   ├── core/          # DB engine, settings, auth, logging, pagination
+│   ├── domain/        # Business constraints
 │   ├── models/        # SQLAlchemy ORM models
-│   ├── schemas/       # Pydantic DTOs
-│   └── utils/         # shared utilities
+│   ├── repositories/  # Data access layer
+│   ├── routers/       # FastAPI route handlers
+│   ├── schemas/       # Pydantic v2 DTOs
+│   ├── services/      # Business logic
+│   ├── main.py        # FastAPI app factory
+│   ├── settings.py    # Environment config (Pydantic BaseSettings)
+│   └── utils.py       # Shared utilities
 │
 ├── tests/             # pytest tests (unit + integration)
 ├── alembic/           # migrations (env.py, versions/)
@@ -31,109 +40,86 @@ backend/
 └── Makefile
 ```
 
-## 🛠️ Setup & Installation
+## Setup
 
-1. **Clone the repository:**
-
-   ```bash
-    git clone git@github.com:halldorvalberg/slodi.git
-    cd slodi/backend
-   ```
-
-2. **Install dependencies:**
+1. **Install dependencies:**
 
    ```bash
    uv sync --group dev
    ```
 
-3. **Set up environment variables:**
-   Create a `.env` file in the `backend/` directory based on the `.env.example` template.
+2. **Set up environment variables:**
 
-## 🗄️ Database Migrations (Alembic)
+   Copy `.env.example` to `.env` and configure the database connection, Auth0 domain, audience, and algorithms.
 
-**Create new migration:**
-When you modify models, create a new migration with:
+## Running
 
 ```bash
-uv run alembic revision --autogenerate -m "your message"
+# Dev server (hot reload, port 8000)
+make run
+
+# Full stack via Docker Compose (PostgreSQL on :5454, API on :8000)
+make docker-run
 ```
 
-**Apply migrations:**
+## Database Migrations
 
 ```bash
-uv run alembic upgrade head
+make makemigration m="your message"   # autogenerate migration
+make migrate                          # apply migrations
+make downgrade                        # roll back one step
 ```
 
-**Downgrade database:**
+All schema changes must go through Alembic — never write raw DDL.
+
+## Testing
+
+Unit tests run without external dependencies; integration tests require Docker.
 
 ```bash
-uv run alembic downgrade -1
+make test-unit         # unit tests only (no Docker needed)
+make test-integration  # integration tests (requires Docker daemon)
+make test              # both
 ```
 
-## 🧪 Testing
-
-We use pytest with async SQLAlchemy.
-Note: Tests should never run against a production database!
-
-**Run all tests:**
+## Lint, Format & Type Check
 
 ```bash
-make test
+make lint       # ruff check
+make fmt        # ruff format
+make typecheck  # mypy
 ```
 
-## 🔑 Conventions
-
-- **Models** (`app/models`): SQLAlchemy 2.0, joined-table inheritance for `Content → Program|Event|Task`.
-
-  - Only `id` has ORM-level defaults (`uuid4`).
-  - Business defaults live in **schemas**.
-  - Relationships use `foreign_keys` + `primaryjoin` when multiple FK paths exist.
-
-- **Schemas** (`app/schemas`): Pydantic v2.
-
-  - Enforce lengths (`StringConstraints`).
-  - Lowercase + normalize emails.
-  - Supply defaults (e.g. `Workspace.default_interval=weekly`).
-  - Validation (e.g. `Task.participant_max >= participant_min`).
-
-- **Tests** (`tests/`):
-
-  - Unit tests check schema validation.
-  - Integration tests insert models into Postgres and verify relationships & cascades.
-  - Optionally skip integration tests if DB not available.
-
-- **Migrations**: All schema changes go through Alembic, never manual `DROP/CREATE`.
-
-## 🛠️ Dev Commands
-
-Makefile in project root:
-
-```Makefile
-test:
-	PYTHONPATH=. uv run pytest -q
-
-lint:
-	uv run ruff check .
-
-fmt:
-	uv run ruff format .
-
-makemigration:
-	uv run alembic revision --autogenerate -m "$(m)"
-
-migrate:
-	uv run alembic upgrade head
-
-downgrade:
-    uv run alembic downgrade -1
-```
-
-Usage:
+## Docker Commands
 
 ```bash
-make test
-make lint
-make fmt
-make makemigration m="add user table"
-make migrate
+make docker-run       # build and start containers
+make docker-stop      # stop containers
+make docker-clean     # stop and remove volumes + image
+make docker-logs      # tail backend logs
+make docker-shell     # shell into backend container
+make docker-db-shell  # psql into postgres container
 ```
+
+## Architecture
+
+The codebase follows a strict layered architecture:
+
+```
+Routers → Services → Repositories → Models
+```
+
+- **Routers** (`app/routers/`): FastAPI route handlers, auth via `get_current_user()` and `require_permission()` dependency injection
+- **Services** (`app/services/`): Business logic
+- **Repositories** (`app/repositories/`): Data access layer
+- **Models** (`app/models/`): SQLAlchemy 2.0 ORM; polymorphic inheritance `Content → Program | Event | Task`
+- **Schemas** (`app/schemas/`): Pydantic v2 DTOs; business defaults and validation live here, not in models
+- **Domain** (`app/domain/`): Business constraints
+- **Core** (`app/core/`): DB engine, auth middleware, logging, pagination helpers
+
+## Conventions
+
+- Full type hints required (`mypy disallow_untyped_defs = true`)
+- SQLAlchemy 2.0 mapped columns and relationships
+- Business logic defaults belong in schemas, not models
+- Auth0 is the sole authentication provider — do not add local auth
