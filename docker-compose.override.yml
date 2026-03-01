@@ -1,0 +1,28 @@
+# docker-compose.override.yml
+# Automatically loaded by `docker compose up` in development
+# Adds hot reloading and debug-friendly settings
+
+services:
+  backend:
+    build:
+      target: base  # Skip production stage, use base with source mount
+    volumes:
+      - ./backend/app:/app/app      # Hot reload app code
+      - ./backend/alembic:/app/alembic
+    command: >
+      uv run uvicorn app.main:app
+        --host 0.0.0.0
+        --port 8000
+        --reload
+    environment:
+      DEBUG: "true"
+
+  frontend:
+    build:
+      target: deps  # Use deps stage, mount source
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    command: npm run dev
+    environment:
+      NODE_ENV: development

@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      target: base          # use the dev/base stage, not production
+    volumes:
+      - ./backend:/app      # mount source so changes reflect immediately
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+
+  frontend:
+    build:
+      target: development   # you'll need a dev stage in your Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules   # keep node_modules inside the container
+      - /app/.next          # same for .next cache
+    command: npm run dev
+    environment:
+      INTERNAL_API_URL: http://backend:8000

@@ -16,12 +16,7 @@ export async function GET() {
       );
     }
 
-    const { token } = await auth0.getAccessToken({
-      authorizationParameters: {
-        audience: process.env.AUTH0_AUDIENCE,
-        scope: process.env.AUTH0_SCOPE ?? "openid profile email",
-      },
-    });
+    const { token } = await auth0.getAccessToken();
 
     if (!token) {
       return NextResponse.json(
