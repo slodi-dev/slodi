@@ -72,7 +72,7 @@ class ContentBase(BaseModel):
 
 
 class ContentCreate(ContentBase):
-    pass
+    tag_names: list[str] | None = None
 
 
 class ContentUpdate(BaseModel):
@@ -88,6 +88,7 @@ class ContentUpdate(BaseModel):
     count: int | None = None
     price: int | None = None
     prep_time: DurationStr | None = None
+    tag_names: list[str] | None = None
 
     @field_validator("count", "price")
     @classmethod

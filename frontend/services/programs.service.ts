@@ -1,6 +1,5 @@
 import { buildApiUrl } from "@/lib/api-utils";
 import { fetchWithAuth } from "@/lib/api";
-import { findTagIdByName, addTagToContent } from "@/services/tags.service";
 import { User } from "@/services/users.service";
 
 export type Program = {
@@ -48,7 +47,7 @@ export type ProgramCreateInput = {
   location?: string;
   count?: number;
   price?: number;
-  tags?: string[];
+  tagNames?: string[];
   workspaceId: string; // Required - workspace to create program in
 };
 
@@ -65,7 +64,7 @@ export type ProgramUpdateInput = {
   location?: string | null;
   count?: number | null;
   price?: number | null;
-  // tags are managed via separate tag-assignment endpoints
+  tagNames?: string[]; // omit to leave tags unchanged; pass [] to clear all tags
 };
 
 export type ProgramsResponse = Program[] | { programs: Program[] };
@@ -93,26 +92,6 @@ export async function fetchPrograms(
   }, getToken);
 
   return Array.isArray(data) ? data : data.programs || [];
-}
-
-/**
- * Assign tags to a program by tag names
- * Looks up tag IDs and assigns them to the program
- */
-async function assignTagsToProgram(
-  programId: string,
-  tagNames: string[],
-  getToken: () => Promise<string | null>
-): Promise<void> {
-  for (const tagName of tagNames) {
-    try {
-      const tagId = await findTagIdByName(tagName);
-      if (!tagId) continue;
-      await addTagToContent(programId, tagId, getToken);
-    } catch {
-      // Continue with other tags even if one fails
-    }
-  }
 }
 
 /**
@@ -149,6 +128,7 @@ export async function createProgram(
     location: input.location?.trim() || null,
     count: input.count ?? null,
     price: input.price ?? null,
+    tag_names: input.tagNames && input.tagNames.length > 0 ? input.tagNames : null,
     content_type: "program" as const,
   };
 
@@ -162,13 +142,7 @@ export async function createProgram(
     body: JSON.stringify(payload),
   }, getToken);
 
-  const program = Array.isArray(data) ? data[0] : data;
-
-  if (input.tags && input.tags.length > 0) {
-    await assignTagsToProgram(program.id, input.tags, getToken);
-  }
-
-  return program;
+  return Array.isArray(data) ? data[0] : data;
 }
 
 /**
@@ -180,13 +154,15 @@ export async function updateProgram(
   input: ProgramUpdateInput,
   getToken: () => Promise<string | null>
 ): Promise<Program> {
+  const { tagNames, ...rest } = input;
+  const body = tagNames !== undefined ? { ...rest, tag_names: tagNames } : rest;
   const url = buildApiUrl(`/programs/${id}`);
   return fetchWithAuth<Program>(url, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   }, getToken);
 }
 

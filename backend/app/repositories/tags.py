@@ -127,3 +127,30 @@ class TagRepository(Repository):
             )
         )
         return res.rowcount or 0
+
+    async def add_content_tags_by_names(
+        self, content_id: UUID, names: Sequence[str]
+    ) -> Sequence[str]:
+        """Add tags by name. Returns any names not found."""
+        not_found = []
+        for name in names:
+            tag = await self.get_by_name(name)
+            if tag is None:
+                not_found.append(name)
+                continue
+            await self.add_content_tag(content_id, tag.id)
+        return not_found
+
+    async def set_content_tags_by_names(
+        self, content_id: UUID, names: Sequence[str]
+    ) -> Sequence[str]:
+        """Replace all tags for content_id. Returns any names not found."""
+        await self.session.execute(delete(ContentTag).where(ContentTag.content_id == content_id))
+        not_found = []
+        for name in names:
+            tag = await self.get_by_name(name)
+            if tag is None:
+                not_found.append(name)
+                continue
+            self.session.add(ContentTag(content_id=content_id, tag_id=tag.id))
+        return not_found
