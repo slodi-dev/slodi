@@ -70,11 +70,6 @@ const AGE_GROUPS = [
   "Vættaskátar",
 ];
 
-const PLACEHOLDER_TAGS = [
-  "útivist", "innileikur", "list", "sköpun",
-  "matreiðsla", "leikur", "fræðsla", "náttúrufræði",
-];
-
 // ── Props ────────────────────────────────────────────────────────────────────
 
 type Props = {
@@ -88,7 +83,7 @@ type Props = {
 export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Props) {
   const { getToken } = useAuth();
   const { tagNames: availableTags } = useTags();
-  const displayTags = availableTags && availableTags.length > 0 ? availableTags : PLACEHOLDER_TAGS;
+  const displayTags = availableTags ?? [];
 
   // Draft state — workspace-scoped key so drafts don't bleed between workspaces
   const draftKey = `prog-draft-${workspaceId}`;
@@ -118,7 +113,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     } catch {
       // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey]);
 
   // ── Accordion helpers ──────────────────────────────────────────────────────
@@ -243,7 +237,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           location: draft.location.trim() || undefined,
           count: draft.countMin !== "" ? Number(draft.countMin) : undefined,
           price: draft.price !== "" ? Number(draft.price) : undefined,
-          tags: draft.selectedTags.length > 0 ? draft.selectedTags : undefined,
+          tagNames: draft.selectedTags.length > 0 ? draft.selectedTags : undefined,
           workspaceId,
         },
         getToken
@@ -685,29 +679,35 @@ function SectionExtras({ draft, updateDraft, displayTags }: SectionExtrasProps) 
   return (
     <>
       <div className={styles.field}>
-        <div className={styles.tagGrid}>
-          {displayTags.map((tag) => {
-            const isSelected = draft.selectedTags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
-                onClick={() => {
-                  const next = isSelected
-                    ? draft.selectedTags.filter((t) => t !== tag)
-                    : [...draft.selectedTags, tag];
-                  updateDraft({ selectedTags: next });
-                }}
-                aria-pressed={isSelected}
-              >
-                {tag}
-              </button>
-            );
-          })}
-        </div>
-        {draft.selectedTags.length > 0 && (
-          <p className={styles.hint}>{draft.selectedTags.length} merkimiðar valdir</p>
+        {displayTags.length === 0 ? (
+          <p className={styles.hint}>Engir merkimiðar tiltækir</p>
+        ) : (
+          <>
+            <div className={styles.tagGrid}>
+              {displayTags.map((tag) => {
+                const isSelected = draft.selectedTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
+                    onClick={() => {
+                      const next = isSelected
+                        ? draft.selectedTags.filter((t) => t !== tag)
+                        : [...draft.selectedTags, tag];
+                      updateDraft({ selectedTags: next });
+                    }}
+                    aria-pressed={isSelected}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+            {draft.selectedTags.length > 0 && (
+              <p className={styles.hint}>{draft.selectedTags.length} merkimiðar valdir</p>
+            )}
+          </>
         )}
       </div>
 
