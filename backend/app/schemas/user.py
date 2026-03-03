@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints, field_validator
 
+from app.domain.enums import Permissions, Pronouns
 from app.domain.user_constraints import (
     AUTH0_ID_MAX,
     AUTH0_ID_MIN,
@@ -12,7 +13,6 @@ from app.domain.user_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.models.user import Permissions, Pronouns
 
 Auth0Id = Annotated[
     str,

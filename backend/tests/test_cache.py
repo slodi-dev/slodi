@@ -13,7 +13,7 @@ from app.core.cache import (
     WorkspaceMembershipCache,
     _make_cache,
 )
-from app.models.workspace import WorkspaceRole
+from app.domain.enums import WorkspaceRole
 from app.schemas.tag import TagOut
 from app.schemas.user import UserOut
 

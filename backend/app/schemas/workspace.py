@@ -6,11 +6,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from app.domain.enums import EventInterval, Weekday, WorkspaceRole
 from app.domain.workspace_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.models.workspace import EventInterval, Weekday, WorkspaceRole
 
 NameStr = Annotated[
     str,

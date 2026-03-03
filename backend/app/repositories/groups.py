@@ -8,7 +8,8 @@ from sqlalchemy import Select, and_, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.group import Group, GroupMemberRow, GroupMembership, GroupRole
+from app.domain.enums import GroupRole
+from app.models.group import Group, GroupMemberRow, GroupMembership
 from app.models.user import User
 from app.repositories.base import Repository
 

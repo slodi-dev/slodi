@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -15,6 +14,7 @@ from sqlalchemy.orm import (
     validates,
 )
 
+from app.domain.enums import Permissions, Pronouns
 from app.domain.user_constraints import (
     AUTH0_ID_MAX,
     AUTH0_ID_MIN,
@@ -30,20 +30,6 @@ if TYPE_CHECKING:
     from .content import Content
     from .group import GroupMembership
     from .workspace import WorkspaceMembership
-
-
-class Pronouns(str, Enum):
-    she_her = "she/her"
-    he_him = "he/him"
-    they_them = "they/them"
-    other = "other"
-    prefer_not_to_say = "prefer not to say"
-
-
-class Permissions(str, Enum):
-    admin = "admin"
-    member = "member"
-    viewer = "viewer"
 
 
 class User(SoftDeleteMixin, Base):

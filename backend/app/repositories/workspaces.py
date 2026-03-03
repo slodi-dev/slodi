@@ -8,9 +8,10 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.domain.enums import WorkspaceRole
 from app.models.content import Content
 from app.models.troop import Troop
-from app.models.workspace import Workspace, WorkspaceMembership, WorkspaceRole
+from app.models.workspace import Workspace, WorkspaceMembership
 
 from .base import Repository
 

@@ -23,7 +23,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.models.content import AgeGroup
+from app.domain.enums import AgeGroup
 from app.repositories.content import ContentStats
 from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_program_edit_access, check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.content import ContentType
+from app.domain.enums import ContentType
 from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole

@@ -5,7 +5,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.workspace import Workspace, WorkspaceRole
+from app.domain.enums import WorkspaceRole
+from app.models.workspace import Workspace
 from app.repositories.workspaces import WorkspaceRepository
 from app.schemas.workspace import (
     WorkspaceCreate,

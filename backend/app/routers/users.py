@@ -11,7 +11,7 @@ from app.core.auth import get_current_user, require_permission
 from app.core.cache import user_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.user import Permissions
+from app.domain.enums import Permissions
 from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
 from app.services.users import UserService
 

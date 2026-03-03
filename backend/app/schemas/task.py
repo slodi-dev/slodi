@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import ConfigDict
 
-from app.models.content import ContentType
+from app.domain.enums import ContentType
 
 from .content import ContentCreate, ContentListOut, ContentOut, ContentUpdate
 
