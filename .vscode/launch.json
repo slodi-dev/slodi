@@ -1,6 +1,12 @@
 {
   "version": "0.2.0",
   "configurations": [
+    {
+      "name": "Launch",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up"
+    },
 
     {
       "name": "Launch Frontend",

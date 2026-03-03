@@ -1,0 +1,109 @@
+services:
+  # ── Database ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: slodi-postgres
+    environment:
+      POSTGRES_DB: slodi_db
+      POSTGRES_USER: slodi_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-slodi_password}
+    ports:
+      - "${DB_EXPOSE_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - slodi-network
+
+  # ── Migrations (run-once) ─────────────────────────────────
+  migrations:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: base
+    container_name: slodi-migrations
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo '🔄 Running database migrations...' &&
+        uv run alembic upgrade head &&
+        echo '✅ Migrations complete!' &&
+        echo '🌱 Running seed...' &&
+        PYTHONPATH=. uv run python seed.py &&
+        echo '✅ Seed complete!'
+      "
+    networks:
+      - slodi-network
+    restart: "no"
+
+  # ── Backend (FastAPI) ─────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: slodi-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    networks:
+      - slodi-network
+    restart: unless-stopped
+
+  # ── Frontend (Next.js) ───────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        # NEXT_PUBLIC_* vars are baked in at build time by Next.js
+        # This pulls from frontend/.env or falls back to localhost
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    container_name: slodi-frontend
+    env_file:
+      - ./frontend/.env
+    environment:
+      # Internal Docker network URL for SSR requests
+      INTERNAL_API_URL: http://backend:8000
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - slodi-network
+    restart: unless-stopped
+
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  slodi-network:
+    driver: bridge
