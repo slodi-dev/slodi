@@ -25,7 +25,7 @@ CMD ["npm", "run", "dev"]
 FROM deps AS build
 
 # Accept build-time env vars (baked into Next.js at build)
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ARG NEXT_PUBLIC_API_URL=http://backend:8000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 COPY . .
