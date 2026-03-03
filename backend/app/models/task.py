@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,20 +25,14 @@ class Task(Content):
         nullable=False,
     )
 
-    media: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-
-    event_id: Mapped[UUID] = mapped_column(
+    event_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("events.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("events.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
-    estimated_duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    participant_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    participant_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
     # Relationships
-    event: Mapped[Event] = relationship(
+    event: Mapped[Event | None] = relationship(
         "Event",
         back_populates="tasks",
         foreign_keys=[event_id],

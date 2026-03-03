@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tag import Tag
 from app.repositories.tags import TagRepository
-from app.schemas.content import ContentOut
+from app.schemas.content import ContentListOut
 from app.schemas.tag import (
     ContentTagOut,
     TagCreate,
@@ -91,10 +91,10 @@ class TagService:
         return await self.repo.count_tagged_content(tag_id)
 
     async def list_tagged_content(
-        self, tag_id: UUID, *, limit: int = 50, offset: int = 0
-    ) -> list[ContentOut]:  # type: ignore[valid-type]
-        rows = await self.repo.list_tagged_content(tag_id, limit=limit, offset=offset)
-        return [ContentOut.model_validate(r) for r in rows]
+        self, tag_id: UUID, current_user_id: UUID | None = None, *, limit: int = 50, offset: int = 0
+    ) -> list[ContentListOut]:  # type: ignore[valid-type]
+        rows = await self.repo.list_tagged_content(tag_id, current_user_id, limit=limit, offset=offset)
+        return [ContentListOut.from_row(r, stats) for r, stats in rows]  # type: ignore[attr-defined]
 
     async def add_content_tag(self, content_id: UUID, tag_id: UUID) -> tuple[bool, ContentTagOut]:
         try:

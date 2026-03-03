@@ -44,29 +44,3 @@ def test_event_time_is_tz_aware():
             content_type=m.ContentType.event,
             start_dt=dt.datetime(2025, 1, 1, 10, 0),  # naive
         )
-
-
-def test_task_participants_rules():
-    # max < min -> invalid
-    with pytest.raises(ValidationError):
-        s.TaskCreate(
-            content_type=m.ContentType.task,
-            name="Knot tying",
-            description=None,
-            created_at=get_current_datetime(),
-            author_id=uuid4(),
-            participant_min=5,
-            participant_max=4,
-        )
-
-    # both zero -> invalid
-    with pytest.raises(ValidationError):
-        s.TaskCreate(
-            content_type=m.ContentType.task,
-            name="Game",
-            description=None,
-            created_at=get_current_datetime(),
-            author_id=uuid4(),
-            participant_min=0,
-            participant_max=0,
-        )

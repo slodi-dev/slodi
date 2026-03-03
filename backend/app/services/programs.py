@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.program import Program
 from app.repositories.programs import ProgramRepository
-from app.schemas.program import ProgramCreate, ProgramOut, ProgramUpdate
+from app.repositories.tags import TagRepository
+from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +30,11 @@ class ProgramService:
         *,
         limit: int = 50,
         offset: int = 0,
-    ) -> list[ProgramOut]:
+    ) -> list[ProgramListOut]:
         rows = await self.repo.list_by_workspace(
             workspace_id, current_user_id, limit=limit, offset=offset
         )
-        return [ProgramOut.from_row(prog, stats) for prog, stats in rows]
+        return [ProgramListOut.from_row(prog, stats) for prog, stats in rows]
 
     async def get_in_workspace(
         self, program_id: UUID, workspace_id: UUID, current_user_id: UUID | None = None
@@ -47,8 +48,18 @@ class ProgramService:
 
     async def create_under_workspace(self, workspace_id: UUID, data: ProgramCreate) -> ProgramOut:
         try:
-            program = Program(workspace_id=workspace_id, **data.model_dump())
+            tag_names = data.tag_names or []
+            program = Program(workspace_id=workspace_id, **data.model_dump(exclude={"tag_names"}))
             await self.repo.create(program)
+            await self.session.flush()  # populate program.id before using it in FK
+            if tag_names:
+                tag_repo = TagRepository(self.session)
+                not_found = await tag_repo.add_content_tags_by_names(program.id, tag_names)
+                if not_found:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"Unknown tags: {not_found}",
+                    )
             await self.session.commit()
 
             fetched = await self.repo.get(program.id)
@@ -90,9 +101,17 @@ class ProgramService:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
         prog, _ = row
-        patch = data.model_dump(exclude_unset=True)
+        patch = data.model_dump(exclude_unset=True, exclude={"tag_names"})
         for k, v in patch.items():
             setattr(prog, k, v)
+        if "tag_names" in data.model_fields_set:
+            tag_repo = TagRepository(self.session)
+            not_found = await tag_repo.set_content_tags_by_names(program_id, data.tag_names or [])
+            if not_found:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Unknown tags: {not_found}",
+                )
         await self.session.commit()
         updated = await self.repo.get(program_id, current_user_id)
         if not updated:

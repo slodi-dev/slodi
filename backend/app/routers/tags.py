@@ -11,7 +11,7 @@ from app.core.auth import get_current_user, require_permission
 from app.core.cache import tags_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.schemas.content import ContentOut
+from app.schemas.content import ContentListOut
 from app.schemas.tag import (
     ContentTagOut,
     TagCreate,
@@ -75,7 +75,7 @@ async def create_tag(
     session: SessionDep,
     body: TagCreate,
     response: Response,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    current_user: UserOut = Depends(require_permission(Permissions.member)),
 ) -> TagOut:
     svc = TagService(session)
     tag = await svc.create(body)
@@ -102,7 +102,7 @@ async def update_tag(
     session: SessionDep,
     tag_id: UUID,
     body: TagUpdate,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    current_user: UserOut = Depends(require_permission(Permissions.member)),
 ) -> TagOut:
     svc = TagService(session)
     updated = await svc.update(tag_id, body)
@@ -114,7 +114,7 @@ async def update_tag(
 async def delete_tag(
     session: SessionDep,
     tag_id: UUID,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    current_user: UserOut = Depends(require_permission(Permissions.member)),
 ) -> None:
     svc = TagService(session)
     await svc.delete(tag_id)
@@ -148,7 +148,7 @@ async def list_content_tags(
     return items
 
 
-@router.get("/tags/{tag_id}/content", response_model=list[ContentOut])
+@router.get("/tags/{tag_id}/content", response_model=list[ContentListOut])
 async def list_tagged_content(
     session: SessionDep,
     request: Request,
@@ -157,10 +157,10 @@ async def list_tagged_content(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[ContentOut]:
+) -> list[ContentListOut]:
     svc = TagService(session)
     total = await svc.count_tagged_content(tag_id)
-    items = await svc.list_tagged_content(tag_id, limit=limit, offset=offset)
+    items = await svc.list_tagged_content(tag_id, current_user.id, limit=limit, offset=offset)
     add_pagination_headers(
         response=response,
         request=request,

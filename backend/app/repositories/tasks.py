@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.content import Content
+from app.models.tag import ContentTag
 from app.models.task import Task
 from app.repositories.base import Repository
 from app.repositories.content import (
@@ -29,8 +30,9 @@ class TaskRepository(Repository):
             select(Task, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id))
             .options(
                 selectinload(Task.author),
-                selectinload(Task.event),
-                selectinload(Task.content_tags),
+                selectinload(Task.workspace),
+                selectinload(Task.comments),
+                selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
             .where(Task.id == task_id, Task.deleted_at.is_(None))
         )
@@ -47,7 +49,9 @@ class TaskRepository(Repository):
             select(Task, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id))
             .options(
                 selectinload(Task.author),
-                selectinload(Task.content_tags),
+                selectinload(Task.workspace),
+                selectinload(Task.comments),
+                selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
             .where(Task.id == task_id, Task.event_id == event_id, Task.deleted_at.is_(None))
         )
@@ -75,7 +79,46 @@ class TaskRepository(Repository):
     ) -> list[tuple[Task, ContentStats]]:
         stmt = (
             select(Task, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id))
+            .options(
+                selectinload(Task.author),
+                selectinload(Task.workspace),
+                selectinload(Task.content_tags).selectinload(ContentTag.tag),
+            )
             .where(Task.event_id == event_id, Task.deleted_at.is_(None))
+            .order_by(Task.name)
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            (task, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm)))
+            for task, lc, cc, lm in rows
+        ]
+
+    async def count_for_workspace(self, workspace_id: UUID) -> int:
+        result = await self.session.scalar(
+            select(func.count())
+            .select_from(Task)
+            .where(Task.workspace_id == workspace_id, Task.deleted_at.is_(None))
+        )
+        return result or 0
+
+    async def list_for_workspace(
+        self,
+        workspace_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[tuple[Task, ContentStats]]:
+        stmt = (
+            select(Task, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id))
+            .options(
+                selectinload(Task.author),
+                selectinload(Task.workspace),
+                selectinload(Task.content_tags).selectinload(ContentTag.tag),
+            )
+            .where(Task.workspace_id == workspace_id, Task.deleted_at.is_(None))
             .order_by(Task.name)
             .limit(limit)
             .offset(offset)

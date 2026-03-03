@@ -33,11 +33,6 @@ const AGE_GROUPS = [
   "Vættaskátar",
 ];
 
-const PLACEHOLDER_TAGS = [
-  "útivist", "innileikur", "list", "sköpun",
-  "matreiðsla", "leikur", "fræðsla", "náttúrufræði",
-];
-
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface FormState {
@@ -80,8 +75,7 @@ export default function ProgramDetailEdit({
   isDeleting = false,
 }: ProgramDetailEditProps) {
   const { tagNames: fetchedTags } = useTags();
-  const displayTags =
-    fetchedTags && fetchedTags.length > 0 ? fetchedTags : PLACEHOLDER_TAGS;
+  const displayTags = fetchedTags ?? [];
 
   const [durationMin0, durationMax0] = parseDuration(program.duration);
   const [prepMin0, prepMax0] = parseDuration(program.prep_time);
@@ -178,6 +172,7 @@ export default function ProgramDetailEdit({
       location: form.location.trim() || null,
       count: form.countMin !== "" ? Number(form.countMin) : null,
       price: form.price !== "" ? Number(form.price) : null,
+      tagNames: form.selectedTags,
     };
 
     try {
@@ -469,27 +464,33 @@ export default function ProgramDetailEdit({
             <p className={styles.label} id="edit-tags-label">
               Merkimiðar
             </p>
-            <div className={styles.tagGrid} role="group" aria-labelledby="edit-tags-label">
-              {displayTags.map((tag) => {
-                const isSelected = form.selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
-                    onClick={() => toggleTag(tag)}
-                    aria-pressed={isSelected}
-                    disabled={isDisabled}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-            {form.selectedTags.length > 0 && (
-              <p className={styles.helpText}>
-                {form.selectedTags.length} merkimiðar valdir
-              </p>
+            {displayTags.length === 0 ? (
+              <p className={styles.helpText}>Engir merkimiðar tiltækir</p>
+            ) : (
+              <>
+                <div className={styles.tagGrid} role="group" aria-labelledby="edit-tags-label">
+                  {displayTags.map((tag) => {
+                    const isSelected = form.selectedTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
+                        onClick={() => toggleTag(tag)}
+                        aria-pressed={isSelected}
+                        disabled={isDisabled}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.selectedTags.length > 0 && (
+                  <p className={styles.helpText}>
+                    {form.selectedTags.length} merkimiðar valdir
+                  </p>
+                )}
+              </>
             )}
           </div>
 
