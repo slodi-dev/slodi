@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -63,8 +65,11 @@ class TagRepository(Repository):
 
     async def delete(self, tag_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = await self.session.execute(
-            update(Tag).where(Tag.id == tag_id, Tag.deleted_at.is_(None)).values(deleted_at=now)
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                update(Tag).where(Tag.id == tag_id, Tag.deleted_at.is_(None)).values(deleted_at=now)
+            ),
         )
         return res.rowcount or 0
 
@@ -138,10 +143,13 @@ class TagRepository(Repository):
         return True, ct
 
     async def remove_content_tag(self, content_id: UUID, tag_id: UUID) -> int:
-        res = await self.session.execute(
-            delete(ContentTag).where(
-                and_(ContentTag.content_id == content_id, ContentTag.tag_id == tag_id)
-            )
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                delete(ContentTag).where(
+                    and_(ContentTag.content_id == content_id, ContentTag.tag_id == tag_id)
+                )
+            ),
         )
         return res.rowcount or 0
 

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import datetime as dt
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import and_, asc, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -216,9 +218,12 @@ class EventRepository(Repository):
         )
 
         # Soft-delete the event itself
-        res = await self.session.execute(
-            update(Content)
-            .where(Content.id == event_id, Content.deleted_at.is_(None))
-            .values(deleted_at=now)
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                update(Content)
+                .where(Content.id == event_id, Content.deleted_at.is_(None))
+                .values(deleted_at=now)
+            ),
         )
         return res.rowcount or 0

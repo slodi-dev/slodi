@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import datetime as dt
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -129,9 +131,12 @@ class ProgramRepository(Repository):
         )
 
         # Soft-delete the program itself
-        res = await self.session.execute(
-            update(Content)
-            .where(Content.id == program_id, Content.deleted_at.is_(None))
-            .values(deleted_at=now)
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                update(Content)
+                .where(Content.id == program_id, Content.deleted_at.is_(None))
+                .values(deleted_at=now)
+            ),
         )
         return res.rowcount or 0

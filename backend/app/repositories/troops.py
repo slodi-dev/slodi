@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -66,10 +68,13 @@ class TroopRepository(Repository):
 
     async def delete(self, troop_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = await self.session.execute(
-            update(Troop)
-            .where(Troop.id == troop_id, Troop.deleted_at.is_(None))
-            .values(deleted_at=now)
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                update(Troop)
+                .where(Troop.id == troop_id, Troop.deleted_at.is_(None))
+                .values(deleted_at=now)
+            ),
         )
         return res.rowcount or 0
 
@@ -139,12 +144,15 @@ class TroopRepository(Repository):
         return True, tp
 
     async def remove_participation(self, event_id: UUID, troop_id: UUID) -> int:
-        res = await self.session.execute(
-            delete(TroopParticipation).where(
-                and_(
-                    TroopParticipation.troop_id == troop_id,
-                    TroopParticipation.event_id == event_id,
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                delete(TroopParticipation).where(
+                    and_(
+                        TroopParticipation.troop_id == troop_id,
+                        TroopParticipation.event_id == event_id,
+                    )
                 )
-            )
+            ),
         )
         return res.rowcount or 0

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import cast
 
 from sqlalchemy import delete, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.email_list import EmailList
@@ -22,5 +24,8 @@ class EmailListRepository(Repository):
         return email_entry
 
     async def delete(self, email: str) -> int:
-        res = await self.session.execute(delete(EmailList).where(EmailList.email == email))
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(delete(EmailList).where(EmailList.email == email)),
+        )
         return res.rowcount or 0

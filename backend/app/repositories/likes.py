@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.like import UserLikedContent
@@ -42,9 +44,12 @@ class LikeRepository(Repository):
         return like
 
     async def delete(self, user_id: UUID, content_id: UUID) -> int:
-        res = await self.session.execute(
-            delete(UserLikedContent).where(
-                UserLikedContent.user_id == user_id, UserLikedContent.content_id == content_id
-            )
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                delete(UserLikedContent).where(
+                    UserLikedContent.user_id == user_id, UserLikedContent.content_id == content_id
+                )
+            ),
         )
         return res.rowcount or 0

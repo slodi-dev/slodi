@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -82,10 +84,13 @@ class WorkspaceRepository(Repository):
         )
 
         # Soft-delete the workspace itself
-        res = await self.session.execute(
-            update(Workspace)
-            .where(Workspace.id == workspace_id, Workspace.deleted_at.is_(None))
-            .values(deleted_at=now)
+        res = cast(  # type: ignore[redundant-cast]
+            CursorResult,
+            await self.session.execute(
+                update(Workspace)
+                .where(Workspace.id == workspace_id, Workspace.deleted_at.is_(None))
+                .values(deleted_at=now)
+            ),
         )
         return res.rowcount or 0
 
