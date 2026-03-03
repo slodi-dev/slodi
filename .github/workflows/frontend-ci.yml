@@ -1,5 +1,4 @@
 name: Frontend CI
-
 on:
   push:
     paths:
@@ -45,3 +44,12 @@ jobs:
           AUTH0_ISSUER_BASE_URL: https://placeholder.auth0.com
           AUTH0_CLIENT_ID: ci_client_id
           AUTH0_CLIENT_SECRET: ci_client_secret
+
+      - name: Notify Discord
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Lint & Build — ${{ github.repository }}"
+          description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"
