@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
  * Return type for useSidebarState hook
  */
 interface UseSidebarStateReturn {
-  sidebarCollapsed: boolean;      // Is sidebar collapsed (desktop/tablet)
-  mobileMenuOpen: boolean;        // Is mobile menu open
-  isMobile: boolean;              // Is current viewport mobile
-  isTablet: boolean;              // Is current viewport tablet
-  isDesktop: boolean;             // Is current viewport desktop
-  toggleSidebar: () => void;      // Toggle sidebar collapsed state
-  toggleMobileMenu: () => void;   // Toggle mobile menu open/close
-  closeMobileMenu: () => void;    // Close mobile menu
+  sidebarCollapsed: boolean; // Is sidebar collapsed (desktop/tablet)
+  mobileMenuOpen: boolean; // Is mobile menu open
+  isMobile: boolean; // Is current viewport mobile
+  isTablet: boolean; // Is current viewport tablet
+  isDesktop: boolean; // Is current viewport desktop
+  toggleSidebar: () => void; // Toggle sidebar collapsed state
+  toggleMobileMenu: () => void; // Toggle mobile menu open/close
+  closeMobileMenu: () => void; // Close mobile menu
 }
 
 /**

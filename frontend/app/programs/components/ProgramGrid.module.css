@@ -96,7 +96,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -235,20 +236,20 @@
     padding: var(--sl-spacing-stack-xl);
     min-height: 300px;
   }
-  
+
   .emptyIcon {
     width: 64px;
     height: 64px;
   }
-  
+
   .emptyTitle {
     font-size: var(--sl-font-size-xl);
   }
-  
+
   .emptyDescription {
     font-size: var(--sl-font-size-sm);
   }
-  
+
   .skeletonMedia {
     height: 140px;
   }

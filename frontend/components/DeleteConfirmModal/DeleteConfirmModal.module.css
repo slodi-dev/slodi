@@ -27,7 +27,9 @@
   border: 2px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-input);
   cursor: pointer;
-  transition: background-color var(--sl-transition-fast), border-color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
 }
 
 .cancelButton:hover:not(:disabled) {
@@ -50,7 +52,9 @@
   border: 2px solid hsl(var(--sl-color-error));
   border-radius: var(--sl-radius-input);
   cursor: pointer;
-  transition: background-color var(--sl-transition-fast), border-color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
 }
 
 .deleteButton:hover:not(:disabled) {

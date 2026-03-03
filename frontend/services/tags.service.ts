@@ -25,7 +25,7 @@ export async function fetchTags(query?: string, token?: string): Promise<Tag[]> 
     params.append("q", query.trim());
   }
 
-  const url = buildApiUrl(`/tags${params.toString() ? `?${params.toString()}` : ''}`);
+  const url = buildApiUrl(`/tags${params.toString() ? `?${params.toString()}` : ""}`);
   return fetchAndCheck<Tag[]>(url, {
     method: "GET",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -89,7 +89,7 @@ export async function deleteTag(id: string): Promise<void> {
  * Extract tag names from Tag objects
  */
 export function extractTagNames(tags: Tag[]): string[] {
-  return tags.map(tag => tag.name);
+  return tags.map((tag) => tag.name);
 }
 
 /**
@@ -113,7 +113,7 @@ export async function addTagToContent(
   getToken: () => Promise<string | null>
 ): Promise<{ created: boolean }> {
   const url = buildApiUrl(`/content/${contentId}/tags/${tagId}`);
-  
+
   const token = await getToken();
   if (!token) {
     throw new Error("Authentication required");
@@ -122,7 +122,7 @@ export async function addTagToContent(
   const response = await fetch(url, {
     method: "PUT",
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -144,7 +144,7 @@ export async function removeTagFromContent(
   getToken: () => Promise<string | null>
 ): Promise<void> {
   const url = buildApiUrl(`/content/${contentId}/tags/${tagId}`);
-  
+
   const token = await getToken();
   if (!token) {
     throw new Error("Authentication required");
@@ -153,7 +153,7 @@ export async function removeTagFromContent(
   const response = await fetch(url, {
     method: "DELETE",
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -169,6 +169,6 @@ export async function removeTagFromContent(
  */
 export async function findTagIdByName(tagName: string): Promise<string | null> {
   const tags = await fetchTags(tagName);
-  const exactMatch = tags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
+  const exactMatch = tags.find((tag) => tag.name.toLowerCase() === tagName.toLowerCase());
   return exactMatch?.id || null;
 }

@@ -18,7 +18,10 @@ function parseDuration(val: string | null | undefined): [string, string] {
 /** Parses "Hrefnuskátar, Drekaskátar" → ["Hrefnuskátar", "Drekaskátar"] */
 function parseAge(val: string | null | undefined): string[] {
   if (!val) return [];
-  return val.split(",").map((s) => s.trim()).filter(Boolean);
+  return val
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -64,7 +67,6 @@ export interface ProgramDetailEditProps {
   isDeleting?: boolean;
 }
 
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProgramDetailEdit({
@@ -107,8 +109,7 @@ export default function ProgramDetailEdit({
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  const patch = (fields: Partial<FormState>) =>
-    setForm((prev) => ({ ...prev, ...fields }));
+  const patch = (fields: Partial<FormState>) => setForm((prev) => ({ ...prev, ...fields }));
 
   const addEquipment = () => {
     const trimmed = equipmentInput.trim();
@@ -165,10 +166,7 @@ export default function ProgramDetailEdit({
         form.prepTimeMin || form.prepTimeMax
           ? `${[form.prepTimeMin, form.prepTimeMax].filter(Boolean).join("–")} mín`
           : null,
-      age:
-        form.selectedAgeGroups.length > 0
-          ? form.selectedAgeGroups.join(", ")
-          : null,
+      age: form.selectedAgeGroups.length > 0 ? form.selectedAgeGroups.join(", ") : null,
       location: form.location.trim() || null,
       count: form.countMin !== "" ? Number(form.countMin) : null,
       price: form.price !== "" ? Number(form.price) : null,
@@ -180,9 +178,7 @@ export default function ProgramDetailEdit({
       setError(null);
       await onSave(payload);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Villa kom upp við að vista"
-      );
+      setError(err instanceof Error ? err.message : "Villa kom upp við að vista");
     } finally {
       setIsSaving(false);
     }
@@ -193,7 +189,6 @@ export default function ProgramDetailEdit({
   return (
     <div className={styles.editContainer}>
       <form onSubmit={handleSubmit} className={styles.form}>
-
         {/* ── Section: Basic ── */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Grunnupplýsingar</h3>
@@ -266,7 +261,9 @@ export default function ProgramDetailEdit({
                   aria-label="Lágmarkstímalengd í mínútum"
                   disabled={isDisabled}
                 />
-                <span className={styles.rangeSep} aria-hidden="true">–</span>
+                <span className={styles.rangeSep} aria-hidden="true">
+                  –
+                </span>
                 <input
                   type="number"
                   className={styles.input}
@@ -293,7 +290,9 @@ export default function ProgramDetailEdit({
                   aria-label="Lágmarks undirbúningstími"
                   disabled={isDisabled}
                 />
-                <span className={styles.rangeSep} aria-hidden="true">–</span>
+                <span className={styles.rangeSep} aria-hidden="true">
+                  –
+                </span>
                 <input
                   type="number"
                   className={styles.input}
@@ -363,11 +362,7 @@ export default function ProgramDetailEdit({
             <p className={styles.label} id="edit-age-label">
               Aldurshópar
             </p>
-            <div
-              className={styles.checkboxGrid}
-              role="group"
-              aria-labelledby="edit-age-label"
-            >
+            <div className={styles.checkboxGrid} role="group" aria-labelledby="edit-age-label">
               {AGE_GROUPS.map((group) => (
                 <label key={group} className={styles.checkboxOption}>
                   <input
@@ -486,9 +481,7 @@ export default function ProgramDetailEdit({
                   })}
                 </div>
                 {form.selectedTags.length > 0 && (
-                  <p className={styles.helpText}>
-                    {form.selectedTags.length} merkimiðar valdir
-                  </p>
+                  <p className={styles.helpText}>{form.selectedTags.length} merkimiðar valdir</p>
                 )}
               </>
             )}
@@ -519,7 +512,10 @@ export default function ProgramDetailEdit({
                 <button
                   type="button"
                   className={styles.imageClearButton}
-                  onClick={() => { patch({ image: "" }); setImageError(false); }}
+                  onClick={() => {
+                    patch({ image: "" });
+                    setImageError(false);
+                  }}
                   disabled={isDisabled}
                   aria-label="Fjarlægja mynd"
                 >
@@ -533,13 +529,14 @@ export default function ProgramDetailEdit({
               type="url"
               className={styles.input}
               value={form.image}
-              onChange={(e) => { setImageError(false); patch({ image: e.target.value }); }}
+              onChange={(e) => {
+                setImageError(false);
+                patch({ image: e.target.value });
+              }}
               disabled={isDisabled}
               placeholder="https://example.com/mynd.jpg"
             />
-            <p className={styles.helpText}>
-              Settu inn slóð á mynd til að sýna á dagskránni
-            </p>
+            <p className={styles.helpText}>Settu inn slóð á mynd til að sýna á dagskránni</p>
           </div>
         </section>
 
@@ -548,11 +545,7 @@ export default function ProgramDetailEdit({
 
         {/* ── Actions ── */}
         <div className={styles.actions}>
-          <button
-            type="submit"
-            className={styles.saveButton}
-            disabled={isDisabled}
-          >
+          <button type="submit" className={styles.saveButton} disabled={isDisabled}>
             {isSaving ? "Vista…" : "Vista breytingar"}
           </button>
           <button
@@ -580,9 +573,7 @@ export default function ProgramDetailEdit({
             {isDeleting ? "Eyði…" : "Eyða dagskrá"}
           </button>
         </div>
-
       </form>
     </div>
   );
 }
-

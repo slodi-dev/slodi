@@ -62,9 +62,7 @@ export function canDeleteProgram(
  *
  * Backend requires workspace role >= "editor" for POST /workspaces/{id}/programs.
  */
-export function canCreateProgram(
-  workspaceRole: WorkspaceRole | null | undefined
-): boolean {
+export function canCreateProgram(workspaceRole: WorkspaceRole | null | undefined): boolean {
   return hasWorkspaceRole(workspaceRole, "editor");
 }
 

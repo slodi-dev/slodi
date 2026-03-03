@@ -1,5 +1,5 @@
-@import './../../app/slodi-tokens.css';
-@import './../../app/slodi-utilities.css';
+@import "./../../app/slodi-tokens.css";
+@import "./../../app/slodi-utilities.css";
 
 /* ═══════════════════════════════════════════════════════════════
    SIDEBAR NAVIGATION - Using Slóði Design Tokens
@@ -20,7 +20,7 @@
   overflow-x: hidden;
   z-index: var(--sl-z-fixed);
   transition: width var(--sl-transition-base);
-  
+
   /* Hide scrollbar while maintaining scroll functionality */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
@@ -401,7 +401,7 @@
     transform: translateX(0);
     box-shadow: var(--sl-shadow-modal);
   }
-  
+
   /* Ensure labels are visible on mobile */
   .sidebar .navLabel,
   .sidebar .userName,
@@ -409,7 +409,7 @@
   .sidebar .collapseLabel {
     display: block;
   }
-  
+
   /* Reset collapsed styles on mobile - always show full menu */
   .sidebar .navItem,
   .sidebar .userLink {
@@ -417,21 +417,21 @@
     padding: var(--sl-spacing-inset-md);
     margin: 0 var(--sl-spacing-inline);
   }
-  
+
   .sidebar .navItemActive {
     border-left: 3px solid hsl(var(--sl-color-primary));
     border-bottom: none;
     padding-left: calc(var(--sl-spacing-inset-md) - 3px);
   }
-  
+
   .sidebar .userSection {
     margin: var(--sl-spacing-element) var(--sl-spacing-inline);
   }
-  
+
   .sidebar .collapseButtonWrapper {
     padding: 0 var(--sl-spacing-inline);
   }
-  
+
   .sidebar .collapseButton {
     justify-content: flex-start;
   }

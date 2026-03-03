@@ -21,7 +21,12 @@ import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import { updateProgram, deleteProgram, type Program, type ProgramUpdateInput } from "@/services/programs.service";
+import {
+  updateProgram,
+  deleteProgram,
+  type Program,
+  type ProgramUpdateInput,
+} from "@/services/programs.service";
 import ProgramDetailEdit from "@/app/programs/[id]/components/ProgramDetailEdit";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
@@ -30,212 +35,205 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfir
  * filtering, sorting, and pagination capabilities.
  */
 export default function ProgramsPage() {
-    const [showNewProgram, setShowNewProgram] = useState(false);
+  const [showNewProgram, setShowNewProgram] = useState(false);
 
-    // Resolve the shared workspace ID — from env var (dev) or /api/config (Docker)
-    const defaultWorkspaceId = useDefaultWorkspaceId();
+  // Resolve the shared workspace ID — from env var (dev) or /api/config (Docker)
+  const defaultWorkspaceId = useDefaultWorkspaceId();
 
-    // Fetch data
-    const { tagNames: availableTags, loading: tagsLoading } = useTags();
+  // Fetch data
+  const { tagNames: availableTags, loading: tagsLoading } = useTags();
 
-    // The shared program bank always reads from the default (shared) workspace.
-    const { programs, loading: programsLoading, error: programsError, refetch } = usePrograms(defaultWorkspaceId);
+  // The shared program bank always reads from the default (shared) workspace.
+  const {
+    programs,
+    loading: programsLoading,
+    error: programsError,
+    refetch,
+  } = usePrograms(defaultWorkspaceId);
 
-    // User's private workspace — fetched now so it's ready for the future
-    // workspace toggle. When the toggle is added, swap postWorkspaceId between
-    // defaultWorkspaceId and userWorkspaceId based on the user's selection.
-    const { workspaceId: userWorkspaceId } = useUserWorkspace();
+  // User's private workspace — fetched now so it's ready for the future
+  // workspace toggle. When the toggle is added, swap postWorkspaceId between
+  // defaultWorkspaceId and userWorkspaceId based on the user's selection.
+  const { workspaceId: userWorkspaceId } = useUserWorkspace();
 
-    // ── Auth & workspace role ──────────────────────────────────────────────
-    const { user, getToken } = useAuth();
-    const { role } = useWorkspaceRole(defaultWorkspaceId);
+  // ── Auth & workspace role ──────────────────────────────────────────────
+  const { user, getToken } = useAuth();
+  const { role } = useWorkspaceRole(defaultWorkspaceId);
 
-    // ── Edit / delete modal state ──────────────────────────────────────────
-    const [editingProgram, setEditingProgram] = useState<Program | null>(null);
-    const [pendingDeleteProgram, setPendingDeleteProgram] = useState<Program | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+  // ── Edit / delete modal state ──────────────────────────────────────────
+  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  const [pendingDeleteProgram, setPendingDeleteProgram] = useState<Program | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-    // ── WHERE TO POST new programs ──────────────────────────────────────────
-    // Currently hardcoded to the shared bank. To allow posting to the user's
-    // private workspace instead, replace defaultWorkspaceId here with
-    // userWorkspaceId (and add a UI toggle to let the user choose).
-    const postWorkspaceId = defaultWorkspaceId ?? "";
-    void userWorkspaceId; // retained for future toggle — prevent lint unused warning
+  // ── WHERE TO POST new programs ──────────────────────────────────────────
+  // Currently hardcoded to the shared bank. To allow posting to the user's
+  // private workspace instead, replace defaultWorkspaceId here with
+  // userWorkspaceId (and add a UI toggle to let the user choose).
+  const postWorkspaceId = defaultWorkspaceId ?? "";
+  void userWorkspaceId; // retained for future toggle — prevent lint unused warning
 
-    // ── Edit / delete handlers ─────────────────────────────────────────────
-    const handleEditSave = async (data: ProgramUpdateInput) => {
-        if (!editingProgram) return;
-        await updateProgram(editingProgram.id, data, getToken);
-        setEditingProgram(null);
-        await refetch();
-    };
+  // ── Edit / delete handlers ─────────────────────────────────────────────
+  const handleEditSave = async (data: ProgramUpdateInput) => {
+    if (!editingProgram) return;
+    await updateProgram(editingProgram.id, data, getToken);
+    setEditingProgram(null);
+    await refetch();
+  };
 
-    const handleDeleteConfirm = async () => {
-        if (!pendingDeleteProgram) return;
-        try {
-            setIsDeleting(true);
-            await deleteProgram(pendingDeleteProgram.id, getToken);
-            setPendingDeleteProgram(null);
-            await refetch();
-        } catch (err) {
-            console.error("Failed to delete program:", err);
-        } finally {
-            setIsDeleting(false);
-        }
-    };
+  const handleDeleteConfirm = async () => {
+    if (!pendingDeleteProgram) return;
+    try {
+      setIsDeleting(true);
+      await deleteProgram(pendingDeleteProgram.id, getToken);
+      setPendingDeleteProgram(null);
+      await refetch();
+    } catch (err) {
+      console.error("Failed to delete program:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
-    // Apply filters and sorting
-    const {
-        query,
-        setQuery,
-        selectedTags,
-        setSelectedTags,
-        sortBy,
-        setSortBy,
-        filteredAndSorted,
-        clearFilters,
-    } = useProgramFilters(programs || []);
+  // Apply filters and sorting
+  const {
+    query,
+    setQuery,
+    selectedTags,
+    setSelectedTags,
+    sortBy,
+    setSortBy,
+    filteredAndSorted,
+    clearFilters,
+  } = useProgramFilters(programs || []);
 
-    // Apply pagination
-    const {
-        currentPage,
-        totalPages,
-        paginatedItems,
-        setCurrentPage,
-        totalItems,
-        itemsPerPage,
-    } = usePagination(filteredAndSorted, PROGRAMS_PER_PAGE);
+  // Apply pagination
+  const { currentPage, totalPages, paginatedItems, setCurrentPage, totalItems, itemsPerPage } =
+    usePagination(filteredAndSorted, PROGRAMS_PER_PAGE);
 
-    const handleProgramCreated = async () => {
-        setShowNewProgram(false);
-        await refetch();
-    };
+  const handleProgramCreated = async () => {
+    setShowNewProgram(false);
+    await refetch();
+  };
 
+  return (
+    <section className="builder-page">
+      {/* Header with FAB button */}
+      <ProgramsHeader onNewProgram={() => setShowNewProgram(true)} />
 
-    return (
-        <section className="builder-page">
-            {/* Header with FAB button */}
-            <ProgramsHeader onNewProgram={() => setShowNewProgram(true)} />
+      {/* New Program Modal */}
+      <Modal
+        open={showNewProgram}
+        onClose={() => setShowNewProgram(false)}
+        title="Bæta hugmynd í bankann"
+      >
+        <NewProgramForm workspaceId={postWorkspaceId} onCreated={handleProgramCreated} />
+      </Modal>
 
-            {/* New Program Modal */}
-            <Modal
-                open={showNewProgram}
-                onClose={() => setShowNewProgram(false)}
-                title="Bæta hugmynd í bankann"
-            >
-                <NewProgramForm
-                    workspaceId={postWorkspaceId}
-                    onCreated={handleProgramCreated}
-                />
-            </Modal>
-
-            {/* Main two-column layout */}
-            <div className={styles.pageContainer}>
-                {/* Left Sidebar - Filters */}
-                <aside className={styles.sidebar}>
-                    <div className={styles.searchSection}>
-                        <ProgramSearch
-                            value={query}
-                            onChange={setQuery}
-                            onSearch={() => { }}
-                            resultCount={query.trim() || selectedTags.length > 0 ? filteredAndSorted.length : undefined}
-                            placeholder="Leita að dagskrá"
-                        />
-                    </div>
-
-                    <ProgramFilters
-                        availableTags={availableTags || []}
-                        selectedTags={selectedTags}
-                        onTagsChange={setSelectedTags}
-                        onClearAll={clearFilters}
-                        isLoadingTags={tagsLoading}
-                    />
-                </aside>
-
-                {/* Right Side - Main Content */}
-                <main className={styles.mainContent}>
-                    {/* Content Header - Result count and sort */}
-                    <div className={styles.contentHeader}>
-                        <div className={styles.resultCount}>
-                            <span>
-                                {filteredAndSorted.length === 1
-                                    ? '1 dagskrá'
-                                    : `${filteredAndSorted.length} dagskrár`}
-                            </span>
-                        </div>
-                        <ProgramSort value={sortBy} onChange={setSortBy} />
-                    </div>
-
-                    {/* Program Grid */}
-                    <ProgramGrid
-                        isEmpty={filteredAndSorted.length === 0}
-                        isLoading={programsLoading}
-                        emptyMessage={
-                            programsError
-                                ? "Villa kom upp við að sækja dagskrár"
-                                : query.trim() || selectedTags.length > 0
-                                    ? "Engin dagskrá fannst við þessi leitarskilyrði"
-                                    : "Engin dagskrá fannst"
-                        }
-                    >
-                        {paginatedItems.map((p) => (
-                            <ProgramCard
-                                key={p.id}
-                                id={p.id}
-                                name={p.name}
-                                image={p.image}
-                                description={p.description}
-                                tags={p.tags}
-                                author={p.author}
-                                canEdit={canEditProgram(user, p, role)}
-                                canDelete={canDeleteProgram(user, p, role)}
-                                onEdit={() => setEditingProgram(p)}
-                                onDelete={() => setPendingDeleteProgram(p)}
-                            />
-                        ))}
-                    </ProgramGrid>
-
-                    {/* Pagination */}
-                    {filteredAndSorted.length > 0 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                            totalItems={totalItems}
-                            itemsPerPage={itemsPerPage}
-                        />
-                    )}
-                </main>
-            </div>
-
-            {/* Edit modal */}
-            <Modal
-                open={!!editingProgram}
-                onClose={() => setEditingProgram(null)}
-                title="Breyta dagskrá"
-            >
-                {editingProgram && (
-                    <ProgramDetailEdit
-                        program={editingProgram}
-                        onSave={handleEditSave}
-                        onCancel={() => setEditingProgram(null)}
-                        onDeleteRequest={() => {
-                            setPendingDeleteProgram(editingProgram);
-                            setEditingProgram(null);
-                        }}
-                        isDeleting={false}
-                    />
-                )}
-            </Modal>
-
-            {/* Delete confirmation modal */}
-            <DeleteConfirmModal
-                open={!!pendingDeleteProgram}
-                programName={pendingDeleteProgram?.name}
-                isDeleting={isDeleting}
-                onClose={() => setPendingDeleteProgram(null)}
-                onConfirm={handleDeleteConfirm}
+      {/* Main two-column layout */}
+      <div className={styles.pageContainer}>
+        {/* Left Sidebar - Filters */}
+        <aside className={styles.sidebar}>
+          <div className={styles.searchSection}>
+            <ProgramSearch
+              value={query}
+              onChange={setQuery}
+              onSearch={() => {}}
+              resultCount={
+                query.trim() || selectedTags.length > 0 ? filteredAndSorted.length : undefined
+              }
+              placeholder="Leita að dagskrá"
             />
-        </section>
-    );
+          </div>
+
+          <ProgramFilters
+            availableTags={availableTags || []}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+            onClearAll={clearFilters}
+            isLoadingTags={tagsLoading}
+          />
+        </aside>
+
+        {/* Right Side - Main Content */}
+        <main className={styles.mainContent}>
+          {/* Content Header - Result count and sort */}
+          <div className={styles.contentHeader}>
+            <div className={styles.resultCount}>
+              <span>
+                {filteredAndSorted.length === 1
+                  ? "1 dagskrá"
+                  : `${filteredAndSorted.length} dagskrár`}
+              </span>
+            </div>
+            <ProgramSort value={sortBy} onChange={setSortBy} />
+          </div>
+
+          {/* Program Grid */}
+          <ProgramGrid
+            isEmpty={filteredAndSorted.length === 0}
+            isLoading={programsLoading}
+            emptyMessage={
+              programsError
+                ? "Villa kom upp við að sækja dagskrár"
+                : query.trim() || selectedTags.length > 0
+                  ? "Engin dagskrá fannst við þessi leitarskilyrði"
+                  : "Engin dagskrá fannst"
+            }
+          >
+            {paginatedItems.map((p) => (
+              <ProgramCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                image={p.image}
+                description={p.description}
+                tags={p.tags}
+                author={p.author}
+                canEdit={canEditProgram(user, p, role)}
+                canDelete={canDeleteProgram(user, p, role)}
+                onEdit={() => setEditingProgram(p)}
+                onDelete={() => setPendingDeleteProgram(p)}
+              />
+            ))}
+          </ProgramGrid>
+
+          {/* Pagination */}
+          {filteredAndSorted.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+            />
+          )}
+        </main>
+      </div>
+
+      {/* Edit modal */}
+      <Modal open={!!editingProgram} onClose={() => setEditingProgram(null)} title="Breyta dagskrá">
+        {editingProgram && (
+          <ProgramDetailEdit
+            program={editingProgram}
+            onSave={handleEditSave}
+            onCancel={() => setEditingProgram(null)}
+            onDeleteRequest={() => {
+              setPendingDeleteProgram(editingProgram);
+              setEditingProgram(null);
+            }}
+            isDeleting={false}
+          />
+        )}
+      </Modal>
+
+      {/* Delete confirmation modal */}
+      <DeleteConfirmModal
+        open={!!pendingDeleteProgram}
+        programName={pendingDeleteProgram?.name}
+        isDeleting={isDeleting}
+        onClose={() => setPendingDeleteProgram(null)}
+        onConfirm={handleDeleteConfirm}
+      />
+    </section>
+  );
 }

@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import styles from './ProgramGrid.module.css';
+import type { ReactNode } from "react";
+import styles from "./ProgramGrid.module.css";
 
-export type GridView = 'grid' | 'list';
+export type GridView = "grid" | "list";
 
 interface ProgramGridProps {
   children: ReactNode;
@@ -14,11 +14,11 @@ interface ProgramGridProps {
 
 export default function ProgramGrid({
   children,
-  view = 'grid',
+  view = "grid",
   isLoading = false,
   isEmpty = false,
-  emptyMessage = 'No programs found',
-  className = '',
+  emptyMessage = "No programs found",
+  className = "",
 }: ProgramGridProps) {
   // Loading skeleton
   if (isLoading) {

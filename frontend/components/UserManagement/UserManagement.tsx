@@ -69,10 +69,7 @@ export default function UserManagement() {
     if (!authLoading) fetchUsers();
   }, [fetchUsers, authLoading]);
 
-  const handlePermissionChange = async (
-    userId: string,
-    permissions: UserPermissions
-  ) => {
+  const handlePermissionChange = async (userId: string, permissions: UserPermissions) => {
     const token = await getToken();
     if (!token) return;
     setPendingUpdates((prev) => ({ ...prev, [userId]: true }));
@@ -167,9 +164,7 @@ export default function UserManagement() {
                 >
                   <td className={styles.td}>
                     <span className={styles.name}>{u.name}</span>
-                    {u.id === currentUser?.id && (
-                      <span className={styles.selfBadge}>þú</span>
-                    )}
+                    {u.id === currentUser?.id && <span className={styles.selfBadge}>þú</span>}
                   </td>
                   <td className={styles.td}>{u.email}</td>
                   <td className={styles.td}>
@@ -188,9 +183,7 @@ export default function UserManagement() {
                         </option>
                       ))}
                     </select>
-                    {pendingUpdates[u.id] && (
-                      <span className={styles.saving}>…</span>
-                    )}
+                    {pendingUpdates[u.id] && <span className={styles.saving}>…</span>}
                   </td>
                   <td className={styles.td}>
                     {u.id !== currentUser?.id &&

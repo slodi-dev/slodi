@@ -127,7 +127,7 @@
   border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-card);
   text-decoration: none;
-  transition: 
+  transition:
     transform 200ms var(--sl-primitive-animation-easing),
     border-color 200ms var(--sl-primitive-animation-easing),
     box-shadow 200ms var(--sl-primitive-animation-easing);

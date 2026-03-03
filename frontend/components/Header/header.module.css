@@ -6,7 +6,10 @@
   background: hsl(var(--sl-color-background));
   color: hsl(var(--sl-color-text-primary));
   border-bottom: 1px solid hsl(var(--sl-color-border) / 0.3);
-  transition: background-color var(--sl-transition-base), color var(--sl-transition-base), border-color var(--sl-transition-base);
+  transition:
+    background-color var(--sl-transition-base),
+    color var(--sl-transition-base),
+    border-color var(--sl-transition-base);
 }
 
 /* Inner layout */
@@ -43,11 +46,13 @@
   font-size: var(--sl-primitive-font-size-sm);
   padding: var(--sl-primitive-space-1) var(--sl-primitive-space-2);
   border-radius: var(--sl-primitive-radius-sm);
-  transition: background-color var(--sl-transition-fast), color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
 }
 
 .primaryNavLink:hover {
-  background: hsl(var(--sl-color-primary) / 0.10);
+  background: hsl(var(--sl-color-primary) / 0.1);
 }
 
 /* Mobile menu toggle button */
@@ -63,7 +68,9 @@
   cursor: pointer;
   border-radius: var(--sl-primitive-radius-md);
   color: hsl(var(--sl-color-text-primary));
-  transition: background-color var(--sl-transition-fast), border-color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
 }
 .menuToggleButton:hover {
   background: hsl(var(--sl-color-surface-secondary) / 0.6);
@@ -118,7 +125,9 @@
   font-size: var(--sl-primitive-font-size-xl);
   padding: var(--sl-primitive-space-2) 0;
   border-bottom: 1px solid hsl(var(--sl-color-border) / 0.2);
-  transition: background-color var(--sl-transition-fast), color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
   border-radius: var(--sl-primitive-radius-sm);
 }
 

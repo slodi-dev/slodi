@@ -61,15 +61,25 @@ function UnsubscribeContent() {
           {status === "success" ? (
             <div className={styles.successContent}>
               <div className={styles.successIcon} aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
-              
+
               <p className={styles.successMessage}>{message}</p>
-              
+
               <p className={styles.description}>
-                Þú munt ekki lengur fá tölvupóst frá okkur. Ef þú skiptir um skoðun geturðu alltaf 
+                Þú munt ekki lengur fá tölvupóst frá okkur. Ef þú skiptir um skoðun geturðu alltaf
                 skráð þig aftur á póstlistann.
               </p>
 
@@ -82,7 +92,8 @@ function UnsubscribeContent() {
           ) : (
             <>
               <p className={styles.description}>
-                Komið nóg af tölvupóstum? Sláðu inn netfangið þitt hér að neðan til að afskrá þig af póstlistanum okkar. Það var gaman að hafa þig með!
+                Komið nóg af tölvupóstum? Sláðu inn netfangið þitt hér að neðan til að afskrá þig af
+                póstlistanum okkar. Það var gaman að hafa þig með!
               </p>
 
               <form onSubmit={handleUnsubscribe} className={styles.form}>
@@ -125,8 +136,20 @@ function UnsubscribeContent() {
                     role="alert"
                     aria-live="polite"
                   >
-                    <svg className={styles.messageIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      className={styles.messageIcon}
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     <span>{message}</span>
                   </div>
@@ -138,7 +161,8 @@ function UnsubscribeContent() {
                   Ef þú átt í vandræðum með að afskrá þig, hafðu samband við okkur á{" "}
                   <a href="mailto:slodi@skatarnir.is" className={styles.mailtoLink}>
                     slodi@skatarnir.is
-                  </a>.
+                  </a>
+                  .
                 </p>
                 <Link href="/" className={styles.backLink}>
                   Aftur á forsíðu
@@ -154,15 +178,17 @@ function UnsubscribeContent() {
 
 export default function UnsubscribePage() {
   return (
-    <Suspense fallback={
-      <div className={styles.page}>
-        <div className={styles.container}>
-          <div className={styles.card}>
-            <div className={styles.loading}>Hleður...</div>
+    <Suspense
+      fallback={
+        <div className={styles.page}>
+          <div className={styles.container}>
+            <div className={styles.card}>
+              <div className={styles.loading}>Hleður...</div>
+            </div>
           </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <UnsubscribeContent />
     </Suspense>
   );

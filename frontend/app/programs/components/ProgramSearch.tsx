@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
-import styles from './ProgramSearch.module.css';
+import { useEffect, useState, useRef } from "react";
+import styles from "./ProgramSearch.module.css";
 
 interface ProgramSearchProps {
   value: string;
@@ -13,8 +13,8 @@ interface ProgramSearchProps {
   disabled?: boolean;
 }
 
-export default function ProgramSearch({ 
-  value, 
+export default function ProgramSearch({
+  value,
   onChange,
   onSearch,
   placeholder = "Leita í dagskrám...",
@@ -51,9 +51,9 @@ export default function ProgramSearch({
   }, [localValue, debounceMs, onChange, onSearch]);
 
   const handleClear = () => {
-    setLocalValue('');
-    onChange('');
-    onSearch?.('');
+    setLocalValue("");
+    onChange("");
+    onSearch?.("");
     inputRef.current?.focus();
   };
 
@@ -84,7 +84,7 @@ export default function ProgramSearch({
         <input
           ref={inputRef}
           type="search"
-          className={`${styles.searchInput} ${isActive ? styles.active : ''}`}
+          className={`${styles.searchInput} ${isActive ? styles.active : ""}`}
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           placeholder={placeholder}
@@ -123,7 +123,7 @@ export default function ProgramSearch({
 
       {/* Result Count */}
       {showResultCount && (
-        <div 
+        <div
           id="search-results-count"
           className={styles.resultCount}
           role="status"

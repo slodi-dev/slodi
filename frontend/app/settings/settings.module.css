@@ -1,5 +1,5 @@
 @import "../slodi-tokens.css";
-@import '../slodi-utilities.css';
+@import "../slodi-utilities.css";
 
 /* ═══════════════════════════════════════════════════════════════
    SETTINGS PAGE - Using Slóði Design Tokens
@@ -63,7 +63,11 @@
 
 .avatarFallback {
   border-radius: var(--sl-radius-avatar);
-  background: linear-gradient(135deg, hsl(var(--sl-color-primary)) 0%, hsl(var(--sl-color-secondary)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--sl-color-primary)) 0%,
+    hsl(var(--sl-color-secondary)) 100%
+  );
   flex-shrink: 0;
 }
 

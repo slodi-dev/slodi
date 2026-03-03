@@ -12,36 +12,32 @@ interface BaseHandler<T extends Record<string, unknown>> {
   reset: (key?: keyof T) => void;
 }
 
-type EventProxy<T extends Record<string, unknown>> =
-  & BaseHandler<T>
-  & {
-    [K in keyof T]: FieldHandler<T[K]>;
-  };
+type EventProxy<T extends Record<string, unknown>> = BaseHandler<T> & {
+  [K in keyof T]: FieldHandler<T[K]>;
+};
 
 /**
  * Nýtist þannig:
- * 
+ *
  * ```ts
  * const [state, event] = useModel({
  *   someKey: 1,
  *   someOtherKey: 2
  * });
- * 
+ *
  * console.log(state.someKey) // 1
- * 
+ *
  * state.someKey.set(2)
- * 
+ *
  * console.log(state.someKey) // 2
  * ```
- * 
+ *
  * Eins og useState nema hvað hver lykill er eins og sér state.
- * 
- * @param initialState 
+ *
+ * @param initialState
  * @returns [state, event]
  */
-function useModel<T extends Record<string, unknown>>(
-  initialState: T,
-): [T, EventProxy<T>] {
+function useModel<T extends Record<string, unknown>>(initialState: T): [T, EventProxy<T>] {
   const [state, setState] = useState<T>(initialState);
 
   const event = useMemo(() => {

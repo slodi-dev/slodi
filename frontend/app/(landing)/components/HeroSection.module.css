@@ -93,7 +93,7 @@
   font-weight: var(--sl-font-weight-emphasis);
   border-radius: var(--sl-radius-button);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     transform var(--sl-transition-fast),
@@ -240,7 +240,8 @@
 }
 
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -253,17 +254,17 @@
   .chevronIcon {
     animation: none;
   }
-  
+
   .scrollIndicator:hover,
   .scrollIndicator:active {
     transform: none;
   }
-  
+
   .primaryButton:hover,
   .primaryButton:active {
     transform: none;
   }
-  
+
   .secondaryButton:hover .arrowIcon {
     transform: none;
   }
@@ -286,51 +287,51 @@
     min-height: 80vh;
     padding: var(--sl-spacing-section) var(--sl-spacing-container);
   }
-  
+
   .container {
     gap: var(--sl-spacing-section);
     max-width: var(--sl-primitive-width-4xl);
   }
-  
+
   .content {
     max-width: 100%;
     gap: var(--sl-spacing-stack-lg);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-4xl);
   }
-  
+
   .subtitle {
     font-size: var(--sl-primitive-font-size-2xl);
   }
-  
+
   .subheading {
     font-size: var(--sl-primitive-font-size-xl);
   }
-  
+
   .description {
     font-size: var(--sl-text-body-lg);
   }
-  
+
   .cta {
     gap: var(--sl-spacing-gap-lg);
   }
-  
+
   .primaryButton,
   .secondaryButton {
     padding: 12px 24px;
     font-size: var(--sl-text-body);
   }
-  
+
   .visual {
     min-height: 350px;
   }
-  
+
   .placeholder {
     max-width: 450px;
   }
-  
+
   .placeholderIcon {
     width: 100px;
     height: 100px;
@@ -343,44 +344,44 @@
     min-height: auto;
     padding: var(--sl-spacing-container) var(--sl-spacing-component);
   }
-  
+
   .container {
     gap: var(--sl-spacing-container);
   }
-  
+
   .content {
     gap: var(--sl-spacing-stack-md);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
   }
-  
+
   .subtitle {
     font-size: var(--sl-primitive-font-size-xl);
   }
-  
+
   .subheading {
     font-size: var(--sl-text-body-lg);
   }
-  
+
   .description {
     font-size: var(--sl-text-body);
   }
-  
+
   .cta {
     gap: var(--sl-spacing-gap-lg);
   }
-  
+
   .primaryButton,
   .secondaryButton {
     padding: 10px 20px;
   }
-  
+
   .visual {
     min-height: 320px;
   }
-  
+
   .placeholderIcon {
     width: 90px;
     height: 90px;
@@ -392,35 +393,35 @@
   .hero {
     padding: var(--sl-spacing-container) var(--sl-spacing-element);
   }
-  
+
   .content {
     gap: var(--sl-spacing-stack-lg);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
     gap: var(--sl-spacing-stack-xs);
   }
-  
+
   .subtitle {
     font-size: var(--sl-text-body-lg);
   }
-  
+
   .subheading {
     font-size: var(--sl-text-body);
   }
-  
+
   .description {
     font-size: var(--sl-text-body-sm);
   }
-  
+
   .cta {
     flex-direction: column;
     width: 100%;
     gap: var(--sl-spacing-gap-md);
     margin-top: var(--sl-spacing-stack-md);
   }
-  
+
   /* Ensure touch targets are at least 44px */
   .primaryButton,
   .secondaryButton {
@@ -428,17 +429,17 @@
     min-height: 44px;
     padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-lg);
   }
-  
+
   .visual {
     min-height: 300px;
     order: -1; /* Move visual above content on mobile */
   }
-  
+
   .placeholderIcon {
     width: 80px;
     height: 80px;
   }
-  
+
   /* Larger touch target for scroll indicator on mobile */
   .scrollIndicator {
     width: 56px;
@@ -446,7 +447,7 @@
     bottom: var(--sl-spacing-element);
     right: var(--sl-spacing-element);
   }
-  
+
   .chevronIcon {
     width: 28px;
     height: 28px;

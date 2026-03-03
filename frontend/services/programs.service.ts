@@ -87,9 +87,13 @@ export async function fetchPrograms(
   getToken: () => Promise<string | null>
 ): Promise<Program[]> {
   const url = buildApiUrl(`/workspaces/${workspaceId}/programs`);
-  const data = await fetchWithAuth<ProgramsResponse>(url, {
-    method: "GET",
-  }, getToken);
+  const data = await fetchWithAuth<ProgramsResponse>(
+    url,
+    {
+      method: "GET",
+    },
+    getToken
+  );
 
   return Array.isArray(data) ? data : data.programs || [];
 }
@@ -103,9 +107,13 @@ export async function fetchProgramById(
   getToken: () => Promise<string | null>
 ): Promise<Program> {
   const url = buildApiUrl(`/programs/${id}`);
-  return fetchWithAuth<Program>(url, {
-    method: "GET",
-  }, getToken);
+  return fetchWithAuth<Program>(
+    url,
+    {
+      method: "GET",
+    },
+    getToken
+  );
 }
 
 /**
@@ -134,13 +142,17 @@ export async function createProgram(
 
   const url = buildApiUrl(`/workspaces/${input.workspaceId}/programs`);
 
-  const data = await fetchWithAuth<Program | Program[]>(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const data = await fetchWithAuth<Program | Program[]>(
+    url,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  }, getToken);
+    getToken
+  );
 
   return Array.isArray(data) ? data[0] : data;
 }
@@ -157,13 +169,17 @@ export async function updateProgram(
   const { tagNames, ...rest } = input;
   const body = tagNames !== undefined ? { ...rest, tag_names: tagNames } : rest;
   const url = buildApiUrl(`/programs/${id}`);
-  return fetchWithAuth<Program>(url, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
+  return fetchWithAuth<Program>(
+    url,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  }, getToken);
+    getToken
+  );
 }
 
 /**
@@ -175,9 +191,13 @@ export async function deleteProgram(
   getToken: () => Promise<string | null>
 ): Promise<void> {
   const url = buildApiUrl(`/programs/${id}`);
-  await fetchWithAuth(url, {
-    method: "DELETE",
-  }, getToken);
+  await fetchWithAuth(
+    url,
+    {
+      method: "DELETE",
+    },
+    getToken
+  );
 }
 
 /**
@@ -190,51 +210,47 @@ export async function toggleProgramLike(
   getToken: () => Promise<string | null>
 ): Promise<{ liked: boolean; likeCount: number }> {
   const url = buildApiUrl(`/programs/${programId}/like`);
-  return fetchWithAuth<{ liked: boolean; likeCount: number }>(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  return fetchWithAuth<{ liked: boolean; likeCount: number }>(
+    url,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action }),
     },
-    body: JSON.stringify({ action }),
-  }, getToken);
+    getToken
+  );
 }
 
 /**
  * Extract unique tags from programs list
  */
 export function extractTags(programs: Program[]): string[] {
-  const tagNames = programs.flatMap((p) => (p.tags || []).map(t => t.name));
+  const tagNames = programs.flatMap((p) => (p.tags || []).map((t) => t.name));
   return Array.from(new Set(tagNames));
 }
 
 /**
  * Filter programs by search query
  */
-export function filterProgramsByQuery(
-  programs: Program[],
-  query: string
-): Program[] {
+export function filterProgramsByQuery(programs: Program[], query: string): Program[] {
   if (!query.trim()) return programs;
 
   const q = query.trim().toLowerCase();
   return programs.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q) ||
-      (p.description || "").toLowerCase().includes(q)
+    (p) => p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q)
   );
 }
 
 /**
  * Filter programs by tags (OR logic - matches ANY selected tag)
  */
-export function filterProgramsByTags(
-  programs: Program[],
-  selectedTags: string[]
-): Program[] {
+export function filterProgramsByTags(programs: Program[], selectedTags: string[]): Program[] {
   if (selectedTags.length === 0) return programs;
 
   return programs.filter((p) => {
-    const programTagNames = (p.tags || []).map(t => t.name);
+    const programTagNames = (p.tags || []).map((t) => t.name);
     return selectedTags.some((selectedTag) => programTagNames.includes(selectedTag));
   });
 }
@@ -251,15 +267,11 @@ export function sortPrograms(
   switch (sortBy) {
     case "newest":
       return sorted.sort(
-        (a, b) =>
-          new Date(b.created_at || 0).getTime() -
-          new Date(a.created_at || 0).getTime()
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       );
     case "oldest":
       return sorted.sort(
-        (a, b) =>
-          new Date(a.created_at || 0).getTime() -
-          new Date(b.created_at || 0).getTime()
+        (a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
       );
     case "most-liked":
       return sorted.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));

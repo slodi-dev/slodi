@@ -19,13 +19,13 @@ export default function ProgramComments({ comments = [] }: ProgramCommentsProps)
   return (
     <div className="program-comments">
       <h3>Comments ({comments.length})</h3>
-      
+
       {/* Comment form placeholder */}
       <form className="comment-form">
         <textarea placeholder="Add a comment..." rows={3} />
         <button type="submit">Post Comment</button>
       </form>
-      
+
       {/* Comment list */}
       <div className="comment-list">
         {comments.length === 0 ? (

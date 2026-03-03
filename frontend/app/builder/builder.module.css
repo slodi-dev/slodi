@@ -9,11 +9,12 @@
   flex-direction: column;
   gap: 0.75rem;
 }
-.filters input, .filters select {
+.filters input,
+.filters select {
   width: 100%;
   padding: 0.4rem 0.5rem;
   border-radius: 6px;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 .grid {
   display: grid;

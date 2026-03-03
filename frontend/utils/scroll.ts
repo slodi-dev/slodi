@@ -4,8 +4,8 @@
  * @param options - Scroll behavior options
  */
 export function scrollToElement(
-  selector: string, 
-  options: ScrollIntoViewOptions = { behavior: 'smooth', block: 'start' }
+  selector: string,
+  options: ScrollIntoViewOptions = { behavior: "smooth", block: "start" }
 ): void {
   const element = document.querySelector(selector);
   if (element) {

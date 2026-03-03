@@ -40,26 +40,29 @@ export function useTags(query?: string): UseTagsResult {
     loadTags();
   }, [loadTags]);
 
-  const createTag = useCallback(async (name: string): Promise<Tag | null> => {
-    try {
-      const newTag = await createTagApi({ name });
-      await loadTags(); // Refresh the list
-      return newTag;
-    } catch (err) {
-      const errorMessage = handleApiError(err, "Failed to create tag");
-      setError(new Error(errorMessage));
-      return null;
-    }
-  }, [loadTags]);
+  const createTag = useCallback(
+    async (name: string): Promise<Tag | null> => {
+      try {
+        const newTag = await createTagApi({ name });
+        await loadTags(); // Refresh the list
+        return newTag;
+      } catch (err) {
+        const errorMessage = handleApiError(err, "Failed to create tag");
+        setError(new Error(errorMessage));
+        return null;
+      }
+    },
+    [loadTags]
+  );
 
-  const tagNames = tags ? tags.map(tag => tag.name) : null;
+  const tagNames = tags ? tags.map((tag) => tag.name) : null;
 
-  return { 
+  return {
     tags,
     tagNames,
     loading,
     error,
     refetch: loadTags,
-    createTag 
+    createTag,
   };
 }

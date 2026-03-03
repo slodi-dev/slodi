@@ -1,274 +1,274 @@
 .container {
-    background: var(--color-background-primary);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
+  background: var(--color-background-primary);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
 }
 
 /* Tab Navigation */
 .tabNav {
-    display: flex;
-    border-bottom: 2px solid var(--color-border);
-    background: var(--color-background-secondary);
+  display: flex;
+  border-bottom: 2px solid var(--color-border);
+  background: var(--color-background-secondary);
 }
 
 .tab {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-4) var(--space-5);
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
 .tab:hover {
-    color: var(--color-text-primary);
-    background: var(--color-background-tertiary);
+  color: var(--color-text-primary);
+  background: var(--color-background-tertiary);
 }
 
 .tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-    background: var(--color-background-primary);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: var(--color-background-primary);
 }
 
 .tab:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: -2px;
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 var(--space-1);
-    background: var(--color-background-tertiary);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-1);
+  background: var(--color-background-tertiary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
 }
 
 .tab.active .count {
-    background: var(--color-primary-subtle);
-    color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 /* Tab Content */
 .tabContent {
-    padding: var(--space-8);
+  padding: var(--space-8);
 }
 
 .panel {
-    animation: fadeIn 0.2s ease-in;
+  animation: fadeIn 0.2s ease-in;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .panelTitle {
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-text-primary);
-    margin: 0 0 var(--space-6) 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-6) 0;
 }
 
 /* Description */
 .description {
-    font-size: var(--font-size-base);
-    line-height: var(--line-height-relaxed);
-    color: var(--color-text-primary);
-    margin-bottom: var(--space-8);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-8);
 }
 
 .description p {
-    margin: 0 0 var(--space-4) 0;
+  margin: 0 0 var(--space-4) 0;
 }
 
 /* Sections */
 .section {
-    margin-bottom: var(--space-8);
+  margin-bottom: var(--space-8);
 }
 
 .section:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .sectionTitle {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
-    margin: 0 0 var(--space-4) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-4) 0;
 }
 
 /* Lists */
 .list {
-    list-style: disc;
-    padding-left: var(--space-6);
-    margin: 0;
+  list-style: disc;
+  padding-left: var(--space-6);
+  margin: 0;
 }
 
 .list li {
-    margin-bottom: var(--space-2);
-    color: var(--color-text-primary);
-    line-height: var(--line-height-relaxed);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-relaxed);
 }
 
 /* Step List */
 .stepList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .step {
-    display: flex;
-    gap: var(--space-4);
-    padding: var(--space-5);
-    background: var(--color-background-secondary);
-    border-radius: var(--radius-lg);
-    border-left: 4px solid var(--color-primary);
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-primary);
 }
 
 .stepNumber {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-primary);
-    color: white;
-    border-radius: var(--radius-full);
-    font-weight: var(--font-weight-bold);
-    font-size: var(--font-size-base);
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
 }
 
 .stepContent {
-    flex: 1;
+  flex: 1;
 }
 
 .stepContent h4 {
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
-    margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2) 0;
 }
 
 .stepContent p {
-    font-size: var(--font-size-base);
-    color: var(--color-text-secondary);
-    margin: 0;
-    line-height: var(--line-height-relaxed);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
 }
 
 /* Material List */
 .materialList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .materialList li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-3) var(--space-4);
-    background: var(--color-background-secondary);
-    border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
 }
 
 .materialItem {
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .materialQty {
-    font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 /* Empty State */
 .emptyState {
-    padding: var(--space-12) var(--space-8);
-    text-align: center;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-base);
-    background: var(--color-background-secondary);
-    border-radius: var(--radius-lg);
+  padding: var(--space-12) var(--space-8);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
 }
 
 /* Prose (instructions free-text) */
 .prose {
-    font-size: var(--font-size-base);
-    line-height: var(--line-height-relaxed);
-    color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
 }
 
 .prose p {
-    margin: 0 0 var(--space-4) 0;
+  margin: 0 0 var(--space-4) 0;
 }
 
 .prose p:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .tabNav {
-        gap: 0;
-    }
+  .tabNav {
+    gap: 0;
+  }
 
-    .tab {
-        flex: 1;
-        justify-content: center;
-        padding: var(--space-3) var(--space-3);
-        font-size: var(--font-size-sm);
-    }
+  .tab {
+    flex: 1;
+    justify-content: center;
+    padding: var(--space-3) var(--space-3);
+    font-size: var(--font-size-sm);
+  }
 
-    .tabContent {
-        padding: var(--space-6) var(--space-4);
-    }
+  .tabContent {
+    padding: var(--space-6) var(--space-4);
+  }
 
-    .panelTitle {
-        font-size: var(--font-size-xl);
-        margin-bottom: var(--space-4);
-    }
+  .panelTitle {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-4);
+  }
 
-    .step {
-        flex-direction: column;
-        gap: var(--space-3);
-    }
+  .step {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
 
-    .stepNumber {
-        align-self: flex-start;
-    }
+  .stepNumber {
+    align-self: flex-start;
+  }
 
-    .materialList li {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-2);
-    }
+  .materialList li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
 }

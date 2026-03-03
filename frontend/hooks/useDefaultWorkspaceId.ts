@@ -13,9 +13,7 @@ import { DEFAULT_WORKSPACE_ID } from "@/constants/config";
  * caches the result in sessionStorage so subsequent renders are instant.
  */
 export function useDefaultWorkspaceId(): string | null {
-  const [workspaceId, setWorkspaceId] = useState<string | null>(
-    DEFAULT_WORKSPACE_ID || null
-  );
+  const [workspaceId, setWorkspaceId] = useState<string | null>(DEFAULT_WORKSPACE_ID || null);
 
   useEffect(() => {
     // Already resolved via env var — nothing to do.
@@ -23,9 +21,7 @@ export function useDefaultWorkspaceId(): string | null {
 
     // Check session cache first to avoid a fetch on every render.
     const cached =
-      typeof sessionStorage !== "undefined"
-        ? sessionStorage.getItem("default_workspace_id")
-        : null;
+      typeof sessionStorage !== "undefined" ? sessionStorage.getItem("default_workspace_id") : null;
 
     if (cached) {
       setWorkspaceId(cached);

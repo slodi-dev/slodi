@@ -1,106 +1,109 @@
 .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-    font: inherit;
-    font-size: 0.875rem;
-    /* ~14px */
-    font-weight: 500;
+  font: inherit;
+  font-size: 0.875rem;
+  /* ~14px */
+  font-weight: 500;
 
-    padding: 0.5rem 1rem;
-    /* comfortable click target */
-    border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  /* comfortable click target */
+  border-radius: 0.5rem;
 
-    border: 1px solid transparent;
-    background: none;
-    color: hsl(var(--foreground));
+  border: 1px solid transparent;
+  background: none;
+  color: hsl(var(--foreground));
 
-    cursor: pointer;
-    text-decoration: none;
-    user-select: none;
-    transition: background-color 0.15s ease, border-color 0.15s ease,
-        color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 /* Common interaction states */
 .btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5);
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5);
 }
 
 .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Full width utility */
 .btn--full {
-    width: 100%;
+  width: 100%;
 }
 
 /* ── Variants ────────────────────────────── */
 
 /* Primary: prominent action */
 .btn--primary {
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border-color: hsl(var(--primary));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
 }
 
 .btn--primary:hover:not(:disabled) {
-    background: hsl(var(--primary) / 0.9);
+  background: hsl(var(--primary) / 0.9);
 }
 
 /* Secondary: less prominent, usually outlined */
 .btn--secondary {
-    background: transparent;
-    color: hsl(var(--secondary));
-    border-color: hsl(var(--secondary));
+  background: transparent;
+  color: hsl(var(--secondary));
+  border-color: hsl(var(--secondary));
 }
 
 .btn--secondary:hover:not(:disabled) {
-    background: hsl(var(--secondary) / 0.1);
+  background: hsl(var(--secondary) / 0.1);
 }
 
 /* Muted: neutral buttons for low-emphasis actions */
 .btn--muted {
-    background: hsl(var(--muted) / 0.4);
-    color: hsl(var(--foreground));
-    border-color: hsl(var(--border) / 0.3);
+  background: hsl(var(--muted) / 0.4);
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border) / 0.3);
 }
 
 .btn--muted:hover:not(:disabled) {
-    background: hsl(var(--muted) / 0.6);
+  background: hsl(var(--muted) / 0.6);
 }
 
 /* Danger / Destructive */
 .btn--danger {
-    background: hsl(var(--error));
-    color: hsl(var(--error-foreground));
-    border-color: hsl(var(--error));
+  background: hsl(var(--error));
+  color: hsl(var(--error-foreground));
+  border-color: hsl(var(--error));
 }
 
 .btn--danger:hover:not(:disabled) {
-    background: hsl(var(--error) / 0.85);
+  background: hsl(var(--error) / 0.85);
 }
 
 /* Ghost: minimal button on colored surfaces */
 .btn--ghost {
-    background: transparent;
-    color: hsl(var(--foreground));
-    border-color: transparent;
+  background: transparent;
+  color: hsl(var(--foreground));
+  border-color: transparent;
 }
 
 .btn--ghost:hover:not(:disabled) {
-    background: hsl(var(--muted) / 0.2);
+  background: hsl(var(--muted) / 0.2);
 }
 .btn--info {
-    background: hsl(var(--info));
-    color: hsl(var(--info-foreground));
-    border-color: hsl(var(--info));
+  background: hsl(var(--info));
+  color: hsl(var(--info-foreground));
+  border-color: hsl(var(--info));
 }
 
 .btn--info:hover:not(:disabled) {
-    background: hsl(var(--info) / 0.9);
+  background: hsl(var(--info) / 0.9);
 }

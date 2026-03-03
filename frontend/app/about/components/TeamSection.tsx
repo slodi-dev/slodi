@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import styles from './TeamSection.module.css';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import styles from "./TeamSection.module.css";
 
 interface Contributor {
   login: string;
@@ -25,19 +25,19 @@ export default function TeamSection() {
   useEffect(() => {
     async function fetchContributors() {
       try {
-        const response = await fetch('/api/contributors');
+        const response = await fetch("/api/contributors");
         const data: ContributorsResponse = await response.json();
-        
+
         if (data.error) {
           setError(data.error);
         }
-        
+
         if (data.contributors) {
           setContributors(data.contributors);
         }
       } catch (err) {
-        setError('Gat ekki sótt upplýsingar um framlög');
-        console.error('Error fetching contributors:', err);
+        setError("Gat ekki sótt upplýsingar um framlög");
+        console.error("Error fetching contributors:", err);
       } finally {
         setLoading(false);
       }
@@ -52,7 +52,7 @@ export default function TeamSection() {
         <h2 id="team-heading" className={styles.heading}>
           Hver er að vinna að þessu?
         </h2>
-        
+
         <p className={styles.introduction}>
           Slóði er samstarfsverkefni sem hefur þróast með aðstoð frá:
         </p>
@@ -70,10 +70,8 @@ export default function TeamSection() {
         </div>
 
         <div className={styles.contributorsSection}>
-          <h3 className={styles.subheading}>
-            Framlög á GitHub
-          </h3>
-          
+          <h3 className={styles.subheading}>Framlög á GitHub</h3>
+
           {loading && (
             <div className={styles.loading}>
               <div className={styles.spinner} aria-label="Hleður..." />
@@ -117,7 +115,8 @@ export default function TeamSection() {
         <div className={styles.callToAction}>
           <h3 className={styles.ctaHeading}>Þú getur orðið hluti af teyminu!</h3>
           <p className={styles.ctaText}>
-            Við erum alltaf að leita að fólki sem vill hjálpa til - hvort sem það er með hugmyndum, kóða, hönnun, eða bara að prófa verkfærið.
+            Við erum alltaf að leita að fólki sem vill hjálpa til - hvort sem það er með hugmyndum,
+            kóða, hönnun, eða bara að prófa verkfærið.
           </p>
         </div>
       </div>

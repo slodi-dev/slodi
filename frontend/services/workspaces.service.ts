@@ -16,7 +16,10 @@ export const WORKSPACE_ROLE_RANK: Record<WorkspaceRole, number> = {
 };
 
 /** Returns true if `role` satisfies `minimum` */
-export function hasWorkspaceRole(role: WorkspaceRole | null | undefined, minimum: WorkspaceRole): boolean {
+export function hasWorkspaceRole(
+  role: WorkspaceRole | null | undefined,
+  minimum: WorkspaceRole
+): boolean {
   if (!role) return false;
   return WORKSPACE_ROLE_RANK[role] >= WORKSPACE_ROLE_RANK[minimum];
 }
@@ -53,9 +56,7 @@ export type WorkspaceCreateInput = {
 /**
  * Get all workspaces for the current user
  */
-export async function getUserWorkspaces(
-  token: string
-): Promise<Workspace[]> {
+export async function getUserWorkspaces(token: string): Promise<Workspace[]> {
   const url = buildApiUrl(`/users/me/workspaces`);
 
   const response = await fetch(url, {
@@ -105,9 +106,7 @@ export async function createUserWorkspace(
  * Get or create a user's personal workspace
  * Returns the first workspace with "Personal" in the name, or creates one
  */
-export async function getOrCreatePersonalWorkspace(
-  token: string
-): Promise<Workspace> {
+export async function getOrCreatePersonalWorkspace(token: string): Promise<Workspace> {
   const workspaces = await getUserWorkspaces(token);
 
   // Look for existing personal workspace

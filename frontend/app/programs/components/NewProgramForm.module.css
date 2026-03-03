@@ -268,7 +268,9 @@
   border: none;
   border-radius: var(--sl-radius-badge);
   cursor: pointer;
-  transition: color var(--sl-transition-base), background-color var(--sl-transition-base);
+  transition:
+    color var(--sl-transition-base),
+    background-color var(--sl-transition-base);
   line-height: 1;
 }
 
@@ -595,7 +597,9 @@
   border-radius: var(--sl-radius-input);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color var(--sl-transition-fast), color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
 }
 
 .draftBannerDiscard:hover {

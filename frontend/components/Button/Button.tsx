@@ -6,10 +6,10 @@ import styles from "./Button.module.css";
 type ButtonVariant = "primary" | "secondary" | "muted" | "danger" | "ghost" | "info";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: ButtonVariant;
-    fullWidth?: boolean;
-    as?: "button" | "a";
-    href?: string;
+  variant?: ButtonVariant;
+  fullWidth?: boolean;
+  as?: "button" | "a";
+  href?: string;
 }
 
 /**
@@ -17,34 +17,36 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
  * Uses global palette tokens for consistent design.
  */
 export default function Button({
-    variant = "primary",
-    fullWidth = false,
-    as = "button",
-    href,
-    className,
-    children,
-    ...rest
+  variant = "primary",
+  fullWidth = false,
+  as = "button",
+  href,
+  className,
+  children,
+  ...rest
 }: ButtonProps) {
-    const classes = [
-        styles.btn,
-        styles[`btn--${variant}`],
-        fullWidth ? styles["btn--full"] : "",
-        className ?? "",
-    ]
-        .filter(Boolean)
-        .join(" ");
+  const classes = [
+    styles.btn,
+    styles[`btn--${variant}`],
+    fullWidth ? styles["btn--full"] : "",
+    className ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-        as === "a" ? (
-            <a href={href} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} className={classes}>
-                {children}
-            </a>
-        ) : (
-            <button {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)} type={rest.type ?? "button"} className={classes}>
-                {children}
-            </button>
-        )
-    );
+  return as === "a" ? (
+    <a href={href} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} className={classes}>
+      {children}
+    </a>
+  ) : (
+    <button
+      {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      type={rest.type ?? "button"}
+      className={classes}
+    >
+      {children}
+    </button>
+  );
 }
 
 /* 

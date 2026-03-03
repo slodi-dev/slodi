@@ -1,6 +1,6 @@
 "use client";
 
-export type TabId = 'overview' | 'instructions' | 'materials' | 'comments' | 'related';
+export type TabId = "overview" | "instructions" | "materials" | "comments" | "related";
 
 interface ProgramTabsProps {
   activeTab: TabId;
@@ -9,11 +9,11 @@ interface ProgramTabsProps {
 
 export default function ProgramTabs({ activeTab, onChange }: ProgramTabsProps) {
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'instructions', label: 'Instructions' },
-    { id: 'materials', label: 'Materials' },
-    { id: 'comments', label: 'Comments' },
-    { id: 'related', label: 'Related' },
+    { id: "overview", label: "Overview" },
+    { id: "instructions", label: "Instructions" },
+    { id: "materials", label: "Materials" },
+    { id: "comments", label: "Comments" },
+    { id: "related", label: "Related" },
   ];
 
   return (

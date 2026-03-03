@@ -16,9 +16,9 @@ export default function AboutHero() {
           </p>
 
           <p className={styles.description}>
-            Slóði er verkfæri sem getur hjálpað skátaforingjum að skipuleggja fjölbreytta
-            og markvissa dagskrá. Verkefnið er byggt af skátaforingjum, fyrir skátaforingja,
-            og er opinn hugbúnaður sem allir geta notað og stuðlað að.
+            Slóði er verkfæri sem getur hjálpað skátaforingjum að skipuleggja fjölbreytta og
+            markvissa dagskrá. Verkefnið er byggt af skátaforingjum, fyrir skátaforingja, og er
+            opinn hugbúnaður sem allir geta notað og stuðlað að.
           </p>
         </div>
 

@@ -10,8 +10,7 @@ import ConditionalLayout from "@/components/ConditionalLayout";
 import { LikesProvider } from "@/contexts/LikesContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Analytics } from "@vercel/analytics/next"
-
+import { Analytics } from "@vercel/analytics/next";
 
 // Geist fonts for code/UI elements
 const geistSans = Geist({
@@ -59,8 +58,7 @@ export const metadata: Metadata = {
     url: "https://slodi.is",
     siteName: "Slóði",
     title: "Slóði - Meira en bara dagskrárvefur",
-    description:
-      "Dagskrárgerð fyrir skátaforingja. Einfalt, markviss, skipulagt.",
+    description: "Dagskrárgerð fyrir skátaforingja. Einfalt, markviss, skipulagt.",
     images: [
       {
         url: "/og-image.png",

@@ -1,6 +1,6 @@
 "use client";
 
-import styles from './Pagination.module.css';
+import styles from "./Pagination.module.css";
 
 interface PaginationProps {
   currentPage: number;
@@ -17,7 +17,7 @@ export default function Pagination({
   onPageChange,
   totalItems,
   itemsPerPage,
-  className = '',
+  className = "",
 }: PaginationProps) {
   // Calculate displayed items range
   const startItem = (currentPage - 1) * itemsPerPage + 1;
@@ -42,21 +42,21 @@ export default function Pagination({
         for (let i = 2; i <= 4; i++) {
           pages.push(i);
         }
-        pages.push('...');
+        pages.push("...");
         pages.push(totalPages);
       } else if (currentPage >= totalPages - 2) {
         // Near the end
-        pages.push('...');
+        pages.push("...");
         for (let i = totalPages - 3; i <= totalPages; i++) {
           pages.push(i);
         }
       } else {
         // In the middle
-        pages.push('...');
+        pages.push("...");
         pages.push(currentPage - 1);
         pages.push(currentPage);
         pages.push(currentPage + 1);
-        pages.push('...');
+        pages.push("...");
         pages.push(totalPages);
       }
     }
@@ -71,10 +71,7 @@ export default function Pagination({
   }
 
   return (
-    <nav
-      className={`${styles.pagination} ${className}`}
-      aria-label="Síðuskipting dagskráa"
-    >
+    <nav className={`${styles.pagination} ${className}`} aria-label="Síðuskipting dagskráa">
       {/* Results info */}
       <div className={styles.info}>
         Sýni {startItem}-{endItem} af {totalItems} dagskrám
@@ -109,7 +106,7 @@ export default function Pagination({
         {/* Page numbers */}
         <div className={styles.pages}>
           {pageNumbers.map((page, index) => {
-            if (page === '...') {
+            if (page === "...") {
               return (
                 <span key={`ellipsis-${index}`} className={styles.ellipsis}>
                   ...
@@ -120,12 +117,10 @@ export default function Pagination({
             return (
               <button
                 key={page}
-                className={`${styles.pageButton} ${
-                  currentPage === page ? styles.active : ''
-                }`}
+                className={`${styles.pageButton} ${currentPage === page ? styles.active : ""}`}
                 onClick={() => onPageChange(page as number)}
                 aria-label={`Síða ${page}`}
-                aria-current={currentPage === page ? 'page' : undefined}
+                aria-current={currentPage === page ? "page" : undefined}
               >
                 {page}
               </button>
@@ -148,12 +143,7 @@ export default function Pagination({
             stroke="currentColor"
             aria-hidden="true"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
