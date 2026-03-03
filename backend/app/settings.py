@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
 
-    # Cache configuration (defaults require no .env change)
+    # Cache configuration
     cache_backend: str = Field("memory", alias="CACHE_BACKEND")  # "memory" or "redis"
     redis_host: str = Field("localhost", alias="REDIS_HOST")
     redis_port: int = Field(6379, alias="REDIS_PORT")
@@ -60,7 +60,15 @@ class Settings(BaseSettings):
         self.db_url = f"postgresql+psycopg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
         # Test database URL (only built when test DB vars are present)
-        if all([self.test_db_user, self.test_db_password, self.test_db_host, self.test_db_port, self.test_db_name]):
+        if all(
+            [
+                self.test_db_user,
+                self.test_db_password,
+                self.test_db_host,
+                self.test_db_port,
+                self.test_db_name,
+            ]
+        ):
             self.test_db_url = f"postgresql+psycopg://{self.test_db_user}:{self.test_db_password}@{self.test_db_host}:{self.test_db_port}/{self.test_db_name}"
 
 

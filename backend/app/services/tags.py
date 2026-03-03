@@ -93,7 +93,9 @@ class TagService:
     async def list_tagged_content(
         self, tag_id: UUID, current_user_id: UUID | None = None, *, limit: int = 50, offset: int = 0
     ) -> list[ContentListOut]:  # type: ignore[valid-type]
-        rows = await self.repo.list_tagged_content(tag_id, current_user_id, limit=limit, offset=offset)
+        rows = await self.repo.list_tagged_content(
+            tag_id, current_user_id, limit=limit, offset=offset
+        )
         return [ContentListOut.from_row(r, stats) for r, stats in rows]  # type: ignore[attr-defined]
 
     async def add_content_tag(self, content_id: UUID, tag_id: UUID) -> tuple[bool, ContentTagOut]:

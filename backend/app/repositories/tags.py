@@ -102,7 +102,9 @@ class TagRepository(Repository):
         self, tag_id: UUID, current_user_id: UUID | None = None, *, limit: int = 50, offset: int = 0
     ) -> list[tuple[Content, ContentStats]]:  # type: ignore[valid-type]
         stmt = (
-            select(Content, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id))
+            select(
+                Content, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id)
+            )
             .join(ContentTag, ContentTag.content_id == Content.id)
             .options(
                 selectinload(Content.author),
