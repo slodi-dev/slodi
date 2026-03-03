@@ -1,12 +1,8 @@
 from enum import Enum
 
-
-class Pronouns(str, Enum):
-    she_her = "she/her"
-    he_him = "he/him"
-    they_them = "they/them"
-    other = "other"
-    prefer_not_to_say = "prefer not to say"
+# --------------------- #
+# Permissions and roles #
+# --------------------- #
 
 
 class Permissions(str, Enum):
@@ -20,6 +16,24 @@ class WorkspaceRole(str, Enum):
     admin = "admin"
     editor = "editor"
     viewer = "viewer"
+
+
+class GroupRole(str, Enum):
+    owner = "owner"
+    admin = "admin"
+    editor = "editor"
+    viewer = "viewer"
+
+
+# ------- #
+# Content #
+# ------- #
+
+
+class ContentType(str, Enum):
+    program = "program"
+    event = "event"
+    task = "task"
 
 
 class Weekday(str, Enum):
@@ -41,12 +55,6 @@ class EventInterval(str, Enum):
     unknown = "unknown"
 
 
-class ContentType(str, Enum):
-    program = "program"
-    event = "event"
-    task = "task"
-
-
 class AgeGroup(str, Enum):
     hrefnuskaatar = "Hrefnuskátar"
     drekaskaatar = "Drekaskátar"
@@ -57,8 +65,14 @@ class AgeGroup(str, Enum):
     vaettaskaatar = "Vættaskátar"
 
 
-class GroupRole(str, Enum):
-    owner = "owner"
-    admin = "admin"
-    editor = "editor"
-    viewer = "viewer"
+# ----- #
+# Other #
+# ----- #
+
+
+class Pronouns(str, Enum):
+    she_her = "she/her"
+    he_him = "he/him"
+    they_them = "they/them"
+    other = "other"
+    prefer_not_to_say = "prefer not to say"
