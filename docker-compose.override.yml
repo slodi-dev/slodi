@@ -19,10 +19,11 @@ services:
 
   frontend:
     build:
-      target: deps  # Use deps stage, mount source
+      target: development
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     command: npm run dev
     environment:
       NODE_ENV: development
