@@ -26,9 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.config import settings
 from app.core.db import get_session
-from app.models.group import GroupRole
-from app.models.user import Permissions
-from app.models.workspace import WorkspaceRole
+from app.domain.enums import GroupRole, Permissions, WorkspaceRole
 from app.schemas.user import UserCreate, UserOut
 from app.services.groups import GroupService
 from app.services.users import UserService

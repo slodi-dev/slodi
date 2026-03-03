@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -17,6 +16,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.domain.enums import EventInterval, Weekday, WorkspaceRole
 from app.domain.workspace_constraints import (
     NAME_MAX,
     NAME_MIN,
@@ -32,32 +32,6 @@ if TYPE_CHECKING:
     from .task import Task
     from .troop import Troop
     from .user import User
-
-
-class WorkspaceRole(str, Enum):
-    owner = "owner"
-    admin = "admin"
-    editor = "editor"
-    viewer = "viewer"
-
-
-class Weekday(str, Enum):
-    monday = "monday"
-    tuesday = "tuesday"
-    wednesday = "wednesday"
-    thursday = "thursday"
-    friday = "friday"
-    saturday = "saturday"
-    sunday = "sunday"
-    unknown = "unknown"
-
-
-class EventInterval(str, Enum):
-    weekly = "weekly"
-    biweekly = "biweekly"
-    monthly = "monthly"
-    yearly = "yearly"
-    unknown = "unknown"
 
 
 class Workspace(SoftDeleteMixin, Base):

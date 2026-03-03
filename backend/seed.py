@@ -20,15 +20,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session_maker
+from app.domain.enums import EventInterval, Permissions, Weekday, WorkspaceRole
 from app.models.tag import Tag
-from app.models.user import Permissions, User
-from app.models.workspace import (
-    EventInterval,
-    Weekday,
-    Workspace,
-    WorkspaceMembership,
-    WorkspaceRole,
-)
+from app.models.user import User
+from app.models.workspace import Workspace, WorkspaceMembership
 from app.settings import settings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")

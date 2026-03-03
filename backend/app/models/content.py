@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -26,6 +25,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
+from app.domain.enums import AgeGroup, ContentType
 
 from .base import Base, SoftDeleteMixin
 
@@ -34,22 +34,6 @@ if TYPE_CHECKING:
     from .tag import ContentTag, Tag
     from .user import User
     from .workspace import Workspace
-
-
-class ContentType(str, Enum):
-    program = "program"
-    event = "event"
-    task = "task"
-
-
-class AgeGroup(str, Enum):
-    hrefnuskaatar = "Hrefnuskátar"
-    drekaskaatar = "Drekaskátar"
-    falkaskaatar = "Fálkaskátar"
-    drottskaatar = "Dróttskátar"
-    rekkaskaatar = "Rekkaskátar"
-    roverskaatar = "Róverskátar"
-    vaettaskaatar = "Vættaskátar"
 
 
 class Content(SoftDeleteMixin, Base):

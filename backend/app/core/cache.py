@@ -5,7 +5,7 @@ from uuid import UUID
 from aiocache import BaseCache, RedisCache, SimpleMemoryCache  # type: ignore[import-untyped]
 from aiocache.serializers import PickleSerializer  # type: ignore[import-untyped]
 
-from app.models.workspace import WorkspaceRole
+from app.domain.enums import WorkspaceRole
 from app.schemas.tag import TagOut
 from app.schemas.user import UserOut
 from app.settings import settings

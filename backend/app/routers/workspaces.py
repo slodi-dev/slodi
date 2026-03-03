@@ -11,8 +11,7 @@ from app.core.auth import check_workspace_access, get_current_user, require_perm
 from app.core.cache import membership_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.user import Permissions
-from app.models.workspace import WorkspaceRole
+from app.domain.enums import Permissions, WorkspaceRole
 from app.schemas.user import UserOut
 from app.schemas.workspace import (
     WorkspaceCreate,
