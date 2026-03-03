@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.schemas.event import EventCreate, EventOut, EventUpdate
+from app.schemas.event import EventCreate, EventListOut, EventOut, EventUpdate
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
 from app.services.events import EventService
@@ -25,7 +25,7 @@ DEFAULT_DATE_TO = Query(None)
 # ----- collections -----
 
 
-@router.get("/workspaces/{workspace_id}/events", response_model=list[EventOut])
+@router.get("/workspaces/{workspace_id}/events", response_model=list[EventListOut])
 async def list_workspace_events(
     session: SessionDep,
     workspace_id: UUID,
@@ -36,7 +36,7 @@ async def list_workspace_events(
     date_to: dt.datetime | None = DEFAULT_DATE_TO,
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[EventOut]:
+) -> list[EventListOut]:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -62,7 +62,7 @@ async def list_workspace_events(
 
 @router.get(
     "/workspaces/{workspace_id}/programs/{program_id}/events",
-    response_model=list[EventOut],
+    response_model=list[EventListOut],
 )
 async def list_program_events(
     session: SessionDep,
@@ -75,7 +75,7 @@ async def list_program_events(
     date_to: dt.datetime | None = DEFAULT_DATE_TO,
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[EventOut]:
+) -> list[EventListOut]:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
@@ -118,7 +118,8 @@ async def create_workspace_event(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
     )
     svc = EventService(session)
-    event = await svc.create_under_workspace(workspace_id, body)
+    event_data = body.model_copy(update={"author_id": current_user.id})
+    event = await svc.create_under_workspace(workspace_id, event_data)
     response.headers["Location"] = f"/events/{event.id}"
     return event
 
@@ -147,7 +148,8 @@ async def create_program_event(
         hide_from_non_members=True,
     )
     svc = EventService(session)
-    event = await svc.create_under_program(program_id, body)
+    event_data = body.model_copy(update={"author_id": current_user.id})
+    event = await svc.create_under_program(program_id, event_data)
     response.headers["Location"] = f"/events/{event.id}"
     return event
 

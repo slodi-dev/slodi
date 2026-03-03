@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.program import Program
 from app.repositories.programs import ProgramRepository
 from app.repositories.tags import TagRepository
-from app.schemas.program import ProgramCreate, ProgramOut, ProgramUpdate
+from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +30,11 @@ class ProgramService:
         *,
         limit: int = 50,
         offset: int = 0,
-    ) -> list[ProgramOut]:
+    ) -> list[ProgramListOut]:
         rows = await self.repo.list_by_workspace(
             workspace_id, current_user_id, limit=limit, offset=offset
         )
-        return [ProgramOut.from_row(prog, stats) for prog, stats in rows]
+        return [ProgramListOut.from_row(prog, stats) for prog, stats in rows]
 
     async def get_in_workspace(
         self, program_id: UUID, workspace_id: UUID, current_user_id: UUID | None = None

@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.content import Content
 from app.models.event import Event
+from app.models.tag import ContentTag
 from app.models.task import Task
 from app.repositories.base import Repository
 from app.repositories.content import (
@@ -33,9 +34,13 @@ class EventRepository(Repository):
             .options(
                 selectinload(Event.author),
                 selectinload(Event.workspace),
-                selectinload(Event.program),
-                selectinload(Event.tasks),
-                selectinload(Event.content_tags),
+                selectinload(Event.tasks).options(
+                    selectinload(Task.author),
+                    selectinload(Task.workspace),
+                    selectinload(Task.content_tags).selectinload(ContentTag.tag),
+                ),
+                selectinload(Event.comments),
+                selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(Event.id == event_id, Event.deleted_at.is_(None))
         )
@@ -59,7 +64,13 @@ class EventRepository(Repository):
             .options(
                 selectinload(Event.author),
                 selectinload(Event.workspace),
-                selectinload(Event.content_tags),
+                selectinload(Event.tasks).options(
+                    selectinload(Task.author),
+                    selectinload(Task.workspace),
+                    selectinload(Task.content_tags).selectinload(ContentTag.tag),
+                ),
+                selectinload(Event.comments),
+                selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(
                 Event.id == event_id,
@@ -111,6 +122,11 @@ class EventRepository(Repository):
         stmt = (
             select(
                 Event, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id)
+            )
+            .options(
+                selectinload(Event.author),
+                selectinload(Event.workspace),
+                selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(and_(*conds))
             .order_by(asc(Event.start_dt))
@@ -171,6 +187,11 @@ class EventRepository(Repository):
             select(
                 Event, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id)
             )
+            .options(
+                selectinload(Event.author),
+                selectinload(Event.workspace),
+                selectinload(Event.content_tags).selectinload(ContentTag.tag),
+            )
             .where(and_(*conds))
             .order_by(asc(Event.start_dt))
             .limit(limit)
@@ -188,25 +209,11 @@ class EventRepository(Repository):
 
     async def delete(self, event_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        # Program/Event/Task use joined-table inheritance: each has its own
-        # table (programs/events/tasks) with a FK to `content`.  deleted_at is
-        # only on `content`, so update(Task/Event) would be a cross-table SET
-        # which PostgreSQL rejects.  We therefore:
-        #   1. Use subclass mappers (Task, Event) only for SELECT (no issue).
-        #   2. Cascade via update(Content) keyed by pre-fetched IDs (no join).
 
-        # Pre-fetch task IDs for this event
-        task_ids = list(
-            (await self.session.execute(select(Task.id).where(Task.event_id == event_id))).scalars()
+        # Orphan tasks: clear event_id so tasks remain as workspace tasks
+        await self.session.execute(
+            update(Task).where(Task.event_id == event_id).values(event_id=None)
         )
-
-        # Cascade: soft-delete tasks
-        if task_ids:
-            await self.session.execute(
-                update(Content)
-                .where(Content.id.in_(task_ids), Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            )
 
         # Soft-delete the event itself
         res = await self.session.execute(

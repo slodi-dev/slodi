@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -20,6 +20,7 @@ from sqlalchemy.types import Integer
 from app.domain.content_constraints import (
     DESC_MAX,
     DURATION_MAX,
+    IMG_MAX,
     INSTRUCTIONS_MAX,
     LOCATION_MAX,
     NAME_MAX,
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
     from .comment import Comment
     from .tag import ContentTag, Tag
     from .user import User
+    from .workspace import Workspace
 
 
 class ContentType(str, Enum):
@@ -76,6 +78,8 @@ class Content(SoftDeleteMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(NAME_MAX), nullable=False)
     description: Mapped[str | None] = mapped_column(String(DESC_MAX), nullable=True)
+    image: Mapped[str | None] = mapped_column(String(IMG_MAX), nullable=True)
+    media: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     equipment: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     instructions: Mapped[str | None] = mapped_column(
         String(INSTRUCTIONS_MAX),
@@ -99,9 +103,20 @@ class Content(SoftDeleteMixin, Base):
         ForeignKey("users.id"),
         nullable=False,
     )
+    workspace_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
 
     # Relationships
     author: Mapped[User] = relationship(back_populates="authored_content")
+    workspace: Mapped[Workspace] = relationship(
+        "Workspace",
+        back_populates="content_items",
+        foreign_keys="Content.workspace_id",
+        primaryjoin="Content.workspace_id == Workspace.id",
+    )
     comments: Mapped[list[Comment]] = relationship(
         back_populates="content", cascade="all, delete-orphan"
     )
@@ -110,6 +125,10 @@ class Content(SoftDeleteMixin, Base):
     )
 
     # Properties for serialization
+    @property
+    def author_name(self) -> str:
+        return self.author.name
+
     @property
     def tags(self) -> list[Tag]:
         """Return list of Tag objects from content_tags relationship"""

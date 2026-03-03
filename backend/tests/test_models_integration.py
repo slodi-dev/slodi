@@ -74,6 +74,7 @@ async def test_user_workspace_program_event_task_flow(db):
         description=None,
         created_at=get_current_datetime(),
         author_id=user.id,
+        workspace_id=workspace.id,
         event_id=event.id,
         content_type=m.ContentType.task,
     )

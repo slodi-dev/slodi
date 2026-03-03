@@ -20,6 +20,7 @@ def _make_program(workspace_id):
         workspace_id=workspace_id,
         name="Test Program",
         author_id=uuid4(),
+        author_name="Test User",
         created_at=datetime.now(),
         author=UserOut(
             id=uuid4(), name="Test User", email="test_email@gmail.com", auth0_id="auth0|123"
