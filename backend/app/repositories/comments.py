@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import desc, func, select, update
@@ -60,12 +59,10 @@ class CommentRepository(Repository):
 
     async def delete(self, comment_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(Comment)
-                .where(Comment.id == comment_id, Comment.deleted_at.is_(None))
-                .values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(Comment)
+            .where(Comment.id == comment_id, Comment.deleted_at.is_(None))
+            .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

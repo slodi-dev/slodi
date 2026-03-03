@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
@@ -68,14 +67,12 @@ class TroopRepository(Repository):
 
     async def delete(self, troop_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(Troop)
-                .where(Troop.id == troop_id, Troop.deleted_at.is_(None))
-                .values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(Troop)
+            .where(Troop.id == troop_id, Troop.deleted_at.is_(None))
+            .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     # ----- participations -----
@@ -144,15 +141,13 @@ class TroopRepository(Repository):
         return True, tp
 
     async def remove_participation(self, event_id: UUID, troop_id: UUID) -> int:
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                delete(TroopParticipation).where(
-                    and_(
-                        TroopParticipation.troop_id == troop_id,
-                        TroopParticipation.event_id == event_id,
-                    )
+        res = await self.session.execute(
+            delete(TroopParticipation).where(
+                and_(
+                    TroopParticipation.troop_id == troop_id,
+                    TroopParticipation.event_id == event_id,
                 )
-            ),
+            )
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

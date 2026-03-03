@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
@@ -65,12 +64,10 @@ class TagRepository(Repository):
 
     async def delete(self, tag_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(Tag).where(Tag.id == tag_id, Tag.deleted_at.is_(None)).values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(Tag).where(Tag.id == tag_id, Tag.deleted_at.is_(None)).values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     # ----- associations -----
@@ -143,14 +140,12 @@ class TagRepository(Repository):
         return True, ct
 
     async def remove_content_tag(self, content_id: UUID, tag_id: UUID) -> int:
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                delete(ContentTag).where(
-                    and_(ContentTag.content_id == content_id, ContentTag.tag_id == tag_id)
-                )
-            ),
+        res = await self.session.execute(
+            delete(ContentTag).where(
+                and_(ContentTag.content_id == content_id, ContentTag.tag_id == tag_id)
+            )
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     async def add_content_tags_by_names(

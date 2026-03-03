@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import and_, asc, func, select, update
@@ -218,12 +217,10 @@ class EventRepository(Repository):
         )
 
         # Soft-delete the event itself
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(Content)
-                .where(Content.id == event_id, Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(Content)
+            .where(Content.id == event_id, Content.deleted_at.is_(None))
+            .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

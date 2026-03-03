@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -84,14 +83,12 @@ class WorkspaceRepository(Repository):
         )
 
         # Soft-delete the workspace itself
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(Workspace)
-                .where(Workspace.id == workspace_id, Workspace.deleted_at.is_(None))
-                .values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(Workspace)
+            .where(Workspace.id == workspace_id, Workspace.deleted_at.is_(None))
+            .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     async def get_user_membership(

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -137,12 +136,10 @@ class TaskRepository(Repository):
 
     async def delete(self, task_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(Content)
-                .where(Content.id == task_id, Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(Content)
+            .where(Content.id == task_id, Content.deleted_at.is_(None))
+            .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

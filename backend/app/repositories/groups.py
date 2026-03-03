@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
@@ -58,14 +57,12 @@ class GroupRepository(Repository):
 
     async def delete(self, group_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(Group)
-                .where(Group.id == group_id, Group.deleted_at.is_(None))
-                .values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(Group)
+            .where(Group.id == group_id, Group.deleted_at.is_(None))
+            .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     # ----- memberships -----
@@ -140,15 +137,13 @@ class GroupRepository(Repository):
         return True, gs
 
     async def remove_member(self, group_id: UUID, user_id: UUID) -> int:
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                delete(GroupMembership).where(
-                    and_(
-                        GroupMembership.group_id == group_id,
-                        GroupMembership.user_id == user_id,
-                    )
+        res = await self.session.execute(
+            delete(GroupMembership).where(
+                and_(
+                    GroupMembership.group_id == group_id,
+                    GroupMembership.user_id == user_id,
                 )
-            ),
+            )
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

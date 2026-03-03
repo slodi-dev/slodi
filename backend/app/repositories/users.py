@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, func, or_, select, update
@@ -82,12 +81,8 @@ class UserRepository(Repository):
 
     async def delete(self, user_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(
-                update(User)
-                .where(User.id == user_id, User.deleted_at.is_(None))
-                .values(deleted_at=now)
-            ),
+        res = await self.session.execute(
+            update(User).where(User.id == user_id, User.deleted_at.is_(None)).values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

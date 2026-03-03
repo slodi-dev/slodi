@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import cast
 
 from sqlalchemy import delete, select
 from sqlalchemy.engine import CursorResult
@@ -24,8 +23,6 @@ class EmailListRepository(Repository):
         return email_entry
 
     async def delete(self, email: str) -> int:
-        res = cast(  # type: ignore[redundant-cast]
-            CursorResult,
-            await self.session.execute(delete(EmailList).where(EmailList.email == email)),
-        )
+        res = await self.session.execute(delete(EmailList).where(EmailList.email == email))
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
