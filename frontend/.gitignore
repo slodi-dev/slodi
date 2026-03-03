@@ -42,8 +42,6 @@ pnpm-lock.yaml
 *.tsbuildinfo
 next-env.d.ts
 
-# npm package lock
-package-lock.json
 # yarn lock file
 yarn.lock
 # pnpm lock file
