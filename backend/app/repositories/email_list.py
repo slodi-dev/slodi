@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from sqlalchemy import delete, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.email_list import EmailList
@@ -23,4 +24,5 @@ class EmailListRepository(Repository):
 
     async def delete(self, email: str) -> int:
         res = await self.session.execute(delete(EmailList).where(EmailList.email == email))
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

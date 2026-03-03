@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -87,6 +88,7 @@ class WorkspaceRepository(Repository):
             .where(Workspace.id == workspace_id, Workspace.deleted_at.is_(None))
             .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     async def get_user_membership(
