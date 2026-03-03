@@ -11,7 +11,6 @@ from app.models.content import Content
 from app.models.event import Event
 from app.models.program import Program
 from app.models.tag import ContentTag
-from app.models.task import Task
 from app.repositories.base import Repository
 from app.repositories.content import (
     ContentStats,
@@ -35,7 +34,11 @@ class ProgramRepository(Repository):
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.events),
+                selectinload(Program.events).options(
+                    selectinload(Event.author),
+                    selectinload(Event.workspace),
+                    selectinload(Event.content_tags).selectinload(ContentTag.tag),
+                ),
                 selectinload(Program.comments),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
@@ -57,6 +60,11 @@ class ProgramRepository(Repository):
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
+                selectinload(Program.events).options(
+                    selectinload(Event.author),
+                    selectinload(Event.workspace),
+                    selectinload(Event.content_tags).selectinload(ContentTag.tag),
+                ),
                 selectinload(Program.comments),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
@@ -95,7 +103,6 @@ class ProgramRepository(Repository):
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.comments),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
@@ -115,44 +122,11 @@ class ProgramRepository(Repository):
 
     async def delete(self, program_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        # Program/Event/Task use joined-table inheritance: each has its own
-        # table (programs/events/tasks) with a FK to `content`.  deleted_at is
-        # only on `content`, so update(Task/Event) would be a cross-table SET
-        # which PostgreSQL rejects.  Strategy:
-        #   1. Use subclass mappers for SELECT only (joins are fine in SELECT).
-        #   2. Cascade via update(Content) keyed by pre-fetched IDs.
 
-        # Pre-fetch event IDs for this program
-        event_ids = list(
-            (
-                await self.session.execute(select(Event.id).where(Event.program_id == program_id))
-            ).scalars()
+        # Orphan events: clear program_id so events remain as standalone workspace events
+        await self.session.execute(
+            update(Event).where(Event.program_id == program_id).values(program_id=None)
         )
-
-        # Pre-fetch task IDs for those events
-        task_ids: list = []
-        if event_ids:
-            task_ids = list(
-                (
-                    await self.session.execute(select(Task.id).where(Task.event_id.in_(event_ids)))
-                ).scalars()
-            )
-
-        # Cascade: soft-delete tasks
-        if task_ids:
-            await self.session.execute(
-                update(Content)
-                .where(Content.id.in_(task_ids), Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            )
-
-        # Cascade: soft-delete events
-        if event_ids:
-            await self.session.execute(
-                update(Content)
-                .where(Content.id.in_(event_ids), Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            )
 
         # Soft-delete the program itself
         res = await self.session.execute(

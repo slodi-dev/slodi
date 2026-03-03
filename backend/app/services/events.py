@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.event import Event
 from app.repositories.events import EventRepository
 from app.repositories.programs import ProgramRepository
-from app.schemas.event import EventCreate, EventOut, EventUpdate
+from app.repositories.tags import TagRepository
+from app.schemas.event import EventCreate, EventListOut, EventOut, EventUpdate
 
 
 class EventService:
@@ -39,7 +40,7 @@ class EventService:
         date_to: dt.datetime | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> list[EventOut]:
+    ) -> list[EventListOut]:
         rows = await self.repo.list_for_workspace(
             workspace_id,
             current_user_id,
@@ -48,7 +49,7 @@ class EventService:
             limit=limit,
             offset=offset,
         )
-        return [EventOut.from_row(event, stats) for event, stats in rows]
+        return [EventListOut.from_row(event, stats) for event, stats in rows]
 
     async def count_events_for_program(
         self,
@@ -72,7 +73,7 @@ class EventService:
         date_to: dt.datetime | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> list[EventOut]:
+    ) -> list[EventListOut]:
         rows = await self.repo.list_for_program(
             workspace_id,
             program_id,
@@ -82,13 +83,25 @@ class EventService:
             limit=limit,
             offset=offset,
         )
-        return [EventOut.from_row(event, stats) for event, stats in rows]
+        return [EventListOut.from_row(event, stats) for event, stats in rows]
 
     # ----- creation under workspace/program -----
 
     async def create_under_workspace(self, workspace_id: UUID, data: EventCreate) -> EventOut:
-        event = Event(workspace_id=workspace_id, program_id=None, **data.model_dump())
+        tag_names = data.tag_names or []
+        event = Event(
+            workspace_id=workspace_id, program_id=None, **data.model_dump(exclude={"tag_names"})
+        )
         await self.repo.create(event)
+        await self.session.flush()
+        if tag_names:
+            tag_repo = TagRepository(self.session)
+            not_found = await tag_repo.add_content_tags_by_names(event.id, tag_names)
+            if not_found:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Unknown tags: {not_found}",
+                )
         await self.session.commit()
         fetched = await self.repo.get(event.id)
         if not fetched:
@@ -104,12 +117,22 @@ class EventService:
         if not prog_row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
         prog, _ = prog_row
+        tag_names = data.tag_names or []
         event = Event(
             workspace_id=prog.workspace_id,
             program_id=prog.id,
-            **data.model_dump(),
+            **data.model_dump(exclude={"tag_names"}),
         )
         await self.repo.create(event)
+        await self.session.flush()
+        if tag_names:
+            tag_repo = TagRepository(self.session)
+            not_found = await tag_repo.add_content_tags_by_names(event.id, tag_names)
+            if not_found:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Unknown tags: {not_found}",
+                )
         await self.session.commit()
         fetched = await self.repo.get(event.id)
         if not fetched:
@@ -149,24 +172,33 @@ class EventService:
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         event, _ = row
-        if data.program_id is not None:
-            prog_row = await self.program_repo.get(data.program_id)
-            if not prog_row:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Program not found"
-                )
-            prog, _ = prog_row
-            if prog.workspace_id != event.workspace_id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Program does not belong to the same workspace as the event",
-                )
-            event.program_id = prog.id
-        elif data.program_id is None:
-            event.program_id = None
-        patch = data.model_dump(exclude_unset=True)
+        if "program_id" in data.model_fields_set:
+            if data.program_id is not None:
+                prog_row = await self.program_repo.get(data.program_id)
+                if not prog_row:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND, detail="Program not found"
+                    )
+                prog, _ = prog_row
+                if prog.workspace_id != event.workspace_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Program does not belong to the same workspace as the event",
+                    )
+                event.program_id = prog.id
+            else:
+                event.program_id = None
+        patch = data.model_dump(exclude_unset=True, exclude={"program_id", "tag_names"})
         for k, v in patch.items():
             setattr(event, k, v)
+        if "tag_names" in data.model_fields_set:
+            tag_repo = TagRepository(self.session)
+            not_found = await tag_repo.set_content_tags_by_names(event_id, data.tag_names or [])
+            if not_found:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Unknown tags: {not_found}",
+                )
         await self.session.commit()
         updated = await self.repo.get(event_id, current_user_id)
         if not updated:

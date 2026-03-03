@@ -10,9 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.workspace import WorkspaceRole
-from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
+from app.schemas.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
 from app.schemas.user import UserOut
+from app.schemas.workspace import WorkspaceRole
 from app.services.events import EventService
 from app.services.tasks import TaskService
 
@@ -20,10 +20,69 @@ router = APIRouter(tags=["tasks"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
+# ----- collection under workspace -----
+
+
+@router.get("/workspaces/{workspace_id}/tasks", response_model=list[TaskListOut])
+async def list_workspace_tasks(
+    session: SessionDep,
+    request: Request,
+    response: Response,
+    workspace_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+    limit: Limit = 50,
+    offset: Offset = 0,
+) -> list[TaskListOut]:
+    svc = TaskService(session)
+    await check_workspace_access(
+        workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer,
+        hide_from_non_members=True,
+    )
+    total = await svc.count_for_workspace(workspace_id)
+    items = await svc.list_for_workspace(workspace_id, current_user.id, limit=limit, offset=offset)
+    add_pagination_headers(
+        response=response,
+        request=request,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+    return items
+
+
+@router.post(
+    "/workspaces/{workspace_id}/tasks",
+    response_model=TaskOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_workspace_task(
+    session: SessionDep,
+    workspace_id: UUID,
+    body: TaskCreate,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
+) -> TaskOut:
+    svc = TaskService(session)
+    await check_workspace_access(
+        workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.editor,
+        hide_from_non_members=True,
+    )
+    task_data = body.model_copy(update={"author_id": current_user.id})
+    task = await svc.create_under_workspace(workspace_id, task_data)
+    response.headers["Location"] = f"/tasks/{task.id}"
+    return task
+
+
 # ----- collection under event -----
 
 
-@router.get("/events/{event_id}/tasks", response_model=list[TaskOut])
+@router.get("/events/{event_id}/tasks", response_model=list[TaskListOut])
 async def list_event_tasks(
     session: SessionDep,
     request: Request,
@@ -32,7 +91,7 @@ async def list_event_tasks(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[TaskOut]:
+) -> list[TaskListOut]:
     svc = TaskService(session)
     event_svc = EventService(session)
     event = await event_svc.get(event_id, current_user.id)
@@ -77,7 +136,8 @@ async def create_event_task(
         minimum_role=WorkspaceRole.editor,
         hide_from_non_members=True,
     )
-    task = await svc.create_under_event(event_id, body)
+    task_data = body.model_copy(update={"author_id": current_user.id})
+    task = await svc.create_under_event(event_id, task_data)
     response.headers["Location"] = f"/tasks/{task.id}"
     return task
 
@@ -90,14 +150,12 @@ async def get_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> TaskOut:
     svc = TaskService(session)
-    event_svc = EventService(session)
     task = await svc.get(task_id, current_user.id)
-    event = await event_svc.get(task.event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id,
+        task.workspace_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.editor,
+        minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
     return task
@@ -111,11 +169,9 @@ async def update_task(
     current_user: UserOut = Depends(get_current_user),
 ) -> TaskOut:
     svc = TaskService(session)
-    event_svc = EventService(session)
     task = await svc.get(task_id, current_user.id)
-    event = await event_svc.get(task.event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id,
+        task.workspace_id,
         current_user,
         session,
         minimum_role=WorkspaceRole.editor,
@@ -129,14 +185,12 @@ async def delete_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = TaskService(session)
-    event_svc = EventService(session)
     task = await svc.get(task_id, current_user.id)
-    event = await event_svc.get(task.event_id, current_user.id)
     await check_workspace_access(
-        event.workspace_id,
+        task.workspace_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.editor,
+        minimum_role=WorkspaceRole.admin,
         hide_from_non_members=True,
     )
     await svc.delete(task_id)
