@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { useUser as useAuth0User } from "@auth0/nextjs-auth0/client";
 import { getCurrentUser, type User } from "@/services/users.service";
 
@@ -97,9 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const token = await getToken();
       if (!token) {
-        console.warn(
-          "No access token available - user may not be fully authenticated yet"
-        );
+        console.warn("No access token available - user may not be fully authenticated yet");
         setUser(null);
         return;
       }
@@ -108,8 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const backendUser = await getCurrentUser(token);
       setUser(backendUser);
     } catch (err) {
-      const error =
-        err instanceof Error ? err : new Error("Failed to fetch user");
+      const error = err instanceof Error ? err : new Error("Failed to fetch user");
       console.error("Failed to fetch backend user:", error);
       setError(error);
       setUser(null);

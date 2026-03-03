@@ -1,13 +1,13 @@
 "use client";
 
-import React from 'react';
-import { useLikes } from '@/contexts/LikesContext';
-import styles from './LikeButton.module.css';
+import React from "react";
+import { useLikes } from "@/contexts/LikesContext";
+import styles from "./LikeButton.module.css";
 
 interface LikeButtonProps {
   programId: string;
   initialLikeCount: number;
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
   showCount?: boolean;
   className?: string;
 }
@@ -15,9 +15,9 @@ interface LikeButtonProps {
 export default function LikeButton({
   programId,
   initialLikeCount,
-  size = 'medium',
+  size = "medium",
   showCount = true,
-  className
+  className,
 }: LikeButtonProps) {
   const { isLiked, likeCount, toggleLike } = useLikes(programId, initialLikeCount);
 
@@ -33,16 +33,16 @@ export default function LikeButton({
   return (
     <button
       type="button"
-      className={`${styles.likeButton} ${styles[size]} ${liked ? styles.liked : ''} ${className || ''}`}
+      className={`${styles.likeButton} ${styles[size]} ${liked ? styles.liked : ""} ${className || ""}`}
       onClick={handleClick}
-      aria-label={liked ? 'Unlike this program' : 'Like this program'}
+      aria-label={liked ? "Unlike this program" : "Like this program"}
       aria-pressed={liked}
     >
       <svg
         className={styles.icon}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
-        fill={liked ? 'currentColor' : 'none'}
+        fill={liked ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"

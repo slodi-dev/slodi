@@ -10,11 +10,10 @@ import ThemeToggle from "./ThemeToggle";
 
 export const dynamic = "force-dynamic";
 
-const EMAIL_LIST =
-  (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim())
-    .filter((email) => email.length > 0);
+const EMAIL_LIST = (process.env.ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((email) => email.trim())
+  .filter((email) => email.length > 0);
 
 async function getBaseUrl() {
   const env = process.env.NEXT_PUBLIC_APP_BASE_URL;
@@ -60,7 +59,7 @@ export default async function SettingsPage() {
             <ShieldCheck className={styles.auth0Icon} aria-hidden="true" />
             <span>Auðkennt með Auth0</span>
           </div>
-          
+
           <div className={styles.accountActions}>
             <Button as="a" href="/auth/logout" variant="danger" fullWidth>
               Skrá út
@@ -90,12 +89,23 @@ function Avatar({ src, alt }: { src?: string; alt: string }) {
   const size = 56;
   if (!src) {
     return (
-      <div className={styles.avatarFallback} style={{ width: size, height: size }} aria-label="Engin mynd" />
+      <div
+        className={styles.avatarFallback}
+        style={{ width: size, height: size }}
+        aria-label="Engin mynd"
+      />
     );
   }
   return (
     <div className={styles.avatar} aria-label="Notendamynd">
-      <Image src={src} alt={alt} width={size} height={size} className={styles.avatarImg} referrerPolicy="no-referrer" />
+      <Image
+        src={src}
+        alt={alt}
+        width={size}
+        height={size}
+        className={styles.avatarImg}
+        referrerPolicy="no-referrer"
+      />
     </div>
   );
 }

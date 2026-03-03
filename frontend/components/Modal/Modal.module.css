@@ -81,7 +81,7 @@
   font-size: var(--sl-font-size-xl);
   color: hsl(var(--sl-color-text-secondary));
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-base),
     color var(--sl-transition-base),
     border-color var(--sl-transition-base),

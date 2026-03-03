@@ -6,14 +6,11 @@ interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
 }
 
-interface AuthFetchOptions extends Omit<RequestInit, 'headers'> {
+interface AuthFetchOptions extends Omit<RequestInit, "headers"> {
   headers?: Record<string, string>;
 }
 
-export async function apiClient<T>(
-  endpoint: string,
-  options: FetchOptions = {}
-): Promise<T> {
+export async function apiClient<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
 
   // Build URL with query params
@@ -28,7 +25,7 @@ export async function apiClient<T>(
 
   // Default headers
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...fetchOptions.headers,
   };
 
@@ -47,16 +44,15 @@ export async function apiClient<T>(
 // Convenience methods
 export const api = {
   get: <T>(endpoint: string, params?: Record<string, string | number | boolean>) =>
-    apiClient<T>(endpoint, { method: 'GET', params }),
+    apiClient<T>(endpoint, { method: "GET", params }),
 
   post: <T>(endpoint: string, body: unknown) =>
-    apiClient<T>(endpoint, { method: 'POST', body: JSON.stringify(body) }),
+    apiClient<T>(endpoint, { method: "POST", body: JSON.stringify(body) }),
 
   patch: <T>(endpoint: string, body: unknown) =>
-    apiClient<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
+    apiClient<T>(endpoint, { method: "PATCH", body: JSON.stringify(body) }),
 
-  delete: <T>(endpoint: string) =>
-    apiClient<T>(endpoint, { method: 'DELETE' }),
+  delete: <T>(endpoint: string) => apiClient<T>(endpoint, { method: "DELETE" }),
 };
 
 /**
@@ -122,7 +118,7 @@ export async function fetchWithAuth<T>(
   if (contentType && contentType.includes("application/json")) {
     // Check if there's actually content to parse
     const text = await response.text();
-    if (!text || text.trim() === '') {
+    if (!text || text.trim() === "") {
       return undefined as T;
     }
     return JSON.parse(text) as T;

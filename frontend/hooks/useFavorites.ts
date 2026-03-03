@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -11,9 +11,9 @@ export function useFavorites() {
 
   const toggleFavorite = async (programId: string) => {
     const wasFavorite = favorites.has(programId);
-    
+
     // Optimistic update
-    setFavorites(prev => {
+    setFavorites((prev) => {
       const next = new Set(prev);
       if (wasFavorite) {
         next.delete(programId);
@@ -22,7 +22,7 @@ export function useFavorites() {
       }
       return next;
     });
-    
+
     // TODO: Persist to backend
   };
 

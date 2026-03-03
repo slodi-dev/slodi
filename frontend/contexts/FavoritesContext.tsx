@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { checkResponse } from '@/lib/api-utils';
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { checkResponse } from "@/lib/api-utils";
 
 interface FavoritesContextValue {
   favorites: Set<string>;
@@ -29,27 +29,30 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       // setFavorites(new Set(data.programIds));
 
       // For now, load from localStorage as fallback
-      const stored = localStorage.getItem('favorite-programs');
+      const stored = localStorage.getItem("favorite-programs");
       if (stored) {
         const parsed = JSON.parse(stored);
         setFavorites(new Set(parsed));
       }
     } catch (error) {
-      console.error('Failed to load favorites:', error);
+      console.error("Failed to load favorites:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isFavorite = useCallback((programId: string) => {
-    return favorites.has(programId);
-  }, [favorites]);
+  const isFavorite = useCallback(
+    (programId: string) => {
+      return favorites.has(programId);
+    },
+    [favorites]
+  );
 
   const toggleFavorite = async (programId: string) => {
     const wasFavorite = favorites.has(programId);
-    
+
     // Optimistic update
-    setFavorites(prev => {
+    setFavorites((prev) => {
       const next = new Set(prev);
       if (wasFavorite) {
         next.delete(programId);
@@ -58,7 +61,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       }
       return next;
     });
-    
+
     // Persist to localStorage immediately
     const updatedSet = new Set(favorites);
     if (wasFavorite) {
@@ -66,20 +69,20 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     } else {
       updatedSet.add(programId);
     }
-    localStorage.setItem('favorite-programs', JSON.stringify(Array.from(updatedSet)));
+    localStorage.setItem("favorite-programs", JSON.stringify(Array.from(updatedSet)));
 
     try {
       // TODO: Replace with actual API call when backend is ready
       if (wasFavorite) {
         const response = await fetch(`/api/users/me/favorites/${programId}`, {
-          method: 'DELETE'
+          method: "DELETE",
         });
 
         checkResponse(response);
       } else {
-        const response = await fetch('/api/users/me/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/users/me/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ programId }),
         });
 
@@ -87,7 +90,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       // Revert optimistic update on error
-      setFavorites(prev => {
+      setFavorites((prev) => {
         const next = new Set(prev);
         if (wasFavorite) {
           next.add(programId);
@@ -103,9 +106,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       } else {
         favorites.delete(programId);
       }
-      localStorage.setItem('favorite-programs', JSON.stringify(Array.from(favorites)));
+      localStorage.setItem("favorite-programs", JSON.stringify(Array.from(favorites)));
 
-      console.error('Failed to update favorite:', error);
+      console.error("Failed to update favorite:", error);
       // You could show a toast notification here
     }
   };
@@ -123,7 +126,7 @@ export function useFavorite(programId: string) {
   const [mounted, setMounted] = useState(false);
 
   if (!context) {
-    throw new Error('useFavorite must be used within FavoritesProvider');
+    throw new Error("useFavorite must be used within FavoritesProvider");
   }
 
   const { isFavorite: contextIsFavorite, toggleFavorite: contextToggleFavorite } = context;
@@ -144,7 +147,7 @@ export function useFavorites() {
   const context = useContext(FavoritesContext);
 
   if (!context) {
-    throw new Error('useFavorites must be used within FavoritesProvider');
+    throw new Error("useFavorites must be used within FavoritesProvider");
   }
 
   return context;

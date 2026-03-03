@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getMyWorkspaceRole, type WorkspaceMembership, type WorkspaceRole } from "@/services/workspaces.service";
+import {
+  getMyWorkspaceRole,
+  type WorkspaceMembership,
+  type WorkspaceRole,
+} from "@/services/workspaces.service";
 import { useAuth } from "@/hooks/useAuth";
 
 type UseWorkspaceRoleResult = {
@@ -39,9 +43,9 @@ export function useWorkspaceRole(workspaceId: string | null | undefined): UseWor
       setMembership(result);
       lastFetchedId.current = workspaceId;
     } catch (err) {
-        const error = err instanceof Error ? err : new Error("Failed to load workspace role");
-        console.error("[useWorkspaceRole] Failed to fetch workspace role:", error.message);
-        setError(error);
+      const error = err instanceof Error ? err : new Error("Failed to load workspace role");
+      console.error("[useWorkspaceRole] Failed to fetch workspace role:", error.message);
+      setError(error);
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +53,7 @@ export function useWorkspaceRole(workspaceId: string | null | undefined): UseWor
 
   useEffect(() => {
     if (!authLoading) {
-        lastFetchedId.current = null; // reset cache when workspaceId or token changes
+      lastFetchedId.current = null; // reset cache when workspaceId or token changes
       fetch();
     }
   }, [workspaceId, authLoading, fetch]);

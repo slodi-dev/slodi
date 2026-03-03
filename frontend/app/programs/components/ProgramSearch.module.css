@@ -49,7 +49,7 @@
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
   border-radius: var(--sl-radius-input);
   outline: none;
-  transition: 
+  transition:
     border-color var(--sl-transition-base),
     box-shadow var(--sl-transition-base),
     background-color var(--sl-transition-base);
@@ -113,7 +113,7 @@
   border: none;
   border-radius: var(--sl-radius-button);
   cursor: pointer;
-  transition: 
+  transition:
     color var(--sl-transition-base),
     background-color var(--sl-transition-base);
 }

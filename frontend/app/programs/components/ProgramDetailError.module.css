@@ -1,110 +1,110 @@
 .container {
-    min-height: calc(100vh - 80px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background: hsl(var(--sl-color-background));
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: hsl(var(--sl-color-background));
 }
 
 .content {
-    text-align: center;
-    max-width: 600px;
+  text-align: center;
+  max-width: 600px;
 }
 
 .title {
-    font-size: 120px;
-    font-weight: 700;
-    color: hsl(var(--sl-color-primary));
-    margin: 0;
-    line-height: 1;
+  font-size: 120px;
+  font-weight: 700;
+  color: hsl(var(--sl-color-primary));
+  margin: 0;
+  line-height: 1;
 }
 
 .subtitle {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: hsl(var(--sl-color-text-primary));
-    margin: 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: hsl(var(--sl-color-text-primary));
+  margin: 1rem 0;
 }
 
 .message {
-    font-size: 1rem;
-    color: hsl(var(--sl-color-text-secondary));
-    line-height: 1.625;
-    margin: 0 0 2rem 0;
-    word-wrap: break-word;
+  font-size: 1rem;
+  color: hsl(var(--sl-color-text-secondary));
+  line-height: 1.625;
+  margin: 0 0 2rem 0;
+  word-wrap: break-word;
 }
 
 .actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .primaryButton,
 .secondaryButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    font-size: 1rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 150ms ease-out;
-    min-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 150ms ease-out;
+  min-width: 200px;
 }
 
 .primaryButton {
-    background: hsl(var(--sl-color-primary));
-    color: white;
-    border: 2px solid hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary));
+  color: white;
+  border: 2px solid hsl(var(--sl-color-primary));
 }
 
 .primaryButton:hover {
-    background: hsl(var(--sl-color-primary-hover));
-    border-color: hsl(var(--sl-color-primary-hover));
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: hsl(var(--sl-color-primary-hover));
+  border-color: hsl(var(--sl-color-primary-hover));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .secondaryButton {
-    background: hsl(var(--sl-color-background-secondary));
-    color: hsl(var(--sl-color-text-primary));
-    border: 2px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-background-secondary));
+  color: hsl(var(--sl-color-text-primary));
+  border: 2px solid hsl(var(--sl-color-border));
 }
 
 .secondaryButton:hover {
-    background: hsl(var(--sl-color-background-tertiary));
-    border-color: hsl(var(--sl-color-border-strong));
+  background: hsl(var(--sl-color-background-tertiary));
+  border-color: hsl(var(--sl-color-border-strong));
 }
 
 .primaryButton:focus-visible,
 .secondaryButton:focus-visible {
-    outline: 2px solid hsl(var(--sl-color-primary));
-    outline-offset: 2px;
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
 }
 
 @media (max-width: 768px) {
-    .container {
-        padding: 1.5rem;
-    }
+  .container {
+    padding: 1.5rem;
+  }
 
-    .title {
-        font-size: 80px;
-    }
+  .title {
+    font-size: 80px;
+  }
 
-    .subtitle {
-        font-size: 1.25rem;
-    }
+  .subtitle {
+    font-size: 1.25rem;
+  }
 
-    .actions {
-        width: 100%;
-    }
+  .actions {
+    width: 100%;
+  }
 
-    .primaryButton,
-    .secondaryButton {
-        width: 100%;
-    }
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+  }
 }

@@ -82,7 +82,7 @@
     flex: 1 1 calc(50% - var(--space-2));
     min-width: 200px;
   }
-  
+
   .mainHeader {
     flex-wrap: wrap;
   }

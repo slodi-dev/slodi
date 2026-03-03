@@ -69,14 +69,9 @@ export function useDraft<T extends object>(
     };
   }, [key, draft]);
 
-  const updateDraft = useCallback(
-    (patch: Partial<T> | ((prev: T) => T)) => {
-      setDraft((prev) =>
-        typeof patch === "function" ? patch(prev) : { ...prev, ...patch }
-      );
-    },
-    []
-  );
+  const updateDraft = useCallback((patch: Partial<T> | ((prev: T) => T)) => {
+    setDraft((prev) => (typeof patch === "function" ? patch(prev) : { ...prev, ...patch }));
+  }, []);
 
   const clearDraft = useCallback(() => {
     setDraft(initial);

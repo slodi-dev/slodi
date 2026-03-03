@@ -118,9 +118,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
   // ── Accordion helpers ──────────────────────────────────────────────────────
 
   const toggleSection = (id: SectionId) => {
-    setOpenSections((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setOpenSections((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   };
 
   /** Returns true if the section has any filled content. */
@@ -130,10 +128,14 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         return !!draft.name || !!draft.description;
       case "info":
         return (
-          !!draft.durationMin || !!draft.durationMax ||
-          !!draft.prepTimeMin || !!draft.prepTimeMax ||
-          !!draft.location || !!draft.price ||
-          !!draft.countMin || !!draft.countMax ||
+          !!draft.durationMin ||
+          !!draft.durationMax ||
+          !!draft.prepTimeMin ||
+          !!draft.prepTimeMax ||
+          !!draft.location ||
+          !!draft.price ||
+          !!draft.countMin ||
+          !!draft.countMax ||
           draft.selectedAgeGroups.length > 0
         );
       case "equipment":
@@ -166,9 +168,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           ? draft.instructions.slice(0, 48) + (draft.instructions.length > 48 ? "…" : "")
           : null;
       case "extras":
-        return draft.selectedTags.length > 0
-          ? `${draft.selectedTags.length} merkar`
-          : null;
+        return draft.selectedTags.length > 0 ? `${draft.selectedTags.length} merkar` : null;
     }
   };
 
@@ -230,10 +230,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
             draft.prepTimeMin || draft.prepTimeMax
               ? [draft.prepTimeMin, draft.prepTimeMax].filter(Boolean).join("–") + " mín"
               : undefined,
-          age:
-            draft.selectedAgeGroups.length > 0
-              ? draft.selectedAgeGroups.join(", ")
-              : undefined,
+          age: draft.selectedAgeGroups.length > 0 ? draft.selectedAgeGroups.join(", ") : undefined,
           location: draft.location.trim() || undefined,
           count: draft.countMin !== "" ? Number(draft.countMin) : undefined,
           price: draft.price !== "" ? Number(draft.price) : undefined,
@@ -258,18 +255,13 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} aria-label="Ný dagskrá">
-
       {/* ── Draft restored banner ── */}
       {showDraftBanner && (
         <div className={styles.draftBanner} role="status">
           <span className={styles.draftBannerText}>
             📝 Óvisttar drakar fundust og voru endurheimt
           </span>
-          <button
-            type="button"
-            className={styles.draftBannerDiscard}
-            onClick={handleDiscard}
-          >
+          <button type="button" className={styles.draftBannerDiscard} onClick={handleDiscard}>
             Fleygja drögum
           </button>
         </div>
@@ -283,7 +275,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
 
         return (
           <div key={id} className={styles.accordionItem}>
-
             {/* Header */}
             <button
               type="button"
@@ -322,12 +313,8 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
             >
               <div className={styles.accordionContentInner}>
                 <div className={styles.accordionBody}>
-                  {id === "basic" && (
-                    <SectionBasic draft={draft} updateDraft={updateDraft} />
-                  )}
-                  {id === "info" && (
-                    <SectionInfo draft={draft} updateDraft={updateDraft} />
-                  )}
+                  {id === "basic" && <SectionBasic draft={draft} updateDraft={updateDraft} />}
+                  {id === "info" && <SectionInfo draft={draft} updateDraft={updateDraft} />}
                   {id === "equipment" && (
                     <SectionEquipment
                       draft={draft}
@@ -352,7 +339,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
                 </div>
               </div>
             </div>
-
           </div>
         );
       })}
@@ -392,7 +378,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           {loading ? "Býr til…" : "Búa til hugmynd"}
         </button>
       </div>
-
     </form>
   );
 }
@@ -446,7 +431,6 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
   return (
     <>
       <div className={styles.fieldGrid}>
-
         <div className={styles.field}>
           <label className={styles.label}>Tímalengd (mín)</label>
           <div className={styles.rangeRow}>
@@ -460,7 +444,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
               min={0}
               aria-label="Lágmarkstímalengd í mínútum"
             />
-            <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+            <span className={styles.rangeSeparator} aria-hidden="true">
+              –
+            </span>
             <input
               id="program-duration-max"
               type="number"
@@ -487,7 +473,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
               min={0}
               aria-label="Lágmarks undirbúningstími í mínútum"
             />
-            <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+            <span className={styles.rangeSeparator} aria-hidden="true">
+              –
+            </span>
             <input
               id="program-prep-max"
               type="number"
@@ -502,7 +490,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="program-location" className={styles.label}>Staðsetning</label>
+          <label htmlFor="program-location" className={styles.label}>
+            Staðsetning
+          </label>
           <input
             id="program-location"
             type="text"
@@ -515,7 +505,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="program-price" className={styles.label}>Kostnaður</label>
+          <label htmlFor="program-price" className={styles.label}>
+            Kostnaður
+          </label>
           <select
             id="program-price"
             className={styles.select}
@@ -529,7 +521,6 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
             <option value="3">kr kr kr — Hár kostnaður</option>
           </select>
         </div>
-
       </div>
 
       <div className={styles.field}>
@@ -545,7 +536,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
             min={1}
             aria-label="Lágmarksfjöldi þátttakenda"
           />
-          <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+          <span className={styles.rangeSeparator} aria-hidden="true">
+            –
+          </span>
           <input
             id="program-count-max"
             type="number"
@@ -560,12 +553,10 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
       </div>
 
       <div className={styles.field}>
-        <p className={styles.label} id="age-groups-label">Aldurshópar</p>
-        <div
-          className={styles.checkboxGrid}
-          role="group"
-          aria-labelledby="age-groups-label"
-        >
+        <p className={styles.label} id="age-groups-label">
+          Aldurshópar
+        </p>
+        <div className={styles.checkboxGrid} role="group" aria-labelledby="age-groups-label">
           {AGE_GROUPS.map((group) => (
             <label key={group} className={styles.checkboxOption}>
               <input
@@ -613,7 +604,9 @@ function SectionEquipment({
 }: SectionEquipmentProps) {
   return (
     <div className={styles.field}>
-      <label htmlFor="program-equipment" className={styles.label}>Búnaðarlisti</label>
+      <label htmlFor="program-equipment" className={styles.label}>
+        Búnaðarlisti
+      </label>
       <div className={styles.equipmentInputRow}>
         <input
           id="program-equipment"
@@ -658,7 +651,9 @@ function SectionEquipment({
 function SectionInstructions({ draft, updateDraft }: DraftProps) {
   return (
     <div className={styles.field}>
-      <label htmlFor="program-instructions" className={styles.label}>Framkvæmd</label>
+      <label htmlFor="program-instructions" className={styles.label}>
+        Framkvæmd
+      </label>
       <textarea
         id="program-instructions"
         className={styles.textarea}
@@ -712,7 +707,9 @@ function SectionExtras({ draft, updateDraft, displayTags }: SectionExtrasProps) 
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="program-image" className={styles.label}>Vefslóð myndar</label>
+        <label htmlFor="program-image" className={styles.label}>
+          Vefslóð myndar
+        </label>
         <input
           id="program-image"
           type="url"

@@ -125,7 +125,7 @@
   .container {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   .content {
     max-width: 100%;
   }
@@ -136,19 +136,19 @@
   .hero {
     padding: var(--sl-spacing-container) var(--sl-spacing-component);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-4xl);
   }
-  
+
   .subheading {
     font-size: var(--sl-primitive-font-size-xl);
   }
-  
+
   .description {
     font-size: var(--sl-text-body);
   }
-  
+
   .icon {
     width: 100px;
     height: 100px;
@@ -160,23 +160,23 @@
   .hero {
     padding: var(--sl-spacing-container) var(--sl-spacing-component);
   }
-  
+
   .container {
     gap: var(--sl-spacing-container);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
   }
-  
+
   .subheading {
     font-size: var(--sl-primitive-font-size-xl);
   }
-  
+
   .description {
     font-size: var(--sl-text-body);
   }
-  
+
   .icon {
     width: 90px;
     height: 90px;
@@ -188,40 +188,40 @@
   .hero {
     padding: var(--sl-spacing-container) var(--sl-spacing-element);
   }
-  
+
   .container {
     gap: var(--sl-spacing-stack-xl);
   }
-  
+
   .content {
     gap: var(--sl-spacing-stack-md);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
   }
-  
+
   .subheading {
     font-size: var(--sl-text-body-lg);
   }
-  
+
   .description {
     font-size: var(--sl-text-body-sm);
   }
-  
+
   .iconWrapper {
     padding: var(--sl-spacing-inset-lg);
   }
-  
+
   .icon {
     width: 80px;
     height: 80px;
   }
-  
+
   .badgeWrapper {
     gap: var(--sl-spacing-gap-xs);
   }
-  
+
   .badgeText {
     font-size: var(--sl-text-caption);
   }

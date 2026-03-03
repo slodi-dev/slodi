@@ -46,7 +46,7 @@
   border: 1px solid hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-30));
   border-radius: var(--sl-radius-button);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-base),
     border-color var(--sl-transition-base);
 }
@@ -165,7 +165,7 @@
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-20));
   border-radius: var(--sl-radius-button);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-base),
     color var(--sl-transition-base),
     border-color var(--sl-transition-base);
@@ -209,7 +209,7 @@
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
   border-radius: var(--sl-radius-badge);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-base),
     color var(--sl-transition-base),
     border-color var(--sl-transition-base),
@@ -352,7 +352,7 @@
   border-radius: var(--sl-radius-input);
   cursor: pointer;
   outline: none;
-  transition: 
+  transition:
     border-color var(--sl-transition-base),
     box-shadow var(--sl-transition-base);
 }
@@ -389,7 +389,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

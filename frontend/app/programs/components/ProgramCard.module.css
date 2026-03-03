@@ -9,22 +9,22 @@
   flex-direction: column;
   gap: var(--sl-spacing-stack-md);
   width: 100%;
-  
+
   /* Surface */
   background: hsl(var(--sl-color-surface));
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
   border-radius: var(--sl-radius-card);
   padding: var(--sl-spacing-inset-md);
-  
+
   /* Shadow */
   box-shadow: var(--sl-shadow-card);
-  
+
   /* Transitions */
-  transition: 
+  transition:
     box-shadow var(--sl-transition-base),
     transform var(--sl-transition-fast),
     border-color var(--sl-transition-fast);
-  
+
   /* Interaction */
   cursor: pointer;
   outline: none;
@@ -107,7 +107,7 @@
   line-height: var(--sl-line-height-heading);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
-  
+
   /* Limit to 2 lines with ellipsis */
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -134,7 +134,7 @@
   line-height: var(--sl-line-height-relaxed);
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
-  
+
   /* Limit to 3 lines with ellipsis */
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -333,7 +333,7 @@
   font-size: var(--sl-text-body-sm);
   font-weight: var(--sl-primitive-font-weight-medium);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     color var(--sl-transition-fast);
@@ -369,7 +369,7 @@
   .media {
     height: 140px;
   }
-  
+
   .title {
     font-size: var(--sl-text-body);
   }
@@ -379,12 +379,12 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
   }
-  
+
   .footer {
     flex-direction: column;
     gap: var(--sl-spacing-stack-sm);
   }
-  
+
   .likeButton,
   .favoriteButton,
   .readMore {
@@ -449,7 +449,9 @@
   letter-spacing: var(--sl-primitive-letter-spacing-wider);
   cursor: pointer;
   backdrop-filter: blur(4px);
-  transition: background-color var(--sl-transition-fast), border-color var(--sl-transition-fast);
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
 }
 
 .menuButton:hover,
@@ -496,4 +498,3 @@
 .menuItemDanger:hover {
   background: hsl(var(--sl-color-error-subtle));
 }
-

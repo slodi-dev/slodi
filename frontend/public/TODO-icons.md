@@ -10,6 +10,7 @@ The following icon files are referenced in the web manifest and layout metadata 
 - [ ] `/og-image.png` - Open Graph preview image (1200x630px)
 
 ## Notes
+
 - These will show 404 errors until added
 - Should use Slóði branding/logo
 - Can be generated from a single SVG logo file

@@ -60,23 +60,19 @@ export default function EmailSignupForm() {
           <h2 id="signup-heading" className={styles.heading}>
             Fylgstu með framvindunni
           </h2>
-          
+
           <p className={styles.description}>
             Skráðu þig á póstlistann okkar og fáðu uppfærslur um:
           </p>
-          
+
           <ul className={styles.benefitsList}>
             <li>Nýja eiginleika og útgáfur</li>
             <li>Tækifæri til að taka þátt í þróuninni</li>
             <li>Ábendingar og leiðbeiningar</li>
             <li>Viðburði og námskeið</li>
           </ul>
-          
-          <form
-            onSubmit={handleSubmit}
-            className={styles.form}
-            aria-label="Skráning á póstlista"
-          >
+
+          <form onSubmit={handleSubmit} className={styles.form} aria-label="Skráning á póstlista">
             <div className={styles.inputGroup}>
               <label htmlFor="email-input" className={styles.visuallyHidden}>
                 Netfang
@@ -120,25 +116,50 @@ export default function EmailSignupForm() {
                 aria-live="polite"
               >
                 {status === "success" && (
-                  <svg className={styles.messageIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className={styles.messageIcon}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 )}
                 {status === "error" && (
-                  <svg className={styles.messageIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className={styles.messageIcon}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 )}
                 <span>{message}</span>
               </div>
             )}
           </form>
-          
+
           <p className={styles.privacyNote}>
             Við virðum persónuverndina þína. Þú getur alltaf{" "}
             <Link href="/unsubscribe" className={styles.unsubscribeLink}>
               afskráð þig af listanum
-            </Link>.
+            </Link>
+            .
           </p>
         </div>
       </div>

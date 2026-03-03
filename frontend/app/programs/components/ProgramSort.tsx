@@ -1,8 +1,8 @@
 "use client";
 
-import styles from './ProgramSort.module.css';
+import styles from "./ProgramSort.module.css";
 
-export type SortOption = 'newest' | 'oldest' | 'most-liked' | 'alphabetical';
+export type SortOption = "newest" | "oldest" | "most-liked" | "alphabetical";
 
 interface ProgramSortProps {
   value: SortOption;
@@ -11,13 +11,13 @@ interface ProgramSortProps {
 }
 
 const SORT_OPTIONS: Record<SortOption, string> = {
-  newest: 'Nýjast fyrst',
-  oldest: 'Elst fyrst',
-  'most-liked': 'Vinsælast',
-  alphabetical: 'Stafrófsröð',
+  newest: "Nýjast fyrst",
+  oldest: "Elst fyrst",
+  "most-liked": "Vinsælast",
+  alphabetical: "Stafrófsröð",
 };
 
-export default function ProgramSort({ value, onChange, className = '' }: ProgramSortProps) {
+export default function ProgramSort({ value, onChange, className = "" }: ProgramSortProps) {
   return (
     <div className={`${styles.sortContainer} ${className}`}>
       <label htmlFor="sort-select" className={styles.sortLabel}>
@@ -45,12 +45,7 @@ export default function ProgramSort({ value, onChange, className = '' }: Program
           stroke="currentColor"
           aria-hidden="true"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
     </div>

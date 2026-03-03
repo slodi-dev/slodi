@@ -118,7 +118,7 @@
   background: hsl(var(--sl-color-background));
   border: 2px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-input);
-  transition: 
+  transition:
     border-color var(--sl-transition-fast),
     box-shadow var(--sl-transition-fast);
 }
@@ -156,7 +156,7 @@
   border: none;
   border-radius: var(--sl-radius-button);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-fast),
     transform var(--sl-transition-fast),
     box-shadow var(--sl-transition-fast);
@@ -273,11 +273,11 @@
   .emailSignup {
     padding: var(--sl-spacing-container) var(--sl-spacing-component);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
   }
-  
+
   .description {
     font-size: var(--sl-text-body);
   }
@@ -288,15 +288,15 @@
   .emailSignup {
     padding: var(--sl-spacing-container) var(--sl-spacing-component);
   }
-  
+
   .content {
     padding: var(--sl-spacing-inset-lg);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
   }
-  
+
   .description {
     font-size: var(--sl-text-body);
   }
@@ -307,29 +307,29 @@
   .emailSignup {
     padding: var(--sl-spacing-container) var(--sl-spacing-element);
   }
-  
+
   .content {
     padding: var(--sl-spacing-inset-md);
     gap: var(--sl-spacing-stack-md);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-2xl);
   }
-  
+
   .description {
     font-size: var(--sl-text-body-sm);
   }
-  
+
   .inputGroup {
     flex-direction: column;
   }
-  
+
   .submitButton {
     width: 100%;
     min-height: 44px;
   }
-  
+
   .benefitsList li {
     font-size: var(--sl-text-body-sm);
   }
@@ -340,7 +340,7 @@
   .submitButton:hover:not(:disabled) {
     transform: none;
   }
-  
+
   .spinner {
     animation: none;
   }

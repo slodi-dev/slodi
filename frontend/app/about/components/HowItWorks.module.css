@@ -38,7 +38,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: 
+  transition:
     transform 200ms var(--sl-primitive-animation-easing),
     border-color 200ms var(--sl-primitive-animation-easing),
     box-shadow 200ms var(--sl-primitive-animation-easing);
@@ -101,7 +101,7 @@
 }
 
 .featureItem::before {
-  content: '✓';
+  content: "✓";
   position: absolute;
   left: 0;
   color: hsl(var(--sl-color-success));

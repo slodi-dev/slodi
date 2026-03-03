@@ -15,7 +15,7 @@ export default function FavoriteProgramsPage() {
   const { getToken } = useAuth();
   const defaultWorkspaceId = useDefaultWorkspaceId();
   const { favorites, isLoading: favoritesLoading } = useFavorites();
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [programs, setPrograms] = useState<Program[]>([]);
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
 
@@ -40,24 +40,24 @@ export default function FavoriteProgramsPage() {
 
   // Filter programs to only show favorites
   const favoritePrograms = useMemo(() => {
-    const filtered = programs.filter(program => favorites.has(program.id));
-    
+    const filtered = programs.filter((program) => favorites.has(program.id));
+
     // Sort programs
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
-        case 'newest':
+        case "newest":
           return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-        case 'oldest':
+        case "oldest":
           return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-        case 'most-liked':
+        case "most-liked":
           return (b.like_count || 0) - (a.like_count || 0);
-        case 'alphabetical':
-          return a.name.localeCompare(b.name, 'is');
+        case "alphabetical":
+          return a.name.localeCompare(b.name, "is");
         default:
           return 0;
       }
     });
-    
+
     return sorted;
   }, [favorites, sortBy, programs]);
 
@@ -94,7 +94,7 @@ export default function FavoriteProgramsPage() {
           <div className={styles.headerBottom}>
             <div className={styles.resultSummary}>
               <p className={styles.resultCount}>
-                {favoritePrograms.length} {favoritePrograms.length === 1 ? 'dagskrá' : 'dagskrár'}
+                {favoritePrograms.length} {favoritePrograms.length === 1 ? "dagskrá" : "dagskrár"}
               </p>
             </div>
             <div className={styles.sortContainer}>

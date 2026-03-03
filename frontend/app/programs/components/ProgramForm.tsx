@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface ProgramFormData {
   name: string;
@@ -19,10 +19,10 @@ interface ProgramFormProps {
 
 export default function ProgramForm({ initialData, onSubmit, onCancel }: ProgramFormProps) {
   const [formData, setFormData] = useState<ProgramFormData>({
-    name: initialData?.name || '',
-    description: initialData?.description || '',
-    workspaceId: initialData?.workspaceId || '',
-    image: initialData?.image || '',
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    workspaceId: initialData?.workspaceId || "",
+    image: initialData?.image || "",
     public: initialData?.public || false,
     tags: initialData?.tags || [],
   });

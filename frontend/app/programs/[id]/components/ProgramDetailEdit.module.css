@@ -520,7 +520,6 @@
   cursor: not-allowed;
 }
 
-
 .form {
   display: flex;
   flex-direction: column;
@@ -550,7 +549,7 @@
   border: 2px solid hsl(var(--color-border));
   border-radius: var(--radius-lg);
   outline: none;
-  transition: 
+  transition:
     border-color var(--transition-base),
     box-shadow var(--transition-base);
 }
@@ -687,7 +686,7 @@
   font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--transition-base),
     border-color var(--transition-base),
     transform var(--transition-fast);
@@ -756,7 +755,7 @@
   border: 2px solid hsl(0 70% 50%);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--transition-base),
     border-color var(--transition-base),
     color var(--transition-base);

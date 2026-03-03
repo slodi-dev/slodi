@@ -3,53 +3,53 @@
 // Goals: simplicity, safety, readability. Not a full spec implementation.
 
 function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 // Very small URL allowlist to avoid javascript: etc.
 function sanitizeUrl(url: string): string {
-    const trimmed = url.trim();
-    if (/^(https?:|mailto:)/i.test(trimmed)) return trimmed;
-    return "#";
+  const trimmed = url.trim();
+  if (/^(https?:|mailto:)/i.test(trimmed)) return trimmed;
+  return "#";
 }
 
 // Inline formatting: runs on a text chunk that is NOT inside code spans.
 function renderInline(md: string): string {
-    // Protect inline code by splitting on backticks
-    const parts = md.split(/(`+)([\s\S]*?)(\1)/g); // delimiter, content, delimiter
-    for (let i = 0; i < parts.length; i += 1) {
-        // parts pattern: [text, delim, content, delim, text, delim, content, ...]
-        if (i % 4 === 0) {
-            // normal text segment → escape + apply bold/italic/links
-            let t = escapeHtml(parts[i]);
+  // Protect inline code by splitting on backticks
+  const parts = md.split(/(`+)([\s\S]*?)(\1)/g); // delimiter, content, delimiter
+  for (let i = 0; i < parts.length; i += 1) {
+    // parts pattern: [text, delim, content, delim, text, delim, content, ...]
+    if (i % 4 === 0) {
+      // normal text segment → escape + apply bold/italic/links
+      let t = escapeHtml(parts[i]);
 
-            // Links: [label](url)
-            t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
-                const safe = sanitizeUrl(String(url));
-                return `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
-                    String(label)
-                )}</a>`;
-            });
+      // Links: [label](url)
+      t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
+        const safe = sanitizeUrl(String(url));
+        return `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+          String(label)
+        )}</a>`;
+      });
 
-            // Bold: **text**
-            t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      // Bold: **text**
+      t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
-            // Italic: *text*  (simple version, avoids conflict with bold we already handled)
-            t = t.replace(/(^|[^\*])\*([^*]+)\*/g, (_m, pre, body) => `${pre}<em>${body}</em>`);
+      // Italic: *text*  (simple version, avoids conflict with bold we already handled)
+      t = t.replace(/(^|[^\*])\*([^*]+)\*/g, (_m, pre, body) => `${pre}<em>${body}</em>`);
 
-            parts[i] = t;
-        } else if ((i - 1) % 4 === 0) {
-            // this is a delimiter captured group → ignore
-        } else if ((i - 2) % 4 === 0) {
-            // code content
-            parts[i] = `<code>${escapeHtml(parts[i])}</code>`;
-        }
+      parts[i] = t;
+    } else if ((i - 1) % 4 === 0) {
+      // this is a delimiter captured group → ignore
+    } else if ((i - 2) % 4 === 0) {
+      // code content
+      parts[i] = `<code>${escapeHtml(parts[i])}</code>`;
     }
-    return parts.join("");
+  }
+  return parts.join("");
 }
 
 export function mdToHtmlLite(md: string): string {

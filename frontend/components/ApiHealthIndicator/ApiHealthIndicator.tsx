@@ -15,7 +15,7 @@ export function ApiHealthIndicator({ showInProduction = false }: ApiHealthIndica
   const { isHealthy, isChecking } = useApiHealth();
 
   // Don't show in production unless explicitly enabled
-  if (process.env.NODE_ENV === 'production' && !showInProduction) {
+  if (process.env.NODE_ENV === "production" && !showInProduction) {
     return null;
   }
 
@@ -29,14 +29,9 @@ export function ApiHealthIndicator({ showInProduction = false }: ApiHealthIndica
   }
 
   return (
-    <div 
-      className={styles.indicator} 
-      data-status={isHealthy ? "healthy" : "unhealthy"}
-    >
+    <div className={styles.indicator} data-status={isHealthy ? "healthy" : "unhealthy"}>
       <span className={styles.dot}></span>
-      <span className={styles.text}>
-        {isHealthy ? "API Connected" : "API Disconnected"}
-      </span>
+      <span className={styles.text}>{isHealthy ? "API Connected" : "API Disconnected"}</span>
     </div>
   );
 }
