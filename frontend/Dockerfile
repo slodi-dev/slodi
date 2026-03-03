@@ -17,6 +17,8 @@ CMD ["npm", "run", "test"]
 # ── Stage: development ───────────────────────────────────
 FROM deps AS development
 
+COPY . .
+
 CMD ["npm", "run", "dev"]
 
 # ── Stage: build ─────────────────────────────────────────
