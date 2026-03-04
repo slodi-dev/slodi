@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: slodi_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-slodi_password}
     ports:
-      - "${DB_EXPOSE_PORT:-5432}:5432"
+      - "${DB_EXPOSE_PORT:-5454}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,10 +27,13 @@ services:
       target: base
     container_name: slodi-migrations
     env_file:
-      - ./backend/.env
+      - ./backend/.env.docker
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
+      SEED_OUTPUT_DIR: /app/seed_data
+    volumes:
+      - seed_data:/app/seed_data
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,10 +58,13 @@ services:
       target: production
     container_name: slodi-backend
     env_file:
-      - ./backend/.env
+      - ./backend/.env.docker
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
+      SEED_OUTPUT_DIR: /app/seed_data
+    volumes:
+      - seed_data:/app/seed_data
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -81,15 +87,12 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        # NEXT_PUBLIC_* vars are baked in at build time by Next.js
-        # This pulls from frontend/.env or falls back to localhost
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://backend:8000}
+        # NEXT_PUBLIC_API_URL is baked into the client bundle at build time.
+        # Must be reachable from the browser — use localhost, not the internal Docker hostname.
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
     container_name: slodi-frontend
     env_file:
-      - ./frontend/.env
-    environment:
-      # Internal Docker network URL for SSR requests
-      INTERNAL_API_URL: http://backend:8000
+      - ./frontend/.env.docker
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
@@ -102,6 +105,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  seed_data:
     driver: local
 
 networks:
