@@ -230,7 +230,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
             draft.prepTimeMin || draft.prepTimeMax
               ? [draft.prepTimeMin, draft.prepTimeMax].filter(Boolean).join("–") + " mín"
               : undefined,
-          age: draft.selectedAgeGroups.length > 0 ? draft.selectedAgeGroups.join(", ") : undefined,
+          age: draft.selectedAgeGroups.length > 0 ? draft.selectedAgeGroups : undefined,
           location: draft.location.trim() || undefined,
           count: draft.countMin !== "" ? Number(draft.countMin) : undefined,
           price: draft.price !== "" ? Number(draft.price) : undefined,
