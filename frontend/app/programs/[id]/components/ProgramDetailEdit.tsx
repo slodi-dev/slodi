@@ -15,14 +15,6 @@ function parseDuration(val: string | null | undefined): [string, string] {
   return [(parts[0] ?? "").trim(), (parts[1] ?? "").trim()];
 }
 
-/** Parses "Hrefnuskátar, Drekaskátar" → ["Hrefnuskátar", "Drekaskátar"] */
-function parseAge(val: string | null | undefined): string[] {
-  if (!val) return [];
-  return val
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -93,7 +85,7 @@ export default function ProgramDetailEdit({
     durationMax: durationMax0,
     prepTimeMin: prepMin0,
     prepTimeMax: prepMax0,
-    selectedAgeGroups: parseAge(program.age),
+    selectedAgeGroups: program.age ?? [],
     location: program.location ?? "",
     countMin: program.count != null ? String(program.count) : "",
     price: program.price != null ? String(program.price) : "",
@@ -166,7 +158,7 @@ export default function ProgramDetailEdit({
         form.prepTimeMin || form.prepTimeMax
           ? `${[form.prepTimeMin, form.prepTimeMax].filter(Boolean).join("–")} mín`
           : null,
-      age: form.selectedAgeGroups.length > 0 ? form.selectedAgeGroups.join(", ") : null,
+      age: form.selectedAgeGroups.length > 0 ? form.selectedAgeGroups : null,
       location: form.location.trim() || null,
       count: form.countMin !== "" ? Number(form.countMin) : null,
       price: form.price !== "" ? Number(form.price) : null,
