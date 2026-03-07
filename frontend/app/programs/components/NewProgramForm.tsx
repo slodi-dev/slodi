@@ -230,7 +230,9 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
             draft.prepTimeMin || draft.prepTimeMax
               ? [draft.prepTimeMin, draft.prepTimeMax].filter(Boolean).join("–") + " mín"
               : undefined,
-          age: draft.selectedAgeGroups.length > 0 ? draft.selectedAgeGroups : undefined,
+          age: draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
+            ? draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
+            : undefined,
           location: draft.location.trim() || undefined,
           count: draft.countMin !== "" ? Number(draft.countMin) : undefined,
           price: draft.price !== "" ? Number(draft.price) : undefined,
@@ -259,10 +261,10 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
       {showDraftBanner && (
         <div className={styles.draftBanner} role="status">
           <span className={styles.draftBannerText}>
-            📝 Óvisttar drakar fundust og voru endurheimt
+            📝 Óvistuð drög fundust og voru endurheimt
           </span>
           <button type="button" className={styles.draftBannerDiscard} onClick={handleDiscard}>
-            Fleygja drögum
+            Henda drögum
           </button>
         </div>
       )}
@@ -375,7 +377,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           className={styles.buttonPrimary}
           disabled={loading || !draft.name.trim()}
         >
-          {loading ? "Býr til…" : "Búa til hugmynd"}
+          {loading ? "Býr til…" : "Bæta í bankann"}
         </button>
       </div>
     </form>
