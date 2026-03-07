@@ -109,17 +109,27 @@ class Content(SoftDeleteMixin, Base):
     )
 
     @validates("age")
-    def coerce_age(self, key: str, value: list[AgeGroup] | None) -> list[str] | None:
-        """Convert AgeGroup StrEnum instances to plain strings.
+    def coerce_age(self, key: str, value: list | None) -> list[str] | None:
+        """Normalize age values to the Icelandic enum value strings expected by PostgreSQL.
 
-        psycopg3 uses enum.Enum.name (not .value) when adapting Python enum objects
-        to PostgreSQL enum types. Converting to plain str here ensures psycopg
-        receives the correct Icelandic enum values (e.g. "Hrefnuskátar"), not
-        the Python member names (e.g. "hrefnuskatar").
+        Pydantic v2 model_dump() serializes StrEnum members using .name (e.g.
+        "hrefnuskatar") rather than .value (e.g. "Hrefnuskátar") in Python mode.
+        psycopg3 also uses .name when adapting Python enum.Enum objects.
+        This validator normalizes all three possible input forms to the plain string
+        values that the PostgreSQL age_group_enum type expects.
         """
         if value is None:
             return None
-        return [v.value if isinstance(v, AgeGroup) else v for v in value]
+        result = []
+        for v in value:
+            if isinstance(v, AgeGroup):
+                result.append(v.value)
+            else:
+                try:
+                    result.append(AgeGroup(v).value)  # already a valid value string
+                except ValueError:
+                    result.append(AgeGroup[v].value)  # a member name string
+        return result
 
     # Properties for serialization
     @property
