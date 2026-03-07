@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
 
@@ -71,7 +71,7 @@ class Content(SoftDeleteMixin, Base):
     )
     duration: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
     age: Mapped[list[AgeGroup] | None] = mapped_column(
-        ARRAY(SAEnum(AgeGroup, name="age_group_enum", create_type=False, native_enum=False)),
+        ARRAY(SAEnum(AgeGroup, name="age_group_enum", create_type=False)),
         nullable=True,
     )
     location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
@@ -107,6 +107,19 @@ class Content(SoftDeleteMixin, Base):
     content_tags: Mapped[list[ContentTag]] = relationship(
         back_populates="content", cascade="all, delete-orphan"
     )
+
+    @validates("age")
+    def coerce_age(self, key: str, value: list[AgeGroup] | None) -> list[str] | None:
+        """Convert AgeGroup StrEnum instances to plain strings.
+
+        psycopg3 uses enum.Enum.name (not .value) when adapting Python enum objects
+        to PostgreSQL enum types. Converting to plain str here ensures psycopg
+        receives the correct Icelandic enum values (e.g. "Hrefnuskátar"), not
+        the Python member names (e.g. "hrefnuskatar").
+        """
+        if value is None:
+            return None
+        return [v.value if isinstance(v, AgeGroup) else v for v in value]
 
     # Properties for serialization
     @property
