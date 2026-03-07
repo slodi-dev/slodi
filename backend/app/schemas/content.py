@@ -55,7 +55,7 @@ ImageStr = Annotated[
 
 
 class ContentBase(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     description: DescStr | None = None
     equipment: list[str] | None = None
