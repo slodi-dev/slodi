@@ -80,10 +80,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production
+      env_file:
+        - ./frontend/.env
       args:
         # NEXT_PUBLIC_* vars are baked in at build time by Next.js
-        # This pulls from frontend/.env or falls back to localhost
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+        # Sourced from frontend/.env via build.env_file above
+        - NEXT_PUBLIC_API_URL
     container_name: slodi-frontend
     env_file:
       - ./frontend/.env
