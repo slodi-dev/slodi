@@ -95,7 +95,7 @@ class ContentUpdate(ContentBase):
 class ContentListOut(BaseModel):
     """Content details for list views, without author info or comments."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: UUID
     name: NameStr
