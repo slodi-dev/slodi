@@ -2,16 +2,8 @@
  * API utility functions for handling fetch responses and errors
  */
 
-// Get the API base URL - must be absolute URL for client-side requests
 const getApiBase = (): string => {
-  // Check if we're on the client side
-  if (typeof window !== "undefined") {
-    // In browser, use NEXT_PUBLIC_API_URL or construct from window.location
-    return process.env.NEXT_PUBLIC_API_URL || window.location.origin;
-  }
-
-  // On server side, use NEXT_PUBLIC_API_URL or fallback
-  return process.env.NEXT_PUBLIC_API_URL || "http://backend:3000";
+  return process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
 };
 
 const API_BASE = getApiBase();
@@ -159,9 +151,7 @@ export function buildApiUrl(endpoint: string, baseUrl: string = API_BASE): strin
   // Ensure we have a valid base URL
   if (!baseUrl || baseUrl === "/api") {
     baseUrl =
-      typeof window !== "undefined"
-        ? window.location.origin
-        : process.env.NEXT_PUBLIC_API_URL || "http://backend:3000";
+      process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
   }
 
   // Remove leading slash from endpoint if present
