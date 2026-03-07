@@ -1,4 +1,4 @@
-from enum import Enum, StrEnum
+from enum import Enum
 
 # --------------------- #
 # Permissions and roles #
@@ -55,7 +55,7 @@ class EventInterval(str, Enum):
     unknown = "unknown"
 
 
-class AgeGroup(StrEnum):
+class AgeGroup(str, Enum):
     hrefnuskatar = "Hrefnuskátar"
     drekaskatar = "Drekaskátar"
     falkaskatar = "Fálkaskátar"
