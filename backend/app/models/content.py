@@ -12,7 +12,11 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+import logging
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
 
@@ -118,6 +122,11 @@ class Content(SoftDeleteMixin, Base):
         This validator normalizes all three possible input forms to the plain string
         values that the PostgreSQL age_group_enum type expects.
         """
+        logger.info(
+            "[content.py coerce_age] incoming value: %r (types: %s)",
+            value,
+            [type(v).__name__ for v in (value or [])],
+        )
         if value is None:
             return None
         result = []
@@ -129,6 +138,7 @@ class Content(SoftDeleteMixin, Base):
                     result.append(AgeGroup(v).value)  # already a valid value string
                 except ValueError:
                     result.append(AgeGroup[v].value)  # a member name string
+        logger.info("[content.py coerce_age] outgoing result: %r", result)
         return result
 
     # Properties for serialization
