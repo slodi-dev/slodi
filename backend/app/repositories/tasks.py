@@ -4,6 +4,7 @@ import datetime as dt
 from uuid import UUID
 
 from sqlalchemy import func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -140,4 +141,5 @@ class TaskRepository(Repository):
             .where(Content.id == task_id, Content.deleted_at.is_(None))
             .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

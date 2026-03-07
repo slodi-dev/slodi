@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.like import UserLikedContent
@@ -47,4 +48,5 @@ class LikeRepository(Repository):
                 UserLikedContent.user_id == user_id, UserLikedContent.content_id == content_id
             )
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

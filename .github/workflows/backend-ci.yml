@@ -1,0 +1,91 @@
+name: Backend CI
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-caching: true
+          cache-dependency-glob: "backend/pyproject.toml"
+
+      - run: uv sync --group dev
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: Mypy
+        run: uv run mypy app
+        env:
+          # Required by Pydantic Settings at import time — dummy values are fine here
+          ENV: ci
+          DB_NAME: ci
+          DB_USER: ci
+          DB_PASSWORD: ci
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          AUTH0_DOMAIN: ci.auth0.com
+          AUTH0_AUDIENCE: ci
+      - name: Notify Discord
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Lint & Type Check — ${{ github.repository }}"
+          description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-caching: true
+          cache-dependency-glob: "backend/pyproject.toml"
+
+      - run: uv sync --group dev
+
+      - name: Run unit tests
+        run: PYTHONPATH=. uv run pytest -q -m "not integration"
+        env:
+          # Required by Pydantic Settings at import time — dummy values are fine here
+          ENV: ci
+          DB_NAME: ci
+          DB_USER: ci
+          DB_PASSWORD: ci
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          AUTH0_DOMAIN: ci.auth0.com
+          AUTH0_AUDIENCE: ci
+
+      - name: Notify Discord
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Unit Tests — ${{ github.repository }}"
+          description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"

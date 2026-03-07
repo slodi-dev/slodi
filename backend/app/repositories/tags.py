@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -66,6 +67,7 @@ class TagRepository(Repository):
         res = await self.session.execute(
             update(Tag).where(Tag.id == tag_id, Tag.deleted_at.is_(None)).values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     # ----- associations -----
@@ -143,6 +145,7 @@ class TagRepository(Repository):
                 and_(ContentTag.content_id == content_id, ContentTag.tag_id == tag_id)
             )
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     async def add_content_tags_by_names(

@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, func, or_, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -83,4 +84,5 @@ class UserRepository(Repository):
         res = await self.session.execute(
             update(User).where(User.id == user_id, User.deleted_at.is_(None)).values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

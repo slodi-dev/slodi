@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -61,6 +62,7 @@ class GroupRepository(Repository):
             .where(Group.id == group_id, Group.deleted_at.is_(None))
             .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     # ----- memberships -----
@@ -143,4 +145,5 @@ class GroupRepository(Repository):
                 )
             )
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0

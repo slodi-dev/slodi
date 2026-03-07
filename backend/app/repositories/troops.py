@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -71,6 +72,7 @@ class TroopRepository(Repository):
             .where(Troop.id == troop_id, Troop.deleted_at.is_(None))
             .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
     # ----- participations -----
@@ -147,4 +149,5 @@ class TroopRepository(Repository):
                 )
             )
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
