@@ -80,14 +80,14 @@ class ContentBase(BaseModel):
 
 
 class ContentCreate(ContentBase):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
 
 class ContentUpdate(ContentBase):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr | None = None
 
