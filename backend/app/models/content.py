@@ -75,7 +75,7 @@ class Content(SoftDeleteMixin, Base):
     )
     duration: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
     age: Mapped[list[AgeGroup] | None] = mapped_column(
-        ARRAY(SAEnum(AgeGroup, name="age_group_enum", create_type=False)),
+        ARRAY(SAEnum(AgeGroup, name="age_group_enum", create_type=False, values_callable=lambda obj: [e.value for e in obj])),
         nullable=True,
     )
     location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
