@@ -230,9 +230,10 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
             draft.prepTimeMin || draft.prepTimeMax
               ? [draft.prepTimeMin, draft.prepTimeMax].filter(Boolean).join("–") + " mín"
               : undefined,
-          age: draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
-            ? draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
-            : undefined,
+          age:
+            draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
+              ? draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
+              : undefined,
           location: draft.location.trim() || undefined,
           count: draft.countMin !== "" ? Number(draft.countMin) : undefined,
           price: draft.price !== "" ? Number(draft.price) : undefined,
@@ -260,9 +261,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
       {/* ── Draft restored banner ── */}
       {showDraftBanner && (
         <div className={styles.draftBanner} role="status">
-          <span className={styles.draftBannerText}>
-            📝 Óvistuð drög fundust og voru endurheimt
-          </span>
+          <span className={styles.draftBannerText}>📝 Óvistuð drög fundust og voru endurheimt</span>
           <button type="button" className={styles.draftBannerDiscard} onClick={handleDiscard}>
             Henda drögum
           </button>

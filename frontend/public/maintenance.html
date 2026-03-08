@@ -1,382 +1,383 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="is">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Slóði — Strax til baka</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@400;500&display=swap"
-        rel="stylesheet" />
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: #21262d;
+        --green: #3fb950;
+        --green-dim: #238636;
+        --text: #e6edf3;
+        --muted: #7d8590;
+        --accent: #58a6ff;
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Mono", monospace;
+        overflow: hidden;
+      }
+
+      /* grid background */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(var(--border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 48px 48px;
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      /* radial glow */
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+          ellipse 80% 60% at 50% 40%,
+          rgba(63, 185, 80, 0.07) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .wrap {
+        position: relative;
+        z-index: 1;
+        height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 560px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2.5rem 2.5rem 2rem;
+        animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(24px);
         }
 
-        :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --border: #21262d;
-            --green: #3fb950;
-            --green-dim: #238636;
-            --text: #e6edf3;
-            --muted: #7d8590;
-            --accent: #58a6ff;
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* top bar */
+      .top-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          box-shadow: 0 0 8px var(--green);
         }
 
-        html,
-        body {
-            height: 100%;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'DM Mono', monospace;
-            overflow: hidden;
+        50% {
+          opacity: 0.5;
+          box-shadow: 0 0 2px var(--green);
+        }
+      }
+
+      .top-bar-text {
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .top-bar-text span {
+        color: var(--green);
+      }
+
+      /* logo */
+      .logo {
+        font-family: "Fraunces", serif;
+        font-size: 2.8rem;
+        font-weight: 300;
+        letter-spacing: -0.03em;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+        line-height: 1;
+      }
+
+      .logo em {
+        font-style: italic;
+        color: var(--green);
+      }
+
+      .tagline {
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 2rem;
+      }
+
+      /* message */
+      .message {
+        font-family: "Fraunces", serif;
+        font-weight: 300;
+        font-size: 1.15rem;
+        line-height: 1.65;
+        color: var(--text);
+        margin-bottom: 1.75rem;
+      }
+
+      .message strong {
+        font-weight: 400;
+        color: var(--accent);
+      }
+
+      /* progress */
+      .progress-wrap {
+        margin-bottom: 1.75rem;
+      }
+
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.68rem;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+      }
+
+      .progress-bar {
+        height: 3px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--green-dim), var(--green));
+        border-radius: 2px;
+        animation: fill 3s ease-in-out infinite alternate;
+        width: 60%;
+      }
+
+      @keyframes fill {
+        from {
+          width: 35%;
         }
 
-        /* grid background */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 48px 48px;
-            opacity: 0.4;
-            pointer-events: none;
+        to {
+          width: 85%;
+        }
+      }
+
+      /* steps */
+      .steps {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        margin-bottom: 2rem;
+      }
+
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+        animation: fadein 0.4s ease both;
+      }
+
+      .step:nth-child(1) {
+        animation-delay: 0.1s;
+      }
+
+      .step:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .step:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      @keyframes fadein {
+        from {
+          opacity: 0;
+          transform: translateX(-8px);
         }
 
-        /* radial glow */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(63, 185, 80, 0.07) 0%, transparent 70%);
-            pointer-events: none;
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .step-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-size: 0.6rem;
+      }
+
+      .step-icon.done {
+        background: rgba(63, 185, 80, 0.15);
+        color: var(--green);
+        border: 1px solid rgba(63, 185, 80, 0.3);
+      }
+
+      .step-icon.running {
+        background: rgba(88, 166, 255, 0.12);
+        color: var(--accent);
+        border: 1px solid rgba(88, 166, 255, 0.25);
+        animation: spin 1.5s linear infinite;
+      }
+
+      .step-icon.pending {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
         }
 
-        .wrap {
-            position: relative;
-            z-index: 1;
-            height: 100vh;
-            display: grid;
-            place-items: center;
-            padding: 2rem;
+        to {
+          transform: rotate(360deg);
         }
+      }
 
-        .card {
-            width: 100%;
-            max-width: 560px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2.5rem 2.5rem 2rem;
-            animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
+      .step.done-step {
+        color: var(--text);
+      }
 
-        @keyframes rise {
-            from {
-                opacity: 0;
-                transform: translateY(24px);
-            }
+      .step.active-step {
+        color: var(--accent);
+      }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+      /* footer */
+      .footer {
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.65rem;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+      }
 
-        /* top bar */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            padding-bottom: 1.25rem;
-            border-bottom: 1px solid var(--border);
-        }
+      .footer a {
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
 
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 8px var(--green);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-                box-shadow: 0 0 8px var(--green);
-            }
-
-            50% {
-                opacity: 0.5;
-                box-shadow: 0 0 2px var(--green);
-            }
-        }
-
-        .top-bar-text {
-            font-size: 0.7rem;
-            color: var(--muted);
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-
-        .top-bar-text span {
-            color: var(--green);
-        }
-
-        /* logo */
-        .logo {
-            font-family: 'Fraunces', serif;
-            font-size: 2.8rem;
-            font-weight: 300;
-            letter-spacing: -0.03em;
-            color: var(--text);
-            margin-bottom: 0.25rem;
-            line-height: 1;
-        }
-
-        .logo em {
-            font-style: italic;
-            color: var(--green);
-        }
-
-        .tagline {
-            font-size: 0.7rem;
-            color: var(--muted);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-bottom: 2rem;
-        }
-
-        /* message */
-        .message {
-            font-family: 'Fraunces', serif;
-            font-weight: 300;
-            font-size: 1.15rem;
-            line-height: 1.65;
-            color: var(--text);
-            margin-bottom: 1.75rem;
-        }
-
-        .message strong {
-            font-weight: 400;
-            color: var(--accent);
-        }
-
-        /* progress */
-        .progress-wrap {
-            margin-bottom: 1.75rem;
-        }
-
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.68rem;
-            color: var(--muted);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
-
-        .progress-bar {
-            height: 3px;
-            background: var(--border);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--green-dim), var(--green));
-            border-radius: 2px;
-            animation: fill 3s ease-in-out infinite alternate;
-            width: 60%;
-        }
-
-        @keyframes fill {
-            from {
-                width: 35%;
-            }
-
-            to {
-                width: 85%;
-            }
-        }
-
-        /* steps */
-        .steps {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-            margin-bottom: 2rem;
-        }
-
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.75rem;
-            color: var(--muted);
-            animation: fadein 0.4s ease both;
-        }
-
-        .step:nth-child(1) {
-            animation-delay: 0.1s;
-        }
-
-        .step:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .step:nth-child(3) {
-            animation-delay: 0.3s;
-        }
-
-        @keyframes fadein {
-            from {
-                opacity: 0;
-                transform: translateX(-8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .step-icon {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            flex-shrink: 0;
-            font-size: 0.6rem;
-        }
-
-        .step-icon.done {
-            background: rgba(63, 185, 80, 0.15);
-            color: var(--green);
-            border: 1px solid rgba(63, 185, 80, 0.3);
-        }
-
-        .step-icon.running {
-            background: rgba(88, 166, 255, 0.12);
-            color: var(--accent);
-            border: 1px solid rgba(88, 166, 255, 0.25);
-            animation: spin 1.5s linear infinite;
-        }
-
-        .step-icon.pending {
-            background: transparent;
-            color: var(--muted);
-            border: 1px solid var(--border);
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .step.done-step {
-            color: var(--text);
-        }
-
-        .step.active-step {
-            color: var(--accent);
-        }
-
-        /* footer */
-        .footer {
-            padding-top: 1.25rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.65rem;
-            color: var(--muted);
-            letter-spacing: 0.06em;
-        }
-
-        .footer a {
-            color: var(--muted);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .footer a:hover {
-            color: var(--accent);
-        }
+      .footer a:hover {
+        color: var(--accent);
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="wrap">
-        <div class="card">
-
-            <div class="top-bar">
-                <div class="dot"></div>
-                <span class="top-bar-text">Síðan er að <span>uppfærast</span></span>
-            </div>
-
-            <div class="logo">Sl<em>ó</em>ði</div>
-            <div class="tagline">Meria en bara dagskrárbanki</div>
-
-            <p class="message">
-                Við erum að keyra nokkrar uppfærslur og síðan verður komin<strong>innan skamms</strong>.<br />
-                Þetta tekur vanalega bara eina eða tvær mínútur
-            </p>
-
-            <div class="progress-wrap">
-                <div class="progress-label">
-                    <span>Uppfærsla</span>
-                    <span>í gangi…</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-            </div>
-
-            <ul class="steps">
-                <li class="step done-step">
-                    <div class="step-icon done">✓</div>
-                    <span>Gagnagrunnur uppfærður</span>
-                </li>
-                <li class="step active-step">
-                    <div class="step-icon running">↻</div>
-                    <span>Þjónar komnir í gáminn</span>
-                </li>
-                <li class="step">
-                    <div class="step-icon pending">·</div>
-                    <span>Kerfið tilbúið</span>
-                </li>
-            </ul>
-
-            <div class="footer">
-                <span>slodi.is</span>
-                <a href="mailto:slodi@skatarnir.is">hafa samband</a>
-            </div>
-
+      <div class="card">
+        <div class="top-bar">
+          <div class="dot"></div>
+          <span class="top-bar-text">Síðan er að <span>uppfærast</span></span>
         </div>
-    </div>
-</body>
 
+        <div class="logo">Sl<em>ó</em>ði</div>
+        <div class="tagline">Meria en bara dagskrárbanki</div>
+
+        <p class="message">
+          Við erum að keyra nokkrar uppfærslur og síðan verður komin<strong>innan skamms</strong
+          >.<br />
+          Þetta tekur vanalega bara eina eða tvær mínútur
+        </p>
+
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Uppfærsla</span>
+            <span>í gangi…</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+
+        <ul class="steps">
+          <li class="step done-step">
+            <div class="step-icon done">✓</div>
+            <span>Gagnagrunnur uppfærður</span>
+          </li>
+          <li class="step active-step">
+            <div class="step-icon running">↻</div>
+            <span>Þjónar komnir í gáminn</span>
+          </li>
+          <li class="step">
+            <div class="step-icon pending">·</div>
+            <span>Kerfið tilbúið</span>
+          </li>
+        </ul>
+
+        <div class="footer">
+          <span>slodi.is</span>
+          <a href="mailto:slodi@skatarnir.is">hafa samband</a>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

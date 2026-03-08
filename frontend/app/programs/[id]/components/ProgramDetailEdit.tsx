@@ -15,7 +15,6 @@ function parseDuration(val: string | null | undefined): [string, string] {
   return [(parts[0] ?? "").trim(), (parts[1] ?? "").trim()];
 }
 
-
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const AGE_GROUPS = [
@@ -158,9 +157,10 @@ export default function ProgramDetailEdit({
         form.prepTimeMin || form.prepTimeMax
           ? `${[form.prepTimeMin, form.prepTimeMax].filter(Boolean).join("–")} mín`
           : null,
-      age: form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
-        ? form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
-        : null,
+      age:
+        form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
+          ? form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
+          : null,
       location: form.location.trim() || null,
       count: form.countMin !== "" ? Number(form.countMin) : null,
       price: form.price !== "" ? Number(form.price) : null,
