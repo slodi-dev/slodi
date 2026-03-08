@@ -9,13 +9,9 @@ This module provides:
 """
 
 import asyncio
-import contextlib
-import json
 import logging
-import os
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from threading import Lock
 from uuid import UUID
 
@@ -30,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.config import settings
 from app.core.db import get_session
+from app.core.seed import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
 from app.schemas.user import UserCreate, UserOut
 from app.services.groups import GroupService
@@ -281,20 +278,8 @@ def verify_auth0_token(token: str) -> TokenPayload:
 # ---------------------------------------------------------------------------
 
 
-_SEED_OUTPUT = Path(__file__).parent.parent.parent / "seed_output.json"
-
-
-def _get_default_workspace_id() -> UUID | None:
-    ws_id = os.getenv("DEFAULT_WORKSPACE_ID")
-    if not ws_id and _SEED_OUTPUT.exists():
-        with contextlib.suppress(Exception):
-            ws_id = json.loads(_SEED_OUTPUT.read_text()).get("dagskrarbankinn_workspace_id")
-    if ws_id:
-        try:
-            return UUID(ws_id)
-        except ValueError:
-            pass
-    return None
+# Resolved once at startup — this is a deployment-time constant
+_DEFAULT_WORKSPACE_ID: UUID | None = get_default_workspace_id()
 
 
 async def get_current_user(
@@ -385,20 +370,17 @@ async def get_current_user(
     user_data = UserCreate(auth0_id=auth0_id, email=email, name=name)
     user = await user_service.create(user_data)
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create user",
-        )
-
-    default_ws_id = _get_default_workspace_id()
-    if default_ws_id:
+    if _DEFAULT_WORKSPACE_ID:
         try:
             ws_service = WorkspaceService(session)
-            await ws_service.add_member(default_ws_id, user.id, WorkspaceRole.viewer)
+            await ws_service.set_member_role(_DEFAULT_WORKSPACE_ID, user.id, WorkspaceRole.viewer)
+            logger.info("Added new user %s to default workspace %s", user.id, _DEFAULT_WORKSPACE_ID)
         except Exception:
             logger.warning(
-                "Failed to add new user %s to default workspace %s", user.id, default_ws_id
+                "Failed to add new user %s to default workspace %s",
+                user.id,
+                _DEFAULT_WORKSPACE_ID,
+                exc_info=True,
             )
 
     await user_cache.set(auth0_id, user)
