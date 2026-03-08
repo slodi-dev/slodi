@@ -62,6 +62,10 @@ class WorkspaceService:
         await self.repo.delete(workspace_id)
         await self.session.commit()
 
+    async def add_member(self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole) -> None:
+        await self.repo.add_member(workspace_id, user_id, role)
+        await self.session.commit()
+
     async def find_user_role(self, workspace_id: UUID, user_id: UUID) -> WorkspaceRole | None:
         """Return the user's workspace role, or None if not a member. Does not raise on miss."""
         membership = await self.repo.get_user_membership(workspace_id, user_id)

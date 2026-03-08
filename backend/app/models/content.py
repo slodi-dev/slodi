@@ -10,15 +10,15 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
 import logging
 
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
-
-logger = logging.getLogger(__name__)
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
+
+logger = logging.getLogger(__name__)
 
 from app.domain.content_constraints import (
     DESC_MAX,
