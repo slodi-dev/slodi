@@ -43,7 +43,7 @@ services:
         uv run alembic upgrade head &&
         echo '✅ Migrations complete!' &&
         echo '🌱 Running seed...' &&
-        PYTHONPATH=. uv run python seed.py &&
+        PYTHONPATH=. uv run python scripts/seed.py &&
         echo '✅ Seed complete!'
       "
     networks:
