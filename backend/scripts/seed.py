@@ -3,7 +3,7 @@ Seed script: creates the default 'slodi' system user and
 the 'Dagskrárbankinn' workspace, then persists their IDs to seed_output.json.
 
 Usage:
-    PYTHONPATH=. uv run python seed.py
+    PYTHONPATH=. uv run python scripts/seed.py
 or via the Makefile:
     make seed
 """
@@ -41,7 +41,7 @@ WORKSPACE_NAME = "Dagskrárbankinn"
 
 DEFAULT_TAGS = ["Leikir", "Útivist", "Samfélagsverkefni"]
 
-_default_output_dir = str(Path(__file__).parent)
+_default_output_dir = str(Path(__file__).parent.parent)
 OUTPUT_FILE = Path(os.getenv("SEED_OUTPUT_DIR", _default_output_dir)) / "seed_output.json"
 
 # Emails that should always be promoted to admin (from ADMIN_EMAILS in .env), or if that value is not found we add halldor@svanir.is

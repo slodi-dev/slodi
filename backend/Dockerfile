@@ -18,7 +18,7 @@ RUN uv sync --no-dev
 
 COPY alembic ./alembic
 COPY app ./app
-COPY seed.py ./
+COPY scripts ./scripts
 
 # ── Stage: test ──────────────────────────────────────────
 # Includes dev/test dependencies, runs pytest

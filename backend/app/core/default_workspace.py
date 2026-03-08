@@ -1,4 +1,4 @@
-"""Utilities for reading the seed_output.json produced by seed.py.
+"""Utilities for reading the seed_output.json produced by scripts/seed.py.
 
 Both auth.py (startup resolution) and routers/config.py (public endpoint)
 need to read this file — this module is the single source of truth for that
@@ -16,7 +16,7 @@ from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
-# JSON key written by seed.py for the default workspace ID
+# JSON key written by scripts/seed.py for the default workspace ID
 SEED_KEY_DEFAULT_WS = "dagskrarbankinn_workspace_id"
 
 _default_seed_dir = str(Path(__file__).parent.parent.parent)

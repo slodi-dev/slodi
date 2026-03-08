@@ -24,14 +24,14 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import CACHE_MISS, membership_cache, user_cache
-from app.core.config import settings
 from app.core.db import get_session
-from app.core.seed import get_default_workspace_id
+from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
 from app.schemas.user import UserCreate, UserOut
 from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
 
