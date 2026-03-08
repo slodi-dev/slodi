@@ -9,6 +9,7 @@ services:
     volumes:
       - ./backend/app:/app/app      # Hot reload app code
       - ./backend/alembic:/app/alembic
+      - ./backend/seed.py:/app/seed.py
     command: >
       uv run uvicorn app.main:app
         --host 0.0.0.0

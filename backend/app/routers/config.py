@@ -14,8 +14,9 @@ from pydantic import BaseModel
 
 router = APIRouter(tags=["config"])
 
-# Seed output written by seed.py at container startup
-_SEED_OUTPUT = Path(__file__).parent.parent.parent / "seed_output.json"
+# Seed output written by seed.py — location controlled by SEED_OUTPUT_DIR env var
+_default_seed_dir = str(Path(__file__).parent.parent.parent)
+_SEED_OUTPUT = Path(os.getenv("SEED_OUTPUT_DIR", _default_seed_dir)) / "seed_output.json"
 
 
 class PublicConfig(BaseModel):
