@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: slodi_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-slodi_password}
     ports:
-      - "${DB_EXPOSE_PORT:-5454}:5432"
+      - "${DB_EXPOSE_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -88,8 +88,8 @@ services:
       target: production
       args:
         # NEXT_PUBLIC_API_URL is baked into the client bundle at build time.
-        # Must be reachable from the browser — use localhost, not the internal Docker hostname.
-        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        # Must be reachable from the browser — set this in your .env file on each machine.
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: slodi-frontend
     env_file:
       - ./frontend/.env.docker
