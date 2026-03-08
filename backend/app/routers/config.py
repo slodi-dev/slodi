@@ -10,7 +10,7 @@ import logging
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.core.seed import SEED_KEY_DEFAULT_WS, read_seed_output
+from app.core.default_workspace import SEED_KEY_DEFAULT_WS, read_seed_output
 
 logger = logging.getLogger(__name__)
 

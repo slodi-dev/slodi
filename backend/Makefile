@@ -38,7 +38,7 @@ run:
 	PYTHONPATH=. uv run uvicorn app.main:app --reload
 
 seed:
-	PYTHONPATH=. uv run python seed.py
+	PYTHONPATH=. uv run python scripts/seed.py
 
 # Docker commands
 docker-build:
