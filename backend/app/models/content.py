@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -10,15 +11,11 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy import Enum as SAEnum
-import logging
-
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
-
-logger = logging.getLogger(__name__)
 
 from app.domain.content_constraints import (
     DESC_MAX,
@@ -38,6 +35,8 @@ if TYPE_CHECKING:
     from .tag import ContentTag, Tag
     from .user import User
     from .workspace import Workspace
+
+logger = logging.getLogger(__name__)
 
 
 class Content(SoftDeleteMixin, Base):

@@ -9,6 +9,7 @@ This module provides:
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -286,10 +287,8 @@ _SEED_OUTPUT = Path(__file__).parent.parent.parent / "seed_output.json"
 def _get_default_workspace_id() -> UUID | None:
     ws_id = os.getenv("DEFAULT_WORKSPACE_ID")
     if not ws_id and _SEED_OUTPUT.exists():
-        try:
+        with contextlib.suppress(Exception):
             ws_id = json.loads(_SEED_OUTPUT.read_text()).get("dagskrarbankinn_workspace_id")
-        except Exception:
-            pass
     if ws_id:
         try:
             return UUID(ws_id)
