@@ -102,6 +102,16 @@ class ProgramService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
         prog, _ = row
         patch = data.model_dump(exclude_unset=True, exclude={"tag_names"})
+        logger.info(
+            "[programs.py update] patch after model_dump: %r",
+            patch,
+        )
+        if "age" in patch:
+            logger.info(
+                "[programs.py update] age values: %r (types: %s)",
+                patch["age"],
+                [type(v).__name__ for v in (patch["age"] or [])],
+            )
         for k, v in patch.items():
             setattr(prog, k, v)
         if "tag_names" in data.model_fields_set:

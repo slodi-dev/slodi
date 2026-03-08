@@ -56,13 +56,13 @@ class EventInterval(str, Enum):
 
 
 class AgeGroup(str, Enum):
-    hrefnuskaatar = "Hrefnuskátar"
-    drekaskaatar = "Drekaskátar"
-    falkaskaatar = "Fálkaskátar"
-    drottskaatar = "Dróttskátar"
-    rekkaskaatar = "Rekkaskátar"
-    roverskaatar = "Róverskátar"
-    vaettaskaatar = "Vættaskátar"
+    hrefnuskatar = "Hrefnuskátar"
+    drekaskatar = "Drekaskátar"
+    falkaskatar = "Fálkaskátar"
+    drottskatar = "Dróttskátar"
+    rekkaskatar = "Rekkaskátar"
+    roverskatar = "Róverskátar"
+    vaettaskatar = "Vættaskátar"
 
 
 # ----- #

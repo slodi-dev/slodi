@@ -29,7 +29,7 @@ export type Program = {
   equipment?: string[] | null;
   duration?: string | null;
   prep_time?: string | null;
-  age?: string | null;
+  age?: string[] | null;
   location?: string | null;
   count?: number | null;
   price?: number | null;
@@ -43,7 +43,7 @@ export type ProgramCreateInput = {
   equipment?: string[];
   duration?: string;
   prep_time?: string;
-  age?: string;
+  age?: string[];
   location?: string;
   count?: number;
   price?: number;
@@ -60,7 +60,7 @@ export type ProgramUpdateInput = {
   equipment?: string[] | null;
   duration?: string | null;
   prep_time?: string | null;
-  age?: string | null;
+  age?: string[] | null;
   location?: string | null;
   count?: number | null;
   price?: number | null;
@@ -132,7 +132,7 @@ export async function createProgram(
     equipment: input.equipment && input.equipment.length > 0 ? input.equipment : null,
     duration: input.duration?.trim() || null,
     prep_time: input.prep_time?.trim() || null,
-    age: input.age?.trim() || null,
+    age: input.age && input.age.length > 0 ? input.age : null,
     location: input.location?.trim() || null,
     count: input.count ?? null,
     price: input.price ?? null,

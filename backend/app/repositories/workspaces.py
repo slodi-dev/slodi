@@ -91,6 +91,13 @@ class WorkspaceRepository(Repository):
         assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
+    async def add_member(
+        self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
+    ) -> WorkspaceMembership:
+        membership = WorkspaceMembership(workspace_id=workspace_id, user_id=user_id, role=role)
+        await self.add(membership)
+        return membership
+
     async def get_user_membership(
         self, workspace_id: UUID, user_id: UUID
     ) -> WorkspaceMembership | None:

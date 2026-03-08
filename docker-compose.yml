@@ -82,8 +82,8 @@ services:
       target: production
       args:
         # NEXT_PUBLIC_* vars are baked in at build time by Next.js
-        # This pulls from frontend/.env or falls back to localhost
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://backend:8000}
+        # Pass frontend/.env with: docker compose --env-file frontend/.env ...
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     container_name: slodi-frontend
     env_file:
       - ./frontend/.env
