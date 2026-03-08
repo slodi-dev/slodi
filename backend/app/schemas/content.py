@@ -55,7 +55,7 @@ ImageStr = Annotated[
 
 
 class ContentBase(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     description: DescStr | None = None
     equipment: list[str] | None = None
@@ -80,14 +80,14 @@ class ContentBase(BaseModel):
 
 
 class ContentCreate(ContentBase):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
 
 class ContentUpdate(ContentBase):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr | None = None
 
@@ -95,7 +95,7 @@ class ContentUpdate(ContentBase):
 class ContentListOut(BaseModel):
     """Content details for list views, without author info or comments."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: UUID
     name: NameStr

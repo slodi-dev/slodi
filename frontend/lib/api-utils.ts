@@ -10,8 +10,8 @@ const getApiBase = (): string => {
     return process.env.NEXT_PUBLIC_API_URL || window.location.origin;
   }
 
-  // On server side, use NEXT_PUBLIC_API_URL or fallback
-  return process.env.NEXT_PUBLIC_API_URL || "http://backend:3000";
+  // On server side, prefer internal Docker URL for SSR, then public URL
+  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
 };
 
 const API_BASE = getApiBase();
@@ -161,7 +161,7 @@ export function buildApiUrl(endpoint: string, baseUrl: string = API_BASE): strin
     baseUrl =
       typeof window !== "undefined"
         ? window.location.origin
-        : process.env.NEXT_PUBLIC_API_URL || "http://backend:3000";
+        : process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
   }
 
   // Remove leading slash from endpoint if present

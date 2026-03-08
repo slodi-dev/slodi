@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -12,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
 
@@ -34,6 +35,8 @@ if TYPE_CHECKING:
     from .tag import ContentTag, Tag
     from .user import User
     from .workspace import Workspace
+
+logger = logging.getLogger(__name__)
 
 
 class Content(SoftDeleteMixin, Base):
@@ -71,7 +74,14 @@ class Content(SoftDeleteMixin, Base):
     )
     duration: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
     age: Mapped[list[AgeGroup] | None] = mapped_column(
-        ARRAY(SAEnum(AgeGroup, name="age_group_enum", create_type=False)),
+        ARRAY(
+            SAEnum(
+                AgeGroup,
+                name="age_group_enum",
+                create_type=False,
+                values_callable=lambda obj: [e.value for e in obj],
+            )
+        ),
         nullable=True,
     )
     location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
@@ -107,6 +117,35 @@ class Content(SoftDeleteMixin, Base):
     content_tags: Mapped[list[ContentTag]] = relationship(
         back_populates="content", cascade="all, delete-orphan"
     )
+
+    @validates("age")
+    def coerce_age(self, key: str, value: list | None) -> list[str] | None:
+        """Normalize age values to the Icelandic enum value strings expected by PostgreSQL.
+
+        Pydantic v2 model_dump() serializes StrEnum members using .name (e.g.
+        "hrefnuskatar") rather than .value (e.g. "Hrefnuskátar") in Python mode.
+        psycopg3 also uses .name when adapting Python enum.Enum objects.
+        This validator normalizes all three possible input forms to the plain string
+        values that the PostgreSQL age_group_enum type expects.
+        """
+        logger.info(
+            "[content.py coerce_age] incoming value: %r (types: %s)",
+            value,
+            [type(v).__name__ for v in (value or [])],
+        )
+        if value is None:
+            return None
+        result = []
+        for v in value:
+            if isinstance(v, AgeGroup):
+                result.append(v.value)
+            else:
+                try:
+                    result.append(AgeGroup(v).value)  # already a valid value string
+                except ValueError:
+                    result.append(AgeGroup[v].value)  # a member name string
+        logger.info("[content.py coerce_age] outgoing result: %r", result)
+        return result
 
     # Properties for serialization
     @property

@@ -9,9 +9,13 @@ This module provides:
 """
 
 import asyncio
+import contextlib
+import json
 import logging
+import os
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from threading import Lock
 from uuid import UUID
 
@@ -277,6 +281,22 @@ def verify_auth0_token(token: str) -> TokenPayload:
 # ---------------------------------------------------------------------------
 
 
+_SEED_OUTPUT = Path(__file__).parent.parent.parent / "seed_output.json"
+
+
+def _get_default_workspace_id() -> UUID | None:
+    ws_id = os.getenv("DEFAULT_WORKSPACE_ID")
+    if not ws_id and _SEED_OUTPUT.exists():
+        with contextlib.suppress(Exception):
+            ws_id = json.loads(_SEED_OUTPUT.read_text()).get("dagskrarbankinn_workspace_id")
+    if ws_id:
+        try:
+            return UUID(ws_id)
+        except ValueError:
+            pass
+    return None
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),  # noqa: B008
     session: AsyncSession = Depends(get_session),  # noqa: B008
@@ -370,6 +390,16 @@ async def get_current_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create user",
         )
+
+    default_ws_id = _get_default_workspace_id()
+    if default_ws_id:
+        try:
+            ws_service = WorkspaceService(session)
+            await ws_service.add_member(default_ws_id, user.id, WorkspaceRole.viewer)
+        except Exception:
+            logger.warning(
+                "Failed to add new user %s to default workspace %s", user.id, default_ws_id
+            )
 
     await user_cache.set(auth0_id, user)
     return user
