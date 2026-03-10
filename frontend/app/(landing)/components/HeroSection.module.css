@@ -165,27 +165,12 @@
   min-height: 400px;
 }
 
-.placeholder {
+.logo {
   width: 100%;
-  max-width: 500px;
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary))
-  );
-  border-radius: var(--sl-radius-card);
-  border: 2px dashed hsl(var(--sl-color-border));
-}
-
-.placeholderIcon {
-  width: 120px;
-  height: 120px;
-  color: hsl(var(--sl-color-text-tertiary));
-  opacity: var(--sl-primitive-opacity-40);
+  max-width: 320px;
+  height: auto;
+  color: hsl(var(--sl-color-primary));
+  transition: color var(--sl-transition-base);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -328,13 +313,8 @@
     min-height: 350px;
   }
 
-  .placeholder {
-    max-width: 450px;
-  }
-
-  .placeholderIcon {
-    width: 100px;
-    height: 100px;
+  .logo {
+    max-width: 280px;
   }
 }
 
@@ -382,9 +362,8 @@
     min-height: 320px;
   }
 
-  .placeholderIcon {
-    width: 90px;
-    height: 90px;
+  .logo {
+    max-width: 250px;
   }
 }
 
@@ -435,9 +414,8 @@
     order: -1; /* Move visual above content on mobile */
   }
 
-  .placeholderIcon {
-    width: 80px;
-    height: 80px;
+  .logo {
+    max-width: 200px;
   }
 
   /* Larger touch target for scroll indicator on mobile */
