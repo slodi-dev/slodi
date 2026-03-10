@@ -12,6 +12,7 @@ export default async function DevPage() {
   return (
     <main className={styles.main}>
       <h1 className={styles.title}>Verkbók</h1>
+      <p>test</p>
       <DevlogClient initialItems={items} total={total} pageSize={PAGE_SIZE} />
     </main>
   );
