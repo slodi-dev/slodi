@@ -13,6 +13,7 @@ export default async function DevPage() {
     <main className={styles.main}>
       <p>This is a test to see if the automatic deployment on Azure VM works correctly.</p>
       <h1 className={styles.title}>Verkbók</h1>
+      <p>test</p>
       <DevlogClient initialItems={items} total={total} pageSize={PAGE_SIZE} />
     </main>
   );
