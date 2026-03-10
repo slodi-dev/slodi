@@ -12,7 +12,7 @@ export function ProgramsHeader({ onNewProgram }: ProgramsHeaderProps) {
         <svg className={styles.fabIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
-        <span className={styles.fabLabel}>Bæta við dagskrá</span>
+        <span className={styles.fabLabel}>Bæta við í dagskrá</span>
       </button>
     </>
   );
