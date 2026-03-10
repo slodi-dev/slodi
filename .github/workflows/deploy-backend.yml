@@ -24,7 +24,7 @@ jobs:
           script: |
             cd ~/slodi
             git pull origin main
-            docker compose up -d --build migrations backend
+            docker compose -f docker-compose.yml up -d --build migrations backend
             docker image prune -f
       - name: Notify Discord
         if: always()
