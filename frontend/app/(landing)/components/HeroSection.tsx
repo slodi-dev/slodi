@@ -73,26 +73,17 @@ export default function HeroSection({ onEmailSignupClick }: HeroSectionProps) {
           </nav>
         </div>
 
-        <figure className={styles.visual} aria-label="Skátalíkan">
-          {/* Placeholder for hero image or illustration */}
-          <div className={styles.placeholder}>
-            <svg
-              className={styles.placeholderIcon}
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              role="img"
-              aria-label="Kort tákn"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
-          </div>
+        <figure className={styles.visual} aria-label="Slóði merki">
+          <svg
+            className={styles.logo}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 204.3 186.3"
+            fill="currentColor"
+            role="img"
+            aria-label="Slóði"
+          >
+            <path d="m151 186.3-11.7-.1 2.9-2.3c18-14.4 25.7-31.2 20.7-45-3-8.1-10.8-16-22.1-22.1-7.8-4.2-14.4-6.9-33.6-13.5-12-4.1-18.9-7.4-21.6-10.3-2.2-2.4-2.4-4.2-.9-7.3 2.7-5.3 12.6-12.5 22.7-16.4l2.6-1-2 .2c-2.6.2-10.4 1.5-13.2 2.2-14.6 3.7-26.8 9.2-33.3 14.8-6.8 6-7.7 12.7-2.4 18.7 4.2 4.6 8.3 7.4 23.2 15.2 4.5 2.4 10.4 5.8 12.8 7.4 1.3.9 3.6 2.8 5.1 4.3 2.2 2.2 2.8 3 3.7 4.8.9 1.9 1 2.4 1.1 4.7.2 4.8-1.7 8.7-6.6 14-8.1 8.8-26.3 19.3-51.7 30-4 1.7-6.2 2-8.2 1.3-1.2-.5-3-2-3.5-3.1-.2-.4-8.2-24.1-17.7-52.8C1 81 0 77.8 0 76.1c0-2.2.6-3.6 2.2-5.1.5-.5 5-3.9 10-7.4 4.9-3.6 12.6-9.1 17-12.4 8.3-6 13-9.4 15.8-11.4.9-.6 8.5-6.2 16.9-12.3 8.4-6.2 16.4-12 17.7-12.9 1.3-1 3-2.2 3.8-2.8 11.2-8.1 15.3-11 16.2-11.4 1.3-.4 3.4-.5 4.8-.1.5.1 2.6 1.5 4.7 3 2 1.5 6 4.4 8.8 6.4 2.8 2 7.1 5.1 9.5 6.9 2.4 1.8 5.2 3.8 6.2 4.5 1.9 1.4 16 11.6 20.8 15.1 5.2 3.8 22.4 16.3 25.5 18.6 10 7.2 21.3 15.5 22.1 16.2 2.4 2.3 2.9 4.7 1.8 8.4-3.2 10.2-33.9 102-34.6 103.3-1 1.9-2.9 3.2-5.2 3.6-.7.1-6.5.1-13 0z" />
+          </svg>
         </figure>
       </div>
 
