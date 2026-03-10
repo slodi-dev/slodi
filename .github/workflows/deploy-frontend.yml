@@ -1,0 +1,36 @@
+name: Deploy Frontend
+
+on:
+  workflow_run:
+    workflows:
+      - "Frontend CI"
+    branches:
+      - main
+    types:
+      - completed
+
+jobs:
+  deploy:
+    name: Deploy Frontend to Azure VM
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          script: |
+            cd ~/slodi
+            git pull origin main
+            docker compose up -d --build frontend
+            docker image prune -f
+      - name: Notify Discord
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Deploy Frontend"
+          description: "Commit: `${{ github.event.workflow_run.head_sha }}`"
