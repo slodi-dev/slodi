@@ -7,7 +7,7 @@ import ProgramDetailTabs from "../components/ProgramDetailTabs";
 import ProgramQuickInfo from "../components/ProgramQuickInfo";
 import styles from "./program-detail.module.css";
 import { useProgram } from "@/hooks/useProgram";
-import { useProgramLikes } from "@/hooks/useProgramLikes";
+import { useLikes } from "@/contexts/LikesContext";
 import { Breadcrumb } from "@/app/programs/components/Breadcrumb";
 import { ROUTES } from "@/constants/routes";
 import { useProgramActions } from "@/hooks/useProgramActions";
@@ -41,7 +41,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { program, isLoading, error, setProgram } = useProgram(id);
-  const { likeCount, isLiked, toggleLike } = useProgramLikes(program?.like_count || 0);
+  const { likeCount, isLiked, toggleLike } = useLikes(id, program?.like_count || 0);
   const { handleShare, handleAddToWorkspace, handleBack } = useProgramActions(program);
   const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
 

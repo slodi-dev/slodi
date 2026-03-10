@@ -1,11 +1,16 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { toggleProgramLike } from "@/services/programs.service";
+import { likeProgram, unlikeProgram } from "@/services/programs.service";
 import { useAuth } from "@/hooks/useAuth";
 
+interface LikeEntry {
+  liked: boolean;
+  count: number;
+}
+
 interface LikesContextValue {
-  likedPrograms: Map<string, number>; // programId -> like_count
+  likedPrograms: Map<string, LikeEntry>;
   isLiked: (programId: string) => boolean;
   getLikeCount: (programId: string) => number | undefined;
   toggleLike: (programId: string, currentCount: number) => Promise<void>;
@@ -16,27 +21,26 @@ const LikesContext = createContext<LikesContextValue | undefined>(undefined);
 
 export function LikesProvider({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth();
-  const [likedPrograms, setLikedPrograms] = useState<Map<string, number>>(new Map());
+  const [likedPrograms, setLikedPrograms] = useState<Map<string, LikeEntry>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load liked programs from backend on mount
   useEffect(() => {
     loadLikedPrograms();
   }, []);
 
   const loadLikedPrograms = async () => {
     try {
-      // TODO: Replace with actual API call when backend is ready
-      // const response = await fetch('/api/users/me/likes');
-      // const data = await response.json();
-      // const likedMap = new Map(data.map((item: any) => [item.programId, item.likeCount]));
-      // setLikedPrograms(likedMap);
-
-      // For now, load from localStorage as fallback
       const stored = localStorage.getItem("liked-programs");
       if (stored) {
         const parsed = JSON.parse(stored);
-        setLikedPrograms(new Map(Object.entries(parsed)));
+        const entries: [string, LikeEntry][] = Object.entries(parsed).map(([id, val]) => {
+          // Handle old format (number) and new format ({ liked, count })
+          if (typeof val === "number") {
+            return [id, { liked: true, count: val }];
+          }
+          return [id, val as LikeEntry];
+        });
+        setLikedPrograms(new Map(entries));
       }
     } catch (error) {
       console.error("Failed to load liked programs:", error);
@@ -47,77 +51,57 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
 
   const isLiked = useCallback(
     (programId: string) => {
-      return likedPrograms.has(programId);
+      return likedPrograms.get(programId)?.liked ?? false;
     },
     [likedPrograms]
   );
 
   const getLikeCount = useCallback(
     (programId: string) => {
-      return likedPrograms.get(programId);
+      return likedPrograms.get(programId)?.count;
     },
     [likedPrograms]
   );
 
   const toggleLike = async (programId: string, currentCount: number) => {
-    const wasLiked = likedPrograms.has(programId);
+    const current = likedPrograms.get(programId);
+    const wasLiked = current?.liked ?? false;
     const newCount = wasLiked ? currentCount - 1 : currentCount + 1;
+    const newEntry: LikeEntry = { liked: !wasLiked, count: newCount };
 
     // Optimistic update
     setLikedPrograms((prev) => {
       const next = new Map(prev);
-      if (wasLiked) {
-        next.delete(programId);
-      } else {
-        next.set(programId, newCount);
-      }
+      next.set(programId, newEntry);
       return next;
     });
 
-    // Persist to localStorage immediately
-    const updatedMap = new Map(likedPrograms);
-    if (wasLiked) {
-      updatedMap.delete(programId);
-    } else {
-      updatedMap.set(programId, newCount);
-    }
-    localStorage.setItem("liked-programs", JSON.stringify(Object.fromEntries(updatedMap)));
+    // Persist to localStorage
+    setLikedPrograms((prev) => {
+      localStorage.setItem(
+        "liked-programs",
+        JSON.stringify(Object.fromEntries(prev))
+      );
+      return prev;
+    });
 
     try {
-      const data = await toggleProgramLike(programId, wasLiked ? "unlike" : "like", getToken);
-
-      // Update with actual count from server
-      setLikedPrograms((prev) => {
-        const next = new Map(prev);
-        if (data.liked) {
-          next.set(programId, data.likeCount);
-        } else {
-          next.delete(programId);
-        }
-        return next;
-      });
+      if (wasLiked) {
+        await unlikeProgram(programId, getToken);
+      } else {
+        await likeProgram(programId, getToken);
+      }
     } catch (error) {
       // Revert optimistic update on error
+      const revertEntry: LikeEntry = { liked: wasLiked, count: currentCount };
       setLikedPrograms((prev) => {
         const next = new Map(prev);
-        if (wasLiked) {
-          next.set(programId, currentCount);
-        } else {
-          next.delete(programId);
-        }
+        next.set(programId, revertEntry);
+        localStorage.setItem("liked-programs", JSON.stringify(Object.fromEntries(next)));
         return next;
       });
 
-      // Revert localStorage
-      if (wasLiked) {
-        likedPrograms.set(programId, currentCount);
-      } else {
-        likedPrograms.delete(programId);
-      }
-      localStorage.setItem("liked-programs", JSON.stringify(Object.fromEntries(likedPrograms)));
-
       console.error("Failed to toggle like:", error);
-      // You could show a toast notification here
     }
   };
 
@@ -144,9 +128,11 @@ export function useLikes(programId: string, initialCount: number = 0) {
     setMounted(true);
   }, []);
 
+  const currentCount = mounted ? (getLikeCount(programId) ?? initialCount) : initialCount;
+
   return {
-    likeCount: mounted ? (getLikeCount(programId) ?? initialCount) : initialCount,
+    likeCount: currentCount,
     isLiked: mounted ? contextIsLiked(programId) : false,
-    toggleLike: () => contextToggleLike(programId, initialCount),
+    toggleLike: () => contextToggleLike(programId, currentCount),
   };
 }
