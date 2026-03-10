@@ -1,0 +1,57 @@
+jobs:
+  check-both-ci:
+    name: Verify all CI passed
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+    steps:
+      - name: Check all required workflows passed
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflows = ['Backend CI', 'Frontend CI'];
+            const sha = context.payload.workflow_run.head_sha;
+            let allPassed = true;
+
+            for (const name of workflows) {
+              const runs = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head_sha: sha,
+              });
+              const run = runs.data.workflow_runs.find(r => r.name === name);
+              if (!run || run.conclusion !== 'success') {
+                console.log(`${name}: ${run?.conclusion ?? 'not found'}`);
+                allPassed = false;
+              }
+            }
+
+            core.setOutput('should_deploy', allPassed ? 'true' : 'false');
+
+  deploy:
+    name: Deploy to Azure VM
+    needs: check-both-ci
+    runs-on: ubuntu-latest
+    if: ${{ needs.check-both-ci.outputs.should_deploy == 'true' }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          script: |
+            cd ~/slodi
+            git pull origin main
+            docker compose -f docker-compose.yml up -d --build
+            docker image prune -f
+      - name: Notify Discord
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Deploy to Production"
+          description: "Commit: `${{ github.event.workflow_run.head_sha }}`"
