@@ -91,12 +91,13 @@ class WorkspaceRepository(Repository):
         assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
-    async def add_member(
-        self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
-    ) -> WorkspaceMembership:
-        membership = WorkspaceMembership(workspace_id=workspace_id, user_id=user_id, role=role)
-        await self.add(membership)
-        return membership
+    async def get_workspace_owner(self, workspace_id: UUID) -> WorkspaceMembership | None:
+        stmt = select(WorkspaceMembership).where(
+            WorkspaceMembership.workspace_id == workspace_id,
+            WorkspaceMembership.role == WorkspaceRole.owner,
+        )
+        res = await self.session.execute(stmt)
+        return res.scalars().first()
 
     async def get_user_membership(
         self, workspace_id: UUID, user_id: UUID
@@ -106,3 +107,14 @@ class WorkspaceRepository(Repository):
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
+
+    async def set_member_role(
+        self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
+    ) -> WorkspaceMembership:
+        membership = await self.get_user_membership(workspace_id, user_id)
+        if membership:
+            membership.role = role
+        else:
+            membership = WorkspaceMembership(workspace_id=workspace_id, user_id=user_id, role=role)
+            await self.add(membership)
+        return membership

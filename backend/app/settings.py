@@ -18,14 +18,6 @@ class Settings(BaseSettings):
     logger_file: str | None = Field(None, alias="LOGGER_FILE")
     db_url: str = ""
 
-    # Test database configuration (optional — not required in production)
-    test_db_name: str | None = Field(None, alias="TEST_DB_NAME")
-    test_db_user: str | None = Field(None, alias="TEST_DB_USER")
-    test_db_password: str | None = Field(None, alias="TEST_DB_PASSWORD")
-    test_db_port: str | None = Field(None, alias="TEST_DB_PORT")
-    test_db_host: str | None = Field(None, alias="TEST_DB_HOST")
-    test_db_url: str = ""
-
     # Auth0 configuration
     auth0_domain: str = Field(..., alias="AUTH0_DOMAIN")
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
@@ -58,18 +50,6 @@ class Settings(BaseSettings):
     def model_post_init(self, __context: object) -> None:
         # Production database URL
         self.db_url = f"postgresql+psycopg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
-
-        # Test database URL (only built when test DB vars are present)
-        if all(
-            [
-                self.test_db_user,
-                self.test_db_password,
-                self.test_db_host,
-                self.test_db_port,
-                self.test_db_name,
-            ]
-        ):
-            self.test_db_url = f"postgresql+psycopg://{self.test_db_user}:{self.test_db_password}@{self.test_db_host}:{self.test_db_port}/{self.test_db_name}"
 
 
 settings: Settings = Settings()  # type: ignore[call-arg]

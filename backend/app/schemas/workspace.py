@@ -86,7 +86,7 @@ class WorkspaceMembershipCreate(WorkspaceMembershipBase):
 
 
 class WorkspaceMembershipUpdate(BaseModel):
-    role: WorkspaceRole | None = None
+    role: WorkspaceRole
 
 
 class WorkspaceMembershipOut(WorkspaceMembershipBase):
