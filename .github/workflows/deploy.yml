@@ -23,19 +23,27 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const workflows = ['Backend CI', 'Frontend CI'];
             const sha = context.payload.workflow_run.head_sha;
+            const requiredWorkflows = ['Backend CI', 'Frontend CI'];
             let allPassed = true;
-            for (const name of workflows) {
-              const runs = await github.rest.actions.listWorkflowRunsForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                head_sha: sha,
-              });
-              const run = runs.data.workflow_runs.find(r => r.name === name);
-              if (!run || run.conclusion !== 'success') {
-                console.log(`${name}: ${run?.conclusion ?? 'not found'}`);
+
+            // List all check suites for this commit to find workflow conclusions
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: sha,
+              status: 'completed',
+            });
+
+            for (const name of requiredWorkflows) {
+              const run = runs.data.workflow_runs.find(
+                r => r.name === name && r.head_sha === sha && r.conclusion === 'success'
+              );
+              if (!run) {
+                console.log(`${name}: not found or not successful for SHA ${sha}`);
                 allPassed = false;
+              } else {
+                console.log(`${name}: success`);
               }
             }
             core.setOutput('should_deploy', allPassed ? 'true' : 'false');
