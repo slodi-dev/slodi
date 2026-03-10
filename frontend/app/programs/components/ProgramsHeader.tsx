@@ -5,7 +5,7 @@ interface ProgramsHeaderProps {
   onNewProgram: () => void;
 }
 
-export function ProgramsHeader({ onNewProgram }: ProgramsHeaderProps) {
+export function ProgramsHeader({ onNewProgram }: ProgramsHeaderProps) { 
   return (
     <>
       <button className={styles.fab} onClick={onNewProgram} aria-label="Bæta við dagskrá">
