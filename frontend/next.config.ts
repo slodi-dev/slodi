@@ -2,32 +2,22 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // TODO: Wildcard allows any HTTPS image URL, which exposes the Next.js image
+    // endpoint to SSRF and bandwidth abuse. This is acceptable short-term given
+    // the small authenticated audience, but should be replaced once we have a
+    // dedicated image hosting solution (e.g. S3/Cloudinary) — at which point this
+    // can be locked down to a single known hostname.
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "cdn.example.com",
-      },
-      {
-        protocol: "https",
-        hostname: "avatars.githubusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.aha.is",
-      },
-      {
-        protocol: "https",
-        hostname: "shedknives.com",
+        hostname: "**",
       },
     ],
+    // Limit cached variants to common screen widths — reduces cache storage per image.
+    deviceSizes: [640, 828, 1080, 1200],
+    // Cache optimized images for 1 hour. Keeps re-fetch load low without
+    // letting abuse-driven cache entries accumulate indefinitely.
+    minimumCacheTTL: 3600,
   },
 };
 
