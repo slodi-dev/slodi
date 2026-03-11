@@ -133,6 +133,16 @@ async def get_my_workspace_role(
     return result
 
 
+@router.get("/workspaces/{workspace_id}/members", response_model=list[WorkspaceMembershipOut])
+async def list_workspace_members(
+    session: SessionDep,
+    workspace_id: UUID,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+) -> list[WorkspaceMembershipOut]:
+    svc = WorkspaceService(session)
+    return await svc.list_members(workspace_id)
+
+
 @router.get("/workspaces/{workspace_id}", response_model=WorkspaceOut)
 async def get_workspace(
     session: SessionDep,

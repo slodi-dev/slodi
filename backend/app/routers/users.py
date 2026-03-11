@@ -1,6 +1,7 @@
 ## backend/app/routers/users.py
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Annotated
 from uuid import UUID
 
@@ -64,6 +65,29 @@ async def get_current_user_info(
 ) -> UserOut:
     """Get the current user's own profile"""
     return current_user
+
+
+@router.get("/admin/list", response_model=list[UserOut])
+async def list_users_admin(
+    session: SessionDep,
+    request: Request,
+    response: Response,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
+    q: str | None = DEFAULT_Q,
+    limit: Limit = 50,
+    offset: Offset = 0,
+) -> Sequence[UserOut]:
+    svc = UserService(session)
+    total = await svc.count(q=q)
+    items = await svc.list_full(q=q, limit=limit, offset=offset)
+    add_pagination_headers(
+        response=response,
+        request=request,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+    return items
 
 
 @router.get("/{user_id}", response_model=UserOutLimited)

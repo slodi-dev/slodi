@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -52,6 +53,12 @@ class UserService:
     ) -> list[UserOutLimited]:
         rows = await self.repo.list(q=q, limit=limit, offset=offset)
         return [UserOutLimited.model_validate(r) for r in rows]
+
+    async def list_full(
+        self, *, q: str | None, limit: int = 50, offset: int = 0
+    ) -> Sequence[UserOut]:
+        rows = await self.repo.list(q=q, limit=limit, offset=offset)
+        return [UserOut.model_validate(r) for r in rows]
 
     async def create(self, data: UserCreate) -> UserOut:
         user = User(**data.model_dump())
