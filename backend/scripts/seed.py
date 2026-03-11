@@ -145,6 +145,26 @@ async def promote_admin_emails(session: AsyncSession) -> None:
             log.info("User '%s' already admin", u.email)
 
 
+async def enroll_all_users_in_workspace(session: AsyncSession, ws: Workspace) -> int:
+    """Add all non-deleted users to the workspace as viewers (skips existing members)."""
+    result = await session.execute(
+        select(User.id).where(
+            User.deleted_at.is_(None),
+            ~User.id.in_(
+                select(WorkspaceMembership.user_id).where(
+                    WorkspaceMembership.workspace_id == ws.id
+                )
+            ),
+        )
+    )
+    missing_user_ids = result.scalars().all()
+    for uid in missing_user_ids:
+        session.add(
+            WorkspaceMembership(user_id=uid, workspace_id=ws.id, role=WorkspaceRole.viewer)
+        )
+    return len(missing_user_ids)
+
+
 async def main() -> None:
     session_maker = get_session_maker()
 
@@ -153,6 +173,9 @@ async def main() -> None:
         ws = await get_or_create_workspace(session, user)
         tags = await get_or_create_tags(session)
         await promote_admin_emails(session)
+        enrolled = await enroll_all_users_in_workspace(session, ws)
+        if enrolled:
+            log.info("Enrolled %d user(s) in '%s' as viewers", enrolled, WORKSPACE_NAME)
         # transaction committed by context-manager exit
 
     output = {

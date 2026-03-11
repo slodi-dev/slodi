@@ -329,6 +329,31 @@ async def get_current_user(
     user_service = UserService(session)
     user = await user_service.get_by_auth0_id(auth0_id)
     if user:
+        # Safety net: ensure default workspace membership for users who
+        # slipped through (e.g. config was missing when they first logged in).
+        # Uses membership_cache so repeated logins don't hit DB.
+        if _DEFAULT_WORKSPACE_ID:
+            try:
+                role = await _get_workspace_role(_DEFAULT_WORKSPACE_ID, user.id, session)
+                if role is None:
+                    ws_service = WorkspaceService(session)
+                    await ws_service.set_member_role(
+                        _DEFAULT_WORKSPACE_ID, user.id, WorkspaceRole.viewer
+                    )
+                    await membership_cache.set(
+                        user.id, _DEFAULT_WORKSPACE_ID, WorkspaceRole.viewer
+                    )
+                    logger.info(
+                        "Added existing user %s to default workspace %s",
+                        user.id,
+                        _DEFAULT_WORKSPACE_ID,
+                    )
+            except Exception:
+                logger.warning(
+                    "Failed to ensure default workspace membership for user %s",
+                    user.id,
+                    exc_info=True,
+                )
         await user_cache.set(auth0_id, user)
         return user
 
