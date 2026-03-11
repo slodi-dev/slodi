@@ -78,10 +78,7 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
 
     // Persist to localStorage
     setLikedPrograms((prev) => {
-      localStorage.setItem(
-        "liked-programs",
-        JSON.stringify(Object.fromEntries(prev))
-      );
+      localStorage.setItem("liked-programs", JSON.stringify(Object.fromEntries(prev)));
       return prev;
     });
 
