@@ -97,7 +97,7 @@ export async function listUsers(
   searchParams.set("offset", String(offset));
   if (q && q.length >= 2) searchParams.set("q", q);
 
-  const url = `${buildApiUrl("/users")}?${searchParams.toString()}`;
+  const url = `${buildApiUrl("/users/admin/list")}?${searchParams.toString()}`;
 
   const response = await fetch(url, {
     method: "GET",

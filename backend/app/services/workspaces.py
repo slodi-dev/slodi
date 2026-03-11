@@ -62,6 +62,10 @@ class WorkspaceService:
         await self.repo.delete(workspace_id)
         await self.session.commit()
 
+    async def list_members(self, workspace_id: UUID) -> list[WorkspaceMembershipOut]:
+        rows = await self.repo.list_members(workspace_id)
+        return [WorkspaceMembershipOut.model_validate(r) for r in rows]
+
     async def set_member_role(
         self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
     ) -> tuple[WorkspaceMembershipOut, UUID | None]:
