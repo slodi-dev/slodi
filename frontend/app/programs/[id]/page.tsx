@@ -56,7 +56,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
 
   const breadcrumbItems = [
     { label: "Heim", href: ROUTES.HOME },
-    { label: "Dagskrár", href: ROUTES.PROGRAMS },
+    { label: "Dagskrárbanki", href: ROUTES.PROGRAMS },
     { label: program.name },
   ];
 
