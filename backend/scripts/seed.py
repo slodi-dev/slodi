@@ -151,17 +151,13 @@ async def enroll_all_users_in_workspace(session: AsyncSession, ws: Workspace) ->
         select(User.id).where(
             User.deleted_at.is_(None),
             ~User.id.in_(
-                select(WorkspaceMembership.user_id).where(
-                    WorkspaceMembership.workspace_id == ws.id
-                )
+                select(WorkspaceMembership.user_id).where(WorkspaceMembership.workspace_id == ws.id)
             ),
         )
     )
     missing_user_ids = result.scalars().all()
     for uid in missing_user_ids:
-        session.add(
-            WorkspaceMembership(user_id=uid, workspace_id=ws.id, role=WorkspaceRole.viewer)
-        )
+        session.add(WorkspaceMembership(user_id=uid, workspace_id=ws.id, role=WorkspaceRole.viewer))
     return len(missing_user_ids)
 
 

@@ -340,9 +340,7 @@ async def get_current_user(
                     await ws_service.set_member_role(
                         _DEFAULT_WORKSPACE_ID, user.id, WorkspaceRole.viewer
                     )
-                    await membership_cache.set(
-                        user.id, _DEFAULT_WORKSPACE_ID, WorkspaceRole.viewer
-                    )
+                    await membership_cache.set(user.id, _DEFAULT_WORKSPACE_ID, WorkspaceRole.viewer)
                     logger.info(
                         "Added existing user %s to default workspace %s",
                         user.id,
