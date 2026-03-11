@@ -79,7 +79,7 @@ export default function BuilderPage() {
               />
             ))
           ) : filtered.length === 0 ? (
-            <div>Engar dagskrár fannst fyrir valin skilyrði.</div>
+            <div>Engin dagskrá fannst fyrir valin skilyrði.</div>
           ) : (
             filtered.map((p) => (
               <ProgramCard
