@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import type { Program, ProgramUpdateInput } from "@/services/programs.service";
 import { useTags } from "@/hooks/useTags";
 import styles from "./ProgramDetailEdit.module.css";
@@ -489,10 +490,12 @@ export default function ProgramDetailEdit({
             {form.image && (
               <div className={styles.imagePreviewContainer}>
                 {!imageError ? (
-                  <img
+                  <Image
                     src={form.image}
                     alt="Forskoðun myndar"
                     className={styles.imagePreview}
+                    width={600}
+                    height={300}
                     onError={() => setImageError(true)}
                   />
                 ) : (
