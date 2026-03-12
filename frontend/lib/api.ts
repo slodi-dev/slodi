@@ -81,8 +81,8 @@ export async function fetchWithAuth<T>(
 
   if (!response.ok) {
     if (response.status === 401) {
-      // Token expired or invalid - redirect to login
-      window.location.href = "/auth/login";
+      const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/auth/login?returnTo=${returnTo}`;
       throw new Error("Authentication required");
     }
 
