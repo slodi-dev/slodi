@@ -27,7 +27,7 @@ from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
-from app.schemas.user import UserCreate, UserOut
+from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
 from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
@@ -329,6 +329,13 @@ async def get_current_user(
     user_service = UserService(session)
     user = await user_service.get_by_auth0_id(auth0_id)
     if user:
+        # Sync name from Auth0 if it has changed since account creation.
+        # This handles cases where a post-login script updates the Auth0 profile
+        # (e.g. linking email/password to a social account) after the user was
+        # already created in our DB.
+        name_from_token: str | None = payload.name
+        if name_from_token and name_from_token != user.name:
+            user = await user_service.update(user.id, UserUpdateAdmin(name=name_from_token))
         await user_cache.set(auth0_id, user)
         return user
 
@@ -365,7 +372,7 @@ async def get_current_user(
         )
 
     if not name:
-        name = email
+        name = email.split("@")[0]
 
     user_data = UserCreate(auth0_id=auth0_id, email=email, name=name)
     user = await user_service.create(user_data)
