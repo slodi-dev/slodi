@@ -32,6 +32,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       SEED_OUTPUT_DIR: /app/seed_data
+      UV_NO_SYNC: "true"
     volumes:
       - seed_data:/app/seed_data
     depends_on:
@@ -63,6 +64,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       SEED_OUTPUT_DIR: /app/seed_data
+      UV_NO_SYNC: "true"
     volumes:
       - seed_data:/app/seed_data
     ports:
