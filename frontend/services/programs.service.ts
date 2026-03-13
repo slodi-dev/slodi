@@ -27,11 +27,14 @@ export type Program = {
   // Extended backend fields (ContentBase)
   instructions?: string | null;
   equipment?: string[] | null;
-  duration?: string | null;
-  prep_time?: string | null;
+  duration_min?: number | null;
+  duration_max?: number | null;
+  prep_time_min?: number | null;
+  prep_time_max?: number | null;
   age?: string[] | null;
   location?: string | null;
-  count?: number | null;
+  count_min?: number | null;
+  count_max?: number | null;
   price?: number | null;
 };
 
@@ -41,11 +44,14 @@ export type ProgramCreateInput = {
   image?: string;
   instructions?: string;
   equipment?: string[];
-  duration?: string;
-  prep_time?: string;
+  duration_min?: number;
+  duration_max?: number;
+  prep_time_min?: number;
+  prep_time_max?: number;
   age?: string[];
   location?: string;
-  count?: number;
+  count_min?: number;
+  count_max?: number;
   price?: number;
   tagNames?: string[];
   workspaceId: string; // Required - workspace to create program in
@@ -58,11 +64,14 @@ export type ProgramUpdateInput = {
   image?: string | null;
   instructions?: string | null;
   equipment?: string[] | null;
-  duration?: string | null;
-  prep_time?: string | null;
+  duration_min?: number | null;
+  duration_max?: number | null;
+  prep_time_min?: number | null;
+  prep_time_max?: number | null;
   age?: string[] | null;
   location?: string | null;
-  count?: number | null;
+  count_min?: number | null;
+  count_max?: number | null;
   price?: number | null;
   tagNames?: string[]; // omit to leave tags unchanged; pass [] to clear all tags
 };
@@ -130,11 +139,14 @@ export async function createProgram(
     image: input.image?.trim() || null,
     instructions: input.instructions?.trim() || null,
     equipment: input.equipment && input.equipment.length > 0 ? input.equipment : null,
-    duration: input.duration?.trim() || null,
-    prep_time: input.prep_time?.trim() || null,
+    duration_min: input.duration_min ?? null,
+    duration_max: input.duration_max ?? null,
+    prep_time_min: input.prep_time_min ?? null,
+    prep_time_max: input.prep_time_max ?? null,
     age: input.age && input.age.length > 0 ? input.age : null,
     location: input.location?.trim() || null,
-    count: input.count ?? null,
+    count_min: input.count_min ?? null,
+    count_max: input.count_max ?? null,
     price: input.price ?? null,
     tag_names: input.tagNames && input.tagNames.length > 0 ? input.tagNames : null,
     content_type: "program" as const,
