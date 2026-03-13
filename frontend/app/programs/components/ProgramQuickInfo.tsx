@@ -36,15 +36,25 @@ export default function ProgramQuickInfo({ program }: ProgramQuickInfoProps) {
             <Clock className={styles.statIcon} size={18} />
             <div className={styles.statContent}>
               <span className={styles.statLabel}>Lengd</span>
-              <span className={styles.statValue}>{program.duration || "—"}</span>
+              <span className={styles.statValue}>
+                {program.duration_min != null || program.duration_max != null
+                  ? program.duration_min != null && program.duration_max != null
+                    ? `${program.duration_min}–${program.duration_max} mín`
+                    : `${program.duration_min ?? program.duration_max} mín`
+                  : "—"}
+              </span>
             </div>
           </div>
-          {program.prep_time && (
+          {(program.prep_time_min != null || program.prep_time_max != null) && (
             <div className={styles.stat}>
               <AlarmClock className={styles.statIcon} size={18} />
               <div className={styles.statContent}>
                 <span className={styles.statLabel}>Undirbúningur</span>
-                <span className={styles.statValue}>{program.prep_time}</span>
+                <span className={styles.statValue}>
+                  {program.prep_time_min != null && program.prep_time_max != null
+                    ? `${program.prep_time_min}–${program.prep_time_max} mín`
+                    : `${program.prep_time_min ?? program.prep_time_max} mín`}
+                </span>
               </div>
             </div>
           )}
@@ -52,7 +62,9 @@ export default function ProgramQuickInfo({ program }: ProgramQuickInfoProps) {
             <Users className={styles.statIcon} size={18} />
             <div className={styles.statContent}>
               <span className={styles.statLabel}>Aldur</span>
-              <span className={styles.statValue}>{program.age || "—"}</span>
+              <span className={styles.statValue}>
+                {program.age && program.age.length > 0 ? program.age.join(", ") : "—"}
+              </span>
             </div>
           </div>
           <div className={styles.stat}>
@@ -67,7 +79,11 @@ export default function ProgramQuickInfo({ program }: ProgramQuickInfoProps) {
             <div className={styles.statContent}>
               <span className={styles.statLabel}>Hópstærð</span>
               <span className={styles.statValue}>
-                {program.count !== null && program.count !== undefined ? program.count : "—"}
+                {program.count_min != null || program.count_max != null
+                  ? program.count_min != null && program.count_max != null
+                    ? `${program.count_min}–${program.count_max}`
+                    : `${program.count_min ?? program.count_max}`
+                  : "—"}
               </span>
             </div>
           </div>

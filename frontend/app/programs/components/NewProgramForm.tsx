@@ -155,7 +155,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
       case "info": {
         const parts: string[] = [];
         if (draft.durationMin || draft.durationMax)
-          parts.push(`${draft.durationMin || "?"}–${draft.durationMax || "?"}m`);
+          parts.push(`${draft.durationMin || "?"}–${draft.durationMax || "?"}mín`);
         if (draft.location) parts.push(draft.location);
         if (draft.selectedAgeGroups.length > 0)
           parts.push(`${draft.selectedAgeGroups.length} hópar`);
@@ -222,20 +222,17 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           image: draft.image.trim() || undefined,
           instructions: draft.instructions.trim() || undefined,
           equipment: draft.equipment.length > 0 ? draft.equipment : undefined,
-          duration:
-            draft.durationMin || draft.durationMax
-              ? [draft.durationMin, draft.durationMax].filter(Boolean).join("–") + " mín"
-              : undefined,
-          prep_time:
-            draft.prepTimeMin || draft.prepTimeMax
-              ? [draft.prepTimeMin, draft.prepTimeMax].filter(Boolean).join("–") + " mín"
-              : undefined,
+          duration_min: draft.durationMin !== "" ? Number(draft.durationMin) : undefined,
+          duration_max: draft.durationMax !== "" ? Number(draft.durationMax) : undefined,
+          prep_time_min: draft.prepTimeMin !== "" ? Number(draft.prepTimeMin) : undefined,
+          prep_time_max: draft.prepTimeMax !== "" ? Number(draft.prepTimeMax) : undefined,
           age:
             draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
               ? draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
               : undefined,
           location: draft.location.trim() || undefined,
-          count: draft.countMin !== "" ? Number(draft.countMin) : undefined,
+          count_min: draft.countMin !== "" ? Number(draft.countMin) : undefined,
+          count_max: draft.countMax !== "" ? Number(draft.countMax) : undefined,
           price: draft.price !== "" ? Number(draft.price) : undefined,
           tagNames: draft.selectedTags.length > 0 ? draft.selectedTags : undefined,
           workspaceId,

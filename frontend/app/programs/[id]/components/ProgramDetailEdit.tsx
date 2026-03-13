@@ -6,16 +6,6 @@ import type { Program, ProgramUpdateInput } from "@/services/programs.service";
 import { useTags } from "@/hooks/useTags";
 import styles from "./ProgramDetailEdit.module.css";
 
-// ── Parse helpers ────────────────────────────────────────────────────────────
-
-/** Parses "10–45 mín" → ["10", "45"], "30 mín" → ["30", ""], null → ["", ""] */
-function parseDuration(val: string | null | undefined): [string, string] {
-  if (!val) return ["", ""];
-  const cleaned = val.replace(/\s*mín\s*$/i, "").trim();
-  const parts = cleaned.split(/[–\-]/);
-  return [(parts[0] ?? "").trim(), (parts[1] ?? "").trim()];
-}
-
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const AGE_GROUPS = [
@@ -44,6 +34,7 @@ interface FormState {
   selectedAgeGroups: string[];
   location: string;
   countMin: string;
+  countMax: string;
   price: string;
   selectedTags: string[];
 }
@@ -71,9 +62,6 @@ export default function ProgramDetailEdit({
   const { tagNames: fetchedTags } = useTags();
   const displayTags = fetchedTags ?? [];
 
-  const [durationMin0, durationMax0] = parseDuration(program.duration);
-  const [prepMin0, prepMax0] = parseDuration(program.prep_time);
-
   const [form, setForm] = useState<FormState>({
     name: program.name ?? "",
     description: program.description ?? "",
@@ -81,13 +69,14 @@ export default function ProgramDetailEdit({
     image: program.image ?? "",
     instructions: program.instructions ?? "",
     equipment: program.equipment ?? [],
-    durationMin: durationMin0,
-    durationMax: durationMax0,
-    prepTimeMin: prepMin0,
-    prepTimeMax: prepMax0,
+    durationMin: program.duration_min != null ? String(program.duration_min) : "",
+    durationMax: program.duration_max != null ? String(program.duration_max) : "",
+    prepTimeMin: program.prep_time_min != null ? String(program.prep_time_min) : "",
+    prepTimeMax: program.prep_time_max != null ? String(program.prep_time_max) : "",
     selectedAgeGroups: (program.age ?? []).filter((g) => AGE_GROUPS.includes(g)),
     location: program.location ?? "",
-    countMin: program.count != null ? String(program.count) : "",
+    countMin: program.count_min != null ? String(program.count_min) : "",
+    countMax: program.count_max != null ? String(program.count_max) : "",
     price: program.price != null ? String(program.price) : "",
     selectedTags: (program.tags ?? []).map((t) => t.name),
   });
@@ -150,20 +139,17 @@ export default function ProgramDetailEdit({
       image: form.image.trim() || null,
       instructions: form.instructions.trim() || null,
       equipment: form.equipment.length > 0 ? form.equipment : null,
-      duration:
-        form.durationMin || form.durationMax
-          ? `${[form.durationMin, form.durationMax].filter(Boolean).join("–")} mín`
-          : null,
-      prep_time:
-        form.prepTimeMin || form.prepTimeMax
-          ? `${[form.prepTimeMin, form.prepTimeMax].filter(Boolean).join("–")} mín`
-          : null,
+      duration_min: form.durationMin !== "" ? Number(form.durationMin) : null,
+      duration_max: form.durationMax !== "" ? Number(form.durationMax) : null,
+      prep_time_min: form.prepTimeMin !== "" ? Number(form.prepTimeMin) : null,
+      prep_time_max: form.prepTimeMax !== "" ? Number(form.prepTimeMax) : null,
       age:
         form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
           ? form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
           : null,
       location: form.location.trim() || null,
-      count: form.countMin !== "" ? Number(form.countMin) : null,
+      count_min: form.countMin !== "" ? Number(form.countMin) : null,
+      count_max: form.countMax !== "" ? Number(form.countMax) : null,
       price: form.price !== "" ? Number(form.price) : null,
       tagNames: form.selectedTags,
     };
@@ -338,19 +324,32 @@ export default function ProgramDetailEdit({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="edit-count" className={styles.label}>
-              Fjöldi þátttakenda
-            </label>
-            <input
-              id="edit-count"
-              type="number"
-              className={`${styles.input} ${styles.inputNarrow}`}
-              value={form.countMin}
-              onChange={(e) => patch({ countMin: e.target.value })}
-              placeholder="t.d. 20"
-              min={1}
-              disabled={isDisabled}
-            />
+            <label className={styles.label}>Fjöldi þátttakenda</label>
+            <div className={styles.rangeRow}>
+              <input
+                type="number"
+                className={styles.input}
+                value={form.countMin}
+                onChange={(e) => patch({ countMin: e.target.value })}
+                placeholder="Frá"
+                min={1}
+                aria-label="Lágmarksfjöldi þátttakenda"
+                disabled={isDisabled}
+              />
+              <span className={styles.rangeSep} aria-hidden="true">
+                –
+              </span>
+              <input
+                type="number"
+                className={styles.input}
+                value={form.countMax}
+                onChange={(e) => patch({ countMax: e.target.value })}
+                placeholder="Til"
+                min={1}
+                aria-label="Hámarksfjöldi þátttakenda"
+                disabled={isDisabled}
+              />
+            </div>
           </div>
 
           <div className={styles.formGroup}>
