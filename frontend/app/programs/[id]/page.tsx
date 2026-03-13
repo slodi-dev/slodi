@@ -41,7 +41,11 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { program, isLoading, error, setProgram } = useProgram(id);
-  const { likeCount, isLiked, toggleLike } = useLikes(id, program?.like_count || 0);
+  const { likeCount, isLiked, toggleLike } = useLikes(
+    id,
+    program?.like_count || 0,
+    program?.liked_by_me ?? false
+  );
   const { handleShare, handleAddToWorkspace, handleBack } = useProgramActions(program);
   const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
 

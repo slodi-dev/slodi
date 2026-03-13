@@ -128,6 +128,7 @@ export default function FavoriteProgramsPage() {
                 author={program.author}
                 tags={program.tags}
                 like_count={program.like_count}
+                liked_by_me={program.liked_by_me}
               />
             ))}
           </ProgramGrid>

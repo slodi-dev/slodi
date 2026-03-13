@@ -9,6 +9,7 @@ export type Program = {
   description: string | null;
   public: boolean;
   like_count: number;
+  liked_by_me: boolean;
   created_at: string;
   author_id: string;
   image: string | null;
