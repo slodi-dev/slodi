@@ -40,7 +40,7 @@
 /* Input Field */
 .searchInput {
   width: 100%;
-  padding: 10px 48px 10px 44px;
+  padding: 10px 16px 10px 44px;
   font-size: var(--sl-font-size-base);
   font-family: inherit;
   line-height: var(--sl-line-height-normal);
@@ -101,12 +101,14 @@
 
 .clearButton {
   position: absolute;
-  right: var(--sl-spacing-inline-xs);
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   color: hsl(var(--sl-color-text-tertiary));
   background: transparent;
@@ -161,9 +163,7 @@
 @media (max-width: 640px) {
   .searchInput {
     font-size: var(--sl-font-size-sm);
-    padding: var(--sl-spacing-inset-xs);
-    padding-left: calc(var(--sl-spacing-inline-sm) + 18px + var(--sl-spacing-inline-xs));
-    padding-right: calc(var(--sl-spacing-inline-sm) + 32px);
+    padding: 10px 16px 10px 40px;
   }
 
   .searchIcon {
@@ -172,13 +172,8 @@
   }
 
   .clearButton {
-    width: 28px;
-    height: 28px;
-  }
-
-  .clearButton svg {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
   }
 
   .resultCount {
