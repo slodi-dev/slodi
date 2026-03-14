@@ -64,7 +64,7 @@
 .comboboxInput {
   width: 100%;
   padding: var(--sl-spacing-inset-sm, 8px) var(--sl-spacing-inset-md, 12px);
-  font-size: var(--sl-font-size-sm, 0.875rem);
+  font-size: var(--sl-input-font-size, 1rem);
   font-family: inherit;
   color: hsl(var(--sl-color-text-primary));
   background: hsl(var(--sl-color-surface));
