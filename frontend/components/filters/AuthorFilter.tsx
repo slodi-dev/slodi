@@ -161,32 +161,34 @@ export default function AuthorFilter({
           aria-label="Höfundur"
           placeholder="Leita eftir höfundi..."
         />
-        {showList && filteredSuggestions.length > 0 && createPortal(
-          <ul
-            id={listId}
-            className={styles.suggestionList}
-            style={listStyle}
-            role="listbox"
-            aria-label="Tillögur að höfundum"
-          >
-            {filteredSuggestions.map((suggestion, index) => (
-              <li
-                key={suggestion}
-                id={`${listId}-option-${index}`}
-                className={`${styles.suggestionItem} ${index === activeIndex ? styles.suggestionItemActive : ""}`}
-                role="option"
-                aria-selected={index === activeIndex}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  selectSuggestion(suggestion);
-                }}
-              >
-                {suggestion}
-              </li>
-            ))}
-          </ul>,
-          document.body
-        )}
+        {showList &&
+          filteredSuggestions.length > 0 &&
+          createPortal(
+            <ul
+              id={listId}
+              className={styles.suggestionList}
+              style={listStyle}
+              role="listbox"
+              aria-label="Tillögur að höfundum"
+            >
+              {filteredSuggestions.map((suggestion, index) => (
+                <li
+                  key={suggestion}
+                  id={`${listId}-option-${index}`}
+                  className={`${styles.suggestionItem} ${index === activeIndex ? styles.suggestionItemActive : ""}`}
+                  role="option"
+                  aria-selected={index === activeIndex}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    selectSuggestion(suggestion);
+                  }}
+                >
+                  {suggestion}
+                </li>
+              ))}
+            </ul>,
+            document.body
+          )}
       </div>
     </CollapsibleSection>
   );

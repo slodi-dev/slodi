@@ -135,37 +135,39 @@ export default function EquipmentFilter({
           aria-label="Leita að búnaði"
           placeholder="Leita að búnaði..."
         />
-        {showList && filteredSuggestions.length > 0 && createPortal(
-          <ul
-            id={listId}
-            className={styles.suggestionList}
-            style={listStyle}
-            role="listbox"
-            aria-label="Tillögur að búnaði"
-            aria-multiselectable="true"
-          >
-            {filteredSuggestions.map((item, index) => {
-              const isSelected = selected.includes(item);
-              return (
-                <li
-                  key={item}
-                  id={`${listId}-option-${index}`}
-                  className={`${styles.suggestionItem} ${index === activeIndex ? styles.suggestionItemActive : ""} ${isSelected ? styles.suggestionItemSelected : ""}`}
-                  role="option"
-                  aria-selected={isSelected}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    toggleItem(item);
-                  }}
-                >
-                  <span className={styles.suggestionItemCheck}>{isSelected ? "✓" : ""}</span>
-                  {item}
-                </li>
-              );
-            })}
-          </ul>,
-          document.body
-        )}
+        {showList &&
+          filteredSuggestions.length > 0 &&
+          createPortal(
+            <ul
+              id={listId}
+              className={styles.suggestionList}
+              style={listStyle}
+              role="listbox"
+              aria-label="Tillögur að búnaði"
+              aria-multiselectable="true"
+            >
+              {filteredSuggestions.map((item, index) => {
+                const isSelected = selected.includes(item);
+                return (
+                  <li
+                    key={item}
+                    id={`${listId}-option-${index}`}
+                    className={`${styles.suggestionItem} ${index === activeIndex ? styles.suggestionItemActive : ""} ${isSelected ? styles.suggestionItemSelected : ""}`}
+                    role="option"
+                    aria-selected={isSelected}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      toggleItem(item);
+                    }}
+                  >
+                    <span className={styles.suggestionItemCheck}>{isSelected ? "✓" : ""}</span>
+                    {item}
+                  </li>
+                );
+              })}
+            </ul>,
+            document.body
+          )}
       </div>
     </CollapsibleSection>
   );
