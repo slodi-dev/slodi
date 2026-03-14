@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
@@ -21,25 +20,7 @@ from app.repositories.content import (
     like_count_subq,
     liked_by_me_subq,
 )
-
-
-@dataclass
-class ProgramFilters:
-    """Filter parameters for listing programs."""
-
-    search: str | None = None
-    age: list[str] | None = None
-    duration_min: int | None = None
-    duration_max: int | None = None
-    prep_time_min: int | None = None
-    prep_time_max: int | None = None
-    count_min: int | None = None
-    count_max: int | None = None
-    price_max: int | None = None
-    location: str | None = None
-    equipment: list[str] | None = None
-    author_id: UUID | None = None
-    sort_by: str | None = None
+from app.schemas.program import ProgramFilters
 
 
 class ProgramRepository(Repository):
@@ -105,7 +86,8 @@ class ProgramRepository(Repository):
     def _apply_filters(self, stmt: Select, filters: ProgramFilters) -> Select:  # noqa: C901
         """Apply filter conditions to a SELECT statement."""
         if filters.search:
-            pattern = f"%{filters.search}%"
+            escaped = filters.search.replace("%", r"\%").replace("_", r"\_")
+            pattern = f"%{escaped}%"
             stmt = stmt.where(
                 or_(
                     Program.name.ilike(pattern),
@@ -116,24 +98,25 @@ class ProgramRepository(Repository):
             # PostgreSQL ARRAY overlap operator: content.age && ARRAY[...]
             stmt = stmt.where(Program.age.overlap(filters.age))
         if filters.duration_min is not None:
-            stmt = stmt.where(Program.duration_min >= filters.duration_min)
+            stmt = stmt.where(Program.duration_max >= filters.duration_min)
         if filters.duration_max is not None:
-            stmt = stmt.where(Program.duration_max <= filters.duration_max)
+            stmt = stmt.where(Program.duration_min <= filters.duration_max)
         if filters.prep_time_min is not None:
-            stmt = stmt.where(Program.prep_time_min >= filters.prep_time_min)
+            stmt = stmt.where(Program.prep_time_max >= filters.prep_time_min)
         if filters.prep_time_max is not None:
-            stmt = stmt.where(Program.prep_time_max <= filters.prep_time_max)
+            stmt = stmt.where(Program.prep_time_min <= filters.prep_time_max)
         if filters.count_min is not None:
-            stmt = stmt.where(Program.count_min >= filters.count_min)
+            stmt = stmt.where(Program.count_max >= filters.count_min)
         if filters.count_max is not None:
-            stmt = stmt.where(Program.count_max <= filters.count_max)
+            stmt = stmt.where(Program.count_min <= filters.count_max)
         if filters.price_max is not None:
             if filters.price_max == 0:
                 stmt = stmt.where(or_(Program.price == 0, Program.price.is_(None)))
             else:
                 stmt = stmt.where(Program.price <= filters.price_max)
         if filters.location:
-            stmt = stmt.where(Program.location.ilike(f"%{filters.location}%"))
+            escaped_location = filters.location.replace("%", r"\%").replace("_", r"\_")
+            stmt = stmt.where(Program.location.ilike(f"%{escaped_location}%"))
         if filters.equipment:
             # JSONB array: check if equipment contains any of the given items (OR logic)
             stmt = stmt.where(
@@ -150,22 +133,16 @@ class ProgramRepository(Repository):
         like_count_col: ColumnElement[Any] | None = None,
     ) -> Select:
         """Apply sorting to a SELECT statement."""
-        sort_by = filters.sort_by
-        if sort_by == "oldest":
+        if filters.sort_by == "oldest":
             stmt = stmt.order_by(Program.created_at.asc())
-        elif sort_by == "liked" and like_count_col is not None:
+        elif filters.sort_by == "newest":
+            stmt = stmt.order_by(Program.created_at.desc())
+        elif filters.sort_by == "liked" and like_count_col is not None:
             stmt = stmt.order_by(like_count_col.desc(), Program.created_at.desc())
-        elif sort_by == "alpha":
+        elif filters.sort_by == "alpha":
             stmt = stmt.order_by(Program.name.asc())
         else:
-            # Default: newest first (preserves backwards compat with current name ordering
-            # only when sort_by is explicitly None — callers that want the old order
-            # should pass sort_by=None)
-            if sort_by == "newest":
-                stmt = stmt.order_by(Program.created_at.desc())
-            else:
-                # No sort_by param at all — keep existing default (order by name)
-                stmt = stmt.order_by(Program.name)
+            stmt = stmt.order_by(Program.name)
         return stmt
 
     async def count_programs_for_workspace(
@@ -176,8 +153,7 @@ class ProgramRepository(Repository):
             .select_from(Program)
             .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
         )
-        if filters:
-            stmt = self._apply_filters(stmt, filters)
+        stmt = self._apply_filters(stmt, filters or ProgramFilters())
         result = await self.session.scalar(stmt)
         return result or 0
 
@@ -190,6 +166,7 @@ class ProgramRepository(Repository):
         offset: int = 0,
         filters: ProgramFilters | None = None,
     ) -> list[tuple[Program, ContentStats]]:
+        resolved_filters = filters or ProgramFilters()
         lc_subq = like_count_subq()
         stmt = (
             select(Program, lc_subq, comment_count_subq(), liked_by_me_subq(current_user_id))
@@ -200,11 +177,8 @@ class ProgramRepository(Repository):
             )
             .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
         )
-        if filters:
-            stmt = self._apply_filters(stmt, filters)
-            stmt = self._apply_sort(stmt, filters, like_count_col=lc_subq)
-        else:
-            stmt = stmt.order_by(Program.name)
+        stmt = self._apply_filters(stmt, resolved_filters)
+        stmt = self._apply_sort(stmt, resolved_filters, like_count_col=lc_subq)
         stmt = stmt.limit(limit).offset(offset)
         rows = (await self.session.execute(stmt)).all()
         return [

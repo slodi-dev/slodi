@@ -65,6 +65,13 @@ class AgeGroup(str, Enum):
     vaettaskatar = "Vættaskátar"
 
 
+class ProgramSortBy(str, Enum):
+    newest = "newest"
+    oldest = "oldest"
+    liked = "liked"
+    alpha = "alpha"
+
+
 # ----- #
 # Other #
 # ----- #

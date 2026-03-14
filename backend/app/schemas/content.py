@@ -122,6 +122,7 @@ class ContentListOut(BaseModel):
     prep_time_min: int | None = None
     prep_time_max: int | None = None
     image: ImageStr | None = None
+    equipment: list[str] | None = None
     tags: list[TagOut] = []
     comment_count: int = 0
     like_count: int = 0
