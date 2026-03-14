@@ -1,0 +1,229 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   FILTER SIDEBAR & DRAWER STYLES
+   Desktop sticky sidebar + Mobile slide-out drawer
+   All values reference --sl-* design tokens
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP SIDEBAR
+   ═══════════════════════════════════════════════════════════ */
+
+.sidebar {
+  position: sticky;
+  top: 1.5rem;
+  width: var(--sl-sidebar-width, 280px);
+  flex-shrink: 0;
+  background: hsl(var(--sl-color-surface, 0 0% 100%));
+  border: 1px solid hsl(var(--sl-color-border, 0 0% 85%) / var(--sl-primitive-opacity-30, 0.3));
+  border-radius: var(--sl-radius-card, 0.75rem);
+  overflow: auto;
+  max-height: calc(100vh - 3rem);
+  padding: var(--sl-spacing-inset-md, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-xs, 4px);
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sl-color-border, 0 0% 85%)) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: hsl(var(--sl-color-border, 0 0% 85%));
+  border-radius: var(--sl-radius-base, 6px);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE DRAWER - BACKDROP
+   ═══════════════════════════════════════════════════════════ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: hsl(0 0% 0% / 0.4);
+  z-index: var(--sl-z-overlay, 190);
+  animation: backdropFadeIn var(--sl-transition-normal, 250ms ease) forwards;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE DRAWER - PANEL
+   ═══════════════════════════════════════════════════════════ */
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, 90vw);
+  z-index: var(--sl-z-drawer, 200);
+  background: hsl(var(--sl-color-surface, 0 0% 100%));
+  box-shadow: var(
+    --sl-shadow-dropdown,
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1)
+  );
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform var(--sl-transition-normal, 250ms ease);
+}
+
+.drawerOpen {
+  transform: translateX(0);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAWER HEADER
+   ═══════════════════════════════════════════════════════════ */
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sl-spacing-inset-md, 12px) var(--sl-spacing-inset-lg, 16px);
+  border-bottom: 1px solid
+    hsl(var(--sl-color-border, 0 0% 85%) / var(--sl-primitive-opacity-30, 0.3));
+  flex-shrink: 0;
+}
+
+.drawerTitle {
+  font-size: var(--sl-font-size-lg, 1.125rem);
+  font-weight: var(--sl-font-weight-semibold, 600);
+  color: hsl(var(--sl-color-text-primary, 0 0% 10%));
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-inline-sm, 8px);
+}
+
+.drawerBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.375rem;
+  font-size: var(--sl-font-size-xs, 0.75rem);
+  font-weight: var(--sl-font-weight-semibold, 600);
+  line-height: 1;
+  color: hsl(var(--sl-color-on-primary, 0 0% 100%));
+  background: hsl(var(--sl-color-primary, 142 50% 42%));
+  border-radius: var(--sl-radius-pill, 9999px);
+}
+
+.drawerClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sl-radius-base, 6px);
+  color: hsl(var(--sl-color-text-secondary, 0 0% 30%));
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-base, 150ms ease),
+    color var(--sl-transition-base, 150ms ease);
+}
+
+.drawerClose svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.drawerClose:hover {
+  background: hsl(var(--sl-color-background-secondary, 0 0% 96%));
+  color: hsl(var(--sl-color-text-primary, 0 0% 10%));
+}
+
+.drawerClose:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 42%));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAWER BODY
+   ═══════════════════════════════════════════════════════════ */
+
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sl-spacing-inset-md, 12px) var(--sl-spacing-inset-lg, 16px);
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sl-color-border, 0 0% 85%)) transparent;
+}
+
+/* Inside the drawer, the sidebar should not be sticky or have its own border/bg */
+.drawerBody .sidebar {
+  position: static;
+  width: 100%;
+  max-height: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.drawerBody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.drawerBody::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.drawerBody::-webkit-scrollbar-thumb {
+  background: hsl(var(--sl-color-border, 0 0% 85%));
+  border-radius: var(--sl-radius-base, 6px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    transition: none;
+  }
+
+  .backdrop {
+    animation: none;
+    opacity: 1;
+  }
+
+  .drawerClose {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .sidebar {
+    border-width: 2px;
+  }
+
+  .drawerHeader {
+    border-bottom-width: 2px;
+  }
+}

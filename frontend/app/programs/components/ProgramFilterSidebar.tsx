@@ -161,19 +161,13 @@ export default function ProgramFilterSidebar({
     return raw ? raw.split(",").filter(Boolean) : [];
   });
 
-  const [location, setLocation] = useState<string>(
-    () => searchParams.get("location") ?? ""
-  );
+  const [location, setLocation] = useState<string>(() => searchParams.get("location") ?? "");
   const [localLocation, setLocalLocation] = useState<string>(
     () => searchParams.get("location") ?? ""
   );
 
-  const [countMin, setCountMin] = useState<string>(
-    () => searchParams.get("count_min") ?? ""
-  );
-  const [countMax, setCountMax] = useState<string>(
-    () => searchParams.get("count_max") ?? ""
-  );
+  const [countMin, setCountMin] = useState<string>(() => searchParams.get("count_min") ?? "");
+  const [countMax, setCountMax] = useState<string>(() => searchParams.get("count_max") ?? "");
 
   const [price, setPrice] = useState<string[]>(() => {
     const raw = searchParams.get("price") ?? "";
@@ -338,9 +332,7 @@ export default function ProgramFilterSidebar({
   };
 
   const buildNextList = (list: string[], value: string): string[] =>
-    list.includes(value)
-      ? list.filter((v) => v !== value)
-      : [...list, value];
+    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 
   const handleAgeToggle = (value: string) => {
     const next = buildNextList(age, value);
@@ -421,8 +413,8 @@ export default function ProgramFilterSidebar({
     totalCount === 0
       ? "Engar dagskrár fundust"
       : totalCount === 1
-      ? "1 dagskrá"
-      : `${totalCount} dagskrár`;
+        ? "1 dagskrá"
+        : `${totalCount} dagskrár`;
 
   // ─── Checkbox section renderer (reused for all multi-select groups) ────────
 
@@ -444,9 +436,7 @@ export default function ProgramFilterSidebar({
     <section className={styles.filterSection}>
       <h3 className={styles.filterSectionTitle}>
         {sectionTitle}
-        {selected.length > 0 && (
-          <span className={styles.sectionCount}> ({selected.length})</span>
-        )}
+        {selected.length > 0 && <span className={styles.sectionCount}> ({selected.length})</span>}
       </h3>
       <fieldset className={styles.checkboxGroup} aria-label={groupLabel}>
         <legend className={styles.srOnly}>{groupLabel}</legend>
@@ -601,9 +591,7 @@ export default function ProgramFilterSidebar({
       <section className={styles.filterSection}>
         <h3 className={styles.filterSectionTitle}>
           Þátttakendur
-          {(countMin || countMax) && (
-            <span className={styles.sectionCount}> (1)</span>
-          )}
+          {(countMin || countMax) && <span className={styles.sectionCount}> (1)</span>}
         </h3>
         <div className={styles.countInputRow}>
           <label htmlFor="filter-count-min" className={styles.countLabel}>
@@ -620,7 +608,9 @@ export default function ProgramFilterSidebar({
               disabled={isLoading}
             />
           </label>
-          <span className={styles.countSeparator} aria-hidden="true">–</span>
+          <span className={styles.countSeparator} aria-hidden="true">
+            –
+          </span>
           <label htmlFor="filter-count-max" className={styles.countLabel}>
             <span className={styles.countLabelText}>Hámark þátttakenda</span>
             <input
@@ -733,9 +723,7 @@ export default function ProgramFilterSidebar({
           className={`${styles.mobileFiltersButton} ${activeSidebarCount > 0 ? styles.mobileFiltersButtonActive : ""}`}
           onClick={() => setDrawerOpen(true)}
           aria-label={
-            activeSidebarCount > 0
-              ? `Opna síur, ${activeSidebarCount} virkar síur`
-              : "Opna síur"
+            activeSidebarCount > 0 ? `Opna síur, ${activeSidebarCount} virkar síur` : "Opna síur"
           }
           disabled={isLoading}
         >
@@ -759,11 +747,7 @@ export default function ProgramFilterSidebar({
       </div>
 
       {/* ── Desktop sidebar ── */}
-      <aside
-        role="search"
-        aria-label="Sía dagskrár"
-        className={`${styles.sidebar} ${className}`}
-      >
+      <aside role="search" aria-label="Sía dagskrár" className={`${styles.sidebar} ${className}`}>
         {/* Sidebar header */}
         <div className={styles.sidebarHeader}>
           <h2 className={styles.sidebarTitle}>Síur</h2>
@@ -780,9 +764,7 @@ export default function ProgramFilterSidebar({
         </div>
 
         {/* Scrollable filter sections */}
-        <div className={styles.sidebarBody}>
-          {renderFilterSections()}
-        </div>
+        <div className={styles.sidebarBody}>{renderFilterSections()}</div>
       </aside>
 
       {/* ── Mobile drawer ── */}
@@ -834,9 +816,7 @@ export default function ProgramFilterSidebar({
               </button>
             </div>
 
-            <div className={styles.drawerBody}>
-              {renderFilterSections()}
-            </div>
+            <div className={styles.drawerBody}>{renderFilterSections()}</div>
 
             <div className={styles.drawerFooter}>
               {anyFilterActive && (

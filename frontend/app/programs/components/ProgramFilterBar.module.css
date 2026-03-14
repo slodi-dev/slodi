@@ -62,8 +62,12 @@
   width: 100%;
   height: var(--sl-size-input);
   padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
-  padding-left: calc(var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm));
-  padding-right: calc(var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm));
+  padding-left: calc(
+    var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm)
+  );
+  padding-right: calc(
+    var(--sl-spacing-inset-sm) + var(--sl-size-icon-sm) + var(--sl-spacing-gap-sm)
+  );
   font-size: var(--sl-text-body-sm);
   font-family: inherit;
   line-height: var(--sl-line-height-body);
@@ -525,7 +529,9 @@
   border-radius: var(--sl-radius-button);
   color: hsl(var(--sl-color-text-secondary));
   cursor: pointer;
-  transition: color var(--sl-transition-fast), background-color var(--sl-transition-fast);
+  transition:
+    color var(--sl-transition-fast),
+    background-color var(--sl-transition-fast);
 }
 
 .drawerCloseButton svg {

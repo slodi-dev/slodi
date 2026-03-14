@@ -1,0 +1,49 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   ACTIVE FILTER BAR - CSS Module
+   Displays active filter chips with a "clear all" button.
+   All values reference --sl-* design tokens.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm, 0.5rem);
+  padding: var(--sl-spacing-inset-sm, 0.75rem) 0;
+}
+
+.clearAllButton {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sl-primitive-space-1, 0.25rem) var(--sl-spacing-gap-sm, 0.5rem);
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-caption, 0.875rem);
+  font-weight: var(--sl-font-weight-emphasis, 600);
+  color: hsl(var(--sl-color-text-secondary, 0 0% 30%));
+  background: none;
+  border: 1px solid hsl(var(--sl-color-border, 0 0% 85%));
+  border-radius: var(--sl-primitive-radius-md, 0.5rem);
+  cursor: pointer;
+  line-height: var(--sl-line-height-body, 1.5);
+  transition:
+    color var(--sl-transition-fast, 150ms) ease,
+    border-color var(--sl-transition-fast, 150ms) ease,
+    background-color var(--sl-transition-fast, 150ms) ease;
+}
+
+.clearAllButton:hover {
+  color: hsl(var(--sl-color-text-primary, 0 0% 10%));
+  border-color: hsl(var(--sl-color-border-strong, 0 0% 60%));
+  background-color: hsl(var(--sl-color-surface-sunken, 0 0% 96%));
+}
+
+.clearAllButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clearAllButton {
+    transition: none;
+  }
+}

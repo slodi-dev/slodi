@@ -81,9 +81,7 @@ export default function ProgramFilterBar({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // ── Refs ──
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined
-  );
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // Keep a stable ref to the latest filter state so the debounce callback
   // never reads stale closure values.
   const latestFiltersRef = useRef<{ q: string; ageGroup: string; selectedTagIds: string[] }>({
@@ -149,8 +147,11 @@ export default function ProgramFilterBar({
     }
     debounceRef.current = setTimeout(() => {
       const trimmed = localQ.trim();
-      const { q: currentQ, ageGroup: currentAgeGroup, selectedTagIds: currentTagIds } =
-        latestFiltersRef.current;
+      const {
+        q: currentQ,
+        ageGroup: currentAgeGroup,
+        selectedTagIds: currentTagIds,
+      } = latestFiltersRef.current;
       if (trimmed !== currentQ) {
         setQ(trimmed);
         pushToUrl({ q: trimmed, ageGroup: currentAgeGroup, tags: currentTagIds });
@@ -203,10 +204,7 @@ export default function ProgramFilterBar({
     if (!ageGroupOpen && !tagsOpen) return;
 
     const handler = (e: MouseEvent) => {
-      if (
-        ageGroupRef.current &&
-        !ageGroupRef.current.contains(e.target as Node)
-      ) {
+      if (ageGroupRef.current && !ageGroupRef.current.contains(e.target as Node)) {
         setAgeGroupOpen(false);
       }
       if (tagsRef.current && !tagsRef.current.contains(e.target as Node)) {
@@ -226,9 +224,7 @@ export default function ProgramFilterBar({
     }
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      const items =
-        ageGroupRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ??
-        [];
+      const items = ageGroupRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ?? [];
       const arr = Array.from(items);
       const currentIndex = arr.indexOf(document.activeElement as HTMLElement);
       const next =
@@ -245,8 +241,7 @@ export default function ProgramFilterBar({
     }
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      const items =
-        tagsRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ?? [];
+      const items = tagsRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ?? [];
       const arr = Array.from(items);
       const currentIndex = arr.indexOf(document.activeElement as HTMLElement);
       const next =
@@ -272,29 +267,21 @@ export default function ProgramFilterBar({
 
   // ─── Derived state ────────────────────────────────────────────────────────
 
-  const isAnyFilterActive =
-    ageGroup !== DEFAULT_AGE_GROUP || selectedTagIds.length > 0 || q !== "";
+  const isAnyFilterActive = ageGroup !== DEFAULT_AGE_GROUP || selectedTagIds.length > 0 || q !== "";
 
-  const tagsLabel =
-    selectedTagIds.length > 0
-      ? `Tags (${selectedTagIds.length})`
-      : "Tags";
+  const tagsLabel = selectedTagIds.length > 0 ? `Tags (${selectedTagIds.length})` : "Tags";
 
   const resultsText =
     totalCount === 0
       ? "Engar dagskrár fundust"
       : totalCount === 1
-      ? "1 dagskrá"
-      : `${totalCount} dagskrár`;
+        ? "1 dagskrá"
+        : `${totalCount} dagskrár`;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div
-      role="search"
-      aria-label="Sía dagskrár"
-      className={`${styles.filterBar} ${className}`}
-    >
+    <div role="search" aria-label="Sía dagskrár" className={`${styles.filterBar} ${className}`}>
       {/* ── Top row: controls ── */}
       <div className={styles.controlsRow}>
         {/* Search — always visible */}
@@ -444,11 +431,7 @@ export default function ProgramFilterBar({
           </div>
 
           {/* Tags multi-select dropdown */}
-          <div
-            className={styles.dropdownContainer}
-            ref={tagsRef}
-            onKeyDown={handleTagsKeyDown}
-          >
+          <div className={styles.dropdownContainer} ref={tagsRef} onKeyDown={handleTagsKeyDown}>
             <button
               type="button"
               className={`${styles.dropdownTrigger} ${selectedTagIds.length > 0 ? styles.dropdownTriggerActive : ""}`}
@@ -561,8 +544,7 @@ export default function ProgramFilterBar({
           Síur
           {(ageGroup !== DEFAULT_AGE_GROUP || selectedTagIds.length > 0) && (
             <span className={styles.mobileFiltersBadge} aria-hidden="true">
-              {(ageGroup !== DEFAULT_AGE_GROUP ? 1 : 0) +
-                selectedTagIds.length}
+              {(ageGroup !== DEFAULT_AGE_GROUP ? 1 : 0) + selectedTagIds.length}
             </span>
           )}
         </button>
@@ -592,11 +574,7 @@ export default function ProgramFilterBar({
           {isLoading ? (
             <span className={styles.resultsLoading}>Hleð dagskrám...</span>
           ) : (
-            <span
-              className={
-                totalCount === 0 ? styles.resultsEmpty : styles.resultsText
-              }
-            >
+            <span className={totalCount === 0 ? styles.resultsEmpty : styles.resultsText}>
               {resultsText}
             </span>
           )}
@@ -662,11 +640,7 @@ export default function ProgramFilterBar({
               {/* Age Group section */}
               <section className={styles.drawerSection}>
                 <h3 className={styles.drawerSectionTitle}>Aldurshópur</h3>
-                <ul
-                  role="listbox"
-                  aria-label="Aldurshópur"
-                  className={styles.drawerOptionList}
-                >
+                <ul role="listbox" aria-label="Aldurshópur" className={styles.drawerOptionList}>
                   {AGE_GROUP_OPTIONS.map((opt) => (
                     <li
                       key={opt.value}
@@ -723,10 +697,7 @@ export default function ProgramFilterBar({
                   <h3 className={styles.drawerSectionTitle}>
                     Flokkar
                     {selectedTagIds.length > 0 && (
-                      <span className={styles.drawerSectionCount}>
-                        {" "}
-                        ({selectedTagIds.length})
-                      </span>
+                      <span className={styles.drawerSectionCount}> ({selectedTagIds.length})</span>
                     )}
                   </h3>
                   <ul

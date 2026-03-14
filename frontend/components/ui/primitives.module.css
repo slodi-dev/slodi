@@ -1,0 +1,271 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   SHARED PRIMITIVES - CSS Module
+   Styles for CollapsibleSection, RangeInput, ActiveChip, SkeletonCard
+   All values reference --sl-* design tokens
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ===== COLLAPSIBLE SECTION ===== */
+
+.collapsible {
+  border-bottom: 1px solid hsl(var(--sl-color-border, 0 0% 85%));
+}
+
+.collapsibleToggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--sl-spacing-inset-sm, 0.75rem) 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body, 1rem);
+  font-weight: var(--sl-font-weight-emphasis, 600);
+  color: hsl(var(--sl-color-text-primary, 0 0% 10%));
+  gap: var(--sl-spacing-gap-sm, 0.5rem);
+  text-align: left;
+  line-height: var(--sl-line-height-body, 1.5);
+}
+
+.collapsibleToggle:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline-offset: 2px;
+  border-radius: var(--sl-primitive-radius-sm, 0.25rem);
+}
+
+.collapsibleLabel {
+  flex: 1;
+}
+
+.collapsibleBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 var(--sl-primitive-space-1, 0.25rem);
+  font-size: var(--sl-text-overline, 0.75rem);
+  font-weight: var(--sl-font-weight-emphasis, 600);
+  line-height: 1;
+  color: hsl(var(--sl-color-text-inverse, 0 0% 100%));
+  background-color: hsl(var(--sl-color-primary, 142 50% 42%));
+  border-radius: var(--sl-radius-badge, 9999px);
+}
+
+.collapsibleChevron {
+  width: var(--sl-primitive-icon-xs, 1rem);
+  height: var(--sl-primitive-icon-xs, 1rem);
+  color: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
+  transition: transform var(--sl-transition-fast, 150ms cubic-bezier(0, 0, 0.2, 1));
+  flex-shrink: 0;
+}
+
+.collapsibleChevronOpen {
+  transform: rotate(180deg);
+}
+
+.collapsiblePanel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--sl-transition-fast, 150ms cubic-bezier(0, 0, 0.2, 1));
+}
+
+.collapsiblePanelOpen {
+  grid-template-rows: 1fr;
+}
+
+.collapsiblePanelInner {
+  overflow: hidden;
+}
+
+.collapsiblePanelContent {
+  padding-bottom: var(--sl-spacing-inset-sm, 0.75rem);
+}
+
+/* ===== RANGE INPUT ===== */
+
+.rangeInputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm, 0.5rem);
+}
+
+.rangeInputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm, 0.5rem);
+}
+
+.rangeInputField {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sl-input-padding-y, 0.75rem) var(--sl-input-padding-x, 1rem);
+  font-size: var(--sl-input-font-size, 1rem);
+  font-family: var(--sl-font-family-body);
+  line-height: 1;
+  background-color: hsl(var(--sl-input-background, 0 0% 100%));
+  border: 1px solid hsl(var(--sl-input-border, 0 0% 85%));
+  border-radius: var(--sl-input-radius, 0.5rem);
+  color: hsl(var(--sl-input-text, 0 0% 10%));
+  transition: var(--sl-input-transition, 150ms cubic-bezier(0, 0, 0.2, 1));
+  /* Remove browser spinner arrows */
+  appearance: textfield;
+}
+
+.rangeInputField::-webkit-inner-spin-button,
+.rangeInputField::-webkit-outer-spin-button {
+  display: none;
+}
+
+.rangeInputField::placeholder {
+  color: hsl(var(--sl-input-placeholder, 0 0% 40%));
+}
+
+.rangeInputField:hover {
+  border-color: hsl(var(--sl-input-border-hover, 0 0% 70%));
+}
+
+.rangeInputField:focus-visible {
+  outline: none;
+  border-color: hsl(var(--sl-input-border-focus, 142 50% 42%));
+  box-shadow: var(--sl-input-shadow-focus, 0 0 0 3px hsl(142 50% 42% / 0.3));
+}
+
+.rangeInputSeparator {
+  color: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
+  font-size: var(--sl-text-body, 1rem);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.rangeInputHint {
+  font-size: var(--sl-text-caption, 0.875rem);
+  color: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
+  line-height: var(--sl-line-height-body, 1.5);
+  margin: 0;
+}
+
+/* ===== ACTIVE CHIP ===== */
+
+.activeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs, 0.25rem);
+  padding: var(--sl-primitive-space-1, 0.25rem) var(--sl-spacing-inset-sm, 0.75rem);
+  background-color: hsl(var(--sl-color-primary-subtle, 142 50% 96%));
+  color: hsl(var(--sl-color-success-text, 142 50% 22%));
+  border-radius: var(--sl-radius-chip, 9999px);
+  font-size: var(--sl-text-caption, 0.875rem);
+  font-family: var(--sl-font-family-body);
+  line-height: var(--sl-line-height-body, 1.5);
+  max-width: 100%;
+}
+
+.activeChipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activeChipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: hsl(var(--sl-color-success-text, 142 50% 22%));
+  border-radius: var(--sl-primitive-radius-full, 9999px);
+  flex-shrink: 0;
+  line-height: 1;
+  transition: background-color var(--sl-transition-fast, 150ms cubic-bezier(0, 0, 0.2, 1));
+}
+
+.activeChipRemove:hover {
+  background-color: hsl(var(--sl-color-primary-muted, 142 50% 90%));
+}
+
+.activeChipRemove:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline-offset: 1px;
+}
+
+.activeChipRemoveIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* ===== SKELETON CARD ===== */
+
+.skeletonCard {
+  background-color: hsl(var(--sl-card-background, 0 0% 100%));
+  border: 1px solid hsl(var(--sl-card-border, 0 0% 90%));
+  border-radius: var(--sl-card-radius, 0.75rem);
+  overflow: hidden;
+  box-shadow: var(--sl-card-shadow, 0 1px 3px 0 rgb(0 0 0 / 0.1));
+}
+
+.skeletonBlock {
+  background-color: hsl(var(--sl-color-border, 0 0% 85%));
+  border-radius: var(--sl-primitive-radius-sm, 0.25rem);
+}
+
+.skeletonImage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0;
+}
+
+.skeletonBody {
+  padding: var(--sl-card-padding, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm, 0.75rem);
+}
+
+.skeletonTitle {
+  height: 1.25rem;
+  width: 75%;
+}
+
+.skeletonLine {
+  height: 0.875rem;
+  width: 100%;
+}
+
+.skeletonLineShort {
+  height: 0.875rem;
+  width: 60%;
+}
+
+.skeletonChips {
+  display: flex;
+  gap: var(--sl-spacing-gap-sm, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.skeletonChip {
+  height: 1.5rem;
+  width: 4rem;
+  border-radius: var(--sl-radius-chip, 9999px);
+}
+
+/* Shimmer animation — only when user has no motion preference */
+@media (prefers-reduced-motion: no-preference) {
+  .skeletonBlock {
+    animation: skeletonShimmer 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes skeletonShimmer {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}

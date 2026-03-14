@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.program import Program
-from app.repositories.programs import ProgramRepository
+from app.repositories.programs import ProgramFilters, ProgramRepository
 from app.repositories.tags import TagRepository
 from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
 
@@ -20,8 +20,10 @@ class ProgramService:
         self.session = session
         self.repo = ProgramRepository(session)
 
-    async def count_programs_for_workspace(self, workspace_id: UUID) -> int:
-        return await self.repo.count_programs_for_workspace(workspace_id)
+    async def count_programs_for_workspace(
+        self, workspace_id: UUID, filters: ProgramFilters | None = None
+    ) -> int:
+        return await self.repo.count_programs_for_workspace(workspace_id, filters=filters)
 
     async def list_for_workspace(
         self,
@@ -30,9 +32,10 @@ class ProgramService:
         *,
         limit: int = 50,
         offset: int = 0,
+        filters: ProgramFilters | None = None,
     ) -> list[ProgramListOut]:
         rows = await self.repo.list_by_workspace(
-            workspace_id, current_user_id, limit=limit, offset=offset
+            workspace_id, current_user_id, limit=limit, offset=offset, filters=filters
         )
         return [ProgramListOut.from_row(prog, stats) for prog, stats in rows]
 

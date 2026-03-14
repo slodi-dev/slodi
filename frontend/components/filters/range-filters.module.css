@@ -1,0 +1,72 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   RANGE FILTERS - Shared CSS Module
+   Styles for DurationFilter, PrepTimeFilter, ParticipantFilter, PriceFilter
+   All values reference --sl-* design tokens
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ===== PRICE FILTER ===== */
+
+.priceCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm, 0.5rem);
+  font-size: var(--sl-text-body, 1rem);
+  font-family: var(--sl-font-family-body);
+  color: hsl(var(--sl-color-text-primary, 0 0% 10%));
+  cursor: pointer;
+  line-height: var(--sl-line-height-body, 1.5);
+  margin-bottom: var(--sl-spacing-gap-sm, 0.5rem);
+}
+
+.priceCheckbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: hsl(var(--sl-color-primary, 142 50% 42%));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.priceMaxInput {
+  width: 100%;
+  padding: var(--sl-input-padding-y, 0.75rem) var(--sl-input-padding-x, 1rem);
+  font-size: var(--sl-input-font-size, 1rem);
+  font-family: var(--sl-font-family-body);
+  line-height: 1;
+  background-color: hsl(var(--sl-input-background, 0 0% 100%));
+  border: 1px solid hsl(var(--sl-input-border, 0 0% 85%));
+  border-radius: var(--sl-input-radius, 0.5rem);
+  color: hsl(var(--sl-input-text, 0 0% 10%));
+  transition: var(--sl-input-transition, 150ms cubic-bezier(0, 0, 0.2, 1));
+  appearance: textfield;
+}
+
+.priceMaxInput::-webkit-inner-spin-button,
+.priceMaxInput::-webkit-outer-spin-button {
+  display: none;
+}
+
+.priceMaxInput::placeholder {
+  color: hsl(var(--sl-input-placeholder, 0 0% 40%));
+}
+
+.priceMaxInput:hover {
+  border-color: hsl(var(--sl-input-border-hover, 0 0% 70%));
+}
+
+.priceMaxInput:focus-visible {
+  outline: none;
+  border-color: hsl(var(--sl-input-border-focus, 142 50% 42%));
+  box-shadow: var(--sl-input-shadow-focus, 0 0 0 3px hsl(142 50% 42% / 0.3));
+}
+
+.priceHint {
+  font-size: var(--sl-text-caption, 0.875rem);
+  color: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
+  line-height: var(--sl-line-height-body, 1.5);
+  margin: var(--sl-spacing-gap-sm, 0.5rem) 0 0;
+}
+
+.priceWrapper {
+  display: flex;
+  flex-direction: column;
+}

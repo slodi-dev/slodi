@@ -1,0 +1,177 @@
+/* ═══════════════════════════════════════════════════════════
+   CATEGORICAL FILTERS - SHARED STYLES
+   Checkbox groups, combobox/autocomplete
+   Using Slóði Design Tokens
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   CHECKBOX GROUP
+   ═══════════════════════════════════════════════════════════ */
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-xs, 4px);
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: var(--sl-spacing-inline-xs, 4px);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-inline-sm, 8px);
+  padding: var(--sl-spacing-inset-xs, 6px) var(--sl-spacing-inset-sm, 8px);
+  border-radius: var(--sl-radius-base, 6px);
+  cursor: pointer;
+  transition: background-color var(--sl-transition-base, 150ms ease);
+  font-size: var(--sl-font-size-sm, 0.875rem);
+  color: hsl(var(--sl-color-text-primary));
+  line-height: var(--sl-line-height-tight, 1.25);
+}
+
+.checkboxLabel:hover {
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.checkboxLabelSelected {
+  font-weight: var(--sl-font-weight-medium, 500);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--sl-color-primary, hsl(142 50% 42%));
+  flex-shrink: 0;
+}
+
+.checkbox:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMBOBOX / AUTOCOMPLETE
+   ═══════════════════════════════════════════════════════════ */
+
+.comboboxWrapper {
+  position: relative;
+}
+
+.comboboxInput {
+  width: 100%;
+  padding: var(--sl-spacing-inset-sm, 8px) var(--sl-spacing-inset-md, 12px);
+  font-size: var(--sl-font-size-sm, 0.875rem);
+  font-family: inherit;
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30, 0.3));
+  border-radius: var(--sl-radius-input, 6px);
+  outline: none;
+  transition:
+    border-color var(--sl-transition-base, 150ms ease),
+    box-shadow var(--sl-transition-base, 150ms ease);
+  box-sizing: border-box;
+}
+
+.comboboxInput::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.comboboxInput:hover {
+  border-color: hsl(var(--sl-color-border));
+}
+
+.comboboxInput:focus {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-10, 0.1));
+}
+
+.suggestionList {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--sl-spacing-stack-xs, 4px);
+  max-height: 200px;
+  overflow-y: auto;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30, 0.3));
+  border-radius: var(--sl-radius-base, 6px);
+  box-shadow: var(
+    --sl-shadow-dropdown,
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1)
+  );
+  z-index: var(--sl-z-dropdown, 100);
+  list-style: none;
+  padding: var(--sl-spacing-stack-xs, 4px) 0;
+}
+
+.suggestionItem {
+  padding: var(--sl-spacing-inset-xs, 6px) var(--sl-spacing-inset-md, 12px);
+  font-size: var(--sl-font-size-sm, 0.875rem);
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+  transition: background-color var(--sl-transition-base, 150ms ease);
+}
+
+.suggestionItem:hover,
+.suggestionItemActive {
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.suggestionItemActive {
+  font-weight: var(--sl-font-weight-medium, 500);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR STYLING
+   ═══════════════════════════════════════════════════════════ */
+
+.checkboxGroup::-webkit-scrollbar,
+.suggestionList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.checkboxGroup::-webkit-scrollbar-track,
+.suggestionList::-webkit-scrollbar-track {
+  background: hsl(var(--sl-color-background-secondary));
+  border-radius: var(--sl-radius-base, 6px);
+}
+
+.checkboxGroup::-webkit-scrollbar-thumb,
+.suggestionList::-webkit-scrollbar-thumb {
+  background: hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-base, 6px);
+}
+
+.checkboxGroup::-webkit-scrollbar-thumb:hover,
+.suggestionList::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .checkboxLabel,
+  .comboboxInput,
+  .suggestionItem {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .comboboxInput {
+    border-width: 2px;
+  }
+
+  .checkbox {
+    outline: 2px solid currentColor;
+  }
+}

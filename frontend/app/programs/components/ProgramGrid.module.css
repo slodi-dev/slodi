@@ -1,44 +1,117 @@
 /* ═══════════════════════════════════════════════════════════
    PROGRAM GRID COMPONENT
-   Responsive grid layout for program cards
+   Responsive grid layout for program cards with loading,
+   empty, and error states.
    Using Slóði Design Tokens
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   GRID LAYOUT
+   Uses minmax(0, 1fr) to prevent grid blowout from long content.
+   Rendered as <ul> for screen reader list semantics.
    ═══════════════════════════════════════════════════════════ */
 
 .grid {
   display: grid;
-  gap: var(--sl-spacing-stack-lg);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
   width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gridItem {
+  list-style: none;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   GRID VIEW (Default)
-   Responsive column layout - uses auto-fill for fluid responsiveness
+   RESPONSIVE BREAKPOINTS
    ═══════════════════════════════════════════════════════════ */
 
-.grid.grid {
-  /* Fluid grid: automatically adjusts columns based on available space */
-  /* Minimum card width: 280px, cards grow equally to fill space */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LIST VIEW
-   Horizontal card layout
+   ERROR STATE
+   Centered layout with icon, message, and retry button.
+   Uses role="alert" for immediate screen reader announcement.
    ═══════════════════════════════════════════════════════════ */
 
-.grid.list {
-  grid-template-columns: 1fr;
-  gap: var(--sl-spacing-stack-md);
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sl-spacing-section, 3rem);
+  text-align: center;
+  min-height: 300px;
+  gap: var(--sl-spacing-element, 1rem);
 }
 
-/* List view cards should have horizontal layout */
-.grid.list > * {
-  /* This would be applied to child cards in list view */
-  /* Cards need to handle their own list view styling */
+.errorIcon {
+  width: var(--sl-icon-xl, 4rem);
+  height: var(--sl-icon-xl, 4rem);
+  color: hsl(var(--sl-color-error, 0 65% 50%));
+  opacity: 0.7;
+}
+
+.errorIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.errorHeading {
+  font-size: var(--sl-font-size-2xl, 1.5rem);
+  font-weight: var(--sl-font-weight-semibold, 600);
+  color: hsl(var(--sl-color-text-primary));
+  margin: 0;
+}
+
+.errorMessage {
+  font-size: var(--sl-font-size-base, 1rem);
+  color: hsl(var(--sl-color-text-secondary));
+  max-width: 400px;
+  margin: 0;
+  line-height: var(--sl-line-height-relaxed, 1.625);
+}
+
+.retryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sl-spacing-inline-sm, 0.5rem) var(--sl-spacing-inline-lg, 1.25rem);
+  font-size: var(--sl-font-size-base, 1rem);
+  font-weight: var(--sl-font-weight-medium, 500);
+  color: hsl(var(--sl-color-surface, 0 0% 100%));
+  background: hsl(var(--sl-color-primary, 142 50% 42%));
+  border: none;
+  border-radius: var(--sl-radius-button, 0.5rem);
+  cursor: pointer;
+  transition: background var(--sl-transition-fast, 150ms) ease-in-out;
+}
+
+.retryButton:hover {
+  background: hsl(var(--sl-color-primary-hover, 142 50% 35%));
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline-offset: 2px;
 }
 
 /* ═══════════════════════════════════════════════════════════
    EMPTY STATE
+   Friendly message when no programs match filters.
    ═══════════════════════════════════════════════════════════ */
 
 .emptyState {
@@ -46,17 +119,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--sl-spacing-section);
+  padding: var(--sl-spacing-section, 3rem);
   text-align: center;
   min-height: 400px;
+  gap: var(--sl-spacing-element, 1rem);
 }
 
 .emptyIcon {
-  width: var(--sl-icon-xl);
-  height: var(--sl-icon-xl);
-  margin-bottom: var(--sl-spacing-stack-lg);
+  width: var(--sl-icon-xl, 4rem);
+  height: var(--sl-icon-xl, 4rem);
   color: hsl(var(--sl-color-text-tertiary));
-  opacity: var(--sl-primitive-opacity-40);
+  opacity: var(--sl-primitive-opacity-40, 0.4);
 }
 
 .emptyIcon svg {
@@ -64,167 +137,19 @@
   height: 100%;
 }
 
-.emptyTitle {
-  font-size: var(--sl-font-size-2xl);
-  font-weight: var(--sl-font-weight-semibold);
+.emptyHeading {
+  font-size: var(--sl-font-size-2xl, 1.5rem);
+  font-weight: var(--sl-font-weight-semibold, 600);
   color: hsl(var(--sl-color-text-primary));
-  margin: 0 0 var(--sl-spacing-stack-sm) 0;
+  margin: 0;
 }
 
-.emptyDescription {
-  font-size: var(--sl-font-size-base);
+.emptyBody {
+  font-size: var(--sl-font-size-base, 1rem);
   color: hsl(var(--sl-color-text-secondary));
   max-width: 400px;
   margin: 0;
-  line-height: var(--sl-line-height-relaxed);
-}
-
-/* ═══════════════════════════════════════════════════════════
-   LOADING SKELETON
-   Animated placeholder for loading state
-   ═══════════════════════════════════════════════════════════ */
-
-.skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-stack-md);
-  background: hsl(var(--sl-color-surface));
-  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
-  border-radius: var(--sl-radius-card);
-  padding: var(--sl-spacing-inset-md);
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.skeletonMedia {
-  width: 100%;
-  height: 180px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary)),
-    hsl(var(--sl-color-background-secondary))
-  );
-  background-size: 200% 100%;
-  border-radius: var(--sl-radius-base);
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.skeletonContent {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-stack-sm);
-  flex: 1;
-}
-
-.skeletonTitle {
-  width: 80%;
-  height: 24px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary)),
-    hsl(var(--sl-color-background-secondary))
-  );
-  background-size: 200% 100%;
-  border-radius: var(--sl-radius-sm);
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-.skeletonByline {
-  width: 40%;
-  height: 16px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary)),
-    hsl(var(--sl-color-background-secondary))
-  );
-  background-size: 200% 100%;
-  border-radius: var(--sl-radius-sm);
-  animation: shimmer 1.5s ease-in-out infinite;
-  animation-delay: 0.1s;
-}
-
-.skeletonDescription {
-  width: 100%;
-  height: 16px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary)),
-    hsl(var(--sl-color-background-secondary))
-  );
-  background-size: 200% 100%;
-  border-radius: var(--sl-radius-sm);
-  animation: shimmer 1.5s ease-in-out infinite;
-  animation-delay: 0.2s;
-}
-
-.skeletonDescription:last-child {
-  width: 70%;
-}
-
-.skeletonTags {
-  display: flex;
-  gap: var(--sl-spacing-inline-xs);
-  margin-top: var(--sl-spacing-stack-sm);
-}
-
-.skeletonTag {
-  width: 60px;
-  height: 24px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary)),
-    hsl(var(--sl-color-background-secondary))
-  );
-  background-size: 200% 100%;
-  border-radius: var(--sl-radius-badge);
-  animation: shimmer 1.5s ease-in-out infinite;
-  animation-delay: 0.3s;
-}
-
-.skeletonFooter {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sl-spacing-inline-md);
-  padding-top: var(--sl-spacing-stack-sm);
-  border-top: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
-}
-
-.skeletonButton {
-  width: 80px;
-  height: 32px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--sl-color-background-secondary)),
-    hsl(var(--sl-color-background-tertiary)),
-    hsl(var(--sl-color-background-secondary))
-  );
-  background-size: 200% 100%;
-  border-radius: var(--sl-radius-button);
-  animation: shimmer 1.5s ease-in-out infinite;
-  animation-delay: 0.4s;
+  line-height: var(--sl-line-height-relaxed, 1.625);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -232,54 +157,25 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 640px) {
-  .emptyState {
-    padding: var(--sl-spacing-stack-xl);
-    min-height: 300px;
+  .emptyState,
+  .errorState {
+    padding: var(--sl-spacing-stack-xl, 2rem);
+    min-height: 250px;
   }
 
-  .emptyIcon {
-    width: 64px;
-    height: 64px;
+  .emptyIcon,
+  .errorIcon {
+    width: 3rem;
+    height: 3rem;
   }
 
-  .emptyTitle {
-    font-size: var(--sl-font-size-xl);
+  .emptyHeading,
+  .errorHeading {
+    font-size: var(--sl-font-size-xl, 1.25rem);
   }
 
-  .emptyDescription {
-    font-size: var(--sl-font-size-sm);
+  .emptyBody,
+  .errorMessage {
+    font-size: var(--sl-font-size-sm, 0.875rem);
   }
-
-  .skeletonMedia {
-    height: 140px;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   ACCESSIBILITY
-   ═══════════════════════════════════════════════════════════ */
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton,
-  .skeletonMedia,
-  .skeletonTitle,
-  .skeletonByline,
-  .skeletonDescription,
-  .skeletonTag,
-  .skeletonButton {
-    animation: none;
-  }
-}
-
-/* Screen reader only text */
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
 }

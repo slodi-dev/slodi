@@ -9,7 +9,9 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "deploy-prod": "vercel --prod"
+    "deploy-prod": "vercel --prod",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.14.0",
@@ -33,6 +35,11 @@
     "eslint-config-next": "^15.5.12",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
-    "typescript": "^5"
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "jsdom": "^25.0.1",
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }

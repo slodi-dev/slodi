@@ -32,14 +32,8 @@ export default function DashboardLayout({
   badgeCount = 0,
 }: DashboardLayoutProps) {
   const { user } = useUser();
-  const {
-    sidebarCollapsed,
-    mobileMenuOpen,
-    isMobile,
-    toggleSidebar,
-    toggleMobileMenu,
-    closeMobileMenu,
-  } = useSidebarState();
+  const { sidebarCollapsed, mobileMenuOpen, toggleSidebar, toggleMobileMenu, closeMobileMenu } =
+    useSidebarState();
 
   // Resolve user data with Auth0 fallbacks
   const resolvedUserName = user?.name || userName;
