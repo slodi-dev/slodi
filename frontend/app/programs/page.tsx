@@ -233,15 +233,15 @@ function ProgramsPageInner() {
         />
       </div>
 
-      {/* Active filter chips bar */}
-      <ActiveFilterBar chips={activeChips} onClearAll={clearAll} />
-
       {/* Main content area: sidebar + programs */}
       <div className={styles.content}>
         {/* Desktop sidebar — hidden on mobile via CSS */}
         <FilterSidebar {...filterSidebarProps} />
 
         <main className={styles.main}>
+          {/* Active filter chips */}
+          <ActiveFilterBar chips={activeChips} onClearAll={clearAll} />
+
           {/* Result count */}
           <p className={styles.resultCount} aria-live="polite">
             {filtered.length === 1 ? "1 dagskrá" : `${filtered.length} dagskrár`}

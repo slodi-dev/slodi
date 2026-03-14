@@ -1,13 +1,30 @@
 from __future__ import annotations
 
 from typing import Literal
+from uuid import UUID
 
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict
 
-from app.domain.enums import ContentType
+from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
 
 from .content import ContentCreate, ContentListOut, ContentOut, ContentUpdate
 from .event import EventListOut
+
+
+class ProgramFilters(BaseModel):
+    search: str | None = None
+    age: list[AgeGroup] | None = None
+    duration_min: int | None = None
+    duration_max: int | None = None
+    prep_time_min: int | None = None
+    prep_time_max: int | None = None
+    count_min: int | None = None
+    count_max: int | None = None
+    price_max: int | None = None
+    location: str | None = None
+    equipment: list[str] | None = None
+    author_id: UUID | None = None
+    sort_by: ProgramSortBy | None = None
 
 
 class ProgramCreate(ContentCreate):

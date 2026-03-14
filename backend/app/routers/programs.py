@@ -10,9 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_program_edit_access, check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.domain.enums import ContentType
-from app.repositories.programs import ProgramFilters
-from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
+from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
+from app.schemas.program import (
+    ProgramCreate,
+    ProgramFilters,
+    ProgramListOut,
+    ProgramOut,
+    ProgramUpdate,
+)
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
 from app.services.programs import ProgramService
@@ -36,9 +41,9 @@ async def list_workspace_programs(
         default=None,
         description="Case-insensitive search on program name and description",
     ),
-    age: list[str] | None = Query(
+    age: list[AgeGroup] | None = Query(
         default=None,
-        description="Filter by age groups (OR logic). Values: hrefnuskatar, drekaskatar, falkaskatar, drottskatar, rekkaskatar, roverskatar, vaettaskatar",
+        description="Filter by age groups (OR logic)",
     ),
     duration_min: int | None = Query(
         default=None,
@@ -87,9 +92,9 @@ async def list_workspace_programs(
         default=None,
         description="Filter by author ID (exact UUID match)",
     ),
-    sort_by: str | None = Query(
+    sort_by: ProgramSortBy | None = Query(
         default=None,
-        description="Sort order: newest, oldest, liked, alpha",
+        description="Sort order",
     ),
 ) -> list[ProgramListOut]:
     svc = ProgramService(session)
@@ -97,43 +102,20 @@ async def list_workspace_programs(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
 
-    # Build filters dataclass only when at least one filter param is provided
-    has_filters = any(
-        v is not None
-        for v in (
-            search,
-            age,
-            duration_min,
-            duration_max,
-            prep_time_min,
-            prep_time_max,
-            count_min,
-            count_max,
-            price_max,
-            location,
-            equipment,
-            author_id,
-            sort_by,
-        )
-    )
-    filters = (
-        ProgramFilters(
-            search=search,
-            age=age,
-            duration_min=duration_min,
-            duration_max=duration_max,
-            prep_time_min=prep_time_min,
-            prep_time_max=prep_time_max,
-            count_min=count_min,
-            count_max=count_max,
-            price_max=price_max,
-            location=location,
-            equipment=equipment,
-            author_id=author_id,
-            sort_by=sort_by,
-        )
-        if has_filters
-        else None
+    filters = ProgramFilters(
+        search=search,
+        age=age,
+        duration_min=duration_min,
+        duration_max=duration_max,
+        prep_time_min=prep_time_min,
+        prep_time_max=prep_time_max,
+        count_min=count_min,
+        count_max=count_max,
+        price_max=price_max,
+        location=location,
+        equipment=equipment,
+        author_id=author_id,
+        sort_by=sort_by,
     )
 
     total = await svc.count_programs_for_workspace(workspace_id, filters=filters)

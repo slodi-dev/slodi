@@ -8,9 +8,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.program import Program
-from app.repositories.programs import ProgramFilters, ProgramRepository
+from app.repositories.programs import ProgramRepository
 from app.repositories.tags import TagRepository
-from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
+from app.schemas.program import (
+    ProgramCreate,
+    ProgramFilters,
+    ProgramListOut,
+    ProgramOut,
+    ProgramUpdate,
+)
 
 logger = logging.getLogger(__name__)
 
