@@ -56,7 +56,7 @@ async def like_content(
     return await svc.like_content(user_id=current_user.id, content_id=content_id)
 
 
-@router.delete("/content/{content_id}/likes/me", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/content/{content_id}/likes", status_code=status.HTTP_204_NO_CONTENT)
 async def unlike_content(
     session: SessionDep,
     content_id: UUID,

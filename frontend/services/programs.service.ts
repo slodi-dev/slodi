@@ -9,6 +9,7 @@ export type Program = {
   description: string | null;
   public: boolean;
   like_count: number;
+  liked_by_me: boolean;
   created_at: string;
   author_id: string;
   image: string | null;
@@ -213,26 +214,25 @@ export async function deleteProgram(
 }
 
 /**
- * Like or unlike a program
- * Requires authentication
+ * Like a program. Requires authentication.
  */
-export async function toggleProgramLike(
+export async function likeProgram(
   programId: string,
-  action: "like" | "unlike",
   getToken: () => Promise<string | null>
-): Promise<{ liked: boolean; likeCount: number }> {
-  const url = buildApiUrl(`/programs/${programId}/like`);
-  return fetchWithAuth<{ liked: boolean; likeCount: number }>(
-    url,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ action }),
-    },
-    getToken
-  );
+): Promise<void> {
+  const url = buildApiUrl(`/content/${programId}/likes`);
+  await fetchWithAuth<void>(url, { method: "POST" }, getToken);
+}
+
+/**
+ * Unlike a program. Requires authentication.
+ */
+export async function unlikeProgram(
+  programId: string,
+  getToken: () => Promise<string | null>
+): Promise<void> {
+  const url = buildApiUrl(`/content/${programId}/likes`);
+  await fetchWithAuth<void>(url, { method: "DELETE" }, getToken);
 }
 
 /**

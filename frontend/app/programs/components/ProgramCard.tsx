@@ -18,6 +18,7 @@ export interface ProgramCardProps {
   };
   tags?: Array<{ id: string; name: string }>;
   like_count?: number;
+  liked_by_me?: boolean;
   className?: string;
   /** Show an edit option in the card action menu. */
   canEdit?: boolean;
@@ -37,6 +38,7 @@ export default function ProgramCard({
   author,
   tags = [],
   like_count = 0,
+  liked_by_me = false,
   className,
   canEdit,
   canDelete,
@@ -44,7 +46,7 @@ export default function ProgramCard({
   onDelete,
 }: ProgramCardProps) {
   const router = useRouter();
-  const { likeCount, isLiked, toggleLike } = useLikes(id, like_count);
+  const { likeCount, isLiked, toggleLike } = useLikes(id, like_count, liked_by_me);
   const { isFavorite, toggleFavorite } = useFavorite(id);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

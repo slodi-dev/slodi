@@ -189,6 +189,8 @@ export default function ProgramsPage() {
                 description={p.description}
                 tags={p.tags}
                 author={p.author}
+                like_count={p.like_count}
+                liked_by_me={p.liked_by_me}
                 canEdit={canEditProgram(user, p, role)}
                 canDelete={canDeleteProgram(user, p, role)}
                 onEdit={() => setEditingProgram(p)}

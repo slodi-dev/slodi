@@ -114,7 +114,7 @@ def test_unlike_content_returns_204(client):
     with patch("app.services.likes.LikeService.delete", new_callable=AsyncMock) as mock_del:
         mock_del.return_value = None
 
-        response = client.delete(f"/content/{content_id}/likes/me")
+        response = client.delete(f"/content/{content_id}/likes")
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
 

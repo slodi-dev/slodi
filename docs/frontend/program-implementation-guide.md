@@ -1028,6 +1028,24 @@ const updateFilters = (newFilters: FilterState) => {
 
 ### Client State (React Context)
 
+**Likes** (`contexts/LikesContext.tsx`):
+
+Like state is seeded from the `liked_by_me` and `like_count` fields returned by the API on every list and detail response — no separate fetch is made. The context holds an in-memory map so that a like toggled on the programs list is immediately reflected when navigating to the detail page.
+
+```typescript
+// useLikes — call this in any component that needs like state
+const { likeCount, isLiked, toggleLike } = useLikes(
+  programId,
+  initialCount,  // from like_count in API response
+  initialLiked   // from liked_by_me in API response
+);
+```
+
+- State is seeded once per ID (subsequent renders with the same ID won't overwrite a toggled state)
+- `toggleLike` does an optimistic update and reverts on API error
+- `LikesProvider` must wrap the app (already in `layout.tsx`)
+- State is in-memory only — not persisted across page reloads
+
 **User Favorites**:
 
 ```typescript
