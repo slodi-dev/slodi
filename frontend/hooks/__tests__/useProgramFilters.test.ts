@@ -39,6 +39,7 @@ function createProgram(overrides: Partial<Program> = {}): Program {
     liked_by_me: false,
     created_at: "2026-01-01T00:00:00Z",
     author_id: "a1",
+    author_name: "Author One",
     image: null,
     workspace_id: "w1",
     author: { id: "a1", name: "Author One", email: "a@test.is" },
