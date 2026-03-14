@@ -195,7 +195,7 @@ class TestProgramFilters:
 
     async def test_no_params_returns_all(self, http, seed_data):
         """No filter params returns all programs (backwards compatibility)."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(f"/workspaces/{sd['workspace_id']}/programs")
         assert resp.status_code == 200
         data = resp.json()
@@ -203,7 +203,7 @@ class TestProgramFilters:
 
     async def test_search_by_name(self, http, seed_data):
         """search=outdoor matches program with 'Outdoor' in name."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"search": "outdoor"},
@@ -215,7 +215,7 @@ class TestProgramFilters:
 
     async def test_search_by_description(self, http, seed_data):
         """search=test matches programs with 'test' in description."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"search": "test"},
@@ -227,7 +227,7 @@ class TestProgramFilters:
 
     async def test_search_case_insensitive(self, http, seed_data):
         """Search is case-insensitive."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"search": "WORKSHOP"},
@@ -239,7 +239,7 @@ class TestProgramFilters:
 
     async def test_age_filter_single(self, http, seed_data):
         """age=hrefnuskatar returns only programs for that age group."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"age": "Hrefnuskátar"},
@@ -251,7 +251,7 @@ class TestProgramFilters:
 
     async def test_age_filter_multiple_or(self, http, seed_data):
         """Multiple age params use OR logic."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"age": ["Hrefnuskátar", "Fálkaskátar"]},
@@ -265,7 +265,7 @@ class TestProgramFilters:
 
     async def test_duration_min_filter(self, http, seed_data):
         """duration_min=60 excludes programs with duration_min < 60."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"duration_min": 60},
@@ -278,7 +278,7 @@ class TestProgramFilters:
 
     async def test_duration_max_filter(self, http, seed_data):
         """duration_max=90 excludes programs with duration_max > 90."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"duration_max": 90},
@@ -291,7 +291,7 @@ class TestProgramFilters:
 
     async def test_price_max_zero_free_only(self, http, seed_data):
         """price_max=0 returns only free programs (price=0 or price=null)."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"price_max": 0},
@@ -305,7 +305,7 @@ class TestProgramFilters:
 
     async def test_price_max_nonzero(self, http, seed_data):
         """price_max=1500 includes programs with price <= 1500."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"price_max": 1500},
@@ -318,7 +318,7 @@ class TestProgramFilters:
 
     async def test_location_partial_match(self, http, seed_data):
         """location=reykjavik matches partial location strings case-insensitively."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"location": "reykjavik"},
@@ -330,7 +330,7 @@ class TestProgramFilters:
 
     async def test_location_partial_match_broader(self, http, seed_data):
         """location=Skata matches 'Skatabudin'."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"location": "Skata"},
@@ -342,7 +342,7 @@ class TestProgramFilters:
 
     async def test_equipment_filter(self, http, seed_data):
         """equipment=rope matches programs containing 'rope' in equipment."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"equipment": "rope"},
@@ -354,7 +354,7 @@ class TestProgramFilters:
 
     async def test_equipment_filter_or_logic(self, http, seed_data):
         """Multiple equipment values use OR logic."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"equipment": ["rope", "pots"]},
@@ -367,7 +367,7 @@ class TestProgramFilters:
 
     async def test_author_id_filter(self, http, seed_data):
         """author_id filters to a specific author."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"author_id": str(sd["other_user_id"])},
@@ -379,7 +379,7 @@ class TestProgramFilters:
 
     async def test_count_min_filter(self, http, seed_data):
         """count_min=10 returns only programs with count_min >= 10."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"count_min": 10},
@@ -391,7 +391,7 @@ class TestProgramFilters:
 
     async def test_count_max_filter(self, http, seed_data):
         """count_max=20 returns only programs with count_max <= 20."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"count_max": 20},
@@ -404,7 +404,7 @@ class TestProgramFilters:
 
     async def test_prep_time_min_filter(self, http, seed_data):
         """prep_time_min=30 returns only programs with prep_time_min >= 30."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"prep_time_min": 30},
@@ -416,7 +416,7 @@ class TestProgramFilters:
 
     async def test_sort_by_oldest(self, http, seed_data):
         """sort_by=oldest returns programs ordered by created_at ASC."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"sort_by": "oldest"},
@@ -430,7 +430,7 @@ class TestProgramFilters:
 
     async def test_sort_by_newest(self, http, seed_data):
         """sort_by=newest returns programs ordered by created_at DESC."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"sort_by": "newest"},
@@ -442,7 +442,7 @@ class TestProgramFilters:
 
     async def test_sort_by_alpha(self, http, seed_data):
         """sort_by=alpha returns programs ordered alphabetically by name."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"sort_by": "alpha"},
@@ -454,7 +454,7 @@ class TestProgramFilters:
 
     async def test_combined_filters_intersection(self, http, seed_data):
         """Combining two filters returns the intersection."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"duration_min": 30, "price_max": 1500},
@@ -468,7 +468,7 @@ class TestProgramFilters:
 
     async def test_combined_search_and_age(self, http, seed_data):
         """Combining search and age filter returns intersection."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"search": "challenge", "age": "Drekaskátar"},
@@ -480,7 +480,7 @@ class TestProgramFilters:
 
     async def test_no_matches_returns_empty(self, http, seed_data):
         """Filters that match nothing return an empty list."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"search": "nonexistent_xyz"},
@@ -490,7 +490,7 @@ class TestProgramFilters:
 
     async def test_pagination_with_filters(self, http, seed_data):
         """Pagination works correctly with filters applied."""
-        sd = await seed_data
+        sd = seed_data
         # Get first page with limit=1 and sort_by=oldest
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
@@ -505,7 +505,7 @@ class TestProgramFilters:
 
     async def test_pagination_headers_with_filters(self, http, seed_data):
         """X-Total-Count reflects filtered count, not total."""
-        sd = await seed_data
+        sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
             params={"search": "outdoor"},
