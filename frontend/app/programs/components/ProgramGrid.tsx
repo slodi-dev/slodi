@@ -1,14 +1,10 @@
-"use client";
-
 import type { ReactNode } from "react";
 import styles from "./ProgramGrid.module.css";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
 export type GridView = "grid" | "list";
 
-export interface ProgramGridProps {
-  children?: ReactNode;
+interface ProgramGridProps {
+  children: ReactNode;
   view?: GridView;
   isLoading?: boolean;
   isEmpty?: boolean;
@@ -16,60 +12,39 @@ export interface ProgramGridProps {
   className?: string;
 }
 
-// ─── Skeleton count ─────────────────────────────────────────────────────────────
-
-const SKELETON_COUNT = 6;
-
-// ─── Component ─────────────────────────────────────────────────────────────────
-
 export default function ProgramGrid({
   children,
   view = "grid",
   isLoading = false,
   isEmpty = false,
-  emptyMessage = "Engar dagskrár fundust",
+  emptyMessage = "No programs found",
   className = "",
 }: ProgramGridProps) {
-  // Loading skeleton — renders inline shimmer cards matching real card dimensions
+  // Loading skeleton
   if (isLoading) {
     return (
-      <ul
-        className={`${styles.grid} ${styles[view]} ${className}`}
-        aria-busy="true"
-        aria-label="Hleð dagskrám..."
-        role="list"
-      >
-        {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-          <li key={i} className={styles.skeletonItem} aria-hidden="true">
-            <div className={styles.skeleton}>
-              {/* 16:9 image placeholder */}
-              <div className={styles.skeletonMedia} />
-              <div className={styles.skeletonContent}>
-                {/* Title */}
-                <div className={styles.skeletonTitle} />
-                {/* Byline */}
-                <div className={styles.skeletonByline} />
-                {/* Description lines */}
-                <div className={styles.skeletonDescription} />
-                <div className={`${styles.skeletonDescription} ${styles.skeletonDescriptionShort}`} />
-                {/* Tags */}
-                <div className={styles.skeletonTags}>
-                  <div className={styles.skeletonTag} />
-                  <div className={styles.skeletonTag} />
-                  <div className={styles.skeletonTag} />
-                </div>
-                {/* Meta row */}
-                <div className={styles.skeletonMeta} />
-              </div>
-              {/* Footer */}
-              <div className={styles.skeletonFooter}>
-                <div className={styles.skeletonButton} />
-                <div className={styles.skeletonButtonSm} />
+      <div className={`${styles.grid} ${styles[view]} ${className}`}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className={styles.skeleton}>
+            <div className={styles.skeletonMedia} />
+            <div className={styles.skeletonContent}>
+              <div className={styles.skeletonTitle} />
+              <div className={styles.skeletonByline} />
+              <div className={styles.skeletonDescription} />
+              <div className={styles.skeletonDescription} />
+              <div className={styles.skeletonTags}>
+                <div className={styles.skeletonTag} />
+                <div className={styles.skeletonTag} />
+                <div className={styles.skeletonTag} />
               </div>
             </div>
-          </li>
+            <div className={styles.skeletonFooter}>
+              <div className={styles.skeletonButton} />
+              <div className={styles.skeletonButton} />
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     );
   }
 
@@ -77,13 +52,12 @@ export default function ProgramGrid({
   if (isEmpty) {
     return (
       <div className={styles.emptyState}>
-        <div className={styles.emptyIcon} aria-hidden="true">
+        <div className={styles.emptyIcon}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -101,14 +75,14 @@ export default function ProgramGrid({
     );
   }
 
-  // Results grid — children are <li> elements from ProgramCard
+  // Grid view
   return (
-    <ul
+    <div
       className={`${styles.grid} ${styles[view]} ${className}`}
       role="list"
       aria-label="Dagskrár"
     >
       {children}
-    </ul>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -17,6 +16,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.domain.enums import EventInterval, Weekday, WorkspaceRole
 from app.domain.workspace_constraints import (
     NAME_MAX,
     NAME_MIN,
@@ -25,37 +25,13 @@ from app.domain.workspace_constraints import (
 from .base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
+    from .content import Content
     from .event import Event
     from .group import Group
     from .program import Program
+    from .task import Task
     from .troop import Troop
     from .user import User
-
-
-class WorkspaceRole(str, Enum):
-    owner = "owner"
-    admin = "admin"
-    editor = "editor"
-    viewer = "viewer"
-
-
-class Weekday(str, Enum):
-    monday = "monday"
-    tuesday = "tuesday"
-    wednesday = "wednesday"
-    thursday = "thursday"
-    friday = "friday"
-    saturday = "saturday"
-    sunday = "sunday"
-    unknown = "unknown"
-
-
-class EventInterval(str, Enum):
-    weekly = "weekly"
-    biweekly = "biweekly"
-    monthly = "monthly"
-    yearly = "yearly"
-    unknown = "unknown"
 
 
 class Workspace(SoftDeleteMixin, Base):
@@ -97,17 +73,33 @@ class Workspace(SoftDeleteMixin, Base):
         passive_deletes=True,
     )
     group: Mapped[Group | None] = relationship(back_populates="workspaces")
-    programs: Mapped[list[Program]] = relationship(
+    content_items: Mapped[list[Content]] = relationship(
+        "Content",
         back_populates="workspace",
-        foreign_keys="Program.workspace_id",
-        primaryjoin="Program.workspace_id == Workspace.id",
+        foreign_keys="Content.workspace_id",
+        primaryjoin="Content.workspace_id == Workspace.id",
         cascade="all, delete-orphan",
     )
+    programs: Mapped[list[Program]] = relationship(
+        "Program",
+        primaryjoin="Program.workspace_id == Workspace.id",
+        foreign_keys="Content.workspace_id",
+        overlaps="content_items,workspace",
+        viewonly=True,
+    )
     events: Mapped[list[Event]] = relationship(
-        back_populates="workspace",
-        foreign_keys="Event.workspace_id",
+        "Event",
         primaryjoin="Event.workspace_id == Workspace.id",
-        cascade="all, delete-orphan",
+        foreign_keys="Content.workspace_id",
+        overlaps="content_items,workspace",
+        viewonly=True,
+    )
+    tasks: Mapped[list[Task]] = relationship(
+        "Task",
+        primaryjoin="Task.workspace_id == Workspace.id",
+        foreign_keys="Content.workspace_id",
+        overlaps="content_items,workspace",
+        viewonly=True,
     )
     troops: Mapped[list[Troop]] = relationship(
         back_populates="workspace",

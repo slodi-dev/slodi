@@ -1,28 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import type { AgeGroup, Program, ProgramUpdateInput } from "@/services/programs.service";
+import Image from "next/image";
+import type { Program, ProgramUpdateInput } from "@/services/programs.service";
 import { useTags } from "@/hooks/useTags";
 import styles from "./ProgramDetailEdit.module.css";
-
-// ── Parse helpers ────────────────────────────────────────────────────────────
-
-/** Parses "10–45 mín" → ["10", "45"], "30 mín" → ["30", ""], null → ["", ""] */
-function parseDuration(val: string | null | undefined): [string, string] {
-  if (!val) return ["", ""];
-  const cleaned = val.replace(/\s*mín\s*$/i, "").trim();
-  const parts = cleaned.split(/[–\-]/);
-  return [(parts[0] ?? "").trim(), (parts[1] ?? "").trim()];
-}
-
-/**
- * Normalises the age field from the Program type (AgeGroup[] | null | undefined)
- * into a plain string[] for use in form state.
- */
-function parseAge(val: readonly string[] | null | undefined): string[] {
-  if (!val || val.length === 0) return [];
-  return [...val];
-}
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -34,11 +16,6 @@ const AGE_GROUPS = [
   "Rekkaskátar",
   "Róverskátar",
   "Vættaskátar",
-];
-
-const PLACEHOLDER_TAGS = [
-  "útivist", "innileikur", "list", "sköpun",
-  "matreiðsla", "leikur", "fræðsla", "náttúrufræði",
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -57,6 +34,7 @@ interface FormState {
   selectedAgeGroups: string[];
   location: string;
   countMin: string;
+  countMax: string;
   price: string;
   selectedTags: string[];
 }
@@ -72,7 +50,6 @@ export interface ProgramDetailEditProps {
   isDeleting?: boolean;
 }
 
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProgramDetailEdit({
@@ -83,11 +60,7 @@ export default function ProgramDetailEdit({
   isDeleting = false,
 }: ProgramDetailEditProps) {
   const { tagNames: fetchedTags } = useTags();
-  const displayTags =
-    fetchedTags && fetchedTags.length > 0 ? fetchedTags : PLACEHOLDER_TAGS;
-
-  const [durationMin0, durationMax0] = parseDuration(program.duration);
-  const [prepMin0, prepMax0] = parseDuration(program.prep_time);
+  const displayTags = fetchedTags ?? [];
 
   const [form, setForm] = useState<FormState>({
     name: program.name ?? "",
@@ -96,13 +69,14 @@ export default function ProgramDetailEdit({
     image: program.image ?? "",
     instructions: program.instructions ?? "",
     equipment: program.equipment ?? [],
-    durationMin: durationMin0,
-    durationMax: durationMax0,
-    prepTimeMin: prepMin0,
-    prepTimeMax: prepMax0,
-    selectedAgeGroups: parseAge(program.age),
+    durationMin: program.duration_min != null ? String(program.duration_min) : "",
+    durationMax: program.duration_max != null ? String(program.duration_max) : "",
+    prepTimeMin: program.prep_time_min != null ? String(program.prep_time_min) : "",
+    prepTimeMax: program.prep_time_max != null ? String(program.prep_time_max) : "",
+    selectedAgeGroups: (program.age ?? []).filter((g) => AGE_GROUPS.includes(g)),
     location: program.location ?? "",
-    countMin: program.count != null ? String(program.count) : "",
+    countMin: program.count_min != null ? String(program.count_min) : "",
+    countMax: program.count_max != null ? String(program.count_max) : "",
     price: program.price != null ? String(program.price) : "",
     selectedTags: (program.tags ?? []).map((t) => t.name),
   });
@@ -116,8 +90,7 @@ export default function ProgramDetailEdit({
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  const patch = (fields: Partial<FormState>) =>
-    setForm((prev) => ({ ...prev, ...fields }));
+  const patch = (fields: Partial<FormState>) => setForm((prev) => ({ ...prev, ...fields }));
 
   const addEquipment = () => {
     const trimmed = equipmentInput.trim();
@@ -166,21 +139,19 @@ export default function ProgramDetailEdit({
       image: form.image.trim() || null,
       instructions: form.instructions.trim() || null,
       equipment: form.equipment.length > 0 ? form.equipment : null,
-      duration:
-        form.durationMin || form.durationMax
-          ? `${[form.durationMin, form.durationMax].filter(Boolean).join("–")} mín`
-          : null,
-      prep_time:
-        form.prepTimeMin || form.prepTimeMax
-          ? `${[form.prepTimeMin, form.prepTimeMax].filter(Boolean).join("–")} mín`
-          : null,
+      duration_min: form.durationMin !== "" ? Number(form.durationMin) : null,
+      duration_max: form.durationMax !== "" ? Number(form.durationMax) : null,
+      prep_time_min: form.prepTimeMin !== "" ? Number(form.prepTimeMin) : null,
+      prep_time_max: form.prepTimeMax !== "" ? Number(form.prepTimeMax) : null,
       age:
-        form.selectedAgeGroups.length > 0
-          ? (form.selectedAgeGroups as AgeGroup[])
+        form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
+          ? form.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
           : null,
       location: form.location.trim() || null,
-      count: form.countMin !== "" ? Number(form.countMin) : null,
+      count_min: form.countMin !== "" ? Number(form.countMin) : null,
+      count_max: form.countMax !== "" ? Number(form.countMax) : null,
       price: form.price !== "" ? Number(form.price) : null,
+      tagNames: form.selectedTags,
     };
 
     try {
@@ -188,9 +159,7 @@ export default function ProgramDetailEdit({
       setError(null);
       await onSave(payload);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Villa kom upp við að vista"
-      );
+      setError(err instanceof Error ? err.message : "Villa kom upp við að vista");
     } finally {
       setIsSaving(false);
     }
@@ -201,7 +170,6 @@ export default function ProgramDetailEdit({
   return (
     <div className={styles.editContainer}>
       <form onSubmit={handleSubmit} className={styles.form}>
-
         {/* ── Section: Basic ── */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Grunnupplýsingar</h3>
@@ -274,7 +242,9 @@ export default function ProgramDetailEdit({
                   aria-label="Lágmarkstímalengd í mínútum"
                   disabled={isDisabled}
                 />
-                <span className={styles.rangeSep} aria-hidden="true">–</span>
+                <span className={styles.rangeSep} aria-hidden="true">
+                  –
+                </span>
                 <input
                   type="number"
                   className={styles.input}
@@ -301,7 +271,9 @@ export default function ProgramDetailEdit({
                   aria-label="Lágmarks undirbúningstími"
                   disabled={isDisabled}
                 />
-                <span className={styles.rangeSep} aria-hidden="true">–</span>
+                <span className={styles.rangeSep} aria-hidden="true">
+                  –
+                </span>
                 <input
                   type="number"
                   className={styles.input}
@@ -352,30 +324,39 @@ export default function ProgramDetailEdit({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="edit-count" className={styles.label}>
-              Fjöldi þátttakenda
-            </label>
-            <input
-              id="edit-count"
-              type="number"
-              className={`${styles.input} ${styles.inputNarrow}`}
-              value={form.countMin}
-              onChange={(e) => patch({ countMin: e.target.value })}
-              placeholder="t.d. 20"
-              min={1}
-              disabled={isDisabled}
-            />
+            <label className={styles.label}>Fjöldi þátttakenda</label>
+            <div className={styles.rangeRow}>
+              <input
+                type="number"
+                className={styles.input}
+                value={form.countMin}
+                onChange={(e) => patch({ countMin: e.target.value })}
+                placeholder="Frá"
+                min={1}
+                aria-label="Lágmarksfjöldi þátttakenda"
+                disabled={isDisabled}
+              />
+              <span className={styles.rangeSep} aria-hidden="true">
+                –
+              </span>
+              <input
+                type="number"
+                className={styles.input}
+                value={form.countMax}
+                onChange={(e) => patch({ countMax: e.target.value })}
+                placeholder="Til"
+                min={1}
+                aria-label="Hámarksfjöldi þátttakenda"
+                disabled={isDisabled}
+              />
+            </div>
           </div>
 
           <div className={styles.formGroup}>
             <p className={styles.label} id="edit-age-label">
               Aldurshópar
             </p>
-            <div
-              className={styles.checkboxGrid}
-              role="group"
-              aria-labelledby="edit-age-label"
-            >
+            <div className={styles.checkboxGrid} role="group" aria-labelledby="edit-age-label">
               {AGE_GROUPS.map((group) => (
                 <label key={group} className={styles.checkboxOption}>
                   <input
@@ -472,27 +453,31 @@ export default function ProgramDetailEdit({
             <p className={styles.label} id="edit-tags-label">
               Merkimiðar
             </p>
-            <div className={styles.tagGrid} role="group" aria-labelledby="edit-tags-label">
-              {displayTags.map((tag) => {
-                const isSelected = form.selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
-                    onClick={() => toggleTag(tag)}
-                    aria-pressed={isSelected}
-                    disabled={isDisabled}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-            {form.selectedTags.length > 0 && (
-              <p className={styles.helpText}>
-                {form.selectedTags.length} merkimiðar valdir
-              </p>
+            {displayTags.length === 0 ? (
+              <p className={styles.helpText}>Engir merkimiðar tiltækir</p>
+            ) : (
+              <>
+                <div className={styles.tagGrid} role="group" aria-labelledby="edit-tags-label">
+                  {displayTags.map((tag) => {
+                    const isSelected = form.selectedTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
+                        onClick={() => toggleTag(tag)}
+                        aria-pressed={isSelected}
+                        disabled={isDisabled}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.selectedTags.length > 0 && (
+                  <p className={styles.helpText}>{form.selectedTags.length} merkimiðar valdir</p>
+                )}
+              </>
             )}
           </div>
 
@@ -504,10 +489,12 @@ export default function ProgramDetailEdit({
             {form.image && (
               <div className={styles.imagePreviewContainer}>
                 {!imageError ? (
-                  <img
+                  <Image
                     src={form.image}
                     alt="Forskoðun myndar"
                     className={styles.imagePreview}
+                    width={600}
+                    height={300}
                     onError={() => setImageError(true)}
                   />
                 ) : (
@@ -521,7 +508,10 @@ export default function ProgramDetailEdit({
                 <button
                   type="button"
                   className={styles.imageClearButton}
-                  onClick={() => { patch({ image: "" }); setImageError(false); }}
+                  onClick={() => {
+                    patch({ image: "" });
+                    setImageError(false);
+                  }}
                   disabled={isDisabled}
                   aria-label="Fjarlægja mynd"
                 >
@@ -535,26 +525,23 @@ export default function ProgramDetailEdit({
               type="url"
               className={styles.input}
               value={form.image}
-              onChange={(e) => { setImageError(false); patch({ image: e.target.value }); }}
+              onChange={(e) => {
+                setImageError(false);
+                patch({ image: e.target.value });
+              }}
               disabled={isDisabled}
               placeholder="https://example.com/mynd.jpg"
             />
-            <p className={styles.helpText}>
-              Settu inn slóð á mynd til að sýna á dagskránni
-            </p>
+            <p className={styles.helpText}>Settu inn slóð á mynd til að sýna á dagskránni</p>
           </div>
         </section>
 
         {/* ── Error ── */}
-        {error && <div className={styles.error} role="alert">{error}</div>}
+        {error && <div className={styles.error}>{error}</div>}
 
         {/* ── Actions ── */}
         <div className={styles.actions}>
-          <button
-            type="submit"
-            className={styles.saveButton}
-            disabled={isDisabled}
-          >
+          <button type="submit" className={styles.saveButton} disabled={isDisabled}>
             {isSaving ? "Vista…" : "Vista breytingar"}
           </button>
           <button
@@ -582,9 +569,7 @@ export default function ProgramDetailEdit({
             {isDeleting ? "Eyði…" : "Eyða dagskrá"}
           </button>
         </div>
-
       </form>
     </div>
   );
 }
-

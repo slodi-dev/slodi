@@ -435,11 +435,6 @@
   cursor: not-allowed;
 }
 
-.addButton:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary));
-  outline-offset: 2px;
-}
-
 .chipList {
   display: flex;
   flex-wrap: wrap;
@@ -525,60 +520,6 @@
   cursor: not-allowed;
 }
 
-.tagButton:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary));
-  outline-offset: 2px;
-}
-
-.saveButton:focus-visible,
-.cancelButton:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary));
-  outline-offset: 2px;
-}
-
-.deleteButton:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-error));
-  outline-offset: 2px;
-}
-
-.chipRemove:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary));
-  outline-offset: 2px;
-}
-
-/* ===== ACCESSIBILITY ===== */
-
-@media (prefers-reduced-motion: reduce) {
-  .input,
-  .textarea,
-  .select,
-  .tagButton,
-  .addButton,
-  .chipRemove,
-  .saveButton,
-  .cancelButton,
-  .deleteButton,
-  .imageClearButton {
-    transition: none;
-  }
-}
-
-@media (prefers-contrast: high) {
-  .input,
-  .textarea,
-  .select,
-  .saveButton,
-  .cancelButton,
-  .deleteButton,
-  .addButton,
-  .tagButton {
-    border-width: 3px;
-  }
-}
-
-/* contrast: verify --sl-color-text-primary on --sl-color-surface meets 4.5:1 */
-/* contrast: verify --sl-color-primary text on --sl-color-primary-subtle meets 4.5:1 */
-
 .form {
   display: flex;
   flex-direction: column;
@@ -608,7 +549,7 @@
   border: 2px solid hsl(var(--color-border));
   border-radius: var(--radius-lg);
   outline: none;
-  transition: 
+  transition:
     border-color var(--transition-base),
     box-shadow var(--transition-base);
 }
@@ -745,7 +686,7 @@
   font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--transition-base),
     border-color var(--transition-base),
     transform var(--transition-fast);
@@ -814,7 +755,7 @@
   border: 2px solid hsl(0 70% 50%);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--transition-base),
     border-color var(--transition-base),
     color var(--transition-base);

@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_program_edit_access, check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.content import ContentType
-from app.schemas.program import ProgramCreate, ProgramOut, ProgramUpdate
+from app.domain.enums import ContentType
+from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
 from app.services.programs import ProgramService
@@ -22,7 +22,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 # ----- workspace-scoped collection endpoints -----
 
 
-@router.get("/workspaces/{workspace_id}/programs", response_model=list[ProgramOut])
+@router.get("/workspaces/{workspace_id}/programs", response_model=list[ProgramListOut])
 async def list_workspace_programs(
     session: SessionDep,
     request: Request,
@@ -31,7 +31,7 @@ async def list_workspace_programs(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[ProgramOut]:
+) -> list[ProgramListOut]:
     svc = ProgramService(session)
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
@@ -96,14 +96,20 @@ async def copy_program_to_workspace(
         description=original_program.description,
         equipment=original_program.equipment,
         instructions=original_program.instructions,
-        duration=original_program.duration,
+        duration_min=original_program.duration_min,
+        duration_max=original_program.duration_max,
         age=original_program.age,
         location=original_program.location,
-        count=original_program.count,
+        count_min=original_program.count_min,
+        count_max=original_program.count_max,
         price=original_program.price,
+        prep_time_min=original_program.prep_time_min,
+        prep_time_max=original_program.prep_time_max,
+        media=original_program.media,
         author_id=current_user.id,
         content_type=ContentType.program,
         image=original_program.image,
+        tag_names=[t.name for t in original_program.tags],
     )
     program = await svc.create_under_workspace(workspace_id, copied_program)
     response.headers["Location"] = f"/programs/{program.id}"
@@ -115,7 +121,10 @@ async def copy_program_to_workspace(
 
 @router.get("/programs/{program_id}", response_model=ProgramOut)
 async def get_program(
-    session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
+    session: SessionDep,
+    program_id: UUID,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
     svc = ProgramService(session)
     program = await svc.get(program_id, current_user.id)
@@ -126,6 +135,7 @@ async def get_program(
         minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
+    response.headers["Cache-Control"] = "private, max-age=60"
     return program
 
 
@@ -140,7 +150,7 @@ async def update_program(
     program = await svc.get(program_id)
     await check_program_edit_access(
         program.workspace_id,
-        program.author_id,
+        program.author.id,
         current_user,
         session,
         hide_from_non_members=True,

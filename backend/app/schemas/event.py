@@ -6,11 +6,11 @@ from uuid import UUID
 
 from pydantic import ConfigDict, Field, field_validator
 
-from app.models.content import ContentType
+from app.domain.enums import ContentType
 from app.utils import get_current_datetime
 
-from .content import ContentCreate, ContentOut, ContentUpdate
-from .workspace import WorkspaceNested  # Import for nested workspace
+from .content import ContentCreate, ContentListOut, ContentOut, ContentUpdate
+from .task import TaskListOut
 
 
 def _ensure_tzaware(value: dt.datetime, field: str) -> dt.datetime:
@@ -41,7 +41,6 @@ class EventCreate(ContentCreate):
 class EventUpdate(ContentUpdate):
     start_dt: dt.datetime | None = None
     end_dt: dt.datetime | None = None
-    workspace_id: UUID | None = None
     program_id: UUID | None = None
 
     @field_validator("start_dt")
@@ -59,11 +58,18 @@ class EventUpdate(ContentUpdate):
         return _ensure_tzaware(v, "end_dt")
 
 
+class EventListOut(ContentListOut):
+    model_config = ConfigDict(from_attributes=True)
+
+    start_dt: dt.datetime
+    end_dt: dt.datetime | None = None
+    program_id: UUID | None
+
+
 class EventOut(ContentOut):
     model_config = ConfigDict(from_attributes=True)
 
     start_dt: dt.datetime
     end_dt: dt.datetime | None = None
-    workspace_id: UUID
-    workspace: WorkspaceNested
     program_id: UUID | None
+    tasks: list[TaskListOut] = []

@@ -88,7 +88,7 @@
   background: hsl(var(--sl-color-background));
   border: 2px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-input);
-  transition: 
+  transition:
     border-color var(--sl-transition-fast),
     box-shadow var(--sl-transition-fast);
 }
@@ -126,7 +126,7 @@
   border: none;
   border-radius: var(--sl-radius-button);
   cursor: pointer;
-  transition: 
+  transition:
     background-color var(--sl-transition-fast),
     transform var(--sl-transition-fast),
     box-shadow var(--sl-transition-fast);
@@ -246,7 +246,7 @@
   font-weight: var(--sl-font-weight-emphasis);
   border-radius: var(--sl-radius-button);
   text-decoration: none;
-  transition: 
+  transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     transform var(--sl-transition-fast),
@@ -326,29 +326,29 @@
   .page {
     padding: var(--sl-spacing-element);
   }
-  
+
   .card {
     padding: var(--sl-spacing-inset-lg);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-2xl);
   }
-  
+
   .successMessage {
     font-size: var(--sl-primitive-font-size-xl);
   }
-  
+
   .successIcon {
     width: 64px;
     height: 64px;
   }
-  
+
   .actions {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .primaryButton,
   .secondaryButton {
     width: 100%;
@@ -362,7 +362,7 @@
   .submitButton:hover:not(:disabled) {
     transform: none;
   }
-  
+
   .spinner {
     animation: none;
   }

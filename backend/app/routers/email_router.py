@@ -10,8 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_workspace_access, get_current_user, require_permission
 from app.core.db import get_session
 from app.core.email import send_email_background
-from app.models.user import Permissions
-from app.models.workspace import WorkspaceRole
+from app.domain.enums import Permissions, WorkspaceRole
 from app.schemas.email import (
     BroadcastOut,
     BroadcastRequest,

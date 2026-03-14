@@ -5,15 +5,14 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.domain.enums import WorkspaceRole
 from app.models.content import Content
-from app.models.event import Event
-from app.models.program import Program
-from app.models.task import Task
 from app.models.troop import Troop
-from app.models.workspace import Workspace, WorkspaceMembership, WorkspaceRole
+from app.models.workspace import Workspace, WorkspaceMembership
 
 from .base import Repository
 
@@ -67,66 +66,16 @@ class WorkspaceRepository(Repository):
 
     async def delete(self, workspace_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
-        # Program/Event/Task use joined-table inheritance: each has its own
-        # table (programs/events/tasks) with a FK to `content`.  deleted_at is
-        # only on `content`, so update(Task/Event/Program) would be a
-        # cross-table SET which PostgreSQL rejects.  Strategy:
-        #   1. Use subclass mappers for SELECT only (JTI joins are fine there).
-        #   2. Cascade via update(Content) keyed by pre-fetched IDs.
 
-        # Pre-fetch event IDs for this workspace
-        event_ids = list(
-            (
-                await self.session.execute(
-                    select(Event.id).where(Event.workspace_id == workspace_id)
-                )
-            ).scalars()
+        # Cascade: soft-delete all content items (programs, events, tasks) in the workspace.
+        # workspace_id is on the content table so one query covers all content types.
+        await self.session.execute(
+            update(Content)
+            .where(Content.workspace_id == workspace_id, Content.deleted_at.is_(None))
+            .values(deleted_at=now)
         )
 
-        # Pre-fetch task IDs for those events
-        task_ids: list = []
-        if event_ids:
-            task_ids = list(
-                (
-                    await self.session.execute(select(Task.id).where(Task.event_id.in_(event_ids)))
-                ).scalars()
-            )
-
-        # Pre-fetch program IDs for this workspace
-        program_ids = list(
-            (
-                await self.session.execute(
-                    select(Program.id).where(Program.workspace_id == workspace_id)
-                )
-            ).scalars()
-        )
-
-        # Cascade: soft-delete tasks
-        if task_ids:
-            await self.session.execute(
-                update(Content)
-                .where(Content.id.in_(task_ids), Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            )
-
-        # Cascade: soft-delete events
-        if event_ids:
-            await self.session.execute(
-                update(Content)
-                .where(Content.id.in_(event_ids), Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            )
-
-        # Cascade: soft-delete programs
-        if program_ids:
-            await self.session.execute(
-                update(Content)
-                .where(Content.id.in_(program_ids), Content.deleted_at.is_(None))
-                .values(deleted_at=now)
-            )
-
-        # Cascade: soft-delete troops
-        # (Troop has its own table with deleted_at — no cross-table issue)
+        # Cascade: soft-delete troops (separate table with its own deleted_at)
         await self.session.execute(
             update(Troop)
             .where(Troop.workspace_id == workspace_id, Troop.deleted_at.is_(None))
@@ -139,7 +88,16 @@ class WorkspaceRepository(Repository):
             .where(Workspace.id == workspace_id, Workspace.deleted_at.is_(None))
             .values(deleted_at=now)
         )
+        assert isinstance(res, CursorResult)
         return res.rowcount or 0
+
+    async def get_workspace_owner(self, workspace_id: UUID) -> WorkspaceMembership | None:
+        stmt = select(WorkspaceMembership).where(
+            WorkspaceMembership.workspace_id == workspace_id,
+            WorkspaceMembership.role == WorkspaceRole.owner,
+        )
+        res = await self.session.execute(stmt)
+        return res.scalars().first()
 
     async def get_user_membership(
         self, workspace_id: UUID, user_id: UUID
@@ -149,3 +107,18 @@ class WorkspaceRepository(Repository):
         )
         res = await self.session.execute(stmt)
         return res.scalars().first()
+
+    async def list_members(self, workspace_id: UUID) -> Sequence[WorkspaceMembership]:
+        stmt = select(WorkspaceMembership).where(WorkspaceMembership.workspace_id == workspace_id)
+        return await self.scalars(stmt)
+
+    async def set_member_role(
+        self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
+    ) -> WorkspaceMembership:
+        membership = await self.get_user_membership(workspace_id, user_id)
+        if membership:
+            membership.role = role
+        else:
+            membership = WorkspaceMembership(workspace_id=workspace_id, user_id=user_id, role=role)
+            await self.add(membership)
+        return membership

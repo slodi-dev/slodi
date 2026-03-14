@@ -18,14 +18,6 @@ class Settings(BaseSettings):
     logger_file: str | None = Field(None, alias="LOGGER_FILE")
     db_url: str = ""
 
-    # Test database configuration
-    test_db_name: str = Field(..., alias="TEST_DB_NAME")
-    test_db_user: str = Field(..., alias="TEST_DB_USER")
-    test_db_password: str = Field(..., alias="TEST_DB_PASSWORD")
-    test_db_port: str = Field(..., alias="TEST_DB_PORT")
-    test_db_host: str = Field(..., alias="TEST_DB_HOST")
-    test_db_url: str = ""
-
     # Auth0 configuration
     auth0_domain: str = Field(..., alias="AUTH0_DOMAIN")
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
@@ -42,6 +34,15 @@ class Settings(BaseSettings):
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
 
+    # Cache configuration
+    cache_backend: str = Field("memory", alias="CACHE_BACKEND")  # "memory" or "redis"
+    redis_host: str = Field("localhost", alias="REDIS_HOST")
+    redis_port: int = Field(6379, alias="REDIS_PORT")
+    cache_user_ttl_seconds: int = Field(300, alias="CACHE_USER_TTL_SECONDS")
+    cache_membership_ttl_seconds: int = Field(120, alias="CACHE_MEMBERSHIP_TTL_SECONDS")
+    cache_tags_ttl_seconds: int = Field(600, alias="CACHE_TAGS_TTL_SECONDS")
+    rate_limit_max_window_seconds: int = Field(3600, alias="RATE_LIMIT_MAX_WINDOW_SECONDS")
+
     @property
     def admin_email_list(self) -> list[str]:
         return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
@@ -49,9 +50,6 @@ class Settings(BaseSettings):
     def model_post_init(self, __context: object) -> None:
         # Production database URL
         self.db_url = f"postgresql+psycopg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
-
-        # Test database URL
-        self.test_db_url = f"postgresql+psycopg://{self.test_db_user}:{self.test_db_password}@{self.test_db_host}:{self.test_db_port}/{self.test_db_name}"
 
 
 settings: Settings = Settings()  # type: ignore[call-arg]

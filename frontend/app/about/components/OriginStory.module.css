@@ -63,7 +63,7 @@
   background: hsl(var(--sl-color-surface));
   border: 2px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-card);
-  transition: 
+  transition:
     transform var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
     box-shadow var(--sl-transition-fast);
@@ -162,23 +162,23 @@
   .originStory {
     padding: var(--sl-spacing-container) var(--sl-spacing-component);
   }
-  
+
   .container {
     gap: var(--sl-spacing-container);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
   }
-  
+
   .introduction {
     font-size: var(--sl-text-body);
   }
-  
+
   .challengeGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .conclusionText {
     font-size: var(--sl-text-body-lg);
   }
@@ -189,33 +189,33 @@
   .originStory {
     padding: var(--sl-spacing-container) var(--sl-spacing-component);
   }
-  
+
   .container {
     gap: var(--sl-spacing-container);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
   }
-  
+
   .introduction {
     font-size: var(--sl-text-body);
   }
-  
+
   .challengeGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .iconWrapper {
     width: 48px;
     height: 48px;
   }
-  
+
   .iconWrapper svg {
     width: 28px;
     height: 28px;
   }
-  
+
   .conclusionText {
     font-size: var(--sl-text-body-lg);
   }
@@ -226,50 +226,50 @@
   .originStory {
     padding: var(--sl-spacing-container) var(--sl-spacing-element);
   }
-  
+
   .container {
     gap: var(--sl-spacing-stack-xl);
   }
-  
+
   .heading {
     font-size: var(--sl-primitive-font-size-2xl);
   }
-  
+
   .introduction {
     font-size: var(--sl-text-body-sm);
   }
-  
+
   .challengeGrid {
     grid-template-columns: 1fr;
     gap: var(--sl-spacing-gap-lg);
   }
-  
+
   .challengeCard {
     padding: var(--sl-spacing-inset-md);
   }
-  
+
   .iconWrapper {
     width: 48px;
     height: 48px;
   }
-  
+
   .iconWrapper svg {
     width: 28px;
     height: 28px;
   }
-  
+
   .challengeTitle {
     font-size: var(--sl-text-body);
   }
-  
+
   .challengeDescription {
     font-size: var(--sl-text-body-sm);
   }
-  
+
   .conclusion {
     padding: var(--sl-spacing-inset-lg);
   }
-  
+
   .conclusionText {
     font-size: var(--sl-text-body);
   }

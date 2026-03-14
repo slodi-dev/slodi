@@ -107,10 +107,10 @@ def test_get_workspace_not_found(client):
 
 def test_delete_user_returns_204(client, sample_user):
     with (
-        patch("app.services.users.UserService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.services.users.UserService.get_full", new_callable=AsyncMock) as mock_get_full,
         patch("app.services.users.UserService.delete", new_callable=AsyncMock) as mock_del,
     ):
-        mock_get.return_value = sample_user
+        mock_get_full.return_value = sample_user
         mock_del.return_value = None
 
         response = client.delete(f"/users/{sample_user.id}")

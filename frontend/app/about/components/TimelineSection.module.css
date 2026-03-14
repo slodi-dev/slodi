@@ -35,9 +35,7 @@
   bottom: 0;
   width: 2px;
   background: hsl(var(--sl-color-border));
-
 }
-
 
 .timelineItem {
   position: relative;

@@ -8,14 +8,15 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import check_workspace_access, get_current_user, require_permission
+from app.core.cache import membership_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.user import Permissions
-from app.models.workspace import WorkspaceRole
+from app.domain.enums import Permissions, WorkspaceRole
 from app.schemas.user import UserOut
 from app.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceMembershipOut,
+    WorkspaceMembershipUpdate,
     WorkspaceOut,
     WorkspaceUpdate,
 )
@@ -110,6 +111,7 @@ async def create_user_workspace_admin(
 async def get_my_workspace_role(
     session: SessionDep,
     workspace_id: UUID,
+    response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> WorkspaceMembershipOut:
     """Return the current user's membership/role for a workspace, or 404 if not a member.
@@ -119,26 +121,42 @@ async def get_my_workspace_role(
     frontend can correctly infer their edit / delete permissions.
     """
     if current_user.permissions == Permissions.admin:
+        response.headers["Cache-Control"] = "private, max-age=120"
         return WorkspaceMembershipOut(
             workspace_id=workspace_id,
             user_id=current_user.id,
             role=WorkspaceRole.owner,
         )
     svc = WorkspaceService(session)
-    return await svc.get_user_membership(workspace_id, current_user.id)
+    result = await svc.get_user_membership(workspace_id, current_user.id)
+    response.headers["Cache-Control"] = "private, max-age=120"
+    return result
+
+
+@router.get("/workspaces/{workspace_id}/members", response_model=list[WorkspaceMembershipOut])
+async def list_workspace_members(
+    session: SessionDep,
+    workspace_id: UUID,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+) -> list[WorkspaceMembershipOut]:
+    svc = WorkspaceService(session)
+    return await svc.list_members(workspace_id)
 
 
 @router.get("/workspaces/{workspace_id}", response_model=WorkspaceOut)
 async def get_workspace(
     session: SessionDep,
     workspace_id: UUID,
+    response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> WorkspaceOut:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
     svc = WorkspaceService(session)
-    return await svc.get(workspace_id)
+    result = await svc.get(workspace_id)
+    response.headers["Cache-Control"] = "private, max-age=60"
+    return result
 
 
 @router.patch("/workspaces/{workspace_id}", response_model=WorkspaceOut)
@@ -155,6 +173,28 @@ async def update_workspace(
     return await svc.update(workspace_id, body)
 
 
+@router.put(
+    "/workspaces/{workspace_id}/members/{user_id}/role",
+    response_model=WorkspaceMembershipOut,
+)
+async def set_member_role(
+    session: SessionDep,
+    workspace_id: UUID,
+    user_id: UUID,
+    body: WorkspaceMembershipUpdate,
+    current_user: UserOut = Depends(get_current_user),
+) -> WorkspaceMembershipOut:
+    await check_workspace_access(
+        workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
+    )
+    svc = WorkspaceService(session)
+    result, displaced_owner_id = await svc.set_member_role(workspace_id, user_id, body.role)
+    await membership_cache.invalidate(user_id, workspace_id)
+    if displaced_owner_id:
+        await membership_cache.invalidate(displaced_owner_id, workspace_id)
+    return result
+
+
 @router.delete("/workspaces/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace(
     session: SessionDep,
@@ -166,4 +206,5 @@ async def delete_workspace(
     )
     svc = WorkspaceService(session)
     await svc.delete(workspace_id)
+    await membership_cache.clear_all()
     return None

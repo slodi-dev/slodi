@@ -7,16 +7,16 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import styles from "./DashboardLayout.module.css";
 
 interface DashboardLayoutProps {
-    children: React.ReactNode;
-    userRole?: "leader" | "editor" | "admin";
-    userName?: string;
-    userAvatar?: string;
-    badgeCount?: number;
+  children: React.ReactNode;
+  userRole?: "leader" | "editor" | "admin";
+  userName?: string;
+  userAvatar?: string;
+  badgeCount?: number;
 }
 
 /**
  * DashboardLayout Component
- * 
+ *
  * Full-page layout for authenticated dashboard routes
  * Features:
  * - Left sidebar navigation (collapsible on desktop)
@@ -25,68 +25,63 @@ interface DashboardLayoutProps {
  * - Responsive: drawer on mobile, icon-only on tablet, full on desktop
  */
 export default function DashboardLayout({
-    children,
-    userRole = "admin",
-    userName = "Notandi",
-    userAvatar,
-    badgeCount = 0,
+  children,
+  userRole = "admin",
+  userName = "Notandi",
+  userAvatar,
+  badgeCount = 0,
 }: DashboardLayoutProps) {
-    const { user } = useUser();
-    const {
-        sidebarCollapsed,
-        mobileMenuOpen,
-        isMobile,
-        toggleSidebar,
-        toggleMobileMenu,
-        closeMobileMenu,
-    } = useSidebarState();
+  const { user } = useUser();
+  const {
+    sidebarCollapsed,
+    mobileMenuOpen,
+    isMobile,
+    toggleSidebar,
+    toggleMobileMenu,
+    closeMobileMenu,
+  } = useSidebarState();
 
-    // Resolve user data with Auth0 fallbacks
-    const resolvedUserName = user?.name || userName;
-    const resolvedUserAvatar = user?.picture || userAvatar;
-    const resolvedUserRole = userRole;
-    const resolvedBadgeCount = badgeCount;
+  // Resolve user data with Auth0 fallbacks
+  const resolvedUserName = user?.name || userName;
+  const resolvedUserAvatar = user?.picture || userAvatar;
+  const resolvedUserRole = userRole;
+  const resolvedBadgeCount = badgeCount;
 
-    return (
-        <div className={styles.layout}>
-            {/* Mobile menu button - only visible on mobile */}
-            <MobileMenuButton isOpen={mobileMenuOpen} onClick={toggleMobileMenu} />
+  return (
+    <div className={styles.layout}>
+      {/* Mobile menu button - only visible on mobile */}
+      <MobileMenuButton isOpen={mobileMenuOpen} onClick={toggleMobileMenu} />
 
-            {/* Sidebar wrapper - handles mobile drawer positioning */}
-            <div
-                className={styles.sidebarWrapper}
-                data-open={mobileMenuOpen}
-                data-collapsed={sidebarCollapsed}
-            >
-                <Sidebar
-                    userRole={resolvedUserRole}
-                    userName={resolvedUserName}
-                    userAvatar={resolvedUserAvatar}
-                    badgeCount={resolvedBadgeCount}
-                    collapsed={sidebarCollapsed}
-                    onCollapsedChange={toggleSidebar}
-                    showUserSection={false}
-                    data-open={mobileMenuOpen.toString()} // Add this prop
-                />
-            </div>
+      {/* Sidebar wrapper - handles mobile drawer positioning */}
+      <div
+        className={styles.sidebarWrapper}
+        data-open={mobileMenuOpen}
+        data-collapsed={sidebarCollapsed}
+      >
+        <Sidebar
+          userRole={resolvedUserRole}
+          userName={resolvedUserName}
+          userAvatar={resolvedUserAvatar}
+          badgeCount={resolvedBadgeCount}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={toggleSidebar}
+          showUserSection={false}
+          data-open={mobileMenuOpen.toString()} // Add this prop
+        />
+      </div>
 
-            {/* Mobile overlay - darkens background and closes menu on click */}
-            {mobileMenuOpen && (
-                <div
-                    className={styles.overlay}
-                    onClick={closeMobileMenu}
-                    aria-hidden="true"
-                />
-            )}
+      {/* Mobile overlay - darkens background and closes menu on click */}
+      {mobileMenuOpen && (
+        <div className={styles.overlay} onClick={closeMobileMenu} aria-hidden="true" />
+      )}
 
-            {/* Main content area */}
-            <main
-                id="main-content"
-                className={`${styles.main} ${sidebarCollapsed ? styles.mainCollapsed : ""
-                    }`}
-            >
-                {children}
-            </main>
-        </div>
-    );
+      {/* Main content area */}
+      <main
+        id="main-content"
+        className={`${styles.main} ${sidebarCollapsed ? styles.mainCollapsed : ""}`}
+      >
+        {children}
+      </main>
+    </div>
+  );
 }

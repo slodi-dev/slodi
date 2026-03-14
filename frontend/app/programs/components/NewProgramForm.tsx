@@ -70,11 +70,6 @@ const AGE_GROUPS = [
   "Vættaskátar",
 ];
 
-const PLACEHOLDER_TAGS = [
-  "útivist", "innileikur", "list", "sköpun",
-  "matreiðsla", "leikur", "fræðsla", "náttúrufræði",
-];
-
 // ── Props ────────────────────────────────────────────────────────────────────
 
 type Props = {
@@ -88,7 +83,7 @@ type Props = {
 export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Props) {
   const { getToken } = useAuth();
   const { tagNames: availableTags } = useTags();
-  const displayTags = availableTags && availableTags.length > 0 ? availableTags : PLACEHOLDER_TAGS;
+  const displayTags = availableTags ?? [];
 
   // Draft state — workspace-scoped key so drafts don't bleed between workspaces
   const draftKey = `prog-draft-${workspaceId}`;
@@ -118,15 +113,12 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     } catch {
       // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey]);
 
   // ── Accordion helpers ──────────────────────────────────────────────────────
 
   const toggleSection = (id: SectionId) => {
-    setOpenSections((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setOpenSections((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   };
 
   /** Returns true if the section has any filled content. */
@@ -136,10 +128,14 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         return !!draft.name || !!draft.description;
       case "info":
         return (
-          !!draft.durationMin || !!draft.durationMax ||
-          !!draft.prepTimeMin || !!draft.prepTimeMax ||
-          !!draft.location || !!draft.price ||
-          !!draft.countMin || !!draft.countMax ||
+          !!draft.durationMin ||
+          !!draft.durationMax ||
+          !!draft.prepTimeMin ||
+          !!draft.prepTimeMax ||
+          !!draft.location ||
+          !!draft.price ||
+          !!draft.countMin ||
+          !!draft.countMax ||
           draft.selectedAgeGroups.length > 0
         );
       case "equipment":
@@ -159,7 +155,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
       case "info": {
         const parts: string[] = [];
         if (draft.durationMin || draft.durationMax)
-          parts.push(`${draft.durationMin || "?"}–${draft.durationMax || "?"}m`);
+          parts.push(`${draft.durationMin || "?"}–${draft.durationMax || "?"}mín`);
         if (draft.location) parts.push(draft.location);
         if (draft.selectedAgeGroups.length > 0)
           parts.push(`${draft.selectedAgeGroups.length} hópar`);
@@ -172,9 +168,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           ? draft.instructions.slice(0, 48) + (draft.instructions.length > 48 ? "…" : "")
           : null;
       case "extras":
-        return draft.selectedTags.length > 0
-          ? `${draft.selectedTags.length} merkar`
-          : null;
+        return draft.selectedTags.length > 0 ? `${draft.selectedTags.length} merkar` : null;
     }
   };
 
@@ -228,22 +222,19 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           image: draft.image.trim() || undefined,
           instructions: draft.instructions.trim() || undefined,
           equipment: draft.equipment.length > 0 ? draft.equipment : undefined,
-          duration:
-            draft.durationMin || draft.durationMax
-              ? [draft.durationMin, draft.durationMax].filter(Boolean).join("–") + " mín"
-              : undefined,
-          prep_time:
-            draft.prepTimeMin || draft.prepTimeMax
-              ? [draft.prepTimeMin, draft.prepTimeMax].filter(Boolean).join("–") + " mín"
-              : undefined,
+          duration_min: draft.durationMin !== "" ? Number(draft.durationMin) : undefined,
+          duration_max: draft.durationMax !== "" ? Number(draft.durationMax) : undefined,
+          prep_time_min: draft.prepTimeMin !== "" ? Number(draft.prepTimeMin) : undefined,
+          prep_time_max: draft.prepTimeMax !== "" ? Number(draft.prepTimeMax) : undefined,
           age:
-            draft.selectedAgeGroups.length > 0
-              ? draft.selectedAgeGroups.join(", ")
+            draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
+              ? draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
               : undefined,
           location: draft.location.trim() || undefined,
-          count: draft.countMin !== "" ? Number(draft.countMin) : undefined,
+          count_min: draft.countMin !== "" ? Number(draft.countMin) : undefined,
+          count_max: draft.countMax !== "" ? Number(draft.countMax) : undefined,
           price: draft.price !== "" ? Number(draft.price) : undefined,
-          tags: draft.selectedTags.length > 0 ? draft.selectedTags : undefined,
+          tagNames: draft.selectedTags.length > 0 ? draft.selectedTags : undefined,
           workspaceId,
         },
         getToken
@@ -264,19 +255,12 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} aria-label="Ný dagskrá">
-
       {/* ── Draft restored banner ── */}
       {showDraftBanner && (
         <div className={styles.draftBanner} role="status">
-          <span className={styles.draftBannerText}>
-            📝 Óvisttar drakar fundust og voru endurheimt
-          </span>
-          <button
-            type="button"
-            className={styles.draftBannerDiscard}
-            onClick={handleDiscard}
-          >
-            Fleygja drögum
+          <span className={styles.draftBannerText}>📝 Óvistuð drög fundust og voru endurheimt</span>
+          <button type="button" className={styles.draftBannerDiscard} onClick={handleDiscard}>
+            Henda drögum
           </button>
         </div>
       )}
@@ -289,7 +273,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
 
         return (
           <div key={id} className={styles.accordionItem}>
-
             {/* Header */}
             <button
               type="button"
@@ -328,12 +311,8 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
             >
               <div className={styles.accordionContentInner}>
                 <div className={styles.accordionBody}>
-                  {id === "basic" && (
-                    <SectionBasic draft={draft} updateDraft={updateDraft} />
-                  )}
-                  {id === "info" && (
-                    <SectionInfo draft={draft} updateDraft={updateDraft} />
-                  )}
+                  {id === "basic" && <SectionBasic draft={draft} updateDraft={updateDraft} />}
+                  {id === "info" && <SectionInfo draft={draft} updateDraft={updateDraft} />}
                   {id === "equipment" && (
                     <SectionEquipment
                       draft={draft}
@@ -358,7 +337,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
                 </div>
               </div>
             </div>
-
           </div>
         );
       })}
@@ -395,10 +373,9 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           className={styles.buttonPrimary}
           disabled={loading || !draft.name.trim()}
         >
-          {loading ? "Býr til…" : "Búa til hugmynd"}
+          {loading ? "Býr til…" : "Bæta í bankann"}
         </button>
       </div>
-
     </form>
   );
 }
@@ -452,7 +429,6 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
   return (
     <>
       <div className={styles.fieldGrid}>
-
         <div className={styles.field}>
           <label className={styles.label}>Tímalengd (mín)</label>
           <div className={styles.rangeRow}>
@@ -466,7 +442,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
               min={0}
               aria-label="Lágmarkstímalengd í mínútum"
             />
-            <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+            <span className={styles.rangeSeparator} aria-hidden="true">
+              –
+            </span>
             <input
               id="program-duration-max"
               type="number"
@@ -493,7 +471,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
               min={0}
               aria-label="Lágmarks undirbúningstími í mínútum"
             />
-            <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+            <span className={styles.rangeSeparator} aria-hidden="true">
+              –
+            </span>
             <input
               id="program-prep-max"
               type="number"
@@ -508,7 +488,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="program-location" className={styles.label}>Staðsetning</label>
+          <label htmlFor="program-location" className={styles.label}>
+            Staðsetning
+          </label>
           <input
             id="program-location"
             type="text"
@@ -521,7 +503,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="program-price" className={styles.label}>Kostnaður</label>
+          <label htmlFor="program-price" className={styles.label}>
+            Kostnaður
+          </label>
           <select
             id="program-price"
             className={styles.select}
@@ -535,7 +519,6 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
             <option value="3">kr kr kr — Hár kostnaður</option>
           </select>
         </div>
-
       </div>
 
       <div className={styles.field}>
@@ -551,7 +534,9 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
             min={1}
             aria-label="Lágmarksfjöldi þátttakenda"
           />
-          <span className={styles.rangeSeparator} aria-hidden="true">–</span>
+          <span className={styles.rangeSeparator} aria-hidden="true">
+            –
+          </span>
           <input
             id="program-count-max"
             type="number"
@@ -566,12 +551,10 @@ function SectionInfo({ draft, updateDraft }: DraftProps) {
       </div>
 
       <div className={styles.field}>
-        <p className={styles.label} id="age-groups-label">Aldurshópar</p>
-        <div
-          className={styles.checkboxGrid}
-          role="group"
-          aria-labelledby="age-groups-label"
-        >
+        <p className={styles.label} id="age-groups-label">
+          Aldurshópar
+        </p>
+        <div className={styles.checkboxGrid} role="group" aria-labelledby="age-groups-label">
           {AGE_GROUPS.map((group) => (
             <label key={group} className={styles.checkboxOption}>
               <input
@@ -619,7 +602,9 @@ function SectionEquipment({
 }: SectionEquipmentProps) {
   return (
     <div className={styles.field}>
-      <label htmlFor="program-equipment" className={styles.label}>Búnaðarlisti</label>
+      <label htmlFor="program-equipment" className={styles.label}>
+        Búnaðarlisti
+      </label>
       <div className={styles.equipmentInputRow}>
         <input
           id="program-equipment"
@@ -664,7 +649,9 @@ function SectionEquipment({
 function SectionInstructions({ draft, updateDraft }: DraftProps) {
   return (
     <div className={styles.field}>
-      <label htmlFor="program-instructions" className={styles.label}>Framkvæmd</label>
+      <label htmlFor="program-instructions" className={styles.label}>
+        Framkvæmd
+      </label>
       <textarea
         id="program-instructions"
         className={styles.textarea}
@@ -685,34 +672,42 @@ function SectionExtras({ draft, updateDraft, displayTags }: SectionExtrasProps) 
   return (
     <>
       <div className={styles.field}>
-        <div className={styles.tagGrid}>
-          {displayTags.map((tag) => {
-            const isSelected = draft.selectedTags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
-                onClick={() => {
-                  const next = isSelected
-                    ? draft.selectedTags.filter((t) => t !== tag)
-                    : [...draft.selectedTags, tag];
-                  updateDraft({ selectedTags: next });
-                }}
-                aria-pressed={isSelected}
-              >
-                {tag}
-              </button>
-            );
-          })}
-        </div>
-        {draft.selectedTags.length > 0 && (
-          <p className={styles.hint}>{draft.selectedTags.length} merkimiðar valdir</p>
+        {displayTags.length === 0 ? (
+          <p className={styles.hint}>Engir merkimiðar tiltækir</p>
+        ) : (
+          <>
+            <div className={styles.tagGrid}>
+              {displayTags.map((tag) => {
+                const isSelected = draft.selectedTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
+                    onClick={() => {
+                      const next = isSelected
+                        ? draft.selectedTags.filter((t) => t !== tag)
+                        : [...draft.selectedTags, tag];
+                      updateDraft({ selectedTags: next });
+                    }}
+                    aria-pressed={isSelected}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+            {draft.selectedTags.length > 0 && (
+              <p className={styles.hint}>{draft.selectedTags.length} merkimiðar valdir</p>
+            )}
+          </>
         )}
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="program-image" className={styles.label}>Vefslóð myndar</label>
+        <label htmlFor="program-image" className={styles.label}>
+          Vefslóð myndar
+        </label>
         <input
           id="program-image"
           type="url"

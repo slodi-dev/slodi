@@ -39,13 +39,12 @@
   /* #333333 */
 
   /* primary colours for the scout patrols. */
- --drekar: #E3CB54;
-  --falkar: #C65C72;
-  --drott:  #399E8F;
-  --rekkar: #67C9C3;
-  --rover:  #D89255;
-  --adrir: #A27ACF;
-
+  --drekar: #e3cb54;
+  --falkar: #c65c72;
+  --drott: #399e8f;
+  --rekkar: #67c9c3;
+  --rover: #d89255;
+  --adrir: #a27acf;
 
   /* text colours for scout patrols */
   --on-drekar: #1a1a1a;
@@ -55,19 +54,19 @@
   --on-rover: #1a1a1a;
   --on-adrir: #ffffff;
   /* dekkri útgáfa af patrol litum (t.d. buttons, darkmode, hover) */
-  --drekar-600: #C7B446;
-  --falkar-600: #A54C60;
-  --drott-600:  #2E857F;
-  --rekkar-600: #57B4AF;
-  --rover-600:  #C17F47;
-  --adrir-600: #8D68B5;
+  --drekar-600: #c7b446;
+  --falkar-600: #a54c60;
+  --drott-600: #2e857f;
+  --rekkar-600: #57b4af;
+  --rover-600: #c17f47;
+  --adrir-600: #8d68b5;
   /* Mjög dauf útgáfa af patrol litum (t.d. background, cards) */
-  --drekar-50: #F9F5E3;
-  --falkar-50: #F7ECEF;
-  --drott-50:  #EAF5F3;
-  --rekkar-50: #ECF8F7;
-  --rover-50:  #F8F0E8;
-  --adrir-50:  #F2ECFA;
+  --drekar-50: #f9f5e3;
+  --falkar-50: #f7ecef;
+  --drott-50: #eaf5f3;
+  --rekkar-50: #ecf8f7;
+  --rover-50: #f8f0e8;
+  --adrir-50: #f2ecfa;
 
   /* Text helpers */
   --text-strong: 0 0% 10%;
@@ -76,11 +75,12 @@
   /* #808080 Medium gray */
 
   /* Typography (your preference: Roboto Condensed) */
-  --font-sans: "Roboto Condensed", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol";
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --font-sans:
+    "Roboto Condensed", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue",
+    Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
 
   color-scheme: light;
 }
@@ -144,24 +144,24 @@
   --color-background-primary: var(--background);
   --color-background-secondary: var(--muted);
   --color-background-tertiary: 0 0% 96%; /* even lighter neutral */
-  
+
   /* Text colors */
   --color-text-primary: var(--foreground);
   --color-text-secondary: var(--text-muted);
   --color-text-tertiary: var(--text-muted);
-  
+
   /* Brand colors - Green accents */
   --color-primary: var(--primary);
   --color-primary-dark: 142 50% 35%; /* darker green */
   --color-primary-subtle: 142 50% 96%; /* very light green tint */
   --color-secondary: var(--secondary);
   --color-secondary-subtle: 160 42% 95%; /* very light forest green */
-  
+
   /* Border colors - Neutral */
   --color-border: var(--border);
   --color-border-subtle: 0 0% 90%; /* lighter gray */
   --color-border-strong: 0 0% 70%; /* darker gray */
-  
+
   /* Semantic colors */
   --color-success: var(--success);
   --color-success-subtle: 92 39% 95%;
@@ -171,7 +171,7 @@
   --color-danger: var(--error);
   --color-danger-subtle: 0 79% 95%;
   --color-info: var(--info);
-  
+
   /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -181,14 +181,14 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-12: 3rem;
-  
+
   /* Border radius */
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
   --radius-full: 9999px;
-  
+
   /* Font sizes */
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -197,18 +197,18 @@
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
-  
+
   /* Font weights */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
-  
+
   /* Line heights */
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
-  
+
   /* Transitions */
   --transition-fast: 150ms ease-in-out;
   --transition-base: 250ms ease-in-out;
@@ -219,24 +219,24 @@
   --color-background-primary: var(--background);
   --color-background-secondary: var(--muted);
   --color-background-tertiary: 24 28% 17%; /* slightly lighter than secondary */
-  
+
   /* Text colors for dark theme */
   --color-text-primary: var(--foreground);
   --color-text-secondary: var(--text-muted);
   --color-text-tertiary: 24 20% 60%;
-  
+
   /* Brand colors for dark theme */
   --color-primary: var(--primary);
   --color-primary-dark: 92 39% 25%;
   --color-primary-subtle: 92 39% 15%; /* darker in dark mode */
   --color-secondary: var(--secondary);
   --color-secondary-subtle: 154 43% 12%;
-  
+
   /* Border colors for dark theme */
   --color-border: var(--border);
   --color-border-subtle: 24 25% 25%;
   --color-border-strong: 24 25% 50%;
-  
+
   /* Semantic colors for dark theme */
   --color-success-subtle: 92 39% 15%;
   --color-warning-subtle: 35 100% 15%;

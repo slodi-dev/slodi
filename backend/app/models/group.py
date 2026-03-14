@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
@@ -10,6 +9,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.domain.enums import GroupRole
 from app.domain.group_constraints import IMG_MAX, NAME_MAX, NAME_MIN
 
 from .base import Base, SoftDeleteMixin
@@ -17,13 +17,6 @@ from .base import Base, SoftDeleteMixin
 if TYPE_CHECKING:
     from .user import User
     from .workspace import Workspace
-
-
-class GroupRole(str, Enum):
-    owner = "owner"
-    admin = "admin"
-    editor = "editor"
-    viewer = "viewer"
 
 
 class Group(SoftDeleteMixin, Base):

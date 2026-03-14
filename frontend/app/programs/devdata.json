@@ -1,534 +1,439 @@
 [
-    {
-        "id": "a3e7b8c9-1234-5678-90ab-cdef12345678",
-        "content_type": "program",
-        "name": "Ratleikur um bæinn",
-        "description": "Skemmtilegur ratleikur þar sem skátar leysa þrautir um bæinn. Hópar fá kort og leiðbeiningar, leysa gátur og þrautir á mismunandi stöðvum. Hentar fyrir 20-40 þátttakendur, tekur 2-3 klukkustundir.",
-        "public": true,
-        "like_count": 42,
-        "created_at": "2026-01-03T10:00:00Z",
-        "author_id": "user-123",
-        "image": "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=800",
-        "workspace_id": "workspace-abc",
-        "author": {
-            "id": "user-123",
-            "name": "Jón Jónsson",
-            "email": "jon@example.is"
-        },
-        "workspace": {
-            "id": "workspace-abc",
-            "name": "Sumarbúðir 2026"
-        },
-        "tags": [
-            "leikir",
-            "útivera",
-            "hópur",
-            "þrautir"
-        ],
-        "comment_count": 8
+  {
+    "id": "a3e7b8c9-1234-5678-90ab-cdef12345678",
+    "content_type": "program",
+    "name": "Ratleikur um bæinn",
+    "description": "Skemmtilegur ratleikur þar sem skátar leysa þrautir um bæinn. Hópar fá kort og leiðbeiningar, leysa gátur og þrautir á mismunandi stöðvum. Hentar fyrir 20-40 þátttakendur, tekur 2-3 klukkustundir.",
+    "public": true,
+    "like_count": 42,
+    "created_at": "2026-01-03T10:00:00Z",
+    "author_id": "user-123",
+    "image": "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=800",
+    "workspace_id": "workspace-abc",
+    "author": {
+      "id": "user-123",
+      "name": "Jón Jónsson",
+      "email": "jon@example.is"
     },
-    {
-        "id": "b4f8c9d0-2345-6789-01bc-def234567890",
-        "content_type": "program",
-        "name": "Kvöldvaka við varðeldinn",
-        "description": "Hefðbundin kvöldvaka þar sem við söfnumst í kring um varðeld. Sögusagnir, skátasöngur, marshmallows og samverustund. Leiðbeiningar um örugga eldavinnu og góða kvöldvökuanda.",
-        "public": true,
-        "like_count": 67,
-        "created_at": "2026-01-01T08:30:00Z",
-        "author_id": "user-456",
-        "image": "https://images.unsplash.com/photo-1476041800959-2f6bb412c8ce?w=800",
-        "workspace_id": "workspace-xyz",
-        "author": {
-            "id": "user-456",
-            "name": "Guðrún Sigurðardóttir",
-            "email": "gudrun@example.is"
-        },
-        "workspace": {
-            "id": "workspace-xyz",
-            "name": "Haustdagskrá Spáta"
-        },
-        "tags": [
-            "kvöldvaka",
-            "varðeldur",
-            "söngur",
-            "sögur"
-        ],
-        "comment_count": 12
+    "workspace": {
+      "id": "workspace-abc",
+      "name": "Sumarbúðir 2026"
     },
-    {
-        "id": "c5g9d0e1-3456-7890-12cd-ef3456789012",
-        "content_type": "program",
-        "name": "Hnútalærdómur - 10 grunnhnútar",
-        "description": "Lærum 10 grunnhnúta sem allir skátar ættu að kunna: slaufuhnút, páls-steik, kólfsteik, vatnsfastara, bátahnút og fleiri. Með skýrum myndum og skref-fyrir-skref leiðbeiningum.",
-        "public": true,
-        "like_count": 89,
-        "created_at": "2026-01-05T14:15:00Z",
-        "author_id": "user-789",
-        "image": "https://images.unsplash.com/photo-1515705576963-95cad62945b6?w=800",
-        "workspace_id": "workspace-abc",
-        "author": {
-            "id": "user-789",
-            "name": "Anna Kristjánsdóttir",
-            "email": "anna@example.is"
-        },
-        "workspace": {
-            "id": "workspace-abc",
-            "name": "Sumarbúðir 2026"
-        },
-        "tags": [
-            "færni",
-            "hnútar",
-            "tækni",
-            "grunnþjálfun"
-        ],
-        "comment_count": 15
+    "tags": ["leikir", "útivera", "hópur", "þrautir"],
+    "comment_count": 8
+  },
+  {
+    "id": "b4f8c9d0-2345-6789-01bc-def234567890",
+    "content_type": "program",
+    "name": "Kvöldvaka við varðeldinn",
+    "description": "Hefðbundin kvöldvaka þar sem við söfnumst í kring um varðeld. Sögusagnir, skátasöngur, marshmallows og samverustund. Leiðbeiningar um örugga eldavinnu og góða kvöldvökuanda.",
+    "public": true,
+    "like_count": 67,
+    "created_at": "2026-01-01T08:30:00Z",
+    "author_id": "user-456",
+    "image": "https://images.unsplash.com/photo-1476041800959-2f6bb412c8ce?w=800",
+    "workspace_id": "workspace-xyz",
+    "author": {
+      "id": "user-456",
+      "name": "Guðrún Sigurðardóttir",
+      "email": "gudrun@example.is"
     },
-    {
-        "id": "d6h0e1f2-4567-8901-23de-f45678901234",
-        "content_type": "program",
-        "name": "Matreiðsla á muurikku",
-        "description": "Lærum að nota Muurikka-pönnu til að baka pönnukökur úti. Einfalt og skemmtilegt verkefni sem börn elska. Innifalið er uppskrift, öryggisreglur og ábendingar fyrir foringja.",
-        "public": true,
-        "like_count": 34,
-        "created_at": "2025-12-28T16:45:00Z",
-        "author_id": "user-123",
-        "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800",
-        "workspace_id": "workspace-def",
-        "author": {
-            "id": "user-123",
-            "name": "Jón Jónsson",
-            "email": "jon@example.is"
-        },
-        "workspace": {
-            "id": "workspace-def",
-            "name": "Vetrarferðir Áhaldamanna"
-        },
-        "tags": [
-            "matreiðsla",
-            "eldavél",
-            "útivera",
-            "matur"
-        ],
-        "comment_count": 5
+    "workspace": {
+      "id": "workspace-xyz",
+      "name": "Haustdagskrá Spáta"
     },
-    {
-        "id": "e7i1f2g3-5678-9012-34ef-56789012345",
-        "content_type": "program",
-        "name": "Færnimerki: Fyrstu hjálp",
-        "description": "Forrit til að vinna færnimerki í fyrstu hjálp. Þátttakendur læra grunnreglur fyrstu hjálpar, hvernig á að setja á sárabindi, takast á við búlur og finna hjálp í neyð.",
-        "public": true,
-        "like_count": 56,
-        "created_at": "2025-12-20T11:20:00Z",
-        "author_id": "user-456",
-        "image": "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800",
-        "workspace_id": "workspace-xyz",
-        "author": {
-            "id": "user-456",
-            "name": "Guðrún Sigurðardóttir",
-            "email": "gudrun@example.is"
-        },
-        "workspace": {
-            "id": "workspace-xyz",
-            "name": "Haustdagskrá Spáta"
-        },
-        "tags": [
-            "færnimerki",
-            "fyrstu hjálp",
-            "öryggi",
-            "þjálfun"
-        ],
-        "comment_count": 7
+    "tags": ["kvöldvaka", "varðeldur", "söngur", "sögur"],
+    "comment_count": 12
+  },
+  {
+    "id": "c5g9d0e1-3456-7890-12cd-ef3456789012",
+    "content_type": "program",
+    "name": "Hnútalærdómur - 10 grunnhnútar",
+    "description": "Lærum 10 grunnhnúta sem allir skátar ættu að kunna: slaufuhnút, páls-steik, kólfsteik, vatnsfastara, bátahnút og fleiri. Með skýrum myndum og skref-fyrir-skref leiðbeiningum.",
+    "public": true,
+    "like_count": 89,
+    "created_at": "2026-01-05T14:15:00Z",
+    "author_id": "user-789",
+    "image": "https://images.unsplash.com/photo-1515705576963-95cad62945b6?w=800",
+    "workspace_id": "workspace-abc",
+    "author": {
+      "id": "user-789",
+      "name": "Anna Kristjánsdóttir",
+      "email": "anna@example.is"
     },
-    {
-        "id": "f8j2g3h4-6789-0123-45fg-678901234567",
-        "content_type": "program",
-        "name": "Samfélagsverkefni - hreinsun á tjaldsvæði",
-        "description": "Náttúruverndarverkefni þar sem við hreinsum og gerum við tjaldsvæði. Skátar læra um ábyrgð gagnvart umhverfinu, úrgangsflokkun og umgengni um náttúruna.",
-        "public": true,
-        "like_count": 23,
-        "created_at": "2025-12-15T09:10:00Z",
-        "author_id": "user-789",
-        "image": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800",
-        "workspace_id": "workspace-ghi",
-        "author": {
-            "id": "user-789",
-            "name": "Anna Kristjánsdóttir",
-            "email": "anna@example.is"
-        },
-        "workspace": {
-            "id": "workspace-ghi",
-            "name": "Vetrarstarf Hringja"
-        },
-        "tags": [
-            "samfélagsverk",
-            "náttúruvernd",
-            "umhverfismál",
-            "útilegur"
-        ],
-        "comment_count": 3
+    "workspace": {
+      "id": "workspace-abc",
+      "name": "Sumarbúðir 2026"
     },
-    {
-        "id": "g9k3h4i5-7890-1234-56gh-789012345678",
-        "content_type": "program",
-        "name": "Hópaefli - stórir leikir",
-        "description": "Safn af hópaeflis-leikjum fyrir 20-50 manns. Leikir sem byggja upp samvinnu, traust og samheldni. Inniheldur Völund, Stafeta, Kommandó og fleiri klassíska skátaleiki.",
-        "public": true,
-        "like_count": 104,
-        "created_at": "2026-01-04T13:30:00Z",
-        "author_id": "user-234",
-        "image": "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800",
-        "workspace_id": "workspace-abc",
-        "author": {
-            "id": "user-234",
-            "name": "Pétur Pétursson",
-            "email": "petur@example.is"
-        },
-        "workspace": {
-            "id": "workspace-abc",
-            "name": "Sumarbúðir 2026"
-        },
-        "tags": [
-            "hópaefli",
-            "leikir",
-            "samvinna",
-            "hópur"
-        ],
-        "comment_count": 22
+    "tags": ["færni", "hnútar", "tækni", "grunnþjálfun"],
+    "comment_count": 15
+  },
+  {
+    "id": "d6h0e1f2-4567-8901-23de-f45678901234",
+    "content_type": "program",
+    "name": "Matreiðsla á muurikku",
+    "description": "Lærum að nota Muurikka-pönnu til að baka pönnukökur úti. Einfalt og skemmtilegt verkefni sem börn elska. Innifalið er uppskrift, öryggisreglur og ábendingar fyrir foringja.",
+    "public": true,
+    "like_count": 34,
+    "created_at": "2025-12-28T16:45:00Z",
+    "author_id": "user-123",
+    "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800",
+    "workspace_id": "workspace-def",
+    "author": {
+      "id": "user-123",
+      "name": "Jón Jónsson",
+      "email": "jon@example.is"
     },
-    {
-        "id": "h0l4i5j6-8901-2345-67hi-890123456789",
-        "content_type": "program",
-        "name": "Vígslugrunnur fyrir drekaskáta",
-        "description": "Kynningarforrit fyrir nýja skáta þar sem farið er yfir skátaheitin, skátalögin, skátakveðjur, sögu skáta á Íslandi og hefðir. Undirbúningur fyrir vígslumessu.",
-        "public": true,
-        "like_count": 18,
-        "created_at": "2025-12-10T14:50:00Z",
-        "author_id": "user-567",
-        "image": "https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800",
-        "workspace_id": "workspace-jkl",
-        "author": {
-            "id": "user-567",
-            "name": "Sigríður Einarsdóttir",
-            "email": "sigridur@example.is"
-        },
-        "workspace": {
-            "id": "workspace-jkl",
-            "name": "Vorhátíð Úlfúða"
-        },
-        "tags": [
-            "vígsla",
-            "grunnþjálfun",
-            "hefðir",
-            "nýliðun"
-        ],
-        "comment_count": 2
+    "workspace": {
+      "id": "workspace-def",
+      "name": "Vetrarferðir Áhaldamanna"
     },
-    {
-        "id": "i1m5j6k7-9012-3456-78ij-901234567890",
-        "content_type": "program",
-        "name": "Dagskrá fyrir félagsútilegu",
-        "description": "Heildar dagskrá fyrir 2ja daga félagsútilegu þar sem allir aldurshópar félagsins koma saman. Inniheldur ratleik, sund, varðeld, leiki og kvöldvöku. Hentar fyrir 40-80 þátttakendur.",
-        "public": true,
-        "like_count": 45,
-        "created_at": "2025-12-05T10:00:00Z",
-        "author_id": "user-123",
-        "image": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800",
-        "workspace_id": "workspace-abc",
-        "author": {
-            "id": "user-123",
-            "name": "Jón Jónsson",
-            "email": "jon@example.is"
-        },
-        "workspace": {
-            "id": "workspace-abc",
-            "name": "Sumarbúðir 2026"
-        },
-        "tags": [
-            "útilega",
-            "félagsútilega",
-            "dagskrá",
-            "viðburður"
-        ],
-        "comment_count": 9
+    "tags": ["matreiðsla", "eldavél", "útivera", "matur"],
+    "comment_count": 5
+  },
+  {
+    "id": "e7i1f2g3-5678-9012-34ef-56789012345",
+    "content_type": "program",
+    "name": "Færnimerki: Fyrstu hjálp",
+    "description": "Forrit til að vinna færnimerki í fyrstu hjálp. Þátttakendur læra grunnreglur fyrstu hjálpar, hvernig á að setja á sárabindi, takast á við búlur og finna hjálp í neyð.",
+    "public": true,
+    "like_count": 56,
+    "created_at": "2025-12-20T11:20:00Z",
+    "author_id": "user-456",
+    "image": "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800",
+    "workspace_id": "workspace-xyz",
+    "author": {
+      "id": "user-456",
+      "name": "Guðrún Sigurðardóttir",
+      "email": "gudrun@example.is"
     },
-    {
-        "id": "j2n6k7l8-0123-4567-89jk-012345678901",
-        "content_type": "program",
-        "name": "Skemmtiatriði fyrir aldursbilamót",
-        "description": "Hugmyndir og skipulag fyrir skemmtiatriði á aldursbilamóti eða kvöldvöku. Leikþættir, söngvar, dans og húmor. Leiðbeiningar fyrir foringja til að hjálpa skátum að skipuleggja.",
-        "public": true,
-        "like_count": 71,
-        "created_at": "2025-11-28T15:30:00Z",
-        "author_id": "user-456",
-        "image": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800",
-        "workspace_id": "workspace-xyz",
-        "author": {
-            "id": "user-456",
-            "name": "Guðrún Sigurðardóttir",
-            "email": "gudrun@example.is"
-        },
-        "workspace": {
-            "id": "workspace-xyz",
-            "name": "Haustdagskrá Spáta"
-        },
-        "tags": [
-            "skemmtiatriði",
-            "kvöldvaka",
-            "menning",
-            "sköpun"
-        ],
-        "comment_count": 14
+    "workspace": {
+      "id": "workspace-xyz",
+      "name": "Haustdagskrá Spáta"
     },
-    {
-        "id": "k3o7l8m9-1234-5678-90kl-123456789012",
-        "content_type": "program",
-        "name": "Kajak og bátar á Úlfljótsvatni",
-        "description": "Skipulag fyrir kajakferð eða bátasiglingu. Öryggisreglur, björgunarvesti, og leiðbeiningar. Best á Úlfljótsvatni eða öðrum rólegum vötnum.",
-        "public": true,
-        "like_count": 93,
-        "created_at": "2025-11-20T12:45:00Z",
-        "author_id": "user-789",
-        "image": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800",
-        "workspace_id": "workspace-abc",
-        "author": {
-            "id": "user-789",
-            "name": "Anna Kristjánsdóttir",
-            "email": "anna@example.is"
-        },
-        "workspace": {
-            "id": "workspace-abc",
-            "name": "Sumarbúðir 2026"
-        },
-        "tags": [
-            "vatn",
-            "kajak",
-            "bátar",
-            "öryggi"
-        ],
-        "comment_count": 18
+    "tags": ["færnimerki", "fyrstu hjálp", "öryggi", "þjálfun"],
+    "comment_count": 7
+  },
+  {
+    "id": "f8j2g3h4-6789-0123-45fg-678901234567",
+    "content_type": "program",
+    "name": "Samfélagsverkefni - hreinsun á tjaldsvæði",
+    "description": "Náttúruverndarverkefni þar sem við hreinsum og gerum við tjaldsvæði. Skátar læra um ábyrgð gagnvart umhverfinu, úrgangsflokkun og umgengni um náttúruna.",
+    "public": true,
+    "like_count": 23,
+    "created_at": "2025-12-15T09:10:00Z",
+    "author_id": "user-789",
+    "image": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800",
+    "workspace_id": "workspace-ghi",
+    "author": {
+      "id": "user-789",
+      "name": "Anna Kristjánsdóttir",
+      "email": "anna@example.is"
     },
-    {
-        "id": "l4p8m9n0-2345-6789-01lm-234567890123",
-        "content_type": "program",
-        "name": "Heimsmarkmiðin - fræðsla og verkefni",
-        "description": "Kennsla um heimsmarkmið Sameinuðu þjóðanna með verklegum verkefnum. Skátar læra um fátækt, jafnrétti, loftslagsbreytingar og aðra mikilvæga þætti. Hentar fyrir 13-18 ára.",
-        "public": true,
-        "like_count": 62,
-        "created_at": "2025-11-15T09:20:00Z",
-        "author_id": "user-234",
-        "image": "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800",
-        "workspace_id": "workspace-def",
-        "author": {
-            "id": "user-234",
-            "name": "Pétur Pétursson",
-            "email": "petur@example.is"
-        },
-        "workspace": {
-            "id": "workspace-def",
-            "name": "Vetrarferðir Áhaldamanna"
-        },
-        "tags": [
-            "heimsmarkmið",
-            "fræðsla",
-            "samfélag",
-            "heimsborgaravitund"
-        ],
-        "comment_count": 11
+    "workspace": {
+      "id": "workspace-ghi",
+      "name": "Vetrarstarf Hringja"
     },
-    {
-        "id": "m5q9n0o1-3456-7890-12mn-345678901234",
-        "content_type": "program",
-        "name": "Klifur á Úlfljótsvatni",
-        "description": "Skipulag fyrir klifurferð á klifurturninn á Úlfljótsvatni. Öryggisbúnaður, leiðbeiningar fyrir foringja, og verkaskipting. Byggjum upp sjálfstraust og þor.",
-        "public": true,
-        "like_count": 38,
-        "created_at": "2025-11-08T14:00:00Z",
-        "author_id": "user-567",
-        "image": "https://images.unsplash.com/photo-1522163182402-834f871fd851?w=800",
-        "workspace_id": "workspace-ghi",
-        "author": {
-            "id": "user-567",
-            "name": "Sigríður Einarsdóttir",
-            "email": "sigridur@example.is"
-        },
-        "workspace": {
-            "id": "workspace-ghi",
-            "name": "Vetrarstarf Hringja"
-        },
-        "tags": [
-            "klifur",
-            "áskorun",
-            "sjálfstraust",
-            "útivera"
-        ],
-        "comment_count": 6
+    "tags": ["samfélagsverk", "náttúruvernd", "umhverfismál", "útilegur"],
+    "comment_count": 3
+  },
+  {
+    "id": "g9k3h4i5-7890-1234-56gh-789012345678",
+    "content_type": "program",
+    "name": "Hópaefli - stórir leikir",
+    "description": "Safn af hópaeflis-leikjum fyrir 20-50 manns. Leikir sem byggja upp samvinnu, traust og samheldni. Inniheldur Völund, Stafeta, Kommandó og fleiri klassíska skátaleiki.",
+    "public": true,
+    "like_count": 104,
+    "created_at": "2026-01-04T13:30:00Z",
+    "author_id": "user-234",
+    "image": "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800",
+    "workspace_id": "workspace-abc",
+    "author": {
+      "id": "user-234",
+      "name": "Pétur Pétursson",
+      "email": "petur@example.is"
     },
-    {
-        "id": "n6r0o1p2-4567-8901-23no-456789012345",
-        "content_type": "program",
-        "name": "Morse og merki",
-        "description": "Lærum Morse stafróf og önnur merki sem notuð eru í skátastarfi. Hagnýtar æfingar, spil og leikir til að æfa Morse. Þátttakendur fá Morse-spjöld.",
-        "public": true,
-        "like_count": 81,
-        "created_at": "2025-11-01T11:30:00Z",
-        "author_id": "user-123",
-        "image": "https://images.unsplash.com/photo-1516192518150-0d8fee5425e3?w=800",
-        "workspace_id": "workspace-abc",
-        "author": {
-            "id": "user-123",
-            "name": "Jón Jónsson",
-            "email": "jon@example.is"
-        },
-        "workspace": {
-            "id": "workspace-abc",
-            "name": "Sumarbúðir 2026"
-        },
-        "tags": [
-            "færni",
-            "morse",
-            "samskipti",
-            "tækni"
-        ],
-        "comment_count": 13
+    "workspace": {
+      "id": "workspace-abc",
+      "name": "Sumarbúðir 2026"
     },
-    {
-        "id": "o7s1p2q3-5678-9012-34op-567890123456",
-        "content_type": "program",
-        "name": "Fletagerð og varðeldasmíði",
-        "description": "Lærum að byggja fleka úr timbri og tógum með réttum hnútum. Síðan smíðum við varðeld og kveikjum á honum. Hagnýt færni sem allir skátar þurfa að kunna.",
-        "public": true,
-        "like_count": 107,
-        "created_at": "2025-10-25T19:00:00Z",
-        "author_id": "user-456",
-        "image": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800",
-        "workspace_id": "workspace-xyz",
-        "author": {
-            "id": "user-456",
-            "name": "Guðrún Sigurðardóttir",
-            "email": "gudrun@example.is"
-        },
-        "workspace": {
-            "id": "workspace-xyz",
-            "name": "Haustdagskrá Spáta"
-        },
-        "tags": [
-            "fletagerð",
-            "varðeldur",
-            "færni",
-            "tækni"
-        ],
-        "comment_count": 21
+    "tags": ["hópaefli", "leikir", "samvinna", "hópur"],
+    "comment_count": 22
+  },
+  {
+    "id": "h0l4i5j6-8901-2345-67hi-890123456789",
+    "content_type": "program",
+    "name": "Vígslugrunnur fyrir drekaskáta",
+    "description": "Kynningarforrit fyrir nýja skáta þar sem farið er yfir skátaheitin, skátalögin, skátakveðjur, sögu skáta á Íslandi og hefðir. Undirbúningur fyrir vígslumessu.",
+    "public": true,
+    "like_count": 18,
+    "created_at": "2025-12-10T14:50:00Z",
+    "author_id": "user-567",
+    "image": "https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800",
+    "workspace_id": "workspace-jkl",
+    "author": {
+      "id": "user-567",
+      "name": "Sigríður Einarsdóttir",
+      "email": "sigridur@example.is"
     },
-    {
-        "id": "p8t2q3r4-6789-0123-45pq-678901234567",
-        "content_type": "program",
-        "name": "Sumardeginn fyrsti - skrúðganga",
-        "description": "Skipulag fyrir Sumardaginn fyrsta þar sem skátar leiða skrúðgöngu og halda hátíð. Leikir, hoppukastali, skátaþrautir og fleira. Opið fyrir alla í hverfinu.",
-        "public": true,
-        "like_count": 29,
-        "created_at": "2025-10-18T13:15:00Z",
-        "author_id": "user-789",
-        "image": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800",
-        "workspace_id": "workspace-jkl",
-        "author": {
-            "id": "user-789",
-            "name": "Anna Kristjánsdóttir",
-            "email": "anna@example.is"
-        },
-        "workspace": {
-            "id": "workspace-jkl",
-            "name": "Vorhátíð Úlfúða"
-        },
-        "tags": [
-            "viðburður",
-            "sumardagur",
-            "skrúðganga",
-            "hátíð"
-        ],
-        "comment_count": 4
+    "workspace": {
+      "id": "workspace-jkl",
+      "name": "Vorhátíð Úlfúða"
     },
-    {
-        "id": "q9u3r4s5-7890-1234-56qr-789012345678",
-        "content_type": "program",
-        "name": "Gönguferð í Heiðmörk",
-        "description": "Skipulag fyrir gönguferð í Heiðmörk eða öðrum útivistarsvæðum. Kort, öryggi, hvað á að taka með, og hvernig á að skipuleggja fyrir mismunandi aldurshópa.",
-        "public": true,
-        "like_count": 51,
-        "created_at": "2025-10-10T08:00:00Z",
-        "author_id": "user-234",
-        "image": "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800",
-        "workspace_id": "workspace-def",
-        "author": {
-            "id": "user-234",
-            "name": "Pétur Pétursson",
-            "email": "petur@example.is"
-        },
-        "workspace": {
-            "id": "workspace-def",
-            "name": "Vetrarferðir Áhaldamanna"
-        },
-        "tags": [
-            "ganga",
-            "útivera",
-            "náttúra",
-            "útilegur"
-        ],
-        "comment_count": 7
+    "tags": ["vígsla", "grunnþjálfun", "hefðir", "nýliðun"],
+    "comment_count": 2
+  },
+  {
+    "id": "i1m5j6k7-9012-3456-78ij-901234567890",
+    "content_type": "program",
+    "name": "Dagskrá fyrir félagsútilegu",
+    "description": "Heildar dagskrá fyrir 2ja daga félagsútilegu þar sem allir aldurshópar félagsins koma saman. Inniheldur ratleik, sund, varðeld, leiki og kvöldvöku. Hentar fyrir 40-80 þátttakendur.",
+    "public": true,
+    "like_count": 45,
+    "created_at": "2025-12-05T10:00:00Z",
+    "author_id": "user-123",
+    "image": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800",
+    "workspace_id": "workspace-abc",
+    "author": {
+      "id": "user-123",
+      "name": "Jón Jónsson",
+      "email": "jon@example.is"
     },
-    {
-        "id": "r0v4s5t6-8901-2345-67rs-890123456789",
-        "content_type": "program",
-        "name": "Skátasafnsbingó",
-        "description": "Skemmtilegur leikur í Skátasafninu þar sem börn læra um sögu skátahreyfingarinnar. Bingó-spjöld með spurningum um muni og myndir í safninu. Hentar fyrir heimsóknir.",
-        "public": true,
-        "like_count": 66,
-        "created_at": "2025-10-03T14:45:00Z",
-        "author_id": "user-567",
-        "image": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800",
-        "workspace_id": "workspace-ghi",
-        "author": {
-            "id": "user-567",
-            "name": "Sigríður Einarsdóttir",
-            "email": "sigridur@example.is"
-        },
-        "workspace": {
-            "id": "workspace-ghi",
-            "name": "Vetrarstarf Hringja"
-        },
-        "tags": [
-            "menning",
-            "saga",
-            "leikir",
-            "innileikur"
-        ],
-        "comment_count": 10
+    "workspace": {
+      "id": "workspace-abc",
+      "name": "Sumarbúðir 2026"
     },
-    {
-        "id": "s1w5t6u7-9012-3456-78st-901234567890",
-        "content_type": "program",
-        "name": "Þemadagur: Víkingar",
-        "description": "Heilsdagsdagskrá með víkingaþema. Búningar, leikir, sögukennsla og verkefni tengd víkingum. Skátar læra um íslenska sögu á skemmtilegan hátt.",
-        "public": true,
-        "like_count": 58,
-        "created_at": "2025-09-28T11:00:00Z",
-        "author_id": "user-123",
-        "image": "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800",
-        "workspace_id": "workspace-abc",
-        "author": {
-            "id": "user-123",
-            "name": "Jón Jónsson",
-            "email": "jon@example.is"
-        },
-        "workspace": {
-            "id": "workspace-abc",
-            "name": "Sumarbúðir 2026"
-        },
-        "tags": [
-            "þemadagur",
-            "saga",
-            "leikir",
-            "menning"
-        ],
-        "comment_count": 16
-    }
+    "tags": ["útilega", "félagsútilega", "dagskrá", "viðburður"],
+    "comment_count": 9
+  },
+  {
+    "id": "j2n6k7l8-0123-4567-89jk-012345678901",
+    "content_type": "program",
+    "name": "Skemmtiatriði fyrir aldursbilamót",
+    "description": "Hugmyndir og skipulag fyrir skemmtiatriði á aldursbilamóti eða kvöldvöku. Leikþættir, söngvar, dans og húmor. Leiðbeiningar fyrir foringja til að hjálpa skátum að skipuleggja.",
+    "public": true,
+    "like_count": 71,
+    "created_at": "2025-11-28T15:30:00Z",
+    "author_id": "user-456",
+    "image": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800",
+    "workspace_id": "workspace-xyz",
+    "author": {
+      "id": "user-456",
+      "name": "Guðrún Sigurðardóttir",
+      "email": "gudrun@example.is"
+    },
+    "workspace": {
+      "id": "workspace-xyz",
+      "name": "Haustdagskrá Spáta"
+    },
+    "tags": ["skemmtiatriði", "kvöldvaka", "menning", "sköpun"],
+    "comment_count": 14
+  },
+  {
+    "id": "k3o7l8m9-1234-5678-90kl-123456789012",
+    "content_type": "program",
+    "name": "Kajak og bátar á Úlfljótsvatni",
+    "description": "Skipulag fyrir kajakferð eða bátasiglingu. Öryggisreglur, björgunarvesti, og leiðbeiningar. Best á Úlfljótsvatni eða öðrum rólegum vötnum.",
+    "public": true,
+    "like_count": 93,
+    "created_at": "2025-11-20T12:45:00Z",
+    "author_id": "user-789",
+    "image": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800",
+    "workspace_id": "workspace-abc",
+    "author": {
+      "id": "user-789",
+      "name": "Anna Kristjánsdóttir",
+      "email": "anna@example.is"
+    },
+    "workspace": {
+      "id": "workspace-abc",
+      "name": "Sumarbúðir 2026"
+    },
+    "tags": ["vatn", "kajak", "bátar", "öryggi"],
+    "comment_count": 18
+  },
+  {
+    "id": "l4p8m9n0-2345-6789-01lm-234567890123",
+    "content_type": "program",
+    "name": "Heimsmarkmiðin - fræðsla og verkefni",
+    "description": "Kennsla um heimsmarkmið Sameinuðu þjóðanna með verklegum verkefnum. Skátar læra um fátækt, jafnrétti, loftslagsbreytingar og aðra mikilvæga þætti. Hentar fyrir 13-18 ára.",
+    "public": true,
+    "like_count": 62,
+    "created_at": "2025-11-15T09:20:00Z",
+    "author_id": "user-234",
+    "image": "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800",
+    "workspace_id": "workspace-def",
+    "author": {
+      "id": "user-234",
+      "name": "Pétur Pétursson",
+      "email": "petur@example.is"
+    },
+    "workspace": {
+      "id": "workspace-def",
+      "name": "Vetrarferðir Áhaldamanna"
+    },
+    "tags": ["heimsmarkmið", "fræðsla", "samfélag", "heimsborgaravitund"],
+    "comment_count": 11
+  },
+  {
+    "id": "m5q9n0o1-3456-7890-12mn-345678901234",
+    "content_type": "program",
+    "name": "Klifur á Úlfljótsvatni",
+    "description": "Skipulag fyrir klifurferð á klifurturninn á Úlfljótsvatni. Öryggisbúnaður, leiðbeiningar fyrir foringja, og verkaskipting. Byggjum upp sjálfstraust og þor.",
+    "public": true,
+    "like_count": 38,
+    "created_at": "2025-11-08T14:00:00Z",
+    "author_id": "user-567",
+    "image": "https://images.unsplash.com/photo-1522163182402-834f871fd851?w=800",
+    "workspace_id": "workspace-ghi",
+    "author": {
+      "id": "user-567",
+      "name": "Sigríður Einarsdóttir",
+      "email": "sigridur@example.is"
+    },
+    "workspace": {
+      "id": "workspace-ghi",
+      "name": "Vetrarstarf Hringja"
+    },
+    "tags": ["klifur", "áskorun", "sjálfstraust", "útivera"],
+    "comment_count": 6
+  },
+  {
+    "id": "n6r0o1p2-4567-8901-23no-456789012345",
+    "content_type": "program",
+    "name": "Morse og merki",
+    "description": "Lærum Morse stafróf og önnur merki sem notuð eru í skátastarfi. Hagnýtar æfingar, spil og leikir til að æfa Morse. Þátttakendur fá Morse-spjöld.",
+    "public": true,
+    "like_count": 81,
+    "created_at": "2025-11-01T11:30:00Z",
+    "author_id": "user-123",
+    "image": "https://images.unsplash.com/photo-1516192518150-0d8fee5425e3?w=800",
+    "workspace_id": "workspace-abc",
+    "author": {
+      "id": "user-123",
+      "name": "Jón Jónsson",
+      "email": "jon@example.is"
+    },
+    "workspace": {
+      "id": "workspace-abc",
+      "name": "Sumarbúðir 2026"
+    },
+    "tags": ["færni", "morse", "samskipti", "tækni"],
+    "comment_count": 13
+  },
+  {
+    "id": "o7s1p2q3-5678-9012-34op-567890123456",
+    "content_type": "program",
+    "name": "Fletagerð og varðeldasmíði",
+    "description": "Lærum að byggja fleka úr timbri og tógum með réttum hnútum. Síðan smíðum við varðeld og kveikjum á honum. Hagnýt færni sem allir skátar þurfa að kunna.",
+    "public": true,
+    "like_count": 107,
+    "created_at": "2025-10-25T19:00:00Z",
+    "author_id": "user-456",
+    "image": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800",
+    "workspace_id": "workspace-xyz",
+    "author": {
+      "id": "user-456",
+      "name": "Guðrún Sigurðardóttir",
+      "email": "gudrun@example.is"
+    },
+    "workspace": {
+      "id": "workspace-xyz",
+      "name": "Haustdagskrá Spáta"
+    },
+    "tags": ["fletagerð", "varðeldur", "færni", "tækni"],
+    "comment_count": 21
+  },
+  {
+    "id": "p8t2q3r4-6789-0123-45pq-678901234567",
+    "content_type": "program",
+    "name": "Sumardeginn fyrsti - skrúðganga",
+    "description": "Skipulag fyrir Sumardaginn fyrsta þar sem skátar leiða skrúðgöngu og halda hátíð. Leikir, hoppukastali, skátaþrautir og fleira. Opið fyrir alla í hverfinu.",
+    "public": true,
+    "like_count": 29,
+    "created_at": "2025-10-18T13:15:00Z",
+    "author_id": "user-789",
+    "image": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800",
+    "workspace_id": "workspace-jkl",
+    "author": {
+      "id": "user-789",
+      "name": "Anna Kristjánsdóttir",
+      "email": "anna@example.is"
+    },
+    "workspace": {
+      "id": "workspace-jkl",
+      "name": "Vorhátíð Úlfúða"
+    },
+    "tags": ["viðburður", "sumardagur", "skrúðganga", "hátíð"],
+    "comment_count": 4
+  },
+  {
+    "id": "q9u3r4s5-7890-1234-56qr-789012345678",
+    "content_type": "program",
+    "name": "Gönguferð í Heiðmörk",
+    "description": "Skipulag fyrir gönguferð í Heiðmörk eða öðrum útivistarsvæðum. Kort, öryggi, hvað á að taka með, og hvernig á að skipuleggja fyrir mismunandi aldurshópa.",
+    "public": true,
+    "like_count": 51,
+    "created_at": "2025-10-10T08:00:00Z",
+    "author_id": "user-234",
+    "image": "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800",
+    "workspace_id": "workspace-def",
+    "author": {
+      "id": "user-234",
+      "name": "Pétur Pétursson",
+      "email": "petur@example.is"
+    },
+    "workspace": {
+      "id": "workspace-def",
+      "name": "Vetrarferðir Áhaldamanna"
+    },
+    "tags": ["ganga", "útivera", "náttúra", "útilegur"],
+    "comment_count": 7
+  },
+  {
+    "id": "r0v4s5t6-8901-2345-67rs-890123456789",
+    "content_type": "program",
+    "name": "Skátasafnsbingó",
+    "description": "Skemmtilegur leikur í Skátasafninu þar sem börn læra um sögu skátahreyfingarinnar. Bingó-spjöld með spurningum um muni og myndir í safninu. Hentar fyrir heimsóknir.",
+    "public": true,
+    "like_count": 66,
+    "created_at": "2025-10-03T14:45:00Z",
+    "author_id": "user-567",
+    "image": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800",
+    "workspace_id": "workspace-ghi",
+    "author": {
+      "id": "user-567",
+      "name": "Sigríður Einarsdóttir",
+      "email": "sigridur@example.is"
+    },
+    "workspace": {
+      "id": "workspace-ghi",
+      "name": "Vetrarstarf Hringja"
+    },
+    "tags": ["menning", "saga", "leikir", "innileikur"],
+    "comment_count": 10
+  },
+  {
+    "id": "s1w5t6u7-9012-3456-78st-901234567890",
+    "content_type": "program",
+    "name": "Þemadagur: Víkingar",
+    "description": "Heilsdagsdagskrá með víkingaþema. Búningar, leikir, sögukennsla og verkefni tengd víkingum. Skátar læra um íslenska sögu á skemmtilegan hátt.",
+    "public": true,
+    "like_count": 58,
+    "created_at": "2025-09-28T11:00:00Z",
+    "author_id": "user-123",
+    "image": "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800",
+    "workspace_id": "workspace-abc",
+    "author": {
+      "id": "user-123",
+      "name": "Jón Jónsson",
+      "email": "jon@example.is"
+    },
+    "workspace": {
+      "id": "workspace-abc",
+      "name": "Sumarbúðir 2026"
+    },
+    "tags": ["þemadagur", "saga", "leikir", "menning"],
+    "comment_count": 16
+  }
 ]

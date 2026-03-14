@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/python-3.10+-brightgreen.svg)](https://www.python.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
-<!-- [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/) -->
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![GitHub issues](https://img.shields.io/github/issues/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/pulls)
 [![Last commit](https://img.shields.io/github/last-commit/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/commits/main)
@@ -54,17 +54,19 @@ Verkfæri til að fara yfir liðna viðburði og greina fjölbreytni dagskrár. 
 
 ## Tæknistaflinn
 
-**Bakendi:** Python (FastAPI eða Django REST, óákveðið)
+**Bakendi:** Python 3.10+ með FastAPI, SQLAlchemy 2.0 og Alembic
 
-**Framendi:** Next.js (React)
+**Framendi:** Next.js 15 (React 19, TypeScript)
 
-**Gagnagrunnur:** PostgreSQL
+**Gagnagrunnur:** PostgreSQL 16
 
-Við munum nota Docker fyrir uppsetningu og hýsa þetta á Azure.
+**Auðkenning:** Auth0
+
+**Uppsetning:** Docker Compose
 
 ## Tímalína
 
-**Kynning á verkefni:** janúar 2026 á viðburðinum Neista.
+**Kynning á verkefni:** janúar 2026 á viðburðinum Neista. ✅
 
 - Smiðja um dagskrárgerð og safna endurgjöf frá foringjum.
 

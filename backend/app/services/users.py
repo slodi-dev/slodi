@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -15,6 +16,13 @@ class UserService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.repo = UserRepository(session)
+
+    async def get_full(self, user_id: UUID) -> UserOut:
+        """Return the full user record including auth0_id. Use for admin operations."""
+        row = await self.repo.get(user_id)
+        if not row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        return UserOut.model_validate(row)
 
     async def get(self, user_id: UUID) -> UserOutLimited:
         row = await self.repo.get(user_id)
@@ -45,6 +53,12 @@ class UserService:
     ) -> list[UserOutLimited]:
         rows = await self.repo.list(q=q, limit=limit, offset=offset)
         return [UserOutLimited.model_validate(r) for r in rows]
+
+    async def list_full(
+        self, *, q: str | None, limit: int = 50, offset: int = 0
+    ) -> Sequence[UserOut]:
+        rows = await self.repo.list(q=q, limit=limit, offset=offset)
+        return [UserOut.model_validate(r) for r in rows]
 
     async def create(self, data: UserCreate) -> UserOut:
         user = User(**data.model_dump())

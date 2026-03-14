@@ -37,6 +37,7 @@ def _prog(workspace_id=None):
         workspace_id=wid,
         name="Test Program",
         author_id=uuid4(),
+        author_name="Author",
         created_at=dt.datetime.now(dt.timezone.utc),
         author=UserOut(id=uuid4(), name="Author", email="a@b.com", auth0_id="auth0|x"),
         workspace=WorkspaceNested(id=wid, name="WS"),
@@ -200,10 +201,10 @@ def test_delete_comment_not_found_returns_404(client):
 
 def test_delete_user_returns_204(client, sample_user):
     with (
-        patch("app.services.users.UserService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.services.users.UserService.get_full", new_callable=AsyncMock) as mock_get_full,
         patch("app.services.users.UserService.delete", new_callable=AsyncMock) as mock_del,
     ):
-        mock_get.return_value = sample_user
+        mock_get_full.return_value = sample_user
         mock_del.return_value = None
 
         resp = client.delete(f"/users/{sample_user.id}")
@@ -212,9 +213,9 @@ def test_delete_user_returns_204(client, sample_user):
 
 
 def test_delete_user_not_found_returns_404(client):
-    # Users router calls svc.delete() directly; 404 is raised inside the service
-    with patch("app.services.users.UserService.delete", new_callable=AsyncMock) as mock_del:
-        mock_del.side_effect = _not_found()
+    # Router calls get_full() first; 404 is raised there when the user doesn't exist
+    with patch("app.services.users.UserService.get_full", new_callable=AsyncMock) as mock_get_full:
+        mock_get_full.side_effect = _not_found()
 
         resp = client.delete(f"/users/{uuid4()}")
         assert resp.status_code == status.HTTP_404_NOT_FOUND
@@ -328,6 +329,7 @@ async def test_workspace_soft_delete_cascade(db):
         name="Cascade Task",
         created_at=get_current_datetime(),
         author_id=user.id,
+        workspace_id=ws.id,
         event_id=event.id,
         content_type=m.ContentType.task,
     )
@@ -373,7 +375,7 @@ async def test_workspace_soft_delete_cascade(db):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_program_soft_delete_cascade(db):
-    """Soft-deleting a program cascades deleted_at to its Events and Tasks."""
+    """Soft-deleting a program orphans its Events; tasks stay attached to their events."""
     from app.repositories.programs import ProgramRepository
 
     user = m.User(name="Prog Casc", auth0_id="auth0|pc1", email="pc@test.com")
@@ -415,6 +417,7 @@ async def test_program_soft_delete_cascade(db):
         name="Prog Casc Task",
         created_at=get_current_datetime(),
         author_id=user.id,
+        workspace_id=ws.id,
         event_id=event.id,
         content_type=m.ContentType.task,
     )
@@ -430,15 +433,21 @@ async def test_program_soft_delete_cascade(db):
 
     assert rows_affected == 1
 
-    # All three rows still exist but are soft-deleted
-    for model_cls, entity_id in [
-        (m.Program, prog_id),
-        (m.Event, event_id),
-        (m.Task, task_id),
-    ]:
-        raw = await db.scalar(select(model_cls).where(model_cls.id == entity_id))
-        assert raw is not None, f"{model_cls.__name__} row must not be hard-deleted"
-        assert raw.deleted_at is not None, f"{model_cls.__name__}.deleted_at must be set"
+    # Program is soft-deleted
+    raw_prog = await db.scalar(select(m.Program).where(m.Program.id == prog_id))
+    assert raw_prog is not None and raw_prog.deleted_at is not None
+
+    # Event is orphaned (program_id=None), not soft-deleted
+    raw_event = await db.scalar(select(m.Event).where(m.Event.id == event_id))
+    assert raw_event is not None, "Event row must not be hard-deleted"
+    assert raw_event.program_id is None, "Event must be orphaned (program_id=None)"
+    assert raw_event.deleted_at is None, "Orphaned event must not be soft-deleted"
+
+    # Task remains attached to its event, not affected
+    raw_task = await db.scalar(select(m.Task).where(m.Task.id == task_id))
+    assert raw_task is not None, "Task row must not be hard-deleted"
+    assert raw_task.event_id == event_id, "Task must remain attached to its event"
+    assert raw_task.deleted_at is None, "Task must not be soft-deleted"
 
 
 @pytest.mark.integration
@@ -475,6 +484,7 @@ async def test_event_soft_delete_cascade(db):
         name="Ev Casc Task",
         created_at=get_current_datetime(),
         author_id=user.id,
+        workspace_id=ws.id,
         event_id=event.id,
         content_type=m.ContentType.task,
     )
@@ -492,8 +502,11 @@ async def test_event_soft_delete_cascade(db):
     raw_event = await db.scalar(select(m.Event).where(m.Event.id == event_id))
     assert raw_event is not None and raw_event.deleted_at is not None
 
+    # Task is orphaned (event_id=None), not soft-deleted
     raw_task = await db.scalar(select(m.Task).where(m.Task.id == task_id))
-    assert raw_task is not None and raw_task.deleted_at is not None
+    assert raw_task is not None, "Task row must not be hard-deleted"
+    assert raw_task.event_id is None, "Task must be orphaned (event_id=None)"
+    assert raw_task.deleted_at is None, "Orphaned task must not be soft-deleted"
 
 
 @pytest.mark.integration

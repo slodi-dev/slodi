@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_group_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.group import GroupRole
+from app.domain.enums import GroupRole
 from app.schemas.group import (
     GroupCreate,
     GroupMemberOut,

@@ -12,9 +12,9 @@ from testcontainers.postgres import PostgresContainer
 
 from app.core.auth import get_current_user
 from app.core.db import get_session
+from app.domain.enums import Permissions
 from app.main import create_app
 from app.models.base import Base
-from app.models.user import Permissions
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceOut
 

@@ -1,5 +1,5 @@
-@import './slodi-tokens.css';
-@import './slodi-utilities.css';
+@import "./slodi-tokens.css";
+@import "./slodi-utilities.css";
 
 /* ═══════════════════════════════════════════════════════════════
    SLÓÐI HOMEPAGE - Enhanced with Slóði Design Tokens
@@ -46,7 +46,7 @@
   line-height: var(--sl-line-height-tight);
   text-transform: uppercase;
   letter-spacing: var(--sl-letter-spacing-heading);
-  
+
   /* Gradient text */
   background: linear-gradient(
     135deg,
@@ -207,7 +207,7 @@
   background: hsl(var(--sl-color-surface));
   border-top: 1px solid hsl(var(--sl-color-border));
   border-bottom: 1px solid hsl(var(--sl-color-border));
-  
+
   display: flex;
   justify-content: center;
   gap: var(--sl-spacing-section);

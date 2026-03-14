@@ -1,5 +1,4 @@
 ---
-
 title: "Auth0 v4.10 innleiðing, farsímavalmynd og /dev bloggsíða"
 
 date: 2025-09-26
@@ -9,10 +8,10 @@ author: "Halldór"
 tags: ["devlog", "auth"]
 
 summary: "Fínstillt auðkenning með Auth0 v4.10, betrumbætt UX í farsímavalmynd og ný /dev síða með óendanlegri flettingu."
-
 ---
 
 ## Markmið
+
 - Uppfæra auðkenningu yfir á Auth0 v4.10 og einfalda leiðslur (middleware-first).
 - Hönnun og innleiðing á notendavænni farsímavalmynd með íslenskum hnöppum „Skrá inn“ / „Skrá út“.
 - Setja upp `/dev` yfirlitssíðu fyrir devlog-færslur með óendanlegri flettingu.

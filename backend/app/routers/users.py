@@ -1,6 +1,7 @@
 ## backend/app/routers/users.py
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Annotated
 from uuid import UUID
 
@@ -8,9 +9,10 @@ from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user, require_permission
+from app.core.cache import user_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.models.user import Permissions
+from app.domain.enums import Permissions
 from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
 from app.services.users import UserService
 
@@ -65,6 +67,29 @@ async def get_current_user_info(
     return current_user
 
 
+@router.get("/admin/list", response_model=list[UserOut])
+async def list_users_admin(
+    session: SessionDep,
+    request: Request,
+    response: Response,
+    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
+    q: str | None = DEFAULT_Q,
+    limit: Limit = 50,
+    offset: Offset = 0,
+) -> Sequence[UserOut]:
+    svc = UserService(session)
+    total = await svc.count(q=q)
+    items = await svc.list_full(q=q, limit=limit, offset=offset)
+    add_pagination_headers(
+        response=response,
+        request=request,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+    return items
+
+
 @router.get("/{user_id}", response_model=UserOutLimited)
 async def get_user(
     session: SessionDep,
@@ -83,7 +108,9 @@ async def update_current_user(
     current_user: UserOut = Depends(get_current_user),  # noqa: B008
 ) -> UserOut:
     svc = UserService(session)
-    return await svc.update(current_user.id, body)
+    updated = await svc.update(current_user.id, body)
+    await user_cache.invalidate(current_user.auth0_id)
+    return updated
 
 
 @router.patch("/{user_id}", response_model=UserOut)
@@ -94,7 +121,9 @@ async def update_user(
     current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
 ) -> UserOut:
     svc = UserService(session)
-    return await svc.update(user_id, body)
+    updated = await svc.update(user_id, body)
+    await user_cache.invalidate(updated.auth0_id)
+    return updated
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
@@ -104,6 +133,7 @@ async def delete_current_user(
 ) -> None:
     svc = UserService(session)
     await svc.delete(current_user.id)
+    await user_cache.invalidate(current_user.auth0_id)
     return None
 
 
@@ -114,5 +144,7 @@ async def delete_user(
     current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
 ) -> None:
     svc = UserService(session)
+    target = await svc.get_full(user_id)  # fetch auth0_id before deletion for cache invalidation
     await svc.delete(user_id)
+    await user_cache.invalidate(target.auth0_id)
     return None

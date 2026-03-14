@@ -8,9 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user, require_permission
+from app.core.cache import tags_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.schemas.content import ContentOut
+from app.schemas.content import ContentListOut
 from app.schemas.tag import (
     ContentTagOut,
     TagCreate,
@@ -39,8 +40,26 @@ async def list_tags(
     offset: Offset = 0,
 ) -> list[TagOut]:
     svc = TagService(session)
+
+    # Serve unfiltered requests from cache (apply pagination in-memory)
+    if q is None:
+        cached = await tags_cache.get()
+        if cached is not None:
+            total = len(cached)
+            sliced = cached[offset : offset + limit]
+            add_pagination_headers(
+                response=response, request=request, total=total, limit=limit, offset=offset
+            )
+            return sliced
+
+    # DB path — filtered query or cache miss
     total = await svc.count(q=q)
     items = await svc.list(q=q, limit=limit, offset=offset)
+
+    # Populate cache when we fetched the full unfiltered list
+    if q is None and offset == 0 and len(items) == total:
+        await tags_cache.set(items)
+
     add_pagination_headers(
         response=response,
         request=request,
@@ -56,20 +75,26 @@ async def create_tag(
     session: SessionDep,
     body: TagCreate,
     response: Response,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    current_user: UserOut = Depends(require_permission(Permissions.member)),
 ) -> TagOut:
     svc = TagService(session)
     tag = await svc.create(body)
     response.headers["Location"] = f"/tags/{tag.id}"
+    await tags_cache.invalidate()
     return tag
 
 
 @router.get("/tags/{tag_id}", response_model=TagOut)
 async def get_tag(
-    session: SessionDep, tag_id: UUID, current_user: UserOut = Depends(get_current_user)
+    session: SessionDep,
+    tag_id: UUID,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
 ) -> TagOut:
     svc = TagService(session)
-    return await svc.get(tag_id)
+    result = await svc.get(tag_id)
+    response.headers["Cache-Control"] = "private, max-age=300"
+    return result
 
 
 @router.patch("/tags/{tag_id}", response_model=TagOut)
@@ -77,20 +102,23 @@ async def update_tag(
     session: SessionDep,
     tag_id: UUID,
     body: TagUpdate,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    current_user: UserOut = Depends(require_permission(Permissions.member)),
 ) -> TagOut:
     svc = TagService(session)
-    return await svc.update(tag_id, body)
+    updated = await svc.update(tag_id, body)
+    await tags_cache.invalidate()
+    return updated
 
 
 @router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tag(
     session: SessionDep,
     tag_id: UUID,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    current_user: UserOut = Depends(require_permission(Permissions.member)),
 ) -> None:
     svc = TagService(session)
     await svc.delete(tag_id)
+    await tags_cache.invalidate()
     return None
 
 
@@ -120,7 +148,7 @@ async def list_content_tags(
     return items
 
 
-@router.get("/tags/{tag_id}/content", response_model=list[ContentOut])
+@router.get("/tags/{tag_id}/content", response_model=list[ContentListOut])
 async def list_tagged_content(
     session: SessionDep,
     request: Request,
@@ -129,10 +157,10 @@ async def list_tagged_content(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[ContentOut]:
+) -> list[ContentListOut]:
     svc = TagService(session)
     total = await svc.count_tagged_content(tag_id)
-    items = await svc.list_tagged_content(tag_id, limit=limit, offset=offset)
+    items = await svc.list_tagged_content(tag_id, current_user.id, limit=limit, offset=offset)
     add_pagination_headers(
         response=response,
         request=request,

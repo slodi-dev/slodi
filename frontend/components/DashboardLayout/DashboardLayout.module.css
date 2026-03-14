@@ -36,6 +36,11 @@
 
 /* Mobile: Sidebar as drawer */
 @media (max-width: 767px) {
+  /* Push all page content below the fixed hamburger button (40px tall at top:16px) */
+  .main {
+    padding-top: 4.5rem; /* 72px: 16px above + 40px button + 16px below */
+  }
+
   .sidebarWrapper {
     position: fixed;
     top: 0;

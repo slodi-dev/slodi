@@ -20,8 +20,8 @@ from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user
 from app.core.db import get_session
+from app.domain.enums import Permissions
 from app.main import create_app
-from app.models.user import Permissions
 from app.schemas.user import UserOut
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

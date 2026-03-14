@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const API_BASE = process.env.API_BASE_URL || "http://localhost:8000";
+const API_BASE = process.env.API_BASE_URL || "http://backend:8000";
 
 /**
  * Proxy to GET /config/public on the backend.

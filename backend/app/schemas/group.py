@@ -5,8 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, StringConstraints
 
+from app.domain.enums import GroupRole
 from app.domain.group_constraints import IMG_MAX, NAME_MAX, NAME_MIN
-from app.models.group import GroupRole
 
 NameStr = Annotated[
     str,

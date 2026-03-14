@@ -39,22 +39,14 @@ export default function Header() {
           </a>
 
           {user ? (
-            <Link
-              href="/dashboard"
-              className={styles.primaryNavLink}
-            >
+            <Link href="/dashboard" className={styles.primaryNavLink}>
               Stjórnborð
             </Link>
           ) : (
-            <Link
-              href="/auth/login"
-              className={styles.primaryNavLink}
-              prefetch={false}
-            >
+            <Link href="/auth/login" className={styles.primaryNavLink} prefetch={false}>
               Innskráning
             </Link>
-          )
-          }
+          )}
         </nav>
 
         {/* Mobile menu toggle */}
@@ -72,18 +64,13 @@ export default function Header() {
 
         {/* Drawer overlay */}
         {isDrawerOpen && (
-          <div
-            className={styles.drawerOverlay}
-            onClick={closeDrawer}
-            aria-hidden="true"
-          />
+          <div className={styles.drawerOverlay} onClick={closeDrawer} aria-hidden="true" />
         )}
 
         {/* Mobile drawer */}
         <aside
           id="main-menu-drawer"
-          className={`${styles.drawerPanel} ${isDrawerOpen ? styles.drawerPanelOpen : ""
-            }`}
+          className={`${styles.drawerPanel} ${isDrawerOpen ? styles.drawerPanelOpen : ""}`}
           aria-hidden={!isDrawerOpen}
         >
           <nav className={styles.drawerNav}>
@@ -104,24 +91,14 @@ export default function Header() {
             </a>
 
             {user ? (
-              <Link
-                href="/dashboard"
-                className={styles.drawerNavLink}
-                onClick={closeDrawer}
-              >
+              <Link href="/dashboard" className={styles.drawerNavLink} onClick={closeDrawer}>
                 Stjórnborð
               </Link>
             ) : (
-              <Link
-                href="/auth/login"
-                className={styles.drawerNavLink}
-                onClick={closeDrawer}
-              >
+              <Link href="/auth/login" className={styles.drawerNavLink} onClick={closeDrawer}>
                 Innskráning
               </Link>
-            )
-            }
-
+            )}
           </nav>
         </aside>
       </div>

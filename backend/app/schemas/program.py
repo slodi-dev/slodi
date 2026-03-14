@@ -1,34 +1,28 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
-from uuid import UUID
+from typing import Literal
 
-from pydantic import ConfigDict, StringConstraints
+from pydantic import ConfigDict
 
-from app.domain.program_constraints import IMG_MAX
-from app.models.content import ContentType
+from app.domain.enums import ContentType
 
-from .content import ContentCreate, ContentOut, ContentUpdate
-from .workspace import WorkspaceNested
-
-ImageStr = Annotated[
-    str, StringConstraints(min_length=0, max_length=IMG_MAX, strip_whitespace=True)
-]
+from .content import ContentCreate, ContentListOut, ContentOut, ContentUpdate
+from .event import EventListOut
 
 
 class ProgramCreate(ContentCreate):
     content_type: Literal[ContentType.program] = ContentType.program
-    image: ImageStr | None = None
 
 
 class ProgramUpdate(ContentUpdate):
-    workspace_id: UUID | None = None
-    image: ImageStr | None = None
+    pass
+
+
+class ProgramListOut(ContentListOut):
+    model_config = ConfigDict(from_attributes=True)
+    pass
 
 
 class ProgramOut(ContentOut):
     model_config = ConfigDict(from_attributes=True)
-
-    image: ImageStr | None = None
-    workspace_id: UUID
-    workspace: WorkspaceNested
+    events: list[EventListOut] = []

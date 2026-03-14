@@ -7,12 +7,15 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "deploy-prod": "vercel --prod"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.14.0",
     "@hookform/resolvers": "^5.2.2",
     "@vercel/analytics": "^1.6.1",
+    "audit": "^0.0.6",
     "clsx": "^2.1.1",
     "lucide-react": "^0.555.0",
     "next": "^15.5.7",
@@ -26,8 +29,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^10.0.0",
-    "eslint-config-next": "^0.2.4",
+    "eslint": "^9.39.3",
+    "eslint-config-next": "^15.5.12",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
     "typescript": "^5"
   }
 }

@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.enums import WorkspaceRole
 from app.models.workspace import Workspace
 from app.repositories.workspaces import WorkspaceRepository
 from app.schemas.workspace import (
@@ -60,6 +61,42 @@ class WorkspaceService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
         await self.repo.delete(workspace_id)
         await self.session.commit()
+
+    async def list_members(self, workspace_id: UUID) -> list[WorkspaceMembershipOut]:
+        rows = await self.repo.list_members(workspace_id)
+        return [WorkspaceMembershipOut.model_validate(r) for r in rows]
+
+    async def set_member_role(
+        self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
+    ) -> tuple[WorkspaceMembershipOut, UUID | None]:
+        """Returns (updated membership, displaced_owner_id).
+
+        displaced_owner_id is set when ownership is transferred so the caller
+        can invalidate the former owner's cached role.
+        """
+        current_owner = await self.repo.get_workspace_owner(workspace_id)
+        displaced_owner_id: UUID | None = None
+
+        if role == WorkspaceRole.owner:
+            # Transfer ownership: demote the current owner to admin first.
+            if current_owner and current_owner.user_id != user_id:
+                current_owner.role = WorkspaceRole.admin
+                displaced_owner_id = current_owner.user_id
+        elif current_owner and current_owner.user_id == user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot demote the workspace owner. Transfer ownership to another member first.",
+            )
+
+        membership = await self.repo.set_member_role(workspace_id, user_id, role)
+        await self.session.commit()
+        await self.session.refresh(membership)
+        return WorkspaceMembershipOut.model_validate(membership), displaced_owner_id
+
+    async def find_user_role(self, workspace_id: UUID, user_id: UUID) -> WorkspaceRole | None:
+        """Return the user's workspace role, or None if not a member. Does not raise on miss."""
+        membership = await self.repo.get_user_membership(workspace_id, user_id)
+        return membership.role if membership else None
 
     async def get_user_membership(
         self, workspace_id: UUID, user_id: UUID

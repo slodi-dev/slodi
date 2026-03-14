@@ -9,10 +9,7 @@ export async function POST(request: NextRequest) {
 
     // Validate email
     if (!email || typeof email !== "string" || !email.includes("@")) {
-      return NextResponse.json(
-        { error: "Ógilt netfang." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Ógilt netfang." }, { status: 400 });
     }
 
     // Make API call to backend
@@ -24,10 +21,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (response.status === 404) {
-      return NextResponse.json(
-        { error: "Netfang fannst ekki á póstlistanum." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Netfang fannst ekki á póstlistanum." }, { status: 404 });
     }
 
     if (!response.ok) {
@@ -40,13 +34,12 @@ export async function POST(request: NextRequest) {
 
     // 204 No Content - successful deletion
     return NextResponse.json(
-      { 
+      {
         message: "Netfang afskráð af póstlista.",
-        email: email 
+        email: email,
       },
       { status: 200 }
     );
-
   } catch (error) {
     console.error("[Unsubscribe Error]", error);
     return NextResponse.json(

@@ -1,6 +1,6 @@
 /* Import Slóði tokens */
-@import './../slodi-tokens.css';
-@import './../slodi-utilities.css';
+@import "./../slodi-tokens.css";
+@import "./../slodi-utilities.css";
 
 /* ===== PAGE LAYOUT ===== */
 
@@ -789,7 +789,7 @@
   .pageTitle {
     font-size: var(--sl-text-heading-2);
   }
-  
+
   .grid2,
   .grid3,
   .grid4,
@@ -797,21 +797,21 @@
   .grid6 {
     grid-template-columns: 1fr;
   }
-  
+
   .themeSelector {
     width: 100%;
   }
-  
+
   .themeButton {
     flex: 1;
     min-width: 100px;
   }
-  
+
   .componentRow {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .btn {
     width: 100%;
   }

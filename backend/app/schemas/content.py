@@ -16,34 +16,20 @@ from typing_extensions import Self
 
 from app.domain.content_constraints import (
     DESC_MAX,
-    DURATION_MAX,
+    IMG_MAX,
     INSTRUCTIONS_MAX,
     LOCATION_MAX,
     NAME_MAX,
     NAME_MIN,
 )
-from app.models.content import AgeGroup
+from app.domain.enums import AgeGroup
 from app.repositories.content import ContentStats
+from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut
-from app.schemas.user import UserOut
+from app.schemas.user import UserOutLimited
 from app.utils import get_current_datetime
 
-# Lookup maps for age group normalisation (used by validators below).
-_AGE_GROUP_BY_VALUE: dict[str, AgeGroup] = {e.value: e for e in AgeGroup}
-_AGE_GROUP_BY_NAME: dict[str, AgeGroup] = {e.name: e for e in AgeGroup}
-
-
-def _normalise_age_item(raw: object) -> AgeGroup:
-    """Accept an AgeGroup by its Icelandic *value* (preferred) or Python *name*."""
-    if isinstance(raw, AgeGroup):
-        return raw
-    s = str(raw)
-    if s in _AGE_GROUP_BY_VALUE:
-        return _AGE_GROUP_BY_VALUE[s]
-    if s in _AGE_GROUP_BY_NAME:
-        return _AGE_GROUP_BY_NAME[s]
-    valid = ", ".join(repr(v) for v in _AGE_GROUP_BY_VALUE)
-    raise ValueError(f"Invalid age group {s!r}. Valid values: {valid}")
+from .workspace import WorkspaceNested
 
 NameStr = Annotated[
     str,
@@ -56,40 +42,43 @@ InstructionsStr = Annotated[
     str,
     StringConstraints(min_length=0, max_length=INSTRUCTIONS_MAX, strip_whitespace=True),
 ]
-DurationStr = Annotated[
-    str, StringConstraints(min_length=0, max_length=DURATION_MAX, strip_whitespace=True)
-]
 LocationStr = Annotated[
     str, StringConstraints(min_length=0, max_length=LOCATION_MAX, strip_whitespace=True)
+]
+ImageStr = Annotated[
+    str, StringConstraints(min_length=0, max_length=IMG_MAX, strip_whitespace=True)
 ]
 
 
 class ContentBase(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
-    name: NameStr
     description: DescStr | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
-    duration: DurationStr | None = None
+    duration_min: int | None = None
+    duration_max: int | None = None
     age: list[AgeGroup] | None = None
     location: LocationStr | None = None
-    count: int | None = None
+    count_min: int | None = None
+    count_max: int | None = None
     price: int | None = None
-    prep_time: DurationStr | None = None
+    prep_time_min: int | None = None
+    prep_time_max: int | None = None
+    image: ImageStr | None = None
+    media: dict[str, Any] | None = None
+    tag_names: list[str] | None = None
     author_id: UUID | None = None
-    created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
-    @field_validator("age", mode="before")
-    @classmethod
-    def normalise_age_groups(cls, v: object) -> list[AgeGroup] | None:
-        if v is None:
-            return None
-        if not isinstance(v, list):
-            raise ValueError("age must be a list")
-        return [_normalise_age_item(item) for item in v]
-
-    @field_validator("count", "price")
+    @field_validator(
+        "count_min",
+        "count_max",
+        "duration_min",
+        "duration_max",
+        "prep_time_min",
+        "prep_time_max",
+        "price",
+    )
     @classmethod
     def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
         if v is not None and v < 0:
@@ -98,45 +87,40 @@ class ContentBase(BaseModel):
 
 
 class ContentCreate(ContentBase):
-    pass
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
+
+    name: NameStr
+    created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
 
-class ContentUpdate(BaseModel):
+class ContentUpdate(ContentBase):
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr | None = None
-    description: DescStr | None = None
-    equipment: list[str] | None = None
-    instructions: InstructionsStr | None = None
-    duration: DurationStr | None = None
-    age: list[AgeGroup] | None = None
-    location: LocationStr | None = None
-    count: int | None = None
-    price: int | None = None
-    prep_time: DurationStr | None = None
-
-    @field_validator("age", mode="before")
-    @classmethod
-    def normalise_age_groups(cls, v: object) -> list[AgeGroup] | None:
-        if v is None:
-            return None
-        if not isinstance(v, list):
-            raise ValueError("age must be a list")
-        return [_normalise_age_item(item) for item in v]
-
-    @field_validator("count", "price")
-    @classmethod
-    def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
-        if v is not None and v < 0:
-            raise ValueError(f"{info.field_name} must be >= 0")
-        return v
 
 
-class ContentOut(ContentBase):
-    model_config = ConfigDict(from_attributes=True)
+class ContentListOut(BaseModel):
+    """Content details for list views, without author info or comments."""
+
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: UUID
-    author: UserOut
+    name: NameStr
+    author_name: str
+    created_at: dt.datetime
+    workspace_id: UUID
+    workspace: WorkspaceNested
+    description: DescStr | None = None
+    duration_min: int | None = None
+    duration_max: int | None = None
+    age: list[AgeGroup] | None = None
+    location: LocationStr | None = None
+    count_min: int | None = None
+    count_max: int | None = None
+    price: int | None = None
+    prep_time_min: int | None = None
+    prep_time_max: int | None = None
+    image: ImageStr | None = None
     tags: list[TagOut] = []
     comment_count: int = 0
     like_count: int = 0
@@ -147,5 +131,15 @@ class ContentOut(ContentBase):
         return cls.model_validate(obj).model_copy(update=vars(stats))
 
 
-UserOut.model_rebuild()
+class ContentOut(ContentListOut):
+    """Full content details, including author info and comments."""
+
+    author: UserOutLimited
+    equipment: list[str] | None = None
+    instructions: InstructionsStr | None = None
+    media: dict[str, Any] | None = None
+    comments: list[CommentOut] = []
+
+
+UserOutLimited.model_rebuild()
 TagOut.model_rebuild()

@@ -16,14 +16,14 @@ export default function Home() {
   useApiHealth();
 
   const scrollToEmailSignup = () => {
-    scrollToElement('#email-signup');
+    scrollToElement("#email-signup");
   };
 
   return (
     <div className={styles.page}>
       {/* Only shown in development */}
       <ApiHealthIndicator />
-      
+
       <HeroSection onEmailSignupClick={scrollToEmailSignup} />
       <EmailSignupForm />
     </div>

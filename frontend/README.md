@@ -11,6 +11,7 @@ The frontend is responsible for delivering a modern, responsive, and user-friend
 - Templates and example program views
 - Collaboration tools (sharing, comments, suggestions)
 - Program Analysis dashboards
+- User Authentication and Authorization
 
 ## Tech Stack
 

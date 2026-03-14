@@ -31,7 +31,7 @@ export function DeleteConfirmModal({
           Ertu viss um að þú viljir eyða{" "}
           {programName ? (
             <>
-              <strong>„{programName}"</strong>?
+              <strong>&bdquo;{programName}&rdquo;</strong>?
             </>
           ) : (
             "þessa dagskrá?"

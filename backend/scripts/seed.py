@@ -3,7 +3,7 @@ Seed script: creates the default 'slodi' system user and
 the 'Dagskrárbankinn' workspace, then persists their IDs to seed_output.json.
 
 Usage:
-    PYTHONPATH=. uv run python seed.py
+    PYTHONPATH=. uv run python scripts/seed.py
 or via the Makefile:
     make seed
 """
@@ -14,21 +14,18 @@ import asyncio
 import datetime as dt
 import json
 import logging
+import os
 from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session_maker
+from app.domain.enums import EventInterval, Permissions, Weekday, WorkspaceRole
 from app.models.tag import Tag
-from app.models.user import Permissions, User
-from app.models.workspace import (
-    EventInterval,
-    Weekday,
-    Workspace,
-    WorkspaceMembership,
-    WorkspaceRole,
-)
+from app.models.user import User
+from app.models.workspace import Workspace, WorkspaceMembership
+from app.schemas.workspace import get_first_monday_of_september
 from app.settings import settings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -44,10 +41,14 @@ WORKSPACE_NAME = "Dagskrárbankinn"
 
 DEFAULT_TAGS = ["Leikir", "Útivist", "Samfélagsverkefni"]
 
-OUTPUT_FILE = Path(__file__).parent / "seed_output.json"
+_default_output_dir = str(Path(__file__).parent.parent)
+OUTPUT_FILE = Path(os.getenv("SEED_OUTPUT_DIR", _default_output_dir)) / "seed_output.json"
 
 # Emails that should always be promoted to admin (from ADMIN_EMAILS in .env), or if that value is not found we add halldor@svanir.is
-ADMIN_EMAILS: list[str] = settings.admin_email_list or ["halldor@svanir.is"]
+ADMIN_EMAILS: list[str] = settings.admin_email_list or [
+    "halldor@svanir.is",
+    "signy.kristin8@gmail.com",
+]
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -73,13 +74,6 @@ async def get_or_create_user(session: AsyncSession) -> User:
     return user
 
 
-def _first_monday_of_september() -> dt.date:
-    year = dt.date.today().year
-    sep1 = dt.date(year, 9, 1)
-    days_to_monday = (7 - sep1.weekday()) % 7
-    return sep1 + dt.timedelta(days=days_to_monday)
-
-
 async def get_or_create_workspace(session: AsyncSession, user: User) -> Workspace:
     # Check if a workspace with this name already belongs to the user.
     result = await session.execute(
@@ -88,6 +82,7 @@ async def get_or_create_workspace(session: AsyncSession, user: User) -> Workspac
         .where(
             WorkspaceMembership.user_id == user.id,
             Workspace.name == WORKSPACE_NAME,
+            Workspace.deleted_at.is_(None),
         )
     )
     ws = result.scalars().first()
@@ -102,7 +97,7 @@ async def get_or_create_workspace(session: AsyncSession, user: User) -> Workspac
         default_start_time=dt.time(hour=20, minute=0),
         default_end_time=dt.time(hour=21, minute=30),
         default_interval=EventInterval.weekly,
-        season_start=_first_monday_of_september(),
+        season_start=get_first_monday_of_september(),
     )
     session.add(ws)
     await session.flush()  # populate ws.id

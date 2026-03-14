@@ -5,13 +5,13 @@
 // Get the API base URL - must be absolute URL for client-side requests
 const getApiBase = (): string => {
   // Check if we're on the client side
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     // In browser, use NEXT_PUBLIC_API_URL or construct from window.location
     return process.env.NEXT_PUBLIC_API_URL || window.location.origin;
   }
 
-  // On server side, use NEXT_PUBLIC_API_URL or fallback
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  // On server side, prefer internal Docker URL for SSR, then public URL
+  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
 };
 
 const API_BASE = getApiBase();
@@ -32,9 +32,10 @@ export async function checkResponse(response: Response): Promise<void> {
         const errorData = await response.json();
         // FastAPI typically returns errors in a "detail" field
         if (errorData.detail) {
-          errorMessage = typeof errorData.detail === 'string'
-            ? errorData.detail
-            : JSON.stringify(errorData.detail);
+          errorMessage =
+            typeof errorData.detail === "string"
+              ? errorData.detail
+              : JSON.stringify(errorData.detail);
         } else if (errorData.message) {
           errorMessage = errorData.message;
         } else {
@@ -50,7 +51,7 @@ export async function checkResponse(response: Response): Promise<void> {
       status: response.status,
       statusText: response.statusText,
       url: response.url,
-      message: errorMessage
+      message: errorMessage,
     });
 
     throw new Error(errorMessage);
@@ -73,9 +74,10 @@ export async function checkResponseIs(response: Response): Promise<void> {
         const errorData = await response.json();
         // FastAPI typically returns errors in a "detail" field
         if (errorData.detail) {
-          errorMessage = typeof errorData.detail === 'string'
-            ? `Villa: ${errorData.detail}`
-            : `Villa: ${JSON.stringify(errorData.detail)}`;
+          errorMessage =
+            typeof errorData.detail === "string"
+              ? `Villa: ${errorData.detail}`
+              : `Villa: ${JSON.stringify(errorData.detail)}`;
         } else if (errorData.message) {
           errorMessage = `Villa: ${errorData.message}`;
         }
@@ -88,7 +90,7 @@ export async function checkResponseIs(response: Response): Promise<void> {
       status: response.status,
       statusText: response.statusText,
       url: response.url,
-      message: errorMessage
+      message: errorMessage,
     });
 
     throw new Error(errorMessage);
@@ -102,10 +104,7 @@ export async function checkResponseIs(response: Response): Promise<void> {
  * @returns The parsed JSON data
  * @throws Error if response is not ok
  */
-export async function fetchAndCheck<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
+export async function fetchAndCheck<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
   await checkResponse(response);
 
@@ -131,10 +130,7 @@ export async function fetchAndCheck<T>(
  * @returns The parsed JSON data
  * @throws Error if response is not ok (with Icelandic message)
  */
-export async function fetchAndCheckIs<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
+export async function fetchAndCheckIs<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
   await checkResponseIs(response);
 
@@ -161,26 +157,27 @@ export async function fetchAndCheckIs<T>(
  */
 export function buildApiUrl(endpoint: string, baseUrl: string = API_BASE): string {
   // Ensure we have a valid base URL
-  if (!baseUrl || baseUrl === '/api') {
-    baseUrl = typeof window !== 'undefined'
-      ? window.location.origin
-      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  if (!baseUrl || baseUrl === "/api") {
+    baseUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
   }
 
   // Remove leading slash from endpoint if present
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
 
   try {
     const url = new URL(cleanEndpoint, baseUrl);
     return url.toString();
   } catch (error) {
-    console.error('Failed to build API URL:', {
+    console.error("Failed to build API URL:", {
       endpoint,
       baseUrl,
       cleanEndpoint,
-      window: typeof window !== 'undefined' ? window.location.origin : 'N/A',
+      window: typeof window !== "undefined" ? window.location.origin : "N/A",
       env: process.env.NEXT_PUBLIC_API_URL,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -200,7 +197,7 @@ export function handleApiError(
     return error.message;
   }
 
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
 
@@ -228,7 +225,9 @@ export function handleApiErrorIs(
  * @param data The data to convert
  * @returns FormData object
  */
-export function createFormData(data: Record<string, string | number | boolean | File | object | null | undefined>): FormData {
+export function createFormData(
+  data: Record<string, string | number | boolean | File | object | null | undefined>
+): FormData {
   const formData = new FormData();
 
   Object.entries(data).forEach(([key, value]) => {

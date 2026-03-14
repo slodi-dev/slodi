@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_permission
 from app.core.db import get_session
-from app.core.limiter import limiter
+from app.core.rate_limiter import ip_rate_limit
 from app.schemas.email_list import EmailListCreate, EmailListOut
 from app.schemas.user import Permissions
 from app.services.email_list import EmailListService
@@ -25,11 +25,11 @@ async def list_email_list(
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
-@limiter.limit("5/minute")
 async def create_email_entry(
     request: Request,
     session: SessionDep,
     body: EmailListCreate,
+    _: None = Depends(ip_rate_limit(5, 60)),
 ) -> None:
     """Subscribe an email address to the mailing list. Public endpoint, no auth required."""
     svc = EmailListService(session)

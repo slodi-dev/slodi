@@ -1,5 +1,5 @@
-@import './../../app/slodi-tokens.css';
-@import './../../app/slodi-utilities.css';
+@import "./../../app/slodi-tokens.css";
+@import "./../../app/slodi-utilities.css";
 
 /* ═══════════════════════════════════════════════════════════════
    DASHBOARD PAGE - Minimalist & Cute
@@ -24,11 +24,25 @@
   margin-bottom: var(--sl-spacing-section);
 }
 
+@media (max-width: 767px) {
+  .dashboardPage {
+    padding: 0 var(--sl-spacing-element);
+  }
+
+  .title {
+    font-size: var(--sl-text-heading-2);
+  }
+}
+
 /* Program Bank Card */
 .programBankCard {
   display: block;
   text-decoration: none;
-  background: linear-gradient(135deg, hsl(var(--sl-color-primary-subtle)) 0%, hsl(var(--sl-color-surface)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--sl-color-primary-subtle)) 0%,
+    hsl(var(--sl-color-surface)) 100%
+  );
   border: 2px solid hsl(var(--sl-color-primary) / 0.2);
   border-radius: var(--sl-radius-card);
   padding: var(--sl-spacing-component);
@@ -62,7 +76,8 @@
 }
 
 @keyframes sparkle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1) rotate(0deg);
   }

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchPrograms, type Program } from "@/services/programs.service";
-import { useAuth } from "@/hooks/useAuth";
 import ProgramCard from "@/app/programs/components/ProgramCard";
 import ProgramGrid from "../components/ProgramGrid";
 import ProgramSort, { type SortOption } from "../components/ProgramSort";
@@ -16,8 +15,7 @@ export default function FavoriteProgramsPage() {
   const { getToken } = useAuth();
   const defaultWorkspaceId = useDefaultWorkspaceId();
   const { favorites, isLoading: favoritesLoading } = useFavorites();
-  const { getToken } = useAuth();
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [programs, setPrograms] = useState<Program[]>([]);
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
 
@@ -42,24 +40,24 @@ export default function FavoriteProgramsPage() {
 
   // Filter programs to only show favorites
   const favoritePrograms = useMemo(() => {
-    const filtered = programs.filter(program => favorites.has(program.id));
-    
+    const filtered = programs.filter((program) => favorites.has(program.id));
+
     // Sort programs
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
-        case 'newest':
+        case "newest":
           return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-        case 'oldest':
+        case "oldest":
           return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-        case 'most-liked':
+        case "most-liked":
           return (b.like_count || 0) - (a.like_count || 0);
-        case 'alphabetical':
-          return a.name.localeCompare(b.name, 'is');
+        case "alphabetical":
+          return a.name.localeCompare(b.name, "is");
         default:
           return 0;
       }
     });
-    
+
     return sorted;
   }, [favorites, sortBy, programs]);
 
@@ -96,7 +94,7 @@ export default function FavoriteProgramsPage() {
           <div className={styles.headerBottom}>
             <div className={styles.resultSummary}>
               <p className={styles.resultCount}>
-                {favoritePrograms.length} {favoritePrograms.length === 1 ? 'dagskrá' : 'dagskrár'}
+                {favoritePrograms.length} {favoritePrograms.length === 1 ? "dagskrá" : "dagskrár"}
               </p>
             </div>
             <div className={styles.sortContainer}>
@@ -112,7 +110,7 @@ export default function FavoriteProgramsPage() {
             <div className={styles.emptyIcon}>⭐</div>
             <h2 className={styles.emptyTitle}>Engar uppáhalds dagskrár ennþá</h2>
             <p className={styles.emptyDescription}>
-              Skoðaðu dagskrábankann og bættu dagskrám í uppáhald með því að smella á stjörnuna.
+              Skoðaðu dagskrárbankann og bættu dagskrám í uppáhald með því að smella á stjörnuna.
             </p>
             <Link href="/programs" className={styles.emptyAction}>
               Skoða dagskrábanka
@@ -128,11 +126,9 @@ export default function FavoriteProgramsPage() {
                 description={program.description}
                 image={program.image}
                 author={program.author}
-                workspace={program.workspace}
                 tags={program.tags}
                 like_count={program.like_count}
-                created_at={program.created_at}
-                public={program.public}
+                liked_by_me={program.liked_by_me}
               />
             ))}
           </ProgramGrid>
