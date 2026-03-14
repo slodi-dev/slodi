@@ -13,7 +13,7 @@ interface LikesContextValue {
   initLike: (id: string, liked: boolean, count: number) => void;
   isLiked: (id: string) => boolean;
   getLikeCount: (id: string) => number | undefined;
-  toggleLike: (id: string, currentCount: number) => Promise<void>;
+  toggleLike: (id: string) => Promise<void>;
 }
 
 const LikesContext = createContext<LikesContextValue | undefined>(undefined);
@@ -36,16 +36,19 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
   const getLikeCount = useCallback((id: string) => likes.get(id)?.count, [likes]);
 
   const toggleLike = useCallback(
-    async (id: string, currentCount: number) => {
-      const wasLiked = likes.get(id)?.liked ?? false;
-      const newEntry: LikeEntry = {
-        liked: !wasLiked,
-        count: wasLiked ? currentCount - 1 : currentCount + 1,
-      };
+    async (id: string) => {
+      let wasLiked = false;
+      let prevCount = 0;
 
       setLikes((prev) => {
+        const entry = prev.get(id);
+        wasLiked = entry?.liked ?? false;
+        prevCount = entry?.count ?? 0;
         const next = new Map(prev);
-        next.set(id, newEntry);
+        next.set(id, {
+          liked: !wasLiked,
+          count: wasLiked ? prevCount - 1 : prevCount + 1,
+        });
         return next;
       });
 
@@ -55,12 +58,12 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
       } catch {
         setLikes((prev) => {
           const next = new Map(prev);
-          next.set(id, { liked: wasLiked, count: currentCount });
+          next.set(id, { liked: wasLiked, count: prevCount });
           return next;
         });
       }
     },
-    [likes, getToken]
+    [getToken]
   );
 
   return (
@@ -90,6 +93,6 @@ export function useLikes(programId: string, initialCount: number, initialLiked =
   return {
     likeCount: currentCount,
     isLiked: contextIsLiked(programId),
-    toggleLike: () => contextToggleLike(programId, currentCount),
+    toggleLike: () => contextToggleLike(programId),
   };
 }
