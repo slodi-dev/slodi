@@ -31,8 +31,8 @@ export default function AuthorFilter({
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
 
-  useEffect(() => {
-    if (showList && inputRef.current) {
+  const updateListPosition = useCallback(() => {
+    if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setListStyle({
         position: "fixed",
@@ -41,7 +41,19 @@ export default function AuthorFilter({
         width: rect.width,
       });
     }
-  }, [showList]);
+  }, []);
+
+  useEffect(() => {
+    if (showList) {
+      updateListPosition();
+      window.addEventListener("scroll", updateListPosition, true);
+      window.addEventListener("resize", updateListPosition);
+      return () => {
+        window.removeEventListener("scroll", updateListPosition, true);
+        window.removeEventListener("resize", updateListPosition);
+      };
+    }
+  }, [showList, updateListPosition]);
 
   // Sync external value changes
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import styles from "./filters.module.css";
@@ -30,8 +30,8 @@ export default function EquipmentFilter({
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
 
-  useEffect(() => {
-    if (showList && inputRef.current) {
+  const updateListPosition = useCallback(() => {
+    if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setListStyle({
         position: "fixed",
@@ -40,7 +40,19 @@ export default function EquipmentFilter({
         width: rect.width,
       });
     }
-  }, [showList]);
+  }, []);
+
+  useEffect(() => {
+    if (showList) {
+      updateListPosition();
+      window.addEventListener("scroll", updateListPosition, true);
+      window.addEventListener("resize", updateListPosition);
+      return () => {
+        window.removeEventListener("scroll", updateListPosition, true);
+        window.removeEventListener("resize", updateListPosition);
+      };
+    }
+  }, [showList, updateListPosition]);
 
   useEffect(() => {
     return () => {
