@@ -1288,13 +1288,13 @@ lib/
 **Tasks**:
 
 1. [ ] Add workspace filter dropdown
-2. [ ] Add author filter (autocomplete)
+2. [x] Add author filter (inline autocomplete — startsWith, debounced, clear button)
 3. [ ] Add date range filter (date pickers)
 4. [ ] Add likes range filter (slider)
 5. [ ] Add visibility filter (public/private toggle)
-6. [ ] Implement "Clear All Filters" button
-7. [ ] Add active filter count badge
-8. [ ] Persist filters in URL (shareable links)
+6. [x] Implement "Clear All Filters" button
+7. [x] Add active filter count badge
+8. [x] Persist filters in URL (shareable links)
 9. [ ] Add filter presets (saved searches, optional)
 10. [ ] Backend query optimization (indexed filters)
 

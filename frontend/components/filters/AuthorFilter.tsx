@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useId } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useEffect, useCallback } from "react";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import styles from "./filters.module.css";
 
@@ -13,8 +12,10 @@ interface AuthorFilterProps {
 }
 
 /**
- * Combobox/autocomplete filter for author (Höfundur).
- * Features keyboard navigation, debounced onChange, and ARIA combobox pattern.
+ * Inline-autocomplete filter for author (Höfundur).
+ * Completes the best startsWith match in-place as the user types.
+ * Tab / ArrowRight / Enter accepts; Backspace deletes the last typed char.
+ * onChange only fires on explicit accept or clear — never on partial input.
  */
 export default function AuthorFilter({
   value,
@@ -22,185 +23,134 @@ export default function AuthorFilter({
   suggestions,
   defaultOpen = false,
 }: AuthorFilterProps) {
-  const [inputValue, setInputValue] = useState(value);
-  const [showList, setShowList] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const [listStyle, setListStyle] = useState<React.CSSProperties>({});
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listId = useId();
+  const typedRef = useRef(value);
 
-  const updateListPosition = useCallback(() => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setListStyle({
-        position: "fixed",
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showList) {
-      updateListPosition();
-      window.addEventListener("scroll", updateListPosition, true);
-      window.addEventListener("resize", updateListPosition);
-      return () => {
-        window.removeEventListener("scroll", updateListPosition, true);
-        window.removeEventListener("resize", updateListPosition);
-      };
-    }
-  }, [showList, updateListPosition]);
-
-  // Sync external value changes
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
-
-  // Filter suggestions based on current input
-  const filteredSuggestions = inputValue
-    ? suggestions.filter((s) => s.toLowerCase().includes(inputValue.toLowerCase()))
-    : suggestions;
-
-  const debouncedOnChange = useCallback(
-    (newValue: string) => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-      debounceRef.current = setTimeout(() => {
-        onChange(newValue);
-      }, 300);
-    },
-    [onChange]
+  const findMatch = useCallback(
+    (typed: string) =>
+      suggestions.find((s) => s.toLowerCase().startsWith(typed.toLowerCase())) ?? null,
+    [suggestions]
   );
 
-  // Cleanup timeouts on unmount
+  // Sync when value changes externally (e.g. "clear all filters").
+  // Skip when it already matches what the user typed (avoids overwriting the input).
   useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    };
-  }, []);
+    if (value !== typedRef.current && inputRef.current) {
+      typedRef.current = value;
+      inputRef.current.value = value;
+    }
+  }, [value]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    setShowList(true);
-    setActiveIndex(-1);
-    debouncedOnChange(newValue);
-  };
+  const accept = useCallback(() => {
+    const input = inputRef.current!;
+    const accepted = input.value;
+    typedRef.current = accepted;
+    input.setSelectionRange(accepted.length, accepted.length);
+    onChange(accepted);
+  }, [onChange]);
 
-  const selectSuggestion = (suggestion: string) => {
-    setInputValue(suggestion);
-    setShowList(false);
-    setActiveIndex(-1);
-    // Immediately propagate on explicit selection
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    onChange(suggestion);
+  const clear = useCallback(() => {
+    const input = inputRef.current!;
+    input.value = "";
+    typedRef.current = "";
+    onChange("");
+    input.focus();
+  }, [onChange]);
+
+  const handleInputChange = () => {
+    const input = inputRef.current!;
+    const typed = input.value;
+    typedRef.current = typed;
+
+    const match = findMatch(typed);
+    if (match && typed.length > 0) {
+      input.value = match;
+      input.setSelectionRange(typed.length, match.length);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showList || filteredSuggestions.length === 0) {
-      if (e.key === "ArrowDown") {
-        setShowList(true);
-        setActiveIndex(0);
-        e.preventDefault();
-      }
-      return;
-    }
+    const input = inputRef.current!;
+    const hasCompletion = input.value.length > typedRef.current.length;
 
     switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setActiveIndex((prev) => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0));
+      case "Backspace":
+        if (hasCompletion) {
+          e.preventDefault();
+          const newTyped = typedRef.current.slice(0, -1);
+          typedRef.current = newTyped;
+          const match = newTyped.length > 0 ? findMatch(newTyped) : null;
+          if (match) {
+            input.value = match;
+            input.setSelectionRange(newTyped.length, match.length);
+          } else {
+            input.value = newTyped;
+          }
+        }
         break;
-      case "ArrowUp":
-        e.preventDefault();
-        setActiveIndex((prev) => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1));
+      case "Tab":
+      case "ArrowRight":
+        if (hasCompletion) {
+          e.preventDefault();
+          accept();
+        }
         break;
       case "Enter":
-        e.preventDefault();
-        if (activeIndex >= 0 && activeIndex < filteredSuggestions.length) {
-          selectSuggestion(filteredSuggestions[activeIndex]);
+        if (hasCompletion) {
+          e.preventDefault();
+          accept();
         }
         break;
       case "Escape":
         e.preventDefault();
-        setShowList(false);
-        setActiveIndex(-1);
+        input.value = "";
+        typedRef.current = "";
+        onChange("");
         break;
     }
   };
 
-  const handleBlur = () => {
-    // Delay closing to allow onMouseDown on suggestions to fire first
-    blurTimeoutRef.current = setTimeout(() => {
-      setShowList(false);
-      setActiveIndex(-1);
-    }, 150);
-  };
-
-  const handleFocus = () => {
-    if (filteredSuggestions.length > 0) {
-      setShowList(true);
-    }
-  };
-
-  const activeDescendant = activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined;
-
-  const hasActiveCount = value.length > 0 ? 1 : 0;
-
   return (
-    <CollapsibleSection label="Höfundur" activeCount={hasActiveCount} defaultOpen={defaultOpen}>
+    <CollapsibleSection
+      label="Höfundur"
+      activeCount={value.length > 0 ? 1 : 0}
+      defaultOpen={defaultOpen}
+    >
       <div className={styles.comboboxWrapper}>
         <input
           ref={inputRef}
           type="text"
-          className={styles.comboboxInput}
-          value={inputValue}
+          className={`${styles.comboboxInput} ${styles.comboboxInputWithClear}`}
+          defaultValue={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          onFocus={handleFocus}
-          role="combobox"
-          aria-expanded={showList}
-          aria-autocomplete="list"
-          aria-controls={listId}
-          aria-activedescendant={activeDescendant}
           aria-label="Höfundur"
+          aria-autocomplete="inline"
           placeholder="Leita eftir höfundi..."
+          autoComplete="off"
+          spellCheck={false}
         />
-        {showList &&
-          filteredSuggestions.length > 0 &&
-          createPortal(
-            <ul
-              id={listId}
-              className={styles.suggestionList}
-              style={listStyle}
-              role="listbox"
-              aria-label="Tillögur að höfundum"
-            >
-              {filteredSuggestions.map((suggestion, index) => (
-                <li
-                  key={suggestion}
-                  id={`${listId}-option-${index}`}
-                  className={`${styles.suggestionItem} ${index === activeIndex ? styles.suggestionItemActive : ""}`}
-                  role="option"
-                  aria-selected={index === activeIndex}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    selectSuggestion(suggestion);
-                  }}
-                >
-                  {suggestion}
-                </li>
-              ))}
-            </ul>,
-            document.body
-          )}
+        <button
+          type="button"
+          className={styles.comboboxClearButton}
+          onClick={clear}
+          aria-label="Hreinsa höfund"
+          tabIndex={-1}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
     </CollapsibleSection>
   );
