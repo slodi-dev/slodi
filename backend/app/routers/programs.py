@@ -4,13 +4,14 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import check_program_edit_access, check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.domain.enums import ContentType
+from app.repositories.programs import ProgramFilters
 from app.schemas.program import ProgramCreate, ProgramListOut, ProgramOut, ProgramUpdate
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
@@ -31,13 +32,114 @@ async def list_workspace_programs(
     current_user: UserOut = Depends(get_current_user),
     limit: Limit = 50,
     offset: Offset = 0,
+    search: str | None = Query(
+        default=None,
+        description="Case-insensitive search on program name and description",
+    ),
+    age: list[str] | None = Query(
+        default=None,
+        description="Filter by age groups (OR logic). Values: hrefnuskatar, drekaskatar, falkaskatar, drottskatar, rekkaskatar, roverskatar, vaettaskatar",
+    ),
+    duration_min: int | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum duration in minutes (programs with duration_min >= this value)",
+    ),
+    duration_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum duration in minutes (programs with duration_max <= this value)",
+    ),
+    prep_time_min: int | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum prep time in minutes (programs with prep_time_min >= this value)",
+    ),
+    prep_time_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum prep time in minutes (programs with prep_time_max <= this value)",
+    ),
+    count_min: int | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum participant count (programs with count_min >= this value)",
+    ),
+    count_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum participant count (programs with count_max <= this value)",
+    ),
+    price_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum price in ISK (0 = free programs only)",
+    ),
+    location: str | None = Query(
+        default=None,
+        description="Case-insensitive partial match on program location",
+    ),
+    equipment: list[str] | None = Query(
+        default=None,
+        description="Filter by equipment items (OR logic — programs with any of these items)",
+    ),
+    author_id: UUID | None = Query(
+        default=None,
+        description="Filter by author ID (exact UUID match)",
+    ),
+    sort_by: str | None = Query(
+        default=None,
+        description="Sort order: newest, oldest, liked, alpha",
+    ),
 ) -> list[ProgramListOut]:
     svc = ProgramService(session)
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
-    total = await svc.count_programs_for_workspace(workspace_id)
-    items = await svc.list_for_workspace(workspace_id, current_user.id, limit=limit, offset=offset)
+
+    # Build filters dataclass only when at least one filter param is provided
+    has_filters = any(
+        v is not None
+        for v in (
+            search,
+            age,
+            duration_min,
+            duration_max,
+            prep_time_min,
+            prep_time_max,
+            count_min,
+            count_max,
+            price_max,
+            location,
+            equipment,
+            author_id,
+            sort_by,
+        )
+    )
+    filters = (
+        ProgramFilters(
+            search=search,
+            age=age,
+            duration_min=duration_min,
+            duration_max=duration_max,
+            prep_time_min=prep_time_min,
+            prep_time_max=prep_time_max,
+            count_min=count_min,
+            count_max=count_max,
+            price_max=price_max,
+            location=location,
+            equipment=equipment,
+            author_id=author_id,
+            sort_by=sort_by,
+        )
+        if has_filters
+        else None
+    )
+
+    total = await svc.count_programs_for_workspace(workspace_id, filters=filters)
+    items = await svc.list_for_workspace(
+        workspace_id, current_user.id, limit=limit, offset=offset, filters=filters
+    )
     add_pagination_headers(
         response=response,
         request=request,

@@ -1,20 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, Suspense } from "react";
 import Modal from "@/components/Modal/Modal";
 import NewProgramForm from "@/app/programs/components/NewProgramForm";
-import ProgramCard from "@/app/programs/components/ProgramCard";
 import ProgramGrid from "./components/ProgramGrid";
-import ProgramSearch from "./components/ProgramSearch";
-import ProgramFilters from "./components/ProgramFilters";
 import ProgramSort from "./components/ProgramSort";
+import type { SortOption } from "./components/ProgramSort";
 import Pagination from "./components/Pagination";
 import { ProgramsHeader } from "./components/ProgramsHeader";
-import styles from "./program.module.css";
-import { useTags } from "@/hooks/useTags";
+import SearchInput from "@/components/filters/SearchInput";
+import FilterSidebar, { FilterDrawer } from "@/components/filters/FilterSidebar";
+import ActiveFilterBar from "@/components/filters/ActiveFilterBar";
+import styles from "./programs.module.css";
 import usePrograms from "@/hooks/usePrograms";
 import { useUserWorkspace } from "@/hooks/useUserWorkspace";
 import { useProgramFilters } from "@/hooks/useProgramFilters";
+import type { FilterState } from "@/hooks/useProgramFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
@@ -31,19 +32,35 @@ import ProgramDetailEdit from "@/app/programs/[id]/components/ProgramDetailEdit"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
 /**
- * Programs page - displays the program bank (dagskrárbankinn) with search,
- * filtering, sorting, and pagination capabilities.
+ * Map between the new FilterState sortBy values ("liked", "alpha")
+ * and the legacy ProgramSort component values ("most-liked", "alphabetical").
  */
-export default function ProgramsPage() {
-  const [showNewProgram, setShowNewProgram] = useState(false);
+const SORT_TO_LEGACY: Record<FilterState["sortBy"], SortOption> = {
+  newest: "newest",
+  oldest: "oldest",
+  liked: "most-liked",
+  alpha: "alphabetical",
+};
 
-  // Resolve the shared workspace ID — from env var (dev) or /api/config (Docker)
+const LEGACY_TO_SORT: Record<SortOption, FilterState["sortBy"]> = {
+  newest: "newest",
+  oldest: "oldest",
+  "most-liked": "liked",
+  alphabetical: "alpha",
+};
+
+/**
+ * Inner page component wrapped in Suspense for useSearchParams support.
+ */
+function ProgramsPageInner() {
+  const [showNewProgram, setShowNewProgram] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const filterToggleRef = useRef<HTMLButtonElement>(null);
+
+  // Resolve the shared workspace ID
   const defaultWorkspaceId = useDefaultWorkspaceId();
 
   // Fetch data
-  const { tagNames: availableTags, loading: tagsLoading } = useTags();
-
-  // The shared program bank always reads from the default (shared) workspace.
   const {
     programs,
     loading: programsLoading,
@@ -51,9 +68,7 @@ export default function ProgramsPage() {
     refetch,
   } = usePrograms(defaultWorkspaceId);
 
-  // User's private workspace — fetched now so it's ready for the future
-  // workspace toggle. When the toggle is added, swap postWorkspaceId between
-  // defaultWorkspaceId and userWorkspaceId based on the user's selection.
+  // User's private workspace (retained for future toggle)
   const { workspaceId: userWorkspaceId } = useUserWorkspace();
 
   // ── Auth & workspace role ──────────────────────────────────────────────
@@ -66,11 +81,8 @@ export default function ProgramsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // ── WHERE TO POST new programs ──────────────────────────────────────────
-  // Currently hardcoded to the shared bank. To allow posting to the user's
-  // private workspace instead, replace defaultWorkspaceId here with
-  // userWorkspaceId (and add a UI toggle to let the user choose).
   const postWorkspaceId = defaultWorkspaceId ?? "";
-  void userWorkspaceId; // retained for future toggle — prevent lint unused warning
+  void userWorkspaceId; // retained for future toggle
 
   // ── Edit / delete handlers ─────────────────────────────────────────────
   const handleEditSave = async (data: ProgramUpdateInput) => {
@@ -94,29 +106,72 @@ export default function ProgramsPage() {
     }
   };
 
-  // Apply filters and sorting
+  // ── Filters (new comprehensive hook from 4A) ──────────────────────────
   const {
-    query,
-    setQuery,
-    selectedTags,
-    setSelectedTags,
-    sortBy,
-    setSortBy,
-    filteredAndSorted,
-    clearFilters,
+    filters,
+    setFilters,
+    filtered,
+    activeChips,
+    clearAll,
+    uniqueLocations,
+    uniqueAuthors,
+    uniqueTags,
+    uniqueEquipment,
   } = useProgramFilters(programs || []);
 
-  // Apply pagination
+  // ── Pagination ─────────────────────────────────────────────────────────
   const { currentPage, totalPages, paginatedItems, setCurrentPage, totalItems, itemsPerPage } =
-    usePagination(filteredAndSorted, PROGRAMS_PER_PAGE);
+    usePagination(filtered, PROGRAMS_PER_PAGE);
 
   const handleProgramCreated = async () => {
     setShowNewProgram(false);
     await refetch();
   };
 
+  // ── Shared filter sidebar props ────────────────────────────────────────
+  const filterSidebarProps = {
+    selectedAges: filters.ages,
+    onAgesChange: (ages: string[]) => setFilters({ ages }),
+
+    availableTags: uniqueTags,
+    selectedTags: filters.tags,
+    onTagsChange: (tags: string[]) => setFilters({ tags }),
+
+    uniqueEquipment,
+    selectedEquipment: filters.equipment,
+    onEquipmentChange: (equipment: string[]) => setFilters({ equipment }),
+
+    authorValue: filters.author,
+    onAuthorChange: (author: string) => setFilters({ author }),
+    uniqueAuthors,
+
+    durationMin: filters.durationMin,
+    durationMax: filters.durationMax,
+    onDurationChange: (min: number | undefined, max: number | undefined) =>
+      setFilters({ durationMin: min, durationMax: max }),
+
+    prepMin: filters.prepMin,
+    prepMax: filters.prepMax,
+    onPrepTimeChange: (min: number | undefined, max: number | undefined) =>
+      setFilters({ prepMin: min, prepMax: max }),
+
+    countMin: filters.countMin,
+    countMax: filters.countMax,
+    onParticipantChange: (min: number | undefined, max: number | undefined) =>
+      setFilters({ countMin: min, countMax: max }),
+
+    freeOnly: filters.freeOnly,
+    priceMax: filters.priceMax,
+    onPriceChange: (freeOnly: boolean, maxPrice: number | undefined) =>
+      setFilters({ freeOnly, priceMax: maxPrice }),
+
+    locationValue: filters.location,
+    onLocationChange: (location: string) => setFilters({ location }),
+    uniqueLocations,
+  };
+
   return (
-    <section className="builder-page">
+    <div className={styles.page}>
       {/* Header with FAB button */}
       <ProgramsHeader onNewProgram={() => setShowNewProgram(true)} />
 
@@ -129,78 +184,83 @@ export default function ProgramsPage() {
         <NewProgramForm workspaceId={postWorkspaceId} onCreated={handleProgramCreated} />
       </Modal>
 
-      {/* Main two-column layout */}
-      <div className={styles.pageContainer}>
-        {/* Left Sidebar - Filters */}
-        <aside className={styles.sidebar}>
-          <div className={styles.searchSection}>
-            <ProgramSearch
-              value={query}
-              onChange={setQuery}
-              onSearch={() => {}}
-              resultCount={
-                query.trim() || selectedTags.length > 0 ? filteredAndSorted.length : undefined
-              }
-              placeholder="Leita að dagskrá"
-            />
-          </div>
-
-          <ProgramFilters
-            availableTags={availableTags || []}
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-            onClearAll={clearFilters}
-            isLoadingTags={tagsLoading}
+      {/* Top bar: Search + mobile filter toggle + Sort */}
+      <div className={styles.topBar}>
+        <div className={styles.searchWrapper}>
+          <SearchInput
+            value={filters.search}
+            onChange={(search) => setFilters({ search })}
+            resultCount={
+              filters.search.trim() || activeChips.length > 0 ? filtered.length : undefined
+            }
+            placeholder="Leita í dagskrárbanka"
           />
-        </aside>
+        </div>
 
-        {/* Right Side - Main Content */}
-        <main className={styles.mainContent}>
-          {/* Content Header - Result count and sort */}
-          <div className={styles.contentHeader}>
-            <div className={styles.resultCount}>
-              <span>
-                {filteredAndSorted.length === 1
-                  ? "1 dagskrá"
-                  : `${filteredAndSorted.length} dagskrár`}
-              </span>
-            </div>
-            <ProgramSort value={sortBy} onChange={setSortBy} />
-          </div>
+        {/* Mobile filter toggle — hidden on desktop via CSS */}
+        <button
+          ref={filterToggleRef}
+          type="button"
+          className={styles.filterToggle}
+          onClick={() => setDrawerOpen(true)}
+          aria-expanded={drawerOpen}
+          aria-controls="filter-drawer"
+        >
+          <svg
+            className={styles.filterToggleIcon}
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+            />
+          </svg>
+          Sía
+          {activeChips.length > 0 && (
+            <span className={styles.filterToggleBadge}>{activeChips.length}</span>
+          )}
+        </button>
+
+        <ProgramSort
+          value={SORT_TO_LEGACY[filters.sortBy]}
+          onChange={(legacySort) => setFilters({ sortBy: LEGACY_TO_SORT[legacySort] })}
+        />
+      </div>
+
+      {/* Active filter chips bar */}
+      <ActiveFilterBar chips={activeChips} onClearAll={clearAll} />
+
+      {/* Main content area: sidebar + programs */}
+      <div className={styles.content}>
+        {/* Desktop sidebar — hidden on mobile via CSS */}
+        <FilterSidebar {...filterSidebarProps} />
+
+        <main className={styles.main}>
+          {/* Result count */}
+          <p className={styles.resultCount} aria-live="polite">
+            {filtered.length === 1 ? "1 dagskrá" : `${filtered.length} dagskrár`}
+          </p>
 
           {/* Program Grid */}
           <ProgramGrid
-            isEmpty={filteredAndSorted.length === 0}
+            programs={paginatedItems}
             isLoading={programsLoading}
-            emptyMessage={
-              programsError
-                ? "Villa kom upp við að sækja dagskrár"
-                : query.trim() || selectedTags.length > 0
-                  ? "Engin dagskrá fannst við þessi leitarskilyrði"
-                  : "Engin dagskrá fannst"
-            }
-          >
-            {paginatedItems.map((p) => (
-              <ProgramCard
-                key={p.id}
-                id={p.id}
-                name={p.name}
-                image={p.image}
-                description={p.description}
-                tags={p.tags}
-                author={p.author}
-                like_count={p.like_count}
-                liked_by_me={p.liked_by_me}
-                canEdit={canEditProgram(user, p, role)}
-                canDelete={canDeleteProgram(user, p, role)}
-                onEdit={() => setEditingProgram(p)}
-                onDelete={() => setPendingDeleteProgram(p)}
-              />
-            ))}
-          </ProgramGrid>
+            error={programsError ? "Villa kom upp við að sækja dagskrár" : undefined}
+            onRetry={refetch}
+            onEdit={(p) => setEditingProgram(p)}
+            onDelete={(p) => setPendingDeleteProgram(p)}
+            canEdit={(p) => canEditProgram(user, p, role)}
+            canDelete={(p) => canDeleteProgram(user, p, role)}
+          />
 
           {/* Pagination */}
-          {filteredAndSorted.length > 0 && (
+          {filtered.length > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -211,6 +271,15 @@ export default function ProgramsPage() {
           )}
         </main>
       </div>
+
+      {/* Mobile filter drawer */}
+      <FilterDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeFilterCount={activeChips.length}
+        triggerRef={filterToggleRef}
+        {...filterSidebarProps}
+      />
 
       {/* Edit modal */}
       <Modal open={!!editingProgram} onClose={() => setEditingProgram(null)} title="Breyta dagskrá">
@@ -236,6 +305,20 @@ export default function ProgramsPage() {
         onClose={() => setPendingDeleteProgram(null)}
         onConfirm={handleDeleteConfirm}
       />
-    </section>
+    </div>
+  );
+}
+
+/**
+ * Programs page — displays the program bank (dagskrárbankinn) with search,
+ * filtering, sorting, and pagination capabilities.
+ *
+ * Wrapped in Suspense because useProgramFilters uses useSearchParams().
+ */
+export default function ProgramsPage() {
+  return (
+    <Suspense>
+      <ProgramsPageInner />
+    </Suspense>
   );
 }

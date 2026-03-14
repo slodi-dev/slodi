@@ -1,34 +1,27 @@
 /* ═══════════════════════════════════════════════════════════
-   PROGRAM CARD COMPONENT
-   Using Slóði Design Tokens
+   PROGRAM CARD COMPONENT — Redesigned
+   Uses Slóði Design Tokens. Stretched-link pattern.
    ═══════════════════════════════════════════════════════════ */
 
 .card {
   /* Layout */
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-stack-md);
   width: 100%;
+  position: relative;
 
   /* Surface */
   background: hsl(var(--sl-color-surface));
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
   border-radius: var(--sl-radius-card);
-  padding: var(--sl-spacing-inset-md);
+  overflow: hidden;
 
-  /* Shadow */
+  /* Shadow & transition */
   box-shadow: var(--sl-shadow-card);
-
-  /* Transitions */
   transition:
-    box-shadow var(--sl-transition-base),
-    transform var(--sl-transition-fast),
-    border-color var(--sl-transition-fast);
-
-  /* Interaction */
-  cursor: pointer;
-  outline: none;
-  position: relative;
+    box-shadow var(--sl-card-transition),
+    transform var(--sl-card-transition),
+    border-color var(--sl-card-transition);
 }
 
 .card:hover {
@@ -37,33 +30,36 @@
   border-color: hsl(var(--sl-color-border-hover) / var(--sl-primitive-opacity-60));
 }
 
-.card:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary));
-  outline-offset: 2px;
-  box-shadow: var(--sl-shadow-card-hover);
+/* ═══════════════════════════════════════════════════════════
+   STRETCHED LINK — covers the entire card
+   ═══════════════════════════════════════════════════════════ */
+
+.stretchedLink {
+  position: absolute;
+  inset: 0;
+  z-index: var(--sl-z-card-link);
+  text-decoration: none;
 }
 
-.card:active {
-  transform: translateY(0);
+.stretchedLink:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+  border-radius: var(--sl-radius-card);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MEDIA / THUMBNAIL
+   HERO IMAGE
    ═══════════════════════════════════════════════════════════ */
 
 .media {
-  width: 100%;
-  height: 180px;
-  border-radius: var(--sl-radius-base);
+  position: relative;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: hsl(var(--sl-color-surface-secondary));
-  position: relative;
   flex-shrink: 0;
 }
 
 .image {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
 }
 
@@ -89,26 +85,28 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CONTENT AREA
+   CONTENT BODY
    ═══════════════════════════════════════════════════════════ */
 
-.content {
+.body {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-stack-sm);
+  gap: var(--sl-spacing-inline);
+  padding: var(--sl-card-padding);
+  padding-bottom: 0;
   flex: 1;
   min-height: 0;
 }
 
 .title {
   font-family: var(--sl-font-family-sans);
-  font-size: var(--sl-text-heading-6);
+  font-size: var(--sl-text-heading-5);
   font-weight: var(--sl-font-weight-emphasis);
   line-height: var(--sl-line-height-heading);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
 
-  /* Limit to 2 lines with ellipsis */
+  /* Clamp to 2 lines */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -118,15 +116,15 @@
 }
 
 .byline {
-  font-size: var(--sl-text-body-sm);
-  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-tertiary));
   margin: 0;
   line-height: var(--sl-primitive-line-height-snug);
 }
 
 .authorName {
   font-weight: var(--sl-primitive-font-weight-medium);
-  color: hsl(var(--sl-color-text-primary));
+  color: hsl(var(--sl-color-text-secondary));
 }
 
 .description {
@@ -135,23 +133,91 @@
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
 
-  /* Limit to 3 lines with ellipsis */
+  /* Clamp to 2 lines */
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TAGS
+   METADATA ROW (<dl>)
+   ═══════════════════════════════════════════════════════════ */
+
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-inline);
+  margin: 0;
+  padding: 0;
+}
+
+.metaItem {
+  display: flex;
+  margin: 0;
+}
+
+.metaItem dd {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-primitive-space-1);
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-tertiary));
+  margin: 0;
+  padding: var(--sl-primitive-space-1) var(--sl-spacing-inline);
+  background: hsl(var(--sl-color-surface-secondary));
+  border-radius: var(--sl-radius-badge);
+  white-space: nowrap;
+}
+
+.metaIcon {
+  width: var(--sl-primitive-icon-sm);
+  height: var(--sl-primitive-icon-sm);
+  flex-shrink: 0;
+}
+
+.metaFree {
+  background: hsl(var(--sl-color-primary-subtle)) !important;
+  color: hsl(var(--sl-color-primary-text)) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AGE GROUP BADGES
+   ═══════════════════════════════════════════════════════════ */
+
+.ageGroups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ageBadge {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-primitive-font-weight-medium);
+  padding: var(--sl-primitive-space-1) var(--sl-spacing-inline);
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-primary-subtle));
+  color: hsl(var(--sl-color-primary-text));
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAG PILLS
    ═══════════════════════════════════════════════════════════ */
 
 .tags {
   display: flex;
   gap: var(--sl-spacing-gap-xs);
   flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
   margin-top: auto;
 }
 
@@ -168,10 +234,6 @@
   transition: background-color var(--sl-transition-fast);
 }
 
-.tag:hover {
-  background: hsl(var(--sl-color-primary-muted));
-}
-
 .tagMore {
   font-size: var(--sl-text-overline);
   font-weight: var(--sl-primitive-font-weight-medium);
@@ -181,24 +243,27 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   FOOTER
+   FOOTER — action buttons
    ═══════════════════════════════════════════════════════════ */
 
 .footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sl-spacing-gap-md);
-  margin-top: var(--sl-spacing-stack-sm);
-  padding-top: var(--sl-spacing-stack-sm);
+  gap: var(--sl-spacing-inline);
+  padding: var(--sl-spacing-inline) var(--sl-card-padding);
+  padding-top: var(--sl-spacing-inline);
+  margin-top: var(--sl-spacing-inline);
   border-top: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LIKE BUTTON
-   ═══════════════════════════════════════════════════════════ */
+.footerSpacer {
+  flex: 1;
+}
 
-.likeButton {
+/* Shared action button base — elevated above stretched link */
+.actionButton {
+  position: relative;
+  z-index: var(--sl-z-card-actions);
   display: inline-flex;
   align-items: center;
   gap: var(--sl-spacing-gap-xs);
@@ -213,20 +278,27 @@
   transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast),
+    color var(--sl-transition-fast),
     transform var(--sl-transition-fast);
-
-  /* Ensure proper hit target size */
   min-height: var(--sl-primitive-height-sm);
 }
 
-.likeButton:hover {
+.actionButton:hover {
   background: hsl(var(--sl-color-surface-hover));
   border-color: hsl(var(--sl-color-border-hover));
+  color: hsl(var(--sl-color-primary));
 }
 
-.likeButton:active {
+.actionButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.actionButton:active {
   transform: scale(0.95);
 }
+
+/* ── Like button ──────────────────────────────────────────── */
 
 .likeButton.liked {
   background: hsl(var(--sl-color-error-subtle));
@@ -239,54 +311,17 @@
   border-color: hsl(var(--sl-color-error) / var(--sl-primitive-opacity-60));
 }
 
-.heartIcon {
-  width: 18px;
-  height: 18px;
-  transition: transform var(--sl-transition-fast);
-}
-
-.likeButton:active .heartIcon {
-  transform: scale(1.2);
-}
-
 .likeCount {
   font-variant-numeric: tabular-nums;
   min-width: 1.5em;
   text-align: left;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   FAVORITE BUTTON
-   ═══════════════════════════════════════════════════════════ */
+/* ── Favorite button ──────────────────────────────────────── */
 
 .favoriteButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
-  background: transparent;
-  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
-  border-radius: var(--sl-radius-button);
-  color: hsl(var(--sl-color-text-secondary));
-  font-size: var(--sl-text-body);
-  cursor: pointer;
-  transition:
-    background-color var(--sl-transition-fast),
-    border-color var(--sl-transition-fast),
-    transform var(--sl-transition-fast);
-
-  /* Ensure proper hit target size */
-  min-height: var(--sl-primitive-height-sm);
   min-width: var(--sl-primitive-height-sm);
-}
-
-.favoriteButton:hover {
-  background: hsl(var(--sl-color-surface-hover));
-  border-color: hsl(var(--sl-color-border-hover));
-}
-
-.favoriteButton:active {
-  transform: scale(0.95);
+  justify-content: center;
 }
 
 .favoriteButton.favorited {
@@ -300,137 +335,49 @@
   border-color: hsl(var(--sl-color-warning) / var(--sl-primitive-opacity-60));
 }
 
-.starIcon {
-  font-size: var(--sl-text-body);
-  line-height: 1;
+/* ── Edit button ──────────────────────────────────────────── */
+
+.editButton {
+  min-width: var(--sl-primitive-height-sm);
+  justify-content: center;
+}
+
+/* ── Delete button ────────────────────────────────────────── */
+
+.deleteButton {
+  min-width: var(--sl-primitive-height-sm);
+  justify-content: center;
+  color: hsl(var(--sl-color-error));
+}
+
+.deleteButton:hover {
+  background: hsl(var(--sl-color-error-subtle));
+  border-color: hsl(var(--sl-color-error) / var(--sl-primitive-opacity-40));
+  color: hsl(var(--sl-color-error));
+}
+
+/* ── Shared action icon ───────────────────────────────────── */
+
+.actionIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
   transition: transform var(--sl-transition-fast);
 }
 
-.bookmarkIcon {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-  transition: transform var(--sl-transition-fast);
-}
-
-.favoriteButton:active .starIcon,
-.favoriteButton:active .bookmarkIcon {
+.actionButton:active .actionIcon {
   transform: scale(1.2);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   READ MORE BUTTON
-   ═══════════════════════════════════════════════════════════ */
-
-.readMore {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs);
-  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
-  background: transparent;
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-button);
-  color: hsl(var(--sl-color-text-primary));
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-primitive-font-weight-medium);
-  cursor: pointer;
-  transition:
-    background-color var(--sl-transition-fast),
-    border-color var(--sl-transition-fast),
-    color var(--sl-transition-fast);
-  white-space: nowrap;
-}
-
-.readMore:hover {
-  background: hsl(var(--sl-color-primary));
-  border-color: hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-text-inverse));
-}
-
-.readMore:hover .arrow {
-  transform: translateX(2px);
-}
-
-.readMore:active {
-  background: hsl(var(--sl-color-primary-active));
-  border-color: hsl(var(--sl-color-primary-active));
-}
-
-.arrow {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-  transition: transform var(--sl-transition-fast);
-}
-
-/* ═══════════════════════════════════════════════════════════
-   RESPONSIVE ADJUSTMENTS
-   ═══════════════════════════════════════════════════════════ */
-
-@media (max-width: 640px) {
-  .media {
-    height: 140px;
-  }
-
-  .title {
-    font-size: var(--sl-text-body);
-  }
-
-  .description {
-    font-size: var(--sl-text-body-sm);
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-
-  .footer {
-    flex-direction: column;
-    gap: var(--sl-spacing-stack-sm);
-  }
-
-  .likeButton,
-  .favoriteButton,
-  .readMore {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   ACCESSIBILITY
-   ═══════════════════════════════════════════════════════════ */
-
-@media (prefers-reduced-motion: reduce) {
-  .card,
-  .favoriteButton,
-  .readMore,
-  .heartIcon,
-  .starIcon,
-  .bookmarkIcon,
-  .arrow,
-  .tag {
-    transition: none;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .card {
-    border-width: 2px;
-  }
-  .favoriteButton,
-  .likeButton,
-  .readMore {
-    border-width: 2px;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   CARD ACTION MENU (edit / delete)
+   CARD ACTION MENU (three-dot overlay)
    ═══════════════════════════════════════════════════════════ */
 
 .cardActions {
   position: absolute;
   top: var(--sl-spacing-inset-sm, 0.5rem);
   right: var(--sl-spacing-inset-sm, 0.5rem);
-  z-index: 2;
+  z-index: var(--sl-z-card-actions);
 }
 
 .menuButton {
@@ -459,6 +406,11 @@
   background: hsl(var(--sl-color-surface));
   border-color: hsl(var(--sl-color-border-hover));
   color: hsl(var(--sl-color-text-primary));
+}
+
+.menuButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
 }
 
 .menu {
@@ -491,10 +443,70 @@
   background: hsl(var(--sl-color-surface-hover));
 }
 
+.menuItem:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+
 .menuItemDanger {
   color: hsl(var(--sl-color-error));
 }
 
 .menuItemDanger:hover {
   background: hsl(var(--sl-color-error-subtle));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .title {
+    font-size: var(--sl-text-body);
+  }
+
+  .description {
+    font-size: var(--sl-text-body-sm);
+  }
+
+  .footer {
+    flex-wrap: wrap;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .actionButton,
+  .actionIcon,
+  .menuButton,
+  .menuItem,
+  .tag {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+
+  .actionButton:active {
+    transform: none;
+  }
+
+  .actionButton:active .actionIcon {
+    transform: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .card {
+    border-width: 2px;
+  }
+
+  .actionButton {
+    border-width: 2px;
+  }
 }

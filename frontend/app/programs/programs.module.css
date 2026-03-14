@@ -1,0 +1,169 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   PROGRAMS PAGE - NEW LAYOUT
+   Responsive layout: sidebar + main content with mobile drawer support
+   All values reference --sl-* design tokens
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE WRAPPER
+   ═══════════════════════════════════════════════════════════ */
+
+.page {
+  max-width: var(--sl-content-max-width, 1280px);
+  margin: 0 auto;
+  padding: var(--sl-spacing-inset-lg, 16px) var(--sl-spacing-inset-md, 12px);
+  min-height: calc(100vh - 80px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOP BAR - Search + filter toggle + sort
+   ═══════════════════════════════════════════════════════════ */
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm, 0.5rem);
+  margin-bottom: var(--sl-spacing-stack-md, 16px);
+}
+
+.searchWrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filterToggle {
+  display: none;
+  align-items: center;
+  gap: var(--sl-spacing-inline-xs, 4px);
+  padding: 10px var(--sl-spacing-inset-md, 12px);
+  font-size: var(--sl-font-size-sm, 0.875rem);
+  font-family: inherit;
+  font-weight: var(--sl-font-weight-medium, 500);
+  color: hsl(var(--sl-color-text-primary, 0 0% 10%));
+  background: hsl(var(--sl-color-surface, 0 0% 100%));
+  border: 1px solid hsl(var(--sl-color-border, 0 0% 85%) / var(--sl-primitive-opacity-30, 0.3));
+  border-radius: var(--sl-radius-input, 6px);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color var(--sl-transition-base, 150ms ease),
+    background-color var(--sl-transition-base, 150ms ease);
+  flex-shrink: 0;
+}
+
+.filterToggle:hover {
+  border-color: hsl(var(--sl-color-border, 0 0% 85%));
+  background: hsl(var(--sl-color-background-secondary, 0 0% 96%));
+}
+
+.filterToggle:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 42%));
+  outline-offset: 2px;
+}
+
+.filterToggleIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.filterToggleBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.25rem;
+  font-size: var(--sl-font-size-xs, 0.75rem);
+  font-weight: var(--sl-font-weight-semibold, 600);
+  line-height: 1;
+  color: hsl(var(--sl-color-on-primary, 0 0% 100%));
+  background: hsl(var(--sl-color-primary, 142 50% 42%));
+  border-radius: var(--sl-radius-pill, 9999px);
+  margin-left: var(--sl-spacing-inline-xs, 4px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONTENT AREA - Sidebar + Main
+   ═══════════════════════════════════════════════════════════ */
+
+.content {
+  display: flex;
+  gap: var(--sl-spacing-gap-lg, 1.5rem);
+  align-items: flex-start;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════════════════════════ */
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-md, 16px);
+}
+
+.resultCount {
+  font-size: var(--sl-font-size-sm, 0.875rem);
+  font-weight: var(--sl-font-weight-medium, 500);
+  color: hsl(var(--sl-color-text-secondary, 0 0% 30%));
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: <= 1024px — sidebar hidden, drawer mode
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  /* Hide the desktop sidebar */
+  .content > aside {
+    display: none;
+  }
+
+  /* Show the mobile filter toggle button */
+  .filterToggle {
+    display: inline-flex;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: <= 640px — search wraps full width
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .topBar {
+    flex-wrap: wrap;
+  }
+
+  .searchWrapper {
+    flex: 1 1 100%;
+    order: -1;
+    margin-bottom: var(--sl-spacing-stack-xs, 4px);
+  }
+
+  .filterToggle {
+    flex: 1;
+  }
+
+  .page {
+    padding: var(--sl-spacing-inset-md, 12px) var(--sl-spacing-inset-sm, 8px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .filterToggle {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .filterToggle {
+    border-width: 2px;
+  }
+}

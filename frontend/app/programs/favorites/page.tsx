@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchPrograms, type Program } from "@/services/programs.service";
-import ProgramCard from "@/app/programs/components/ProgramCard";
 import ProgramGrid from "../components/ProgramGrid";
 import ProgramSort, { type SortOption } from "../components/ProgramSort";
 import styles from "../program.module.css";
@@ -117,21 +116,7 @@ export default function FavoriteProgramsPage() {
             </Link>
           </div>
         ) : (
-          <ProgramGrid>
-            {favoritePrograms.map((program) => (
-              <ProgramCard
-                key={program.id}
-                id={program.id}
-                name={program.name}
-                description={program.description}
-                image={program.image}
-                author={program.author}
-                tags={program.tags}
-                like_count={program.like_count}
-                liked_by_me={program.liked_by_me}
-              />
-            ))}
-          </ProgramGrid>
+          <ProgramGrid programs={favoritePrograms} isLoading={false} />
         )}
       </div>
     </div>
