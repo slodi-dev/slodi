@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useId } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useCallback } from "react";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import styles from "./filters.module.css";
 
@@ -13,8 +12,8 @@ interface EquipmentFilterProps {
 }
 
 /**
- * Multi-select autocomplete filter for equipment (Búnaður).
- * Selected items are shown with a checkmark in the dropdown and can be toggled off.
+ * Multi-select inline-autocomplete filter for equipment (Búnaður).
+ * Tab / ArrowRight / Enter toggles the matched item and clears the input.
  */
 export default function EquipmentFilter({
   availableItems,
@@ -22,164 +21,96 @@ export default function EquipmentFilter({
   onChange,
   defaultOpen = false,
 }: EquipmentFilterProps) {
-  const [inputValue, setInputValue] = useState("");
-  const [showList, setShowList] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const [listStyle, setListStyle] = useState<React.CSSProperties>({});
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listId = useId();
+  const typedRef = useRef("");
 
-  const updateListPosition = useCallback(() => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setListStyle({
-        position: "fixed",
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showList) {
-      updateListPosition();
-      window.addEventListener("scroll", updateListPosition, true);
-      window.addEventListener("resize", updateListPosition);
-      return () => {
-        window.removeEventListener("scroll", updateListPosition, true);
-        window.removeEventListener("resize", updateListPosition);
-      };
-    }
-  }, [showList, updateListPosition]);
-
-  useEffect(() => {
-    return () => {
-      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    };
-  }, []);
-
-  const filteredSuggestions = availableItems.filter((item) =>
-    item.toLowerCase().includes(inputValue.toLowerCase())
+  const findMatch = useCallback(
+    (typed: string) =>
+      availableItems.find((s) => s.toLowerCase().startsWith(typed.toLowerCase())) ?? null,
+    [availableItems]
   );
 
-  const toggleItem = (item: string) => {
-    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    const isSelected = selected.includes(item);
-    onChange(isSelected ? selected.filter((s) => s !== item) : [...selected, item]);
-    setActiveIndex(-1);
-    setShowList(true);
-    inputRef.current?.focus();
-  };
+  const toggleItem = useCallback(
+    (item: string) => {
+      onChange(selected.includes(item) ? selected.filter((s) => s !== item) : [...selected, item]);
+      if (inputRef.current) inputRef.current.value = "";
+      typedRef.current = "";
+    },
+    [selected, onChange]
+  );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    setShowList(true);
-    setActiveIndex(-1);
+  const handleInputChange = () => {
+    const input = inputRef.current!;
+    const typed = input.value;
+    typedRef.current = typed;
+
+    const match = findMatch(typed);
+    if (match && typed.length > 0) {
+      input.value = match;
+      input.setSelectionRange(typed.length, match.length);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showList || filteredSuggestions.length === 0) {
-      if (e.key === "ArrowDown") {
-        setShowList(true);
-        setActiveIndex(0);
-        e.preventDefault();
-      }
-      return;
-    }
+    const input = inputRef.current!;
+    const hasCompletion = input.value.length > typedRef.current.length;
 
     switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setActiveIndex((prev) => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0));
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setActiveIndex((prev) => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1));
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (activeIndex >= 0 && activeIndex < filteredSuggestions.length) {
-          toggleItem(filteredSuggestions[activeIndex]);
+      case "Backspace":
+        if (hasCompletion) {
+          e.preventDefault();
+          const newTyped = typedRef.current.slice(0, -1);
+          typedRef.current = newTyped;
+          const match = newTyped.length > 0 ? findMatch(newTyped) : null;
+          if (match) {
+            input.value = match;
+            input.setSelectionRange(newTyped.length, match.length);
+          } else {
+            input.value = newTyped;
+          }
         }
         break;
+      case "Tab":
+      case "ArrowRight":
+        if (hasCompletion) {
+          e.preventDefault();
+          toggleItem(input.value);
+        }
+        break;
+      case "Enter": {
+        const exact =
+          !hasCompletion &&
+          availableItems.find((s) => s.toLowerCase() === typedRef.current.toLowerCase());
+        if (hasCompletion || exact) {
+          e.preventDefault();
+          toggleItem(hasCompletion ? input.value : (exact as string));
+        }
+        break;
+      }
       case "Escape":
         e.preventDefault();
-        setShowList(false);
-        setActiveIndex(-1);
+        input.value = "";
+        typedRef.current = "";
         break;
     }
   };
-
-  const handleBlur = () => {
-    blurTimeoutRef.current = setTimeout(() => {
-      setShowList(false);
-      setActiveIndex(-1);
-      setInputValue("");
-    }, 150);
-  };
-
-  const handleFocus = () => {
-    setShowList(true);
-  };
-
-  const activeDescendant = activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined;
 
   return (
     <CollapsibleSection label="Búnaður" activeCount={selected.length} defaultOpen={defaultOpen}>
-      {/* Autocomplete input */}
       <div className={styles.comboboxWrapper}>
         <input
           ref={inputRef}
           type="text"
           className={styles.comboboxInput}
-          value={inputValue}
+          defaultValue=""
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          onFocus={handleFocus}
-          role="combobox"
-          aria-expanded={showList}
-          aria-autocomplete="list"
-          aria-controls={listId}
-          aria-activedescendant={activeDescendant}
           aria-label="Leita að búnaði"
+          aria-autocomplete="inline"
           placeholder="Leita að búnaði..."
+          autoComplete="off"
+          spellCheck={false}
         />
-        {showList &&
-          filteredSuggestions.length > 0 &&
-          createPortal(
-            <ul
-              id={listId}
-              className={styles.suggestionList}
-              style={listStyle}
-              role="listbox"
-              aria-label="Tillögur að búnaði"
-              aria-multiselectable="true"
-            >
-              {filteredSuggestions.map((item, index) => {
-                const isSelected = selected.includes(item);
-                return (
-                  <li
-                    key={item}
-                    id={`${listId}-option-${index}`}
-                    className={`${styles.suggestionItem} ${index === activeIndex ? styles.suggestionItemActive : ""} ${isSelected ? styles.suggestionItemSelected : ""}`}
-                    role="option"
-                    aria-selected={isSelected}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      toggleItem(item);
-                    }}
-                  >
-                    <span className={styles.suggestionItemCheck}>{isSelected ? "✓" : ""}</span>
-                    {item}
-                  </li>
-                );
-              })}
-            </ul>,
-            document.body
-          )}
       </div>
     </CollapsibleSection>
   );

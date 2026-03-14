@@ -90,75 +90,70 @@
   box-shadow: 0 0 0 3px hsl(var(--sl-color-primary) / var(--sl-primitive-opacity-10, 0.1));
 }
 
-.suggestionList {
-  max-height: 200px;
-  overflow-y: auto;
-  background: hsl(var(--sl-color-surface));
-  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30, 0.3));
-  border-radius: var(--sl-radius-base, 6px);
-  box-shadow: var(
-    --sl-shadow-dropdown,
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -2px rgba(0, 0, 0, 0.1)
+.comboboxInputWithClear {
+  padding-right: calc(
+    var(--sl-spacing-gap-sm, 6px) + var(--sl-size-icon-sm, 16px) + var(--sl-spacing-gap-sm, 6px)
   );
-  z-index: 9999;
-  list-style: none;
-  padding: var(--sl-spacing-stack-xs, 4px) 0;
 }
 
-.suggestionItem {
-  padding: var(--sl-spacing-inset-xs, 6px) var(--sl-spacing-inset-md, 12px);
-  font-size: var(--sl-font-size-sm, 0.875rem);
-  color: hsl(var(--sl-color-text-primary));
+.comboboxClearButton {
+  position: absolute;
+  right: var(--sl-spacing-gap-sm, 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-size-icon-sm, 16px);
+  height: var(--sl-size-icon-sm, 16px);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sl-radius-button, 6px);
+  color: hsl(var(--sl-color-text-tertiary));
   cursor: pointer;
-  transition: background-color var(--sl-transition-base, 150ms ease);
+  transition: color var(--sl-transition-fast, 150ms ease);
 }
 
-.suggestionItem:hover,
-.suggestionItemActive {
-  background: hsl(var(--sl-color-background-secondary));
+.comboboxClearButton:hover {
+  color: hsl(var(--sl-color-text-primary));
 }
 
-.suggestionItemActive {
-  font-weight: var(--sl-font-weight-medium, 500);
+.comboboxClearButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
 }
 
-.suggestionItemSelected {
-  color: hsl(var(--sl-color-primary));
-  font-weight: var(--sl-font-weight-medium, 500);
+.comboboxClearButton svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
 }
 
-.suggestionItemCheck {
-  display: inline-block;
-  width: 1rem;
-  margin-right: 4px;
-  color: hsl(var(--sl-color-primary));
-  font-size: var(--sl-font-size-sm, 0.875rem);
+/* Hide when the input is empty (placeholder is showing) */
+.comboboxWrapper:has(input:placeholder-shown) .comboboxClearButton {
+  display: none;
 }
 
 /* ═══════════════════════════════════════════════════════════
    SCROLLBAR STYLING
    ═══════════════════════════════════════════════════════════ */
 
-.checkboxGroup::-webkit-scrollbar,
-.suggestionList::-webkit-scrollbar {
+.checkboxGroup::-webkit-scrollbar {
   width: 8px;
 }
 
-.checkboxGroup::-webkit-scrollbar-track,
-.suggestionList::-webkit-scrollbar-track {
+.checkboxGroup::-webkit-scrollbar-track {
   background: hsl(var(--sl-color-background-secondary));
   border-radius: var(--sl-radius-base, 6px);
 }
 
-.checkboxGroup::-webkit-scrollbar-thumb,
-.suggestionList::-webkit-scrollbar-thumb {
+.checkboxGroup::-webkit-scrollbar-thumb {
   background: hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-base, 6px);
 }
 
-.checkboxGroup::-webkit-scrollbar-thumb:hover,
-.suggestionList::-webkit-scrollbar-thumb:hover {
+.checkboxGroup::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--sl-color-text-tertiary));
 }
 
@@ -169,7 +164,7 @@
 @media (prefers-reduced-motion: reduce) {
   .checkboxLabel,
   .comboboxInput,
-  .suggestionItem {
+  .comboboxClearButton {
     transition: none;
   }
 }
