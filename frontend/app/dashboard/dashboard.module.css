@@ -24,6 +24,16 @@
   margin-bottom: var(--sl-spacing-section);
 }
 
+@media (max-width: 767px) {
+  .dashboardPage {
+    padding: 0 var(--sl-spacing-element);
+  }
+
+  .title {
+    font-size: var(--sl-text-heading-2);
+  }
+}
+
 /* Program Bank Card */
 .programBankCard {
   display: block;

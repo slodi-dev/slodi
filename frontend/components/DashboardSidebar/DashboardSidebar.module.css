@@ -402,6 +402,11 @@
     box-shadow: var(--sl-shadow-modal);
   }
 
+  /* Push nav content below the floating hamburger button */
+  .sidebar .nav {
+    padding-top: 4.5rem;
+  }
+
   /* Ensure labels are visible on mobile */
   .sidebar .navLabel,
   .sidebar .userName,

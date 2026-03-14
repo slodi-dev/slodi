@@ -128,6 +128,60 @@ export async function getOrCreatePersonalWorkspace(token: string): Promise<Works
 }
 
 /**
+ * List all members of a workspace (admin only).
+ */
+export async function getWorkspaceMembers(
+  workspaceId: string,
+  token: string
+): Promise<WorkspaceMembership[]> {
+  const url = buildApiUrl(`/workspaces/${workspaceId}/members`);
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to get workspace members: ${response.status} - ${errorBody}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Set a user's role in a workspace (admin only).
+ */
+export async function setWorkspaceMemberRole(
+  workspaceId: string,
+  userId: string,
+  role: WorkspaceRole,
+  token: string
+): Promise<WorkspaceMembership> {
+  const url = buildApiUrl(`/workspaces/${workspaceId}/members/${userId}/role`);
+
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ role }),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to set workspace role: ${response.status} - ${errorBody}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Get the current user's membership/role for a workspace.
  * Returns null if the user is not a member (404 from backend).
  */

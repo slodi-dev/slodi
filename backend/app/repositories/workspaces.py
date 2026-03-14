@@ -108,6 +108,10 @@ class WorkspaceRepository(Repository):
         res = await self.session.execute(stmt)
         return res.scalars().first()
 
+    async def list_members(self, workspace_id: UUID) -> Sequence[WorkspaceMembership]:
+        stmt = select(WorkspaceMembership).where(WorkspaceMembership.workspace_id == workspace_id)
+        return await self.scalars(stmt)
+
     async def set_member_role(
         self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
     ) -> WorkspaceMembership:

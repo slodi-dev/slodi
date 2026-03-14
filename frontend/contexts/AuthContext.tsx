@@ -41,11 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/api/auth/token");
 
       if (response.status === 401) {
-        // Token expired or invalid - clear user state and force re-login
         setUser(null);
         setTokenCache(null);
-        // Redirect to logout to clear the stale Auth0 session cookie
-        window.location.href = "/api/auth/logout";
+        // Redirect to login (not logout) so the user can re-authenticate and
+        // return to exactly where they were. Their localStorage draft survives.
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/auth/login?returnTo=${returnTo}`;
         return null;
       }
 

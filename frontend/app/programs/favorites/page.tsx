@@ -110,7 +110,7 @@ export default function FavoriteProgramsPage() {
             <div className={styles.emptyIcon}>⭐</div>
             <h2 className={styles.emptyTitle}>Engar uppáhalds dagskrár ennþá</h2>
             <p className={styles.emptyDescription}>
-              Skoðaðu dagskrábankann og bættu dagskrám í uppáhald með því að smella á stjörnuna.
+              Skoðaðu dagskrárbankann og bættu dagskrám í uppáhald með því að smella á stjörnuna.
             </p>
             <Link href="/programs" className={styles.emptyAction}>
               Skoða dagskrábanka

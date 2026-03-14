@@ -8,12 +8,10 @@ export default function AboutHero() {
       <div className={styles.container}>
         <div className={styles.content}>
           <h1 id="about-heading" className={styles.heading}>
-            Um Slóði
+            Um Slóða
           </h1>
 
-          <p className={styles.subheading}>
-            Opinn hugbúnaður fyrir skipulega dagskrárgerð í skátastarfi
-          </p>
+          <p className={styles.subheading}>Opinn hugbúnaður fyrir dagskrárgerð í skátastarfi</p>
 
           <p className={styles.description}>
             Slóði er verkfæri sem getur hjálpað skátaforingjum að skipuleggja fjölbreytta og

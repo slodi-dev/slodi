@@ -372,7 +372,7 @@ async def get_current_user(
         )
 
     if not name:
-        name = email
+        name = email.split("@")[0]
 
     user_data = UserCreate(auth0_id=auth0_id, email=email, name=name)
     user = await user_service.create(user_data)

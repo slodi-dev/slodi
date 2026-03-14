@@ -16,7 +16,6 @@ from typing_extensions import Self
 
 from app.domain.content_constraints import (
     DESC_MAX,
-    DURATION_MAX,
     IMG_MAX,
     INSTRUCTIONS_MAX,
     LOCATION_MAX,
@@ -43,9 +42,6 @@ InstructionsStr = Annotated[
     str,
     StringConstraints(min_length=0, max_length=INSTRUCTIONS_MAX, strip_whitespace=True),
 ]
-DurationStr = Annotated[
-    str, StringConstraints(min_length=0, max_length=DURATION_MAX, strip_whitespace=True)
-]
 LocationStr = Annotated[
     str, StringConstraints(min_length=0, max_length=LOCATION_MAX, strip_whitespace=True)
 ]
@@ -60,18 +56,29 @@ class ContentBase(BaseModel):
     description: DescStr | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
-    duration: DurationStr | None = None
+    duration_min: int | None = None
+    duration_max: int | None = None
     age: list[AgeGroup] | None = None
     location: LocationStr | None = None
-    count: int | None = None
+    count_min: int | None = None
+    count_max: int | None = None
     price: int | None = None
-    prep_time: DurationStr | None = None
+    prep_time_min: int | None = None
+    prep_time_max: int | None = None
     image: ImageStr | None = None
     media: dict[str, Any] | None = None
     tag_names: list[str] | None = None
     author_id: UUID | None = None
 
-    @field_validator("count", "price")
+    @field_validator(
+        "count_min",
+        "count_max",
+        "duration_min",
+        "duration_max",
+        "prep_time_min",
+        "prep_time_max",
+        "price",
+    )
     @classmethod
     def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
         if v is not None and v < 0:
@@ -104,12 +111,15 @@ class ContentListOut(BaseModel):
     workspace_id: UUID
     workspace: WorkspaceNested
     description: DescStr | None = None
-    duration: DurationStr | None = None
+    duration_min: int | None = None
+    duration_max: int | None = None
     age: list[AgeGroup] | None = None
     location: LocationStr | None = None
-    count: int | None = None
+    count_min: int | None = None
+    count_max: int | None = None
     price: int | None = None
-    prep_time: DurationStr | None = None
+    prep_time_min: int | None = None
+    prep_time_max: int | None = None
     image: ImageStr | None = None
     tags: list[TagOut] = []
     comment_count: int = 0

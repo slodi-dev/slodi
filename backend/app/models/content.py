@@ -19,7 +19,6 @@ from sqlalchemy.types import Integer
 
 from app.domain.content_constraints import (
     DESC_MAX,
-    DURATION_MAX,
     IMG_MAX,
     INSTRUCTIONS_MAX,
     LOCATION_MAX,
@@ -47,7 +46,24 @@ class Content(SoftDeleteMixin, Base):
         "with_polymorphic": "*",
     }
     __table_args__ = (
-        CheckConstraint("count >= 0", name="ck_content_count_nonneg"),
+        CheckConstraint("count_min >= 0", name="ck_content_count_min_nonneg"),
+        CheckConstraint("count_max >= 0", name="ck_content_count_max_nonneg"),
+        CheckConstraint(
+            "count_max IS NULL OR count_min IS NULL OR count_max >= count_min",
+            name="ck_content_count_range",
+        ),
+        CheckConstraint("duration_min >= 0", name="ck_content_duration_min_nonneg"),
+        CheckConstraint("duration_max >= 0", name="ck_content_duration_max_nonneg"),
+        CheckConstraint(
+            "duration_max IS NULL OR duration_min IS NULL OR duration_max >= duration_min",
+            name="ck_content_duration_range",
+        ),
+        CheckConstraint("prep_time_min >= 0", name="ck_content_prep_time_min_nonneg"),
+        CheckConstraint("prep_time_max >= 0", name="ck_content_prep_time_max_nonneg"),
+        CheckConstraint(
+            "prep_time_max IS NULL OR prep_time_min IS NULL OR prep_time_max >= prep_time_min",
+            name="ck_content_prep_time_range",
+        ),
         CheckConstraint("price >= 0", name="ck_content_price_nonneg"),
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_content_name_min"),
     )
@@ -72,7 +88,8 @@ class Content(SoftDeleteMixin, Base):
         String(INSTRUCTIONS_MAX),
         nullable=True,
     )
-    duration: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
+    duration_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     age: Mapped[list[AgeGroup] | None] = mapped_column(
         ARRAY(
             SAEnum(
@@ -85,9 +102,11 @@ class Content(SoftDeleteMixin, Base):
         nullable=True,
     )
     location: Mapped[str | None] = mapped_column(String(LOCATION_MAX), nullable=True)
-    count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    count_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    count_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     price: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    prep_time: Mapped[str | None] = mapped_column(String(DURATION_MAX), nullable=True)
+    prep_time_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    prep_time_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(
         SADateTime(timezone=True),
         nullable=False,
