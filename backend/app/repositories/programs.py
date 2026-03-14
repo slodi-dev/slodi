@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import datetime as dt
 from dataclasses import dataclass
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import ColumnElement, Select, func, or_, select, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -101,7 +102,7 @@ class ProgramRepository(Repository):
         prog, lc, cc, lm = row
         return prog, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm))
 
-    def _apply_filters(self, stmt, filters: ProgramFilters):  # noqa: C901
+    def _apply_filters(self, stmt: Select, filters: ProgramFilters) -> Select:  # noqa: C901
         """Apply filter conditions to a SELECT statement."""
         if filters.search:
             pattern = f"%{filters.search}%"
@@ -142,7 +143,12 @@ class ProgramRepository(Repository):
             stmt = stmt.where(Program.author_id == filters.author_id)
         return stmt
 
-    def _apply_sort(self, stmt, filters: ProgramFilters, like_count_col=None):
+    def _apply_sort(
+        self,
+        stmt: Select,
+        filters: ProgramFilters,
+        like_count_col: ColumnElement[Any] | None = None,
+    ) -> Select:
         """Apply sorting to a SELECT statement."""
         sort_by = filters.sort_by
         if sort_by == "oldest":
