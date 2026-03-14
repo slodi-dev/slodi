@@ -13,6 +13,7 @@ import {
   formatPrice,
   formatPriceLabel,
   formatAgeGroup,
+  getAgeGroupPatrol,
 } from "@/lib/format";
 import styles from "./ProgramCard.module.css";
 
@@ -339,11 +340,20 @@ export default function ProgramCard({
         {/* ── Age group badges ────────────────────────────────── */}
         {ageGroups.length > 0 && (
           <ul className={styles.ageGroups} aria-label="Aldurshópar">
-            {ageGroups.map((ag) => (
-              <li key={ag} className={styles.ageBadge}>
-                {formatAgeGroup(ag)}
-              </li>
-            ))}
+            {ageGroups.map((ag) => {
+              const patrol = getAgeGroupPatrol(ag);
+              const patrolClass = patrol
+                ? styles[`patrol${patrol.charAt(0).toUpperCase()}${patrol.slice(1)}`]
+                : undefined;
+              return (
+                <li
+                  key={ag}
+                  className={`${styles.ageBadge}${patrolClass ? ` ${patrolClass}` : ""}`}
+                >
+                  {formatAgeGroup(ag)}
+                </li>
+              );
+            })}
           </ul>
         )}
 

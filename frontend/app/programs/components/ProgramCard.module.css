@@ -207,6 +207,36 @@
   white-space: nowrap;
 }
 
+.ageBadge.patrolDrekar {
+  background: hsl(var(--sl-badge-patrol-drekar-background));
+  color: hsl(var(--sl-badge-patrol-drekar-text));
+}
+
+.ageBadge.patrolFalkar {
+  background: hsl(var(--sl-badge-patrol-falkar-background));
+  color: hsl(var(--sl-badge-patrol-falkar-text));
+}
+
+.ageBadge.patrolDrott {
+  background: hsl(var(--sl-badge-patrol-drott-background));
+  color: hsl(var(--sl-badge-patrol-drott-text));
+}
+
+.ageBadge.patrolRekkar {
+  background: hsl(var(--sl-badge-patrol-rekkar-background));
+  color: hsl(var(--sl-badge-patrol-rekkar-text));
+}
+
+.ageBadge.patrolRover {
+  background: hsl(var(--sl-badge-patrol-rover-background));
+  color: hsl(var(--sl-badge-patrol-rover-text));
+}
+
+.ageBadge.patrolAdrir {
+  background: hsl(var(--sl-badge-patrol-adrir-background));
+  color: hsl(var(--sl-badge-patrol-adrir-text));
+}
+
 /* ═══════════════════════════════════════════════════════════
    TAG PILLS
    ═══════════════════════════════════════════════════════════ */

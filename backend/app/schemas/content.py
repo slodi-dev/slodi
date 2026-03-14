@@ -106,6 +106,7 @@ class ContentListOut(BaseModel):
 
     id: UUID
     name: NameStr
+    author_id: UUID
     author_name: str
     created_at: dt.datetime
     workspace_id: UUID

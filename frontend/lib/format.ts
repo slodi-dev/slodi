@@ -17,6 +17,24 @@ const AGE_GROUP_DISPLAY: Record<string, string> = {
   Vættaskátar: "Vættaskátar",
 };
 
+/**
+ * Map an age group enum value to its patrol token key (used for CSS classes).
+ * Returns undefined for unknown groups.
+ */
+const AGE_GROUP_PATROL: Record<string, string> = {
+  Drekaskátar: "drekar",
+  Fálkaskátar: "falkar",
+  Dróttskátar: "drott",
+  Rekkaskátar: "rekkar",
+  Róverskátar: "rover",
+  Hrefnuskátar: "adrir",
+  Vættaskátar: "adrir",
+};
+
+export function getAgeGroupPatrol(age: string): string | undefined {
+  return AGE_GROUP_PATROL[age];
+}
+
 // ── Minutes ─────────────────────────────────────────────────────────────────────
 
 /**
