@@ -119,7 +119,7 @@ export function paramsToFilters(p: URLSearchParams): FilterState {
 // ── Client-side filtering ───────────────────────────────────────────────────────
 
 function getAuthorName(program: Program): string {
-  return program.author?.name ?? "";
+  return program.author_name ?? program.author?.name ?? "";
 }
 
 function applyFilters(programs: Program[], f: FilterState): Program[] {
@@ -160,28 +160,28 @@ function applyFilters(programs: Program[], f: FilterState): Program[] {
     });
   }
 
-  // 5. Duration range
+  // 5. Duration range (overlap: program range intersects filter range)
   if (f.durationMin !== undefined) {
-    result = result.filter((p) => p.duration_min != null && p.duration_min >= f.durationMin!);
+    result = result.filter((p) => p.duration_max != null && p.duration_max >= f.durationMin!);
   }
   if (f.durationMax !== undefined) {
-    result = result.filter((p) => p.duration_max != null && p.duration_max <= f.durationMax!);
+    result = result.filter((p) => p.duration_min != null && p.duration_min <= f.durationMax!);
   }
 
-  // 6. Prep time range
+  // 6. Prep time range (overlap)
   if (f.prepMin !== undefined) {
-    result = result.filter((p) => p.prep_time_min != null && p.prep_time_min >= f.prepMin!);
+    result = result.filter((p) => p.prep_time_max != null && p.prep_time_max >= f.prepMin!);
   }
   if (f.prepMax !== undefined) {
-    result = result.filter((p) => p.prep_time_max != null && p.prep_time_max <= f.prepMax!);
+    result = result.filter((p) => p.prep_time_min != null && p.prep_time_min <= f.prepMax!);
   }
 
-  // 7. Participant count range
+  // 7. Participant count range (overlap)
   if (f.countMin !== undefined) {
-    result = result.filter((p) => p.count_min != null && p.count_min >= f.countMin!);
+    result = result.filter((p) => p.count_max != null && p.count_max >= f.countMin!);
   }
   if (f.countMax !== undefined) {
-    result = result.filter((p) => p.count_max != null && p.count_max <= f.countMax!);
+    result = result.filter((p) => p.count_min != null && p.count_min <= f.countMax!);
   }
 
   // 8. Price filters

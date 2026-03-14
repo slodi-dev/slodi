@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useId } from "react";
+import { createPortal } from "react-dom";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import styles from "./filters.module.css";
 
@@ -24,10 +25,23 @@ export default function AuthorFilter({
   const [inputValue, setInputValue] = useState(value);
   const [showList, setShowList] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [listStyle, setListStyle] = useState<React.CSSProperties>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+
+  useEffect(() => {
+    if (showList && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setListStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [showList]);
 
   // Sync external value changes
   useEffect(() => {
@@ -147,10 +161,11 @@ export default function AuthorFilter({
           aria-label="Höfundur"
           placeholder="Leita eftir höfundi..."
         />
-        {showList && filteredSuggestions.length > 0 && (
+        {showList && filteredSuggestions.length > 0 && createPortal(
           <ul
             id={listId}
             className={styles.suggestionList}
+            style={listStyle}
             role="listbox"
             aria-label="Tillögur að höfundum"
           >
@@ -169,7 +184,8 @@ export default function AuthorFilter({
                 {suggestion}
               </li>
             ))}
-          </ul>
+          </ul>,
+          document.body
         )}
       </div>
     </CollapsibleSection>

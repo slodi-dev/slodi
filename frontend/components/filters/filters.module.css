@@ -91,11 +91,6 @@
 }
 
 .suggestionList {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: var(--sl-spacing-stack-xs, 4px);
   max-height: 200px;
   overflow-y: auto;
   background: hsl(var(--sl-color-surface));
@@ -106,7 +101,7 @@
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -2px rgba(0, 0, 0, 0.1)
   );
-  z-index: var(--sl-z-dropdown, 100);
+  z-index: 9999;
   list-style: none;
   padding: var(--sl-spacing-stack-xs, 4px) 0;
 }
@@ -126,6 +121,19 @@
 
 .suggestionItemActive {
   font-weight: var(--sl-font-weight-medium, 500);
+}
+
+.suggestionItemSelected {
+  color: hsl(var(--sl-color-primary));
+  font-weight: var(--sl-font-weight-medium, 500);
+}
+
+.suggestionItemCheck {
+  display: inline-block;
+  width: 1rem;
+  margin-right: 4px;
+  color: hsl(var(--sl-color-primary));
+  font-size: var(--sl-font-size-sm, 0.875rem);
 }
 
 /* ═══════════════════════════════════════════════════════════

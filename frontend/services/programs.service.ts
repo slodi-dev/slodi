@@ -12,6 +12,7 @@ export type Program = {
   liked_by_me: boolean;
   created_at: string;
   author_id: string;
+  author_name: string;
   image: string | null;
   workspace_id: string;
   author: {
