@@ -101,8 +101,19 @@ async def list_workspace_programs(
     has_filters = any(
         v is not None
         for v in (
-            search, age, duration_min, duration_max, prep_time_min, prep_time_max,
-            count_min, count_max, price_max, location, equipment, author_id, sort_by,
+            search,
+            age,
+            duration_min,
+            duration_max,
+            prep_time_min,
+            prep_time_max,
+            count_min,
+            count_max,
+            price_max,
+            location,
+            equipment,
+            author_id,
+            sort_by,
         )
     )
     filters = (

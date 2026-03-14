@@ -186,9 +186,7 @@ class ProgramRepository(Repository):
     ) -> list[tuple[Program, ContentStats]]:
         lc_subq = like_count_subq()
         stmt = (
-            select(
-                Program, lc_subq, comment_count_subq(), liked_by_me_subq(current_user_id)
-            )
+            select(Program, lc_subq, comment_count_subq(), liked_by_me_subq(current_user_id))
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
