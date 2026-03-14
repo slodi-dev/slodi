@@ -7,6 +7,16 @@
 
 // ── Age Groups ──────────────────────────────────────────────────────────────────
 
+const AGE_GROUP_ORDER: string[] = [
+  "Hrefnuskátar",
+  "Drekaskátar",
+  "Fálkaskátar",
+  "Dróttskátar",
+  "Rekkaskátar",
+  "Róverskátar",
+  "Vættaskátar",
+];
+
 const AGE_GROUP_DISPLAY: Record<string, string> = {
   Hrefnuskátar: "Hrefnuskátar",
   Drekaskátar: "Drekaskátar",
@@ -33,6 +43,18 @@ const AGE_GROUP_PATROL: Record<string, string> = {
 
 export function getAgeGroupPatrol(age: string): string | undefined {
   return AGE_GROUP_PATROL[age];
+}
+
+/**
+ * Sort age groups in canonical order (youngest → oldest).
+ * Unknown values are pushed to the end.
+ */
+export function sortAgeGroups(ages: string[]): string[] {
+  return [...ages].sort((a, b) => {
+    const ai = AGE_GROUP_ORDER.indexOf(a);
+    const bi = AGE_GROUP_ORDER.indexOf(b);
+    return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
+  });
 }
 
 // ── Minutes ─────────────────────────────────────────────────────────────────────
@@ -210,5 +232,5 @@ export function formatAgeGroup(age: string): string {
  */
 export function formatAgeGroups(ages: string[]): string {
   if (ages.length === 0) return "";
-  return ages.map(formatAgeGroup).join(", ");
+  return sortAgeGroups(ages).map(formatAgeGroup).join(", ");
 }

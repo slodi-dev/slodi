@@ -14,6 +14,7 @@ import {
   formatPriceLabel,
   formatAgeGroup,
   getAgeGroupPatrol,
+  sortAgeGroups,
 } from "@/lib/format";
 import styles from "./ProgramCard.module.css";
 
@@ -174,7 +175,7 @@ export default function ProgramCard({
   const priceStr = priceValue !== undefined ? formatPrice(priceValue) : "";
   const priceLabelStr = priceValue !== undefined ? formatPriceLabel(priceValue) : "";
   const locationStr = location?.trim() || "";
-  const ageGroups = age ?? [];
+  const ageGroups = sortAgeGroups(age ?? []);
   const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
   const overflowTagCount = tags.length - MAX_VISIBLE_TAGS;
   const hasMetadata = durationStr || participantsStr || priceStr || locationStr;
