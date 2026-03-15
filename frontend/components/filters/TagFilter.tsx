@@ -12,8 +12,8 @@ interface TagFilterProps {
 }
 
 /**
- * Checkbox group filter for tags (Merki).
- * Sorts active tags first (in selection order), then inactive alphabetically.
+ * Checkbox group filter for tags (Flokkar).
+ * Tags are sorted alphabetically regardless of selection state.
  */
 export default function TagFilter({
   availableTags,
@@ -22,12 +22,8 @@ export default function TagFilter({
   defaultOpen = false,
 }: TagFilterProps) {
   const sortedTags = useMemo(() => {
-    const activeTags = selected.filter((tag) => availableTags.includes(tag));
-    const inactiveTags = availableTags
-      .filter((tag) => !selected.includes(tag))
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    return [...activeTags, ...inactiveTags];
-  }, [availableTags, selected]);
+    return [...availableTags].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  }, [availableTags]);
 
   const handleToggle = (tag: string) => {
     if (selected.includes(tag)) {

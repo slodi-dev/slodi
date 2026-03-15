@@ -7,7 +7,6 @@ interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  resultCount?: number;
 }
 
 /**
@@ -18,7 +17,6 @@ export default function SearchInput({
   value,
   onChange,
   placeholder = "Leita í dagskrábanka",
-  resultCount,
 }: SearchInputProps) {
   const [localValue, setLocalValue] = useState(value);
   const debounceTimer = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -116,13 +114,6 @@ export default function SearchInput({
           </button>
         )}
       </div>
-
-      {/* Screen-reader result count announcement */}
-      {resultCount !== undefined && (
-        <p aria-live="polite" className={styles.srOnly}>
-          {resultCount} niðurstöður
-        </p>
-      )}
     </div>
   );
 }

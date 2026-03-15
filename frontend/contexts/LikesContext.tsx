@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { likeProgram, unlikeProgram } from "@/services/programs.service";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -21,6 +21,8 @@ const LikesContext = createContext<LikesContextValue | undefined>(undefined);
 export function LikesProvider({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth();
   const [likes, setLikes] = useState<Map<string, LikeEntry>>(new Map());
+  const likesRef = useRef(likes);
+  likesRef.current = likes;
 
   const initLike = useCallback((id: string, liked: boolean, count: number) => {
     setLikes((prev) => {
@@ -37,13 +39,11 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
 
   const toggleLike = useCallback(
     async (id: string) => {
-      let wasLiked = false;
-      let prevCount = 0;
+      const entry = likesRef.current.get(id);
+      const wasLiked = entry?.liked ?? false;
+      const prevCount = entry?.count ?? 0;
 
       setLikes((prev) => {
-        const entry = prev.get(id);
-        wasLiked = entry?.liked ?? false;
-        prevCount = entry?.count ?? 0;
         const next = new Map(prev);
         next.set(id, {
           liked: !wasLiked,
