@@ -190,9 +190,6 @@ function ProgramsPageInner() {
           <SearchInput
             value={filters.search}
             onChange={(search) => setFilters({ search })}
-            resultCount={
-              filters.search.trim() || activeChips.length > 0 ? filtered.length : undefined
-            }
             placeholder="Leita í dagskrárbanka"
           />
         </div>
