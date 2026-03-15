@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import styles from "./filters.module.css";
 
@@ -11,87 +11,45 @@ interface EquipmentFilterProps {
   defaultOpen?: boolean;
 }
 
-/**
- * Multi-select inline-autocomplete filter for equipment (Búnaður).
- * Tab / ArrowRight / Enter toggles the matched item and clears the input.
- */
 export default function EquipmentFilter({
   availableItems,
   selected,
   onChange,
   defaultOpen = false,
 }: EquipmentFilterProps) {
+  const [inputValue, setInputValue] = useState("");
+  const [inputKey, setInputKey] = useState(0);
+  const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const typedRef = useRef("");
 
-  const findMatch = useCallback(
-    (typed: string) =>
-      availableItems.find((s) => s.toLowerCase().startsWith(typed.toLowerCase())) ?? null,
-    [availableItems]
-  );
+  useEffect(() => {
+    if (inputKey > 0) inputRef.current?.focus();
+  }, [inputKey]);
 
-  const toggleItem = useCallback(
-    (item: string) => {
-      onChange(selected.includes(item) ? selected.filter((s) => s !== item) : [...selected, item]);
-      if (inputRef.current) inputRef.current.value = "";
-      typedRef.current = "";
-    },
-    [selected, onChange]
-  );
+  const toggleItem = (item: string) => {
+    onChange(selected.includes(item) ? selected.filter((s) => s !== item) : [...selected, item]);
+    setInputValue("");
+    setInputKey((k) => k + 1);
+  };
 
-  const handleInputChange = () => {
-    const input = inputRef.current!;
-    const typed = input.value;
-    typedRef.current = typed;
-
-    const match = findMatch(typed);
-    if (match && typed.length > 0) {
-      input.value = match;
-      input.setSelectionRange(typed.length, match.length);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputValue(val);
+    // Only auto-select when the user picks from the datalist dropdown
+    if ((e.nativeEvent as InputEvent).inputType === "insertReplacementText") {
+      const exact = availableItems.find((s) => s.toLowerCase() === val.toLowerCase());
+      if (exact) toggleItem(exact);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const input = inputRef.current!;
-    const hasCompletion = input.value.length > typedRef.current.length;
-
-    switch (e.key) {
-      case "Backspace":
-        if (hasCompletion) {
-          e.preventDefault();
-          const newTyped = typedRef.current.slice(0, -1);
-          typedRef.current = newTyped;
-          const match = newTyped.length > 0 ? findMatch(newTyped) : null;
-          if (match) {
-            input.value = match;
-            input.setSelectionRange(newTyped.length, match.length);
-          } else {
-            input.value = newTyped;
-          }
-        }
-        break;
-      case "Tab":
-      case "ArrowRight":
-        if (hasCompletion) {
-          e.preventDefault();
-          toggleItem(input.value);
-        }
-        break;
-      case "Enter": {
-        const exact =
-          !hasCompletion &&
-          availableItems.find((s) => s.toLowerCase() === typedRef.current.toLowerCase());
-        if (hasCompletion || exact) {
-          e.preventDefault();
-          toggleItem(hasCompletion ? input.value : (exact as string));
-        }
-        break;
-      }
-      case "Escape":
-        e.preventDefault();
-        input.value = "";
-        typedRef.current = "";
-        break;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const exact = availableItems.find((s) => s.toLowerCase() === inputValue.toLowerCase());
+      if (exact) toggleItem(exact);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setInputValue("");
     }
   };
 
@@ -99,18 +57,24 @@ export default function EquipmentFilter({
     <CollapsibleSection label="Búnaður" activeCount={selected.length} defaultOpen={defaultOpen}>
       <div className={styles.comboboxWrapper}>
         <input
+          key={inputKey}
           ref={inputRef}
           type="text"
+          list={listId}
           className={styles.comboboxInput}
-          defaultValue=""
-          onChange={handleInputChange}
+          value={inputValue}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           aria-label="Leita að búnaði"
-          aria-autocomplete="inline"
           placeholder="Leita að búnaði..."
           autoComplete="off"
           spellCheck={false}
         />
+        <datalist id={listId}>
+          {availableItems.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
       </div>
     </CollapsibleSection>
   );

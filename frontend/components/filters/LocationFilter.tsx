@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useId, useMemo } from "react";
+import { useState, useEffect, useId } from "react";
 import CollapsibleSection from "../ui/CollapsibleSection";
-import styles from "./search.module.css";
+import styles from "./filters.module.css";
 
 interface LocationFilterProps {
   value: string;
@@ -11,220 +11,90 @@ interface LocationFilterProps {
   defaultOpen?: boolean;
 }
 
-/**
- * Location filter with ARIA combobox pattern and autocomplete suggestions.
- * Wrapped in a CollapsibleSection labelled "Staðsetning".
- */
 export default function LocationFilter({
   value,
   onChange,
   suggestions,
   defaultOpen = false,
 }: LocationFilterProps) {
-  const [localValue, setLocalValue] = useState(value);
-  const [showList, setShowList] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const debounceTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-  const blurTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const generatedId = useId();
-  const listId = `location-listbox-${generatedId}`;
+  const [inputValue, setInputValue] = useState(value);
+  const listId = useId();
 
-  // Stable onChange ref to avoid re-triggering debounce
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
-
-  // Sync external value changes (e.g. "clear all" resets)
+  // Sync when parent clears the value (e.g. "clear all filters")
   useEffect(() => {
-    setLocalValue(value);
+    setInputValue(value);
   }, [value]);
 
-  // Debounce local value → parent onChange
-  useEffect(() => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputValue(val);
+    // Propagate immediately on exact match (user picked from datalist) or clear
+    const exact = suggestions.find((s) => s.toLowerCase() === val.toLowerCase());
+    if (exact) onChange(exact);
+    else if (val === "") onChange("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onChange(inputValue);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setInputValue("");
+      onChange("");
     }
+  };
 
-    debounceTimer.current = setTimeout(() => {
-      onChangeRef.current(localValue);
-    }, 300);
-
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-  }, [localValue]);
-
-  // Cleanup blur timer on unmount
-  useEffect(() => {
-    return () => {
-      if (blurTimer.current) {
-        clearTimeout(blurTimer.current);
-      }
-    };
-  }, []);
-
-  // Filter suggestions: case-insensitive includes match, only when input has content
-  const filtered = useMemo(
-    () =>
-      localValue.length >= 1
-        ? suggestions.filter((s) => s.toLowerCase().includes(localValue.toLowerCase()))
-        : [],
-    [localValue, suggestions]
-  );
-
-  const activeId =
-    activeIndex >= 0 && activeIndex < filtered.length ? `${listId}-${activeIndex}` : undefined;
-
-  const openList = useCallback(() => {
-    setShowList(true);
-    setActiveIndex(-1);
-  }, []);
-
-  const closeList = useCallback(() => {
-    setShowList(false);
-    setActiveIndex(-1);
-  }, []);
-
-  const selectSuggestion = useCallback(
-    (suggestion: string) => {
-      setLocalValue(suggestion);
-      onChangeRef.current(suggestion);
-      // Clear any pending debounce since we're setting immediately
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-      closeList();
-    },
-    [closeList]
-  );
-
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setLocalValue(newValue);
-      if (newValue.length >= 1) {
-        setShowList(true);
-        setActiveIndex(-1);
-      } else {
-        closeList();
-      }
-    },
-    [closeList]
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      switch (e.key) {
-        case "ArrowDown": {
-          e.preventDefault();
-          if (!showList && filtered.length > 0) {
-            openList();
-            setActiveIndex(0);
-          } else if (showList && filtered.length > 0) {
-            setActiveIndex((prev) => (prev >= filtered.length - 1 ? 0 : prev + 1));
-          }
-          break;
-        }
-        case "ArrowUp": {
-          e.preventDefault();
-          if (showList && filtered.length > 0) {
-            setActiveIndex((prev) => (prev <= 0 ? filtered.length - 1 : prev - 1));
-          }
-          break;
-        }
-        case "Enter": {
-          if (showList && activeIndex >= 0 && activeIndex < filtered.length) {
-            e.preventDefault();
-            selectSuggestion(filtered[activeIndex]);
-          }
-          break;
-        }
-        case "Escape": {
-          if (showList) {
-            e.preventDefault();
-            closeList();
-          }
-          break;
-        }
-      }
-    },
-    [showList, filtered, activeIndex, openList, closeList, selectSuggestion]
-  );
-
-  const handleFocus = useCallback(() => {
-    // Cancel any pending blur close
-    if (blurTimer.current) {
-      clearTimeout(blurTimer.current);
-    }
-    if (localValue.length >= 1 && filtered.length > 0) {
-      openList();
-    }
-  }, [localValue, filtered.length, openList]);
-
-  const handleBlur = useCallback(() => {
-    // Delay closing so onMouseDown on suggestions can fire first
-    blurTimer.current = setTimeout(() => {
-      closeList();
-    }, 150);
-  }, [closeList]);
-
-  const handleSuggestionMouseDown = useCallback(
-    (suggestion: string) => {
-      // Using onMouseDown instead of onClick — critical for blur timing
-      selectSuggestion(suggestion);
-    },
-    [selectSuggestion]
-  );
+  const handleClear = () => {
+    setInputValue("");
+    onChange("");
+  };
 
   return (
-    <CollapsibleSection label="Staðsetning" defaultOpen={defaultOpen}>
-      <div className={styles.locationWrapper}>
+    <CollapsibleSection
+      label="Staðsetning"
+      activeCount={value.length > 0 ? 1 : 0}
+      defaultOpen={defaultOpen}
+    >
+      <div className={styles.comboboxWrapper}>
         <input
-          ref={inputRef}
           type="text"
-          role="combobox"
-          className={styles.locationInput}
-          value={localValue}
-          onChange={handleInputChange}
+          list={listId}
+          className={`${styles.comboboxInput} ${styles.comboboxInputWithClear}`}
+          value={inputValue}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          placeholder="Sláðu inn staðsetningu..."
-          aria-expanded={showList && filtered.length > 0}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={activeId || undefined}
           aria-label="Staðsetning"
+          placeholder="Sláðu inn staðsetningu..."
           autoComplete="off"
-          spellCheck="false"
+          spellCheck={false}
         />
-
-        {showList && filtered.length > 0 && (
-          <ul
-            id={listId}
-            role="listbox"
-            aria-label="Staðsetningartillögur"
-            className={styles.suggestionList}
+        <datalist id={listId}>
+          {suggestions.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+        <button
+          type="button"
+          className={styles.comboboxClearButton}
+          onClick={handleClear}
+          aria-label="Hreinsa staðsetningu"
+          tabIndex={-1}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            {filtered.map((suggestion, index) => {
-              const isActive = index === activeIndex;
-              return (
-                <li
-                  key={suggestion}
-                  id={`${listId}-${index}`}
-                  role="option"
-                  aria-selected={isActive}
-                  className={`${styles.suggestionItem} ${isActive ? styles.suggestionItemActive : ""}`}
-                  onMouseDown={() => handleSuggestionMouseDown(suggestion)}
-                >
-                  {suggestion}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
     </CollapsibleSection>
   );
