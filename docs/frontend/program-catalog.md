@@ -150,8 +150,8 @@ All filters are multi-select checkboxes unless noted otherwise. Filters are addi
 | Merki | `tags` | Multi-select checkboxes | Dynamic list from API; URL param: `tags` (comma-separated IDs) |
 | Tímalengd | `duration` | Multi-select bucketed ranges | < 30 mín / 30–60 mín / 1–2 klst / > 2 klst; URL param: `duration` |
 | Undirbúningstími | `prep_time` | Multi-select bucketed ranges | < 15 mín / 15–30 mín / > 30 mín; URL param: `prep_time` |
-| Höfundur | `author_name` | Inline autocomplete text input | startsWith match against known author names; filter only applied on explicit accept (Tab/ArrowRight/Enter) or clear — never on partial input; URL param: `author` |
-| Búnaður | `equipment` | Multi-select inline autocomplete | startsWith match; Tab/ArrowRight/Enter toggles item and clears input; active count shown in section header; URL param: `equipment` (comma-separated) |
+| Höfundur | `author_name` | Text input with native datalist | Browser-native autocomplete from known author names; filter applied on selection or Enter; clear button resets; URL param: `author` |
+| Búnaður | `equipment` | Multi-select text input with native datalist | Browser-native autocomplete; selecting an item toggles it and clears the input; active count shown in section header; URL param: `equipment` (comma-separated) |
 | Staðsetning | `location` | Text input | Partial match; URL param: `location` |
 | Þátttakendur | `count` | Min/max number inputs | URL params: `count_min`, `count_max` |
 | Verð | `price` | Multi-select | Frítt (price = 0) / Með kostnað (price > 0); URL param: `price` |

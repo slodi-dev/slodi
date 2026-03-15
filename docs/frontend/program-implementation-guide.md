@@ -1288,7 +1288,7 @@ lib/
 **Tasks**:
 
 1. [ ] Add workspace filter dropdown
-2. [x] Add author filter (inline autocomplete — startsWith, debounced, clear button)
+2. [x] Add author filter (native datalist autocomplete, clear button)
 3. [ ] Add date range filter (date pickers)
 4. [ ] Add likes range filter (slider)
 5. [ ] Add visibility filter (public/private toggle)
