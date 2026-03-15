@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useId } from "react";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import styles from "./filters.module.css";
 
@@ -11,103 +11,43 @@ interface AuthorFilterProps {
   defaultOpen?: boolean;
 }
 
-/**
- * Inline-autocomplete filter for author (Höfundur).
- * Completes the best startsWith match in-place as the user types.
- * Tab / ArrowRight / Enter accepts; Backspace deletes the last typed char.
- * onChange only fires on explicit accept or clear — never on partial input.
- */
 export default function AuthorFilter({
   value,
   onChange,
   suggestions,
   defaultOpen = false,
 }: AuthorFilterProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const typedRef = useRef(value);
+  const [inputValue, setInputValue] = useState(value);
+  const listId = useId();
 
-  const findMatch = useCallback(
-    (typed: string) =>
-      suggestions.find((s) => s.toLowerCase().startsWith(typed.toLowerCase())) ?? null,
-    [suggestions]
-  );
-
-  // Sync when value changes externally (e.g. "clear all filters").
-  // Skip when it already matches what the user typed (avoids overwriting the input).
+  // Sync when parent clears the value (e.g. "clear all filters")
   useEffect(() => {
-    if (value !== typedRef.current && inputRef.current) {
-      typedRef.current = value;
-      inputRef.current.value = value;
-    }
+    setInputValue(value);
   }, [value]);
 
-  const accept = useCallback(() => {
-    const input = inputRef.current!;
-    const accepted = input.value;
-    typedRef.current = accepted;
-    input.setSelectionRange(accepted.length, accepted.length);
-    onChange(accepted);
-  }, [onChange]);
-
-  const clear = useCallback(() => {
-    const input = inputRef.current!;
-    input.value = "";
-    typedRef.current = "";
-    onChange("");
-    input.focus();
-  }, [onChange]);
-
-  const handleInputChange = () => {
-    const input = inputRef.current!;
-    const typed = input.value;
-    typedRef.current = typed;
-
-    const match = findMatch(typed);
-    if (match && typed.length > 0) {
-      input.value = match;
-      input.setSelectionRange(typed.length, match.length);
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputValue(val);
+    // Propagate immediately on exact match (user picked from datalist) or clear
+    const exact = suggestions.find((s) => s.toLowerCase() === val.toLowerCase());
+    if (exact) onChange(exact);
+    else if (val === "") onChange("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const input = inputRef.current!;
-    const hasCompletion = input.value.length > typedRef.current.length;
-
-    switch (e.key) {
-      case "Backspace":
-        if (hasCompletion) {
-          e.preventDefault();
-          const newTyped = typedRef.current.slice(0, -1);
-          typedRef.current = newTyped;
-          const match = newTyped.length > 0 ? findMatch(newTyped) : null;
-          if (match) {
-            input.value = match;
-            input.setSelectionRange(newTyped.length, match.length);
-          } else {
-            input.value = newTyped;
-          }
-        }
-        break;
-      case "Tab":
-      case "ArrowRight":
-        if (hasCompletion) {
-          e.preventDefault();
-          accept();
-        }
-        break;
-      case "Enter":
-        if (hasCompletion) {
-          e.preventDefault();
-          accept();
-        }
-        break;
-      case "Escape":
-        e.preventDefault();
-        input.value = "";
-        typedRef.current = "";
-        onChange("");
-        break;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onChange(inputValue);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setInputValue("");
+      onChange("");
     }
+  };
+
+  const handleClear = () => {
+    setInputValue("");
+    onChange("");
   };
 
   return (
@@ -118,22 +58,26 @@ export default function AuthorFilter({
     >
       <div className={styles.comboboxWrapper}>
         <input
-          ref={inputRef}
           type="text"
+          list={listId}
           className={`${styles.comboboxInput} ${styles.comboboxInputWithClear}`}
-          defaultValue={value}
-          onChange={handleInputChange}
+          value={inputValue}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           aria-label="Höfundur"
-          aria-autocomplete="inline"
           placeholder="Leita eftir höfundi..."
           autoComplete="off"
           spellCheck={false}
         />
+        <datalist id={listId}>
+          {suggestions.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
         <button
           type="button"
           className={styles.comboboxClearButton}
-          onClick={clear}
+          onClick={handleClear}
           aria-label="Hreinsa höfund"
           tabIndex={-1}
         >
