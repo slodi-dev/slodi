@@ -1,0 +1,219 @@
+/* ═══════════════════════════════════════════════════════════
+   CONTENT PICKER — searchable list + drag-and-drop staging
+   ═══════════════════════════════════════════════════════════ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Search ──────────────────────────────────────────────── */
+
+.searchRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  color: hsl(var(--color-text-secondary));
+  pointer-events: none;
+}
+
+.search {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input, 6px);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--color-text-primary));
+  font-size: var(--sl-font-size-sm, 13px);
+  outline: none;
+}
+
+.search:focus {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: 0 0 0 2px hsl(var(--sl-color-primary) / 0.2);
+}
+
+/* ── Available list ──────────────────────────────────────── */
+
+.availableList {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input, 6px);
+  background: hsl(var(--sl-color-surface));
+}
+
+.empty {
+  padding: 12px;
+  text-align: center;
+  color: hsl(var(--color-text-secondary));
+  font-size: var(--sl-font-size-sm, 13px);
+  margin: 0;
+}
+
+.availableItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid hsl(var(--sl-color-border) / 0.5);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--sl-transition-base);
+}
+
+.availableItem:last-child {
+  border-bottom: none;
+}
+
+.availableItem:hover {
+  background: hsl(var(--sl-color-primary) / 0.06);
+}
+
+.availableItemMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.availableName {
+  font-size: var(--sl-font-size-sm, 13px);
+  color: hsl(var(--color-text-primary));
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Type badges ──────────────────────────────────────────── */
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.typeBadgeEvent {
+  background: hsl(142 71% 45% / 0.15);
+  color: hsl(142 60% 30%);
+}
+
+.typeBadgeTask {
+  background: hsl(217 91% 60% / 0.15);
+  color: hsl(217 80% 35%);
+}
+
+.availableDesc {
+  font-size: 11px;
+  color: hsl(var(--color-text-secondary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.addChip {
+  font-size: 16px;
+  color: hsl(var(--sl-color-primary));
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Staged items ─────────────────────────────────────────── */
+
+.stagedSection {
+  margin-top: 4px;
+}
+
+.stagedLabel {
+  font-size: var(--sl-font-size-xs, 11px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--color-text-secondary));
+  margin: 0 0 6px;
+}
+
+.stagedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stagedItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: 6px;
+  cursor: default;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: hsl(var(--color-text-secondary));
+  flex-shrink: 0;
+  touch-action: none;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.stagedIndex {
+  font-size: var(--sl-font-size-xs, 11px);
+  color: hsl(var(--color-text-secondary));
+  font-weight: 600;
+  min-width: 16px;
+}
+
+.stagedName {
+  flex: 1;
+  font-size: var(--sl-font-size-sm, 13px);
+  color: hsl(var(--color-text-primary));
+  font-weight: 500;
+}
+
+.removeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: hsl(var(--sl-color-border));
+  color: hsl(var(--color-text-secondary));
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--sl-transition-base),
+    color var(--sl-transition-base);
+}
+
+.removeBtn:hover {
+  background: hsl(var(--sl-color-error, 0 70% 50%) / 0.15);
+  color: hsl(var(--sl-color-error, 0 70% 50%));
+}

@@ -84,7 +84,7 @@ export default function FavoriteProgramsPage() {
       <header className={styles.header}>
         <div className={styles.headerTop}>
           <h1 className={styles.title}>Mín úrval</h1>
-          <Link href="/programs" className={styles.backLink}>
+          <Link href="/content" className={styles.backLink}>
             ← Til baka í dagskrárbanka
           </Link>
         </div>
@@ -111,7 +111,7 @@ export default function FavoriteProgramsPage() {
             <p className={styles.emptyDescription}>
               Skoðaðu dagskrárbankann og bættu dagskrám í uppáhald með því að smella á stjörnuna.
             </p>
-            <Link href="/programs" className={styles.emptyAction}>
+            <Link href="/content" className={styles.emptyAction}>
               Skoða dagskrábanka
             </Link>
           </div>

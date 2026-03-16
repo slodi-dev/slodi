@@ -9,6 +9,7 @@ from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
 
 from .content import ContentCreate, ContentListOut, ContentOut, ContentUpdate
 from .event import EventListOut
+from .task import TaskListOut
 
 
 class ProgramFilters(BaseModel):
@@ -37,9 +38,9 @@ class ProgramUpdate(ContentUpdate):
 
 class ProgramListOut(ContentListOut):
     model_config = ConfigDict(from_attributes=True)
-    pass
 
 
 class ProgramOut(ContentOut):
     model_config = ConfigDict(from_attributes=True)
     events: list[EventListOut] = []
+    tasks: list[TaskListOut] = []

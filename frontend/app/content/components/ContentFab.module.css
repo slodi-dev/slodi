@@ -1,0 +1,186 @@
+/* ═══════════════════════════════════════════════════════════
+   CONTENT FAB — Radial speed-dial
+   ═══════════════════════════════════════════════════════════ */
+
+.container {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* ── Main FAB button ──────────────────────────────────────── */
+
+.fab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  background: hsl(var(--sl-color-primary));
+  color: #fff;
+  border: none;
+  border-radius: 32px;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition:
+    transform var(--sl-transition-base),
+    box-shadow var(--sl-transition-base),
+    padding var(--sl-transition-base),
+    border-radius var(--sl-transition-base),
+    background var(--sl-transition-base);
+  overflow: hidden;
+  font-size: var(--sl-font-size-base);
+}
+
+.fabIcon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  transition: transform var(--sl-transition-base);
+}
+
+.fabLabel {
+  font-size: var(--sl-font-size-lg);
+  font-weight: var(--sl-font-weight-bold);
+  white-space: nowrap;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width var(--sl-transition-base),
+    opacity var(--sl-transition-base),
+    margin-left var(--sl-transition-base);
+}
+
+.fab:hover,
+.fabOpen {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.2),
+    0 6px 12px rgba(0, 0, 0, 0.15);
+  padding: 18px 28px;
+  border-radius: 36px;
+}
+
+.fab:hover .fabLabel,
+.fabOpen .fabLabel {
+  max-width: 200px;
+  opacity: 1;
+  margin-left: 8px;
+}
+
+.fabOpen {
+  background: hsl(var(--sl-color-primary) / 0.9);
+}
+
+.fab:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fab:focus-visible {
+  outline: 3px solid hsl(var(--sl-color-primary));
+  outline-offset: 4px;
+}
+
+/* ── Speed-dial action buttons ────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.actionsOpen {
+  pointer-events: auto;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--color-text-primary));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  font-size: var(--sl-font-size-base);
+  font-weight: 500;
+  white-space: nowrap;
+
+  /* Staggered entrance animation */
+  opacity: 0;
+  transform: translateY(12px) scale(0.92);
+  transition:
+    opacity 0.18s ease calc(var(--delay, 0ms)),
+    transform 0.18s ease calc(var(--delay, 0ms)),
+    background var(--sl-transition-base),
+    border-color var(--sl-transition-base);
+}
+
+.actionsOpen .action {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.action:hover {
+  background: hsl(var(--sl-color-primary) / 0.08);
+  border-color: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-primary));
+}
+
+.action:focus-visible {
+  outline: 3px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.actionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: hsl(var(--sl-color-primary) / 0.1);
+  color: hsl(var(--sl-color-primary));
+  flex-shrink: 0;
+}
+
+.actionLabel {
+  font-size: var(--sl-font-size-sm, 14px);
+}
+
+/* ── Mobile adjustments ────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .container {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .fab {
+    padding: 16px;
+  }
+
+  .fab:hover,
+  .fabOpen {
+    padding: 16px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .action {
+    transition: none;
+  }
+}

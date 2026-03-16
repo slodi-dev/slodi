@@ -11,6 +11,7 @@ from .content import Content, ContentType
 
 if TYPE_CHECKING:
     from .event import Event
+    from .task import Task
 
 
 class Program(Content):
@@ -31,5 +32,13 @@ class Program(Content):
         back_populates="program",
         foreign_keys="Event.program_id",
         primaryjoin="Event.program_id == Program.id",
+        cascade="save-update, merge",
+    )
+
+    tasks: Mapped[list[Task]] = relationship(
+        "Task",
+        back_populates="program",
+        foreign_keys="Task.program_id",
+        primaryjoin="Task.program_id == Program.id",
         cascade="save-update, merge",
     )

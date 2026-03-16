@@ -1,6 +1,6 @@
 // constants/routes.ts
 export const ROUTES = {
   HOME: "/",
-  PROGRAMS: "/programs",
-  PROGRAM_DETAIL: (id: string) => `/programs/${id}`,
+  PROGRAMS: "/content",
+  PROGRAM_DETAIL: (id: string) => `/content/${id}`,
 } as const;

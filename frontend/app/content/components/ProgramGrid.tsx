@@ -3,22 +3,22 @@
 import React from "react";
 import SkeletonCard from "@/components/ui/SkeletonCard";
 import ProgramCard from "./ProgramCard";
-import type { Program } from "@/services/programs.service";
+import type { ContentItem } from "@/services/content.service";
 import styles from "./ProgramGrid.module.css";
 
 interface ProgramGridProps {
-  programs: Program[];
+  programs: ContentItem[];
   isLoading: boolean;
   error?: string | null;
   onRetry?: () => void;
   /** Called when the user selects "Edit" on a card. */
-  onEdit?: (program: Program) => void;
+  onEdit?: (program: ContentItem) => void;
   /** Called when the user selects "Delete" on a card. */
-  onDelete?: (program: Program) => void;
-  /** Returns true if the user can edit the given program. */
-  canEdit?: (program: Program) => boolean;
-  /** Returns true if the user can delete the given program. */
-  canDelete?: (program: Program) => boolean;
+  onDelete?: (program: ContentItem) => void;
+  /** Returns true if the user can edit the given item. */
+  canEdit?: (program: ContentItem) => boolean;
+  /** Returns true if the user can delete the given item. */
+  canDelete?: (program: ContentItem) => boolean;
 }
 
 /**
@@ -129,29 +129,30 @@ export default function ProgramGrid({
         {programs.length} atriði fundust
       </div>
       <ul className={styles.grid} aria-label="Dagskrá">
-        {programs.map((program) => (
-          <li key={program.id} className={styles.gridItem}>
+        {programs.map((item) => (
+          <li key={item.id} className={styles.gridItem}>
             <ProgramCard
-              id={program.id}
-              name={program.name}
-              image={program.image}
-              description={program.description}
-              tags={program.tags}
-              author={program.author}
-              like_count={program.like_count}
-              liked_by_me={program.liked_by_me}
-              created_at={program.created_at}
-              duration_min={program.duration_min}
-              duration_max={program.duration_max}
-              count_min={program.count_min}
-              count_max={program.count_max}
-              price={program.price}
-              location={program.location}
-              age={program.age}
-              canEdit={canEdit ? canEdit(program) : false}
-              canDelete={canDelete ? canDelete(program) : false}
-              onEdit={onEdit ? () => onEdit(program) : undefined}
-              onDelete={onDelete ? () => onDelete(program) : undefined}
+              id={item.id}
+              content_type={item.content_type}
+              name={item.name}
+              image={item.image}
+              description={item.description}
+              tags={item.tags}
+              author={item.author}
+              like_count={item.like_count}
+              liked_by_me={item.liked_by_me}
+              created_at={item.created_at}
+              duration_min={item.duration_min}
+              duration_max={item.duration_max}
+              count_min={item.count_min}
+              count_max={item.count_max}
+              price={item.price}
+              location={item.location}
+              age={item.age}
+              canEdit={canEdit ? canEdit(item) : false}
+              canDelete={canDelete ? canDelete(item) : false}
+              onEdit={onEdit ? () => onEdit(item) : undefined}
+              onDelete={onDelete ? () => onDelete(item) : undefined}
             />
           </li>
         ))}

@@ -22,7 +22,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.domain.enums import AgeGroup
+from app.domain.enums import AgeGroup, ContentType
 from app.repositories.content import ContentStats
 from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut
@@ -105,6 +105,7 @@ class ContentListOut(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: UUID
+    content_type: ContentType
     name: NameStr
     author_id: UUID
     author_name: str

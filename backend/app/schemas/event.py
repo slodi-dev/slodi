@@ -24,6 +24,7 @@ class EventCreate(ContentCreate):
 
     start_dt: dt.datetime = Field(default_factory=get_current_datetime)
     end_dt: dt.datetime | None = None
+    position: int = 0
 
     @field_validator("start_dt")
     @classmethod
@@ -42,6 +43,7 @@ class EventUpdate(ContentUpdate):
     start_dt: dt.datetime | None = None
     end_dt: dt.datetime | None = None
     program_id: UUID | None = None
+    position: int | None = None
 
     @field_validator("start_dt")
     @classmethod
@@ -64,6 +66,7 @@ class EventListOut(ContentListOut):
     start_dt: dt.datetime
     end_dt: dt.datetime | None = None
     program_id: UUID | None
+    position: int = 0
 
 
 class EventOut(ContentOut):
@@ -72,4 +75,5 @@ class EventOut(ContentOut):
     start_dt: dt.datetime
     end_dt: dt.datetime | None = None
     program_id: UUID | None
+    position: int = 0
     tasks: list[TaskListOut] = []

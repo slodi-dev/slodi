@@ -4,7 +4,7 @@
  */
 
 import type { User } from "@/services/users.service";
-import type { Program } from "@/services/programs.service";
+import type { ContentItem as Program } from "@/services/content.service";
 import { type WorkspaceRole, hasWorkspaceRole } from "@/services/workspaces.service";
 
 /**
@@ -76,7 +76,7 @@ export function canViewProgram(
   program: Program,
   workspaceRole: WorkspaceRole | null | undefined = null
 ): boolean {
-  if (program.public) return true;
+  if ((program as { public?: boolean }).public) return true;
   if (!user) return false;
   return hasWorkspaceRole(workspaceRole, "viewer");
 }

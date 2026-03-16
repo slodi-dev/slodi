@@ -47,7 +47,7 @@ const PUBLIC_ROUTES = [
 // Dashboard/app routes that should use sidebar-only layout
 const DASHBOARD_ROUTES = [
   "/dashboard",
-  "/programs",
+  "/content",
   "/builder",
   "/social",
   "/analytics",

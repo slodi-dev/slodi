@@ -5,6 +5,9 @@ import { ChevronDown } from "lucide-react";
 import styles from "./NewProgramForm.module.css";
 import type { Program } from "@/services/programs.service";
 import { createProgram } from "@/services/programs.service";
+import { updateEvent, fetchEvents } from "@/services/events.service";
+import { updateTask, fetchTasks } from "@/services/tasks.service";
+import { ContentPicker, type PickerItem } from "./ContentPicker";
 import { useTags } from "@/hooks/useTags";
 import { useDraft } from "@/hooks/useDraft";
 import { handleApiErrorIs } from "@/lib/api-utils";
@@ -30,7 +33,7 @@ type ProgramDraft = {
   selectedTags: string[];
 };
 
-type SectionId = "basic" | "info" | "equipment" | "instructions" | "extras";
+type SectionId = "basic" | "info" | "equipment" | "instructions" | "extras" | "children";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -58,6 +61,7 @@ const SECTIONS: Array<{ id: SectionId; title: string; required?: boolean }> = [
   { id: "equipment", title: "Gögn og búnaður" },
   { id: "instructions", title: "Leiðbeiningar" },
   { id: "extras", title: "Merkimiðar og mynd" },
+  { id: "children", title: "Dagskrárliðir" },
 ];
 
 const AGE_GROUPS = [
@@ -95,6 +99,33 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
   const [equipmentInput, setEquipmentInput] = useState("");
   const [openSections, setOpenSections] = useState<SectionId[]>(["basic"]);
   const [showDraftBanner, setShowDraftBanner] = useState(false);
+
+  // Combined event+task picker state
+  const [availableChildren, setAvailableChildren] = useState<PickerItem[]>([]);
+  const [stagedChildren, setStagedChildren] = useState<PickerItem[]>([]);
+
+  // Load workspace events and tasks for the combined picker
+  useEffect(() => {
+    if (!workspaceId) return;
+    Promise.all([fetchEvents(workspaceId, getToken), fetchTasks(workspaceId, getToken)])
+      .then(([events, tasks]) => {
+        setAvailableChildren([
+          ...events.map((ev) => ({
+            id: ev.id,
+            name: ev.name,
+            description: ev.description,
+            type: "event" as const,
+          })),
+          ...tasks.map((t) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+            type: "task" as const,
+          })),
+        ]);
+      })
+      .catch(() => {});
+  }, [workspaceId, getToken]);
 
   // Show draft-restored banner if localStorage had meaningful content on mount
   useEffect(() => {
@@ -144,6 +175,8 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         return !!draft.instructions;
       case "extras":
         return draft.selectedTags.length > 0 || !!draft.image;
+      case "children":
+        return stagedChildren.length > 0;
     }
   };
 
@@ -169,6 +202,14 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           : null;
       case "extras":
         return draft.selectedTags.length > 0 ? `${draft.selectedTags.length} merkar` : null;
+      case "children": {
+        const evCount = stagedChildren.filter((c) => c.type === "event").length;
+        const taskCount = stagedChildren.filter((c) => c.type === "task").length;
+        const parts: string[] = [];
+        if (evCount > 0) parts.push(`${evCount} viðburðir`);
+        if (taskCount > 0) parts.push(`${taskCount} verkefni`);
+        return parts.length > 0 ? parts.join(", ") : null;
+      }
     }
   };
 
@@ -197,6 +238,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
   const handleDiscard = () => {
     clearDraft();
     setEquipmentInput("");
+    setStagedChildren([]);
     setShowDraftBanner(false);
     setError(null);
     setOpenSections(["basic"]);
@@ -239,8 +281,18 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         },
         getToken
       );
+      // Assign staged children (events and tasks) with their unified positions
+      await Promise.all(
+        stagedChildren.map((child, index) =>
+          child.type === "event"
+            ? updateEvent(child.id, { program_id: program.id, position: index }, getToken)
+            : updateTask(child.id, { program_id: program.id, position: index }, getToken)
+        )
+      );
+
       clearDraft();
       setEquipmentInput("");
+      setStagedChildren([]);
       setShowDraftBanner(false);
       setOpenSections(["basic"]);
       onCreated?.(program);
@@ -333,6 +385,21 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
                       updateDraft={updateDraft}
                       displayTags={displayTags}
                     />
+                  )}
+                  {id === "children" && (
+                    <div className={styles.field}>
+                      <p className={styles.hint} style={{ marginBottom: 8 }}>
+                        Veldu viðburði og verkefni úr bankanum. Dragðu til að raða í þeirri röð sem
+                        þau eiga að koma.
+                      </p>
+                      <ContentPicker
+                        available={availableChildren}
+                        staged={stagedChildren}
+                        onChange={setStagedChildren}
+                        placeholder="Leita að viðburði eða verkefni..."
+                        emptyText="Engar niðurstöður"
+                      />
+                    </div>
                   )}
                 </div>
               </div>

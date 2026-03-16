@@ -2,17 +2,20 @@
 
 import React, { useState, useRef, Suspense } from "react";
 import Modal from "@/components/Modal/Modal";
-import NewProgramForm from "@/app/programs/components/NewProgramForm";
+import NewProgramForm from "@/app/content/components/NewProgramForm";
+import NewEventForm from "@/app/content/components/NewEventForm";
+import NewTaskForm from "@/app/content/components/NewTaskForm";
 import ProgramGrid from "./components/ProgramGrid";
 import ProgramSort from "./components/ProgramSort";
 import type { SortOption } from "./components/ProgramSort";
 import Pagination from "./components/Pagination";
-import { ProgramsHeader } from "./components/ProgramsHeader";
+import { ContentFab } from "./components/ContentFab";
 import SearchInput from "@/components/filters/SearchInput";
 import FilterSidebar, { FilterDrawer } from "@/components/filters/FilterSidebar";
 import ActiveFilterBar from "@/components/filters/ActiveFilterBar";
 import styles from "./programs.module.css";
-import usePrograms from "@/hooks/usePrograms";
+import fabStyles from "./content.module.css";
+import useContentItems from "@/hooks/useContentItems";
 import { useUserWorkspace } from "@/hooks/useUserWorkspace";
 import { useProgramFilters } from "@/hooks/useProgramFilters";
 import type { FilterState } from "@/hooks/useProgramFilters";
@@ -22,19 +25,17 @@ import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import {
-  updateProgram,
-  deleteProgram,
-  type Program,
-  type ProgramUpdateInput,
-} from "@/services/programs.service";
-import ProgramDetailEdit from "@/app/programs/[id]/components/ProgramDetailEdit";
+import type { ContentItem, ContentType } from "@/services/content.service";
+import { CONTENT_TYPE_LABELS } from "@/services/content.service";
+import { updateProgram, type ProgramUpdateInput } from "@/services/programs.service";
+import { updateEvent } from "@/services/events.service";
+import { updateTask } from "@/services/tasks.service";
+import { deleteProgram } from "@/services/programs.service";
+import { deleteEvent } from "@/services/events.service";
+import { deleteTask } from "@/services/tasks.service";
+import ProgramDetailEdit from "@/app/content/[id]/components/ProgramDetailEdit";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
-/**
- * Map between the new FilterState sortBy values ("liked", "alpha")
- * and the legacy ProgramSort component values ("most-liked", "alphabetical").
- */
 const SORT_TO_LEGACY: Record<FilterState["sortBy"], SortOption> = {
   newest: "newest",
   oldest: "oldest",
@@ -49,64 +50,75 @@ const LEGACY_TO_SORT: Record<SortOption, FilterState["sortBy"]> = {
   alphabetical: "alpha",
 };
 
-/**
- * Inner page component wrapped in Suspense for useSearchParams support.
- */
-function ProgramsPageInner() {
+const CONTENT_TYPE_FILTERS: Array<{ value: ContentType | "all"; label: string }> = [
+  { value: "all", label: "Allt" },
+  { value: "task", label: CONTENT_TYPE_LABELS.task },
+  { value: "event", label: CONTENT_TYPE_LABELS.event },
+  { value: "program", label: CONTENT_TYPE_LABELS.program },
+];
+
+function ContentPageInner() {
+  const [showNewTask, setShowNewTask] = useState(false);
+  const [showNewEvent, setShowNewEvent] = useState(false);
   const [showNewProgram, setShowNewProgram] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [contentTypeFilter, setContentTypeFilter] = useState<ContentType | "all">("all");
   const filterToggleRef = useRef<HTMLButtonElement>(null);
 
-  // Resolve the shared workspace ID
   const defaultWorkspaceId = useDefaultWorkspaceId();
-
-  // Fetch data
-  const {
-    programs,
-    loading: programsLoading,
-    error: programsError,
-    refetch,
-  } = usePrograms(defaultWorkspaceId);
-
-  // User's private workspace (retained for future toggle)
   const { workspaceId: userWorkspaceId } = useUserWorkspace();
+  void userWorkspaceId;
 
-  // ── Auth & workspace role ──────────────────────────────────────────────
+  const { items, loading, error, refetch } = useContentItems(defaultWorkspaceId);
   const { user, getToken } = useAuth();
   const { role } = useWorkspaceRole(defaultWorkspaceId);
 
-  // ── Edit / delete modal state ──────────────────────────────────────────
-  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
-  const [pendingDeleteProgram, setPendingDeleteProgram] = useState<Program | null>(null);
+  const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
+  const [pendingDeleteItem, setPendingDeleteItem] = useState<ContentItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // ── WHERE TO POST new programs ──────────────────────────────────────────
   const postWorkspaceId = defaultWorkspaceId ?? "";
-  void userWorkspaceId; // retained for future toggle
+
+  // ── Filter by content type ──────────────────────────────────────────────
+  const typeFilteredItems = (items ?? []).filter(
+    (item) => contentTypeFilter === "all" || item.content_type === contentTypeFilter
+  );
 
   // ── Edit / delete handlers ─────────────────────────────────────────────
   const handleEditSave = async (data: ProgramUpdateInput) => {
-    if (!editingProgram) return;
-    await updateProgram(editingProgram.id, data, getToken);
-    setEditingProgram(null);
+    if (!editingItem) return;
+    if (editingItem.content_type === "program") {
+      await updateProgram(editingItem.id, data, getToken);
+    } else if (editingItem.content_type === "event") {
+      await updateEvent(editingItem.id, data, getToken);
+    } else {
+      await updateTask(editingItem.id, data, getToken);
+    }
+    setEditingItem(null);
     await refetch();
   };
 
   const handleDeleteConfirm = async () => {
-    if (!pendingDeleteProgram) return;
+    if (!pendingDeleteItem) return;
     try {
       setIsDeleting(true);
-      await deleteProgram(pendingDeleteProgram.id, getToken);
-      setPendingDeleteProgram(null);
+      if (pendingDeleteItem.content_type === "program") {
+        await deleteProgram(pendingDeleteItem.id, getToken);
+      } else if (pendingDeleteItem.content_type === "event") {
+        await deleteEvent(pendingDeleteItem.id, getToken);
+      } else {
+        await deleteTask(pendingDeleteItem.id, getToken);
+      }
+      setPendingDeleteItem(null);
       await refetch();
     } catch (err) {
-      console.error("Failed to delete program:", err);
+      console.error("Failed to delete item:", err);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // ── Filters (new comprehensive hook from 4A) ──────────────────────────
+  // ── Filters ────────────────────────────────────────────────────────────
   const {
     filters,
     setFilters,
@@ -117,13 +129,15 @@ function ProgramsPageInner() {
     uniqueAuthors,
     uniqueTags,
     uniqueEquipment,
-  } = useProgramFilters(programs || []);
+  } = useProgramFilters(typeFilteredItems);
 
   // ── Pagination ─────────────────────────────────────────────────────────
   const { currentPage, totalPages, paginatedItems, setCurrentPage, totalItems, itemsPerPage } =
     usePagination(filtered, PROGRAMS_PER_PAGE);
 
-  const handleProgramCreated = async () => {
+  const handleCreated = async () => {
+    setShowNewTask(false);
+    setShowNewEvent(false);
     setShowNewProgram(false);
     await refetch();
   };
@@ -132,60 +146,92 @@ function ProgramsPageInner() {
   const filterSidebarProps = {
     selectedAges: filters.ages,
     onAgesChange: (ages: string[]) => setFilters({ ages }),
-
     availableTags: uniqueTags,
     selectedTags: filters.tags,
     onTagsChange: (tags: string[]) => setFilters({ tags }),
-
     uniqueEquipment,
     selectedEquipment: filters.equipment,
     onEquipmentChange: (equipment: string[]) => setFilters({ equipment }),
-
     authorValue: filters.author,
     onAuthorChange: (author: string) => setFilters({ author }),
     uniqueAuthors,
-
     durationMin: filters.durationMin,
     durationMax: filters.durationMax,
     onDurationChange: (min: number | undefined, max: number | undefined) =>
       setFilters({ durationMin: min, durationMax: max }),
-
     prepMin: filters.prepMin,
     prepMax: filters.prepMax,
     onPrepTimeChange: (min: number | undefined, max: number | undefined) =>
       setFilters({ prepMin: min, prepMax: max }),
-
     countMin: filters.countMin,
     countMax: filters.countMax,
     onParticipantChange: (min: number | undefined, max: number | undefined) =>
       setFilters({ countMin: min, countMax: max }),
-
     freeOnly: filters.freeOnly,
     priceMax: filters.priceMax,
     onPriceChange: (freeOnly: boolean, maxPrice: number | undefined) =>
       setFilters({ freeOnly, priceMax: maxPrice }),
-
     locationValue: filters.location,
     onLocationChange: (location: string) => setFilters({ location }),
     uniqueLocations,
   };
 
+  const editModalTitle =
+    editingItem?.content_type === "event"
+      ? "Breyta viðburði"
+      : editingItem?.content_type === "task"
+        ? "Breyta verkefni"
+        : "Breyta dagskrá";
+
   return (
     <div className={styles.page}>
-      {/* Header with FAB button */}
-      <ProgramsHeader onNewProgram={() => setShowNewProgram(true)} />
+      {/* Radial FAB */}
+      <ContentFab
+        onNewTask={() => setShowNewTask(true)}
+        onNewEvent={() => setShowNewEvent(true)}
+        onNewProgram={() => setShowNewProgram(true)}
+      />
 
-      {/* New Program Modal */}
+      {/* Create modals */}
+      <Modal
+        open={showNewTask}
+        onClose={() => setShowNewTask(false)}
+        title="Bæta verkefni í bankann"
+      >
+        <NewTaskForm workspaceId={postWorkspaceId} onCreated={handleCreated} />
+      </Modal>
+      <Modal
+        open={showNewEvent}
+        onClose={() => setShowNewEvent(false)}
+        title="Bæta viðburði í bankann"
+      >
+        <NewEventForm workspaceId={postWorkspaceId} onCreated={handleCreated} />
+      </Modal>
       <Modal
         open={showNewProgram}
         onClose={() => setShowNewProgram(false)}
-        title="Bæta hugmynd í bankann"
+        title="Bæta dagskrá í bankann"
       >
-        <NewProgramForm workspaceId={postWorkspaceId} onCreated={handleProgramCreated} />
+        <NewProgramForm workspaceId={postWorkspaceId} onCreated={handleCreated} />
       </Modal>
 
-      {/* Top bar: Search + mobile filter toggle + Sort */}
+      {/* Top bar: Content type filter + Search + Sort */}
       <div className={styles.topBar}>
+        {/* Content type toggle */}
+        <div className={fabStyles.typeFilter} role="group" aria-label="Sía eftir tegund">
+          {CONTENT_TYPE_FILTERS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              className={`${fabStyles.typeFilterBtn} ${contentTypeFilter === value ? fabStyles.typeFilterBtnActive : ""}`}
+              onClick={() => setContentTypeFilter(value)}
+              aria-pressed={contentTypeFilter === value}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className={styles.searchWrapper}>
           <SearchInput
             value={filters.search}
@@ -194,7 +240,6 @@ function ProgramsPageInner() {
           />
         </div>
 
-        {/* Mobile filter toggle — hidden on desktop via CSS */}
         <button
           ref={filterToggleRef}
           type="button"
@@ -230,33 +275,28 @@ function ProgramsPageInner() {
         />
       </div>
 
-      {/* Main content area: sidebar + programs */}
+      {/* Main content area: sidebar + grid */}
       <div className={styles.content}>
-        {/* Desktop sidebar — hidden on mobile via CSS */}
         <FilterSidebar {...filterSidebarProps} />
 
         <main className={styles.main}>
-          {/* Active filter chips */}
           <ActiveFilterBar chips={activeChips} onClearAll={clearAll} />
 
-          {/* Result count */}
           <p className={styles.resultCount} aria-live="polite">
-            {filtered.length === 1 ? "1 dagskrá" : `${filtered.length} dagskrár`}
+            {filtered.length} atriði
           </p>
 
-          {/* Program Grid */}
           <ProgramGrid
             programs={paginatedItems}
-            isLoading={programsLoading}
-            error={programsError ? "Villa kom upp við að sækja dagskrár" : undefined}
+            isLoading={loading}
+            error={error ? "Villa kom upp við að sækja efni" : undefined}
             onRetry={refetch}
-            onEdit={(p) => setEditingProgram(p)}
-            onDelete={(p) => setPendingDeleteProgram(p)}
-            canEdit={(p) => canEditProgram(user, p, role)}
-            canDelete={(p) => canDeleteProgram(user, p, role)}
+            onEdit={(item) => setEditingItem(item)}
+            onDelete={(item) => setPendingDeleteItem(item)}
+            canEdit={(item) => canEditProgram(user, item, role)}
+            canDelete={(item) => canDeleteProgram(user, item, role)}
           />
 
-          {/* Pagination */}
           {filtered.length > 0 && (
             <Pagination
               currentPage={currentPage}
@@ -279,15 +319,15 @@ function ProgramsPageInner() {
       />
 
       {/* Edit modal */}
-      <Modal open={!!editingProgram} onClose={() => setEditingProgram(null)} title="Breyta dagskrá">
-        {editingProgram && (
+      <Modal open={!!editingItem} onClose={() => setEditingItem(null)} title={editModalTitle}>
+        {editingItem && (
           <ProgramDetailEdit
-            program={editingProgram}
+            program={editingItem as Parameters<typeof ProgramDetailEdit>[0]["program"]}
             onSave={handleEditSave}
-            onCancel={() => setEditingProgram(null)}
+            onCancel={() => setEditingItem(null)}
             onDeleteRequest={() => {
-              setPendingDeleteProgram(editingProgram);
-              setEditingProgram(null);
+              setPendingDeleteItem(editingItem);
+              setEditingItem(null);
             }}
             isDeleting={false}
           />
@@ -296,26 +336,20 @@ function ProgramsPageInner() {
 
       {/* Delete confirmation modal */}
       <DeleteConfirmModal
-        open={!!pendingDeleteProgram}
-        programName={pendingDeleteProgram?.name}
+        open={!!pendingDeleteItem}
+        programName={pendingDeleteItem?.name}
         isDeleting={isDeleting}
-        onClose={() => setPendingDeleteProgram(null)}
+        onClose={() => setPendingDeleteItem(null)}
         onConfirm={handleDeleteConfirm}
       />
     </div>
   );
 }
 
-/**
- * Programs page — displays the program bank (dagskrárbankinn) with search,
- * filtering, sorting, and pagination capabilities.
- *
- * Wrapped in Suspense because useProgramFilters uses useSearchParams().
- */
-export default function ProgramsPage() {
+export default function ContentPage() {
   return (
     <Suspense>
-      <ProgramsPageInner />
+      <ContentPageInner />
     </Suspense>
   );
 }

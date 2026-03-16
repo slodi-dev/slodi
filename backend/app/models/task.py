@@ -11,6 +11,7 @@ from .content import Content, ContentType
 
 if TYPE_CHECKING:
     from .event import Event
+    from .program import Program
 
 
 class Task(Content):
@@ -25,9 +26,17 @@ class Task(Content):
         nullable=False,
     )
 
+    position: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+
     event_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("events.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    program_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("programs.id", ondelete="SET NULL"),
         nullable=True,
     )
 
@@ -37,4 +46,11 @@ class Task(Content):
         back_populates="tasks",
         foreign_keys=[event_id],
         primaryjoin="Task.event_id == Event.id",
+    )
+
+    program: Mapped[Program | None] = relationship(
+        "Program",
+        back_populates="tasks",
+        foreign_keys=[program_id],
+        primaryjoin="Task.program_id == Program.id",
     )

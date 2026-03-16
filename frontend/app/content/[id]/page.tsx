@@ -6,33 +6,29 @@ import ProgramDetailHero from "../components/ProgramDetailHero";
 import ProgramDetailTabs from "../components/ProgramDetailTabs";
 import ProgramQuickInfo from "../components/ProgramQuickInfo";
 import styles from "./program-detail.module.css";
-import { useProgram } from "@/hooks/useProgram";
+import { useContentItem } from "@/hooks/useContentItem";
 import { useLikes } from "@/contexts/LikesContext";
-import { Breadcrumb } from "@/app/programs/components/Breadcrumb";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { ROUTES } from "@/constants/routes";
 import { useProgramActions } from "@/hooks/useProgramActions";
-import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
-import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
+import { ProgramDetailError } from "../components/ProgramDetailError";
+import { ProgramDetailSkeleton } from "../components/ProgramDetailSkeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
 import { updateProgram, deleteProgram, type ProgramUpdateInput } from "@/services/programs.service";
+import { updateEvent, deleteEvent } from "@/services/events.service";
+import { updateTask, deleteTask } from "@/services/tasks.service";
+import type { ContentItem } from "@/services/content.service";
+import { CONTENT_TYPE_LABELS } from "@/services/content.service";
 import ProgramDetailEdit from "./components/ProgramDetailEdit";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
-interface ProgramDetailPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+interface ContentDetailPageProps {
+  params: Promise<{ id: string }>;
 }
 
-/**
- * Program detail page component that displays comprehensive information about a single program.
- *
- * @param params - URL parameters containing the program ID
- * @returns Program detail view with hero section, tabs, and sidebar information
- */
-export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
+export default function ContentDetailPage({ params }: ContentDetailPageProps) {
   const router = useRouter();
   const { id } = React.use(params);
   const { user, isAuthenticated, getToken } = useAuth();
@@ -40,58 +36,59 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { program, isLoading, error, setProgram } = useProgram(id);
+  const { item, isLoading, error, setItem } = useContentItem(id);
   const { likeCount, isLiked, toggleLike } = useLikes(
     id,
-    program?.like_count || 0,
-    program?.liked_by_me ?? false
+    item?.like_count || 0,
+    item?.liked_by_me ?? false
   );
-  const { handleShare, handleAddToWorkspace, handleBack } = useProgramActions(program);
-  const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
+  const { handleShare, handleAddToWorkspace, handleBack } = useProgramActions(
+    item as Parameters<typeof useProgramActions>[0]
+  );
+  const { role: workspaceRole } = useWorkspaceRole(item?.workspace_id ?? null);
 
-  // All hooks are called first, then we do conditional rendering
   if (error) return <ProgramDetailError error={error} />;
   if (isLoading) return <ProgramDetailSkeleton />;
-  if (!program) notFound();
+  if (!item) notFound();
 
-  // Role-aware permission checks — uses workspace membership fetched above
-  const canEdit = canEditProgram(user, program, workspaceRole);
-  const canDelete = canDeleteProgram(user, program, workspaceRole);
+  const canEdit = canEditProgram(user, item, workspaceRole);
+  const canDelete = canDeleteProgram(user, item, workspaceRole);
+
+  const typeLabel = CONTENT_TYPE_LABELS[item.content_type];
 
   const breadcrumbItems = [
     { label: "Heim", href: ROUTES.HOME },
     { label: "Dagskrárbanki", href: ROUTES.PROGRAMS },
-    { label: program.name },
+    { label: item.name },
   ];
 
-  const handleEdit = () => {
-    setIsEditMode(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-  };
-
   const handleSaveEdit = async (data: ProgramUpdateInput) => {
-    if (!program) return;
-    const updatedProgram = await updateProgram(program.id, data, getToken);
-    setProgram(updatedProgram);
+    let updated: ContentItem;
+    if (item.content_type === "program") {
+      updated = await updateProgram(item.id, data, getToken);
+    } else if (item.content_type === "event") {
+      updated = await updateEvent(item.id, data, getToken);
+    } else {
+      updated = await updateTask(item.id, data, getToken);
+    }
+    setItem(updated);
     setIsEditMode(false);
-  };
-
-  const handleDeleteRequest = () => {
-    if (!canDelete) return;
-    setShowDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!program || !canDelete) return;
+    if (!canDelete) return;
     try {
       setIsDeleting(true);
-      await deleteProgram(program.id, getToken);
+      if (item.content_type === "program") {
+        await deleteProgram(item.id, getToken);
+      } else if (item.content_type === "event") {
+        await deleteEvent(item.id, getToken);
+      } else {
+        await deleteTask(item.id, getToken);
+      }
       router.push(ROUTES.PROGRAMS);
     } catch (error) {
-      console.error("Failed to delete program:", error);
+      console.error("Failed to delete item:", error);
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
@@ -102,7 +99,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
       <Breadcrumb items={breadcrumbItems} />
 
       <ProgramDetailHero
-        program={program}
+        program={item as Parameters<typeof ProgramDetailHero>[0]["program"]}
         likeCount={likeCount}
         isLiked={isLiked}
         onLike={toggleLike}
@@ -111,38 +108,37 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         isAuthenticated={isAuthenticated}
         canEdit={canEdit}
         isEditMode={isEditMode}
-        onEdit={handleEdit}
+        onEdit={() => setIsEditMode(true)}
       />
 
       <div className={styles.contentGrid}>
         <div className={styles.mainContent}>
           {isEditMode ? (
             <ProgramDetailEdit
-              program={program}
+              program={item}
               onSave={handleSaveEdit}
-              onCancel={handleCancelEdit}
-              onDeleteRequest={handleDeleteRequest}
+              onCancel={() => setIsEditMode(false)}
+              onDeleteRequest={() => setShowDeleteConfirm(true)}
               isDeleting={isDeleting}
             />
           ) : (
-            <ProgramDetailTabs program={program} />
+            <ProgramDetailTabs program={item} />
           )}
         </div>
         <aside className={styles.sidebar}>
-          <ProgramQuickInfo program={program} />
+          <ProgramQuickInfo program={item as Parameters<typeof ProgramQuickInfo>[0]["program"]} />
         </aside>
       </div>
 
       <div className={styles.backButton}>
         <button onClick={handleBack} className={styles.backBtn}>
-          ← Til baka í dagskrárlista
+          ← Til baka í {typeLabel.toLowerCase()}lista
         </button>
       </div>
 
-      {/* Delete confirmation modal */}
       <DeleteConfirmModal
         open={showDeleteConfirm}
-        programName={program.name}
+        programName={item.name}
         isDeleting={isDeleting}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteConfirm}

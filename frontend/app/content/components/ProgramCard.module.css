@@ -3,6 +3,34 @@
    Uses Slóði Design Tokens. Stretched-link pattern.
    ═══════════════════════════════════════════════════════════ */
 
+/* ── Content type badge ──────────────────────────────────── */
+
+.typeBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: var(--sl-font-size-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.typeBadge_task {
+  background: hsl(210 70% 92%);
+  color: hsl(210 60% 35%);
+}
+
+.typeBadge_event {
+  background: hsl(150 50% 90%);
+  color: hsl(150 50% 28%);
+}
+
+.typeBadge_program {
+  background: hsl(280 40% 92%);
+  color: hsl(280 40% 38%);
+}
+
 .card {
   /* Layout */
   display: flex;

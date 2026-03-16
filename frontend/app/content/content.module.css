@@ -1,0 +1,45 @@
+/* ── Content type filter toggle ──────────────────────────── */
+
+.typeFilter {
+  display: flex;
+  gap: 4px;
+  padding: 0 var(--space-6, 24px);
+  flex-wrap: wrap;
+}
+
+.typeFilterBtn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--color-text-secondary));
+  font-size: var(--sl-font-size-sm, 13px);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--sl-transition-base),
+    border-color var(--sl-transition-base),
+    color var(--sl-transition-base);
+  white-space: nowrap;
+}
+
+.typeFilterBtn:hover {
+  border-color: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-primary));
+}
+
+.typeFilterBtnActive {
+  background: hsl(var(--sl-color-primary));
+  border-color: hsl(var(--sl-color-primary));
+  color: #fff;
+}
+
+.typeFilterBtnActive:hover {
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .typeFilter {
+    padding: 0 var(--space-3, 12px);
+  }
+}

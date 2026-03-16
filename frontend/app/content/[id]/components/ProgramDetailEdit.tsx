@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import type { Program, ProgramUpdateInput } from "@/services/programs.service";
+import type { ProgramUpdateInput } from "@/services/programs.service";
+import type { ContentItem } from "@/services/content.service";
+import { fetchEvents, updateEvent } from "@/services/events.service";
+import { fetchTasks, updateTask } from "@/services/tasks.service";
+import { ContentPicker, type PickerItem } from "@/app/content/components/ContentPicker";
 import { useTags } from "@/hooks/useTags";
+import { useAuth } from "@/hooks/useAuth";
 import styles from "./ProgramDetailEdit.module.css";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -40,11 +45,11 @@ interface FormState {
 }
 
 export interface ProgramDetailEditProps {
-  program: Program;
+  program: ContentItem;
   /** Called with the full update payload when the user saves. */
   onSave: (data: ProgramUpdateInput) => Promise<void>;
   onCancel: () => void;
-  /** Called when the user presses "Eyða dagskrá" — parent handles confirmation. */
+  /** Called when the user presses "Eyða" — parent handles confirmation. */
   onDeleteRequest: () => void;
   /** When true, disable all controls (deletion in progress). */
   isDeleting?: boolean;
@@ -59,13 +64,17 @@ export default function ProgramDetailEdit({
   onDeleteRequest,
   isDeleting = false,
 }: ProgramDetailEditProps) {
+  const { getToken } = useAuth();
   const { tagNames: fetchedTags } = useTags();
   const displayTags = fetchedTags ?? [];
+
+  const isProgram = program.content_type === "program";
+  const isEvent = program.content_type === "event";
 
   const [form, setForm] = useState<FormState>({
     name: program.name ?? "",
     description: program.description ?? "",
-    public: program.public ?? false,
+    public: (program as { public?: boolean }).public ?? false,
     image: program.image ?? "",
     instructions: program.instructions ?? "",
     equipment: program.equipment ?? [],
@@ -73,7 +82,7 @@ export default function ProgramDetailEdit({
     durationMax: program.duration_max != null ? String(program.duration_max) : "",
     prepTimeMin: program.prep_time_min != null ? String(program.prep_time_min) : "",
     prepTimeMax: program.prep_time_max != null ? String(program.prep_time_max) : "",
-    selectedAgeGroups: (program.age ?? []).filter((g) => AGE_GROUPS.includes(g)),
+    selectedAgeGroups: ((program.age ?? []) as string[]).filter((g) => AGE_GROUPS.includes(g)),
     location: program.location ?? "",
     countMin: program.count_min != null ? String(program.count_min) : "",
     countMax: program.count_max != null ? String(program.count_max) : "",
@@ -85,6 +94,85 @@ export default function ProgramDetailEdit({
   const [isSaving, setIsSaving] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Children pickers ──────────────────────────────────────────────────────
+
+  const programItem = program as ContentItem & {
+    events?: import("@/services/events.service").Event[];
+    tasks?: import("@/services/tasks.service").Task[];
+  };
+  const eventItem = program as ContentItem & { tasks?: import("@/services/tasks.service").Task[] };
+
+  // For programs: merge events and tasks into a single ordered list
+  const initialProgramChildren: PickerItem[] = isProgram
+    ? [
+        ...(programItem.events ?? []).map((ev) => ({
+          id: ev.id,
+          name: ev.name,
+          description: ev.description,
+          type: "event" as const,
+          _sort: ev.position,
+        })),
+        ...(programItem.tasks ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+          description: t.description,
+          type: "task" as const,
+          _sort: t.position,
+        })),
+      ]
+        .sort((a, b) => a._sort - b._sort)
+        .map(({ _sort: _, ...item }) => item)
+    : [];
+
+  const initialEventTasks: PickerItem[] = isEvent
+    ? (eventItem.tasks ?? [])
+        .slice()
+        .sort((a, b) => a.position - b.position)
+        .map((t) => ({ id: t.id, name: t.name, description: t.description }))
+    : [];
+
+  const [availableProgramChildren, setAvailableProgramChildren] = useState<PickerItem[]>([]);
+  const [stagedProgramChildren, setStagedProgramChildren] =
+    useState<PickerItem[]>(initialProgramChildren);
+  const [availableEventTasks, setAvailableEventTasks] = useState<PickerItem[]>([]);
+  const [stagedEventTasks, setStagedEventTasks] = useState<PickerItem[]>(initialEventTasks);
+
+  useEffect(() => {
+    if (!program.workspace_id) return;
+    if (isProgram) {
+      Promise.all([
+        fetchEvents(program.workspace_id, getToken),
+        fetchTasks(program.workspace_id, getToken),
+      ])
+        .then(([evs, ts]) => {
+          setAvailableProgramChildren([
+            ...evs.map((ev) => ({
+              id: ev.id,
+              name: ev.name,
+              description: ev.description,
+              type: "event" as const,
+            })),
+            ...ts.map((t) => ({
+              id: t.id,
+              name: t.name,
+              description: t.description,
+              type: "task" as const,
+            })),
+          ]);
+        })
+        .catch(() => {});
+    }
+    if (isEvent) {
+      fetchTasks(program.workspace_id, getToken)
+        .then((ts) =>
+          setAvailableEventTasks(
+            ts.map((t) => ({ id: t.id, name: t.name, description: t.description }))
+          )
+        )
+        .catch(() => {});
+    }
+  }, [program.workspace_id, isProgram, isEvent, getToken]);
 
   const isDisabled = isSaving || isDeleting;
 
@@ -157,6 +245,45 @@ export default function ProgramDetailEdit({
     try {
       setIsSaving(true);
       setError(null);
+
+      // Reconcile children before saving metadata so the PATCH response includes updated children
+      if (isProgram) {
+        const origEventIds = new Set(
+          initialProgramChildren.filter((c) => c.type === "event").map((c) => c.id)
+        );
+        const origTaskIds = new Set(
+          initialProgramChildren.filter((c) => c.type === "task").map((c) => c.id)
+        );
+        const stagedEventIds = new Set(
+          stagedProgramChildren.filter((c) => c.type === "event").map((c) => c.id)
+        );
+        const stagedTaskIds = new Set(
+          stagedProgramChildren.filter((c) => c.type === "task").map((c) => c.id)
+        );
+        const removedEventIds = [...origEventIds].filter((id) => !stagedEventIds.has(id));
+        const removedTaskIds = [...origTaskIds].filter((id) => !stagedTaskIds.has(id));
+        await Promise.all([
+          ...removedEventIds.map((id) => updateEvent(id, { program_id: null }, getToken)),
+          ...removedTaskIds.map((id) => updateTask(id, { program_id: null }, getToken)),
+          ...stagedProgramChildren.map((child, i) =>
+            child.type === "event"
+              ? updateEvent(child.id, { program_id: program.id, position: i }, getToken)
+              : updateTask(child.id, { program_id: program.id, position: i }, getToken)
+          ),
+        ]);
+      } else if (isEvent) {
+        const origTaskIds = new Set(initialEventTasks.map((t) => t.id));
+        const stagedTaskIds = new Set(stagedEventTasks.map((t) => t.id));
+        const removedTasks = initialEventTasks.filter((t) => !stagedTaskIds.has(t.id));
+        await Promise.all([
+          ...removedTasks.map((t) => updateTask(t.id, { event_id: null }, getToken)),
+          ...stagedEventTasks.map((t, i) =>
+            updateTask(t.id, { event_id: program.id, position: i }, getToken)
+          ),
+        ]);
+        void origTaskIds;
+      }
+
       await onSave(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Villa kom upp við að vista");
@@ -164,6 +291,10 @@ export default function ProgramDetailEdit({
       setIsSaving(false);
     }
   };
+
+  // ── Content type label ────────────────────────────────────────────────────
+
+  const typeLabel = isProgram ? "dagskrá" : isEvent ? "viðburð" : "verkefni";
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -176,7 +307,7 @@ export default function ProgramDetailEdit({
 
           <div className={styles.formGroup}>
             <label htmlFor="edit-name" className={styles.label}>
-              Nafn dagskrár <span className={styles.required}>*</span>
+              Nafn <span className={styles.required}>*</span>
             </label>
             <input
               id="edit-name"
@@ -207,21 +338,23 @@ export default function ProgramDetailEdit({
             <p className={styles.helpText}>{form.description.length}/1000</p>
           </div>
 
-          <div className={styles.formGroup}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={form.public}
-                onChange={(e) => patch({ public: e.target.checked })}
-                disabled={isDisabled}
-              />
-              <span>Opinber dagskrá</span>
-            </label>
-            <p className={styles.helpText}>
-              Openberar dagskrár eru sýnilegar öllum í dagskrárbankanum
-            </p>
-          </div>
+          {isProgram && (
+            <div className={styles.formGroup}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  className={styles.checkbox}
+                  checked={form.public}
+                  onChange={(e) => patch({ public: e.target.checked })}
+                  disabled={isDisabled}
+                />
+                <span>Opinber dagskrá</span>
+              </label>
+              <p className={styles.helpText}>
+                Openberar dagskrár eru sýnilegar öllum í dagskrárbankanum
+              </p>
+            </div>
+          )}
         </section>
 
         {/* ── Section: Info ── */}
@@ -532,9 +665,43 @@ export default function ProgramDetailEdit({
               disabled={isDisabled}
               placeholder="https://example.com/mynd.jpg"
             />
-            <p className={styles.helpText}>Settu inn slóð á mynd til að sýna á dagskránni</p>
+            <p className={styles.helpText}>Settu inn slóð á mynd til að sýna á {typeLabel}num</p>
           </div>
         </section>
+
+        {/* ── Section: Children ── */}
+        {isProgram && (
+          <section className={styles.section}>
+            <h3 className={styles.sectionTitle}>Dagskrárliðir</h3>
+            <p className={styles.helpText} style={{ marginBottom: 8 }}>
+              Viðburðir og verkefni í þessari dagskrá. Dragðu til að raða í þeirri röð sem þau eiga
+              að koma.
+            </p>
+            <ContentPicker
+              available={availableProgramChildren}
+              staged={stagedProgramChildren}
+              onChange={setStagedProgramChildren}
+              placeholder="Leita að viðburði eða verkefni..."
+              emptyText="Engar niðurstöður"
+            />
+          </section>
+        )}
+
+        {isEvent && (
+          <section className={styles.section}>
+            <h3 className={styles.sectionTitle}>Dagskrárliðir</h3>
+            <p className={styles.helpText} style={{ marginBottom: 8 }}>
+              Verkefni sem tilheyra þessum viðburði. Dragðu til að raða.
+            </p>
+            <ContentPicker
+              available={availableEventTasks}
+              staged={stagedEventTasks}
+              onChange={setStagedEventTasks}
+              placeholder="Leita að verkefni..."
+              emptyText="Engar niðurstöður"
+            />
+          </section>
+        )}
 
         {/* ── Error ── */}
         {error && <div className={styles.error}>{error}</div>}
@@ -558,7 +725,7 @@ export default function ProgramDetailEdit({
         <div className={styles.dangerZone}>
           <h3 className={styles.dangerTitle}>Hættusvæði</h3>
           <p className={styles.dangerDescription}>
-            Þegar dagskrá er eytt er ekki hægt að afturkalla það.
+            Þegar þessum {typeLabel} er eytt er ekki hægt að afturkalla það.
           </p>
           <button
             type="button"
@@ -566,7 +733,7 @@ export default function ProgramDetailEdit({
             onClick={onDeleteRequest}
             disabled={isDisabled}
           >
-            {isDeleting ? "Eyði…" : "Eyða dagskrá"}
+            {isDeleting ? "Eyði…" : `Eyða ${typeLabel}`}
           </button>
         </div>
       </form>

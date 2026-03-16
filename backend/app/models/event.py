@@ -31,6 +31,7 @@ class Event(Content):
 
     start_dt: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
     end_dt: Mapped[dt.datetime | None] = mapped_column(SADateTime(timezone=True), nullable=True)
+    position: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
 
     program_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),

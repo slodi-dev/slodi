@@ -34,6 +34,7 @@ def _prog(workspace_id=None):
     wid = workspace_id or uuid4()
     return ProgramOut(
         id=uuid4(),
+        content_type="program",
         workspace_id=wid,
         name="Test Program",
         author_id=uuid4(),

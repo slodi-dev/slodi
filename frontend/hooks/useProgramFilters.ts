@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import type { Program } from "@/services/programs.service";
+import type { ContentItem as Program } from "@/services/content.service";
 import { formatDuration, formatPrepTime, formatParticipants, formatPrice } from "@/lib/format";
 
 // ── FilterState type ────────────────────────────────────────────────────────────

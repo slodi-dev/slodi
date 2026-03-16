@@ -120,6 +120,7 @@ class Content(SoftDeleteMixin, Base):
         PGUUID(as_uuid=True),
         ForeignKey("workspaces.id", ondelete="RESTRICT"),
         nullable=False,
+        index=True,
     )
 
     # Relationships

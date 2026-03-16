@@ -38,6 +38,9 @@ export type Program = {
   count_min?: number | null;
   count_max?: number | null;
   price?: number | null;
+  // Children
+  events?: import("./events.service").Event[];
+  tasks?: import("./tasks.service").Task[];
 };
 
 export type ProgramCreateInput = {

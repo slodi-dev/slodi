@@ -1,0 +1,73 @@
+/* ═══════════════════════════════════════════════════════════
+   SORTABLE LIST — reusable drag-and-drop children list
+   ═══════════════════════════════════════════════════════════ */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: 8px;
+  cursor: default;
+  transition: background var(--sl-transition-base);
+}
+
+.item:hover {
+  background: hsl(var(--sl-color-primary) / 0.04);
+}
+
+.handle {
+  cursor: grab;
+  color: hsl(var(--color-text-secondary));
+  flex-shrink: 0;
+  padding-top: 2px;
+  touch-action: none;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.index {
+  font-size: var(--sl-font-size-xs, 11px);
+  font-weight: 700;
+  color: hsl(var(--color-text-secondary));
+  min-width: 20px;
+  padding-top: 2px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--sl-font-size-sm, 14px);
+  font-weight: 600;
+  color: hsl(var(--sl-color-primary));
+  text-decoration: none;
+}
+
+.name:hover {
+  text-decoration: underline;
+}
+
+.desc {
+  margin: 2px 0 0;
+  font-size: var(--sl-font-size-xs, 12px);
+  color: hsl(var(--color-text-secondary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

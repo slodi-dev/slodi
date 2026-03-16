@@ -49,7 +49,7 @@ export default function HeroSection({ onEmailSignupClick }: HeroSectionProps) {
             </button>
 
             <Link
-              href="/programs"
+              href="/content"
               className={styles.secondaryButton}
               aria-label="Skoða hugmyndabanka forritanna"
             >

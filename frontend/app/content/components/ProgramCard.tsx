@@ -16,9 +16,11 @@ import {
   getAgeGroupPatrol,
 } from "@/lib/format";
 import styles from "./ProgramCard.module.css";
+import { CONTENT_TYPE_LABELS, type ContentType } from "@/services/content.service";
 
 export interface ProgramCardProps {
   id: string;
+  content_type?: ContentType;
   name: string;
   description?: string | null;
   image?: string | null;
@@ -58,6 +60,7 @@ const MAX_VISIBLE_TAGS = 4;
 
 export default function ProgramCard({
   id,
+  content_type,
   name,
   description,
   image,
@@ -222,12 +225,19 @@ export default function ProgramCard({
       </div>
 
       {/* ── Stretched link (covers entire card) ─────────────────── */}
-      <Link href={`/programs/${id}`} className={styles.stretchedLink}>
+      <Link href={`/content/${id}`} className={styles.stretchedLink}>
         <span className="sl-sr-only">Opna {name}</span>
       </Link>
 
       {/* ── Content body ────────────────────────────────────────── */}
       <div className={styles.body}>
+        {/* Content type badge */}
+        {content_type && (
+          <span className={`${styles.typeBadge} ${styles[`typeBadge_${content_type}`]}`}>
+            {CONTENT_TYPE_LABELS[content_type]}
+          </span>
+        )}
+
         {/* Title */}
         <h2 className={styles.title}>{name}</h2>
 

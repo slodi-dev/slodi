@@ -11,7 +11,7 @@ export default function DashboardPage() {
         sem beinir þér inn á dagskrárbankann.
       </p>
 
-      <Link href="/programs" className={styles.programBankCard}>
+      <Link href="/content" className={styles.programBankCard}>
         <div className={styles.cardContent}>
           <Sparkles className={styles.sparkleIcon} aria-hidden="true" />
           <div className={styles.cardText}>

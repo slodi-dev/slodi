@@ -1,4 +1,4 @@
-// frontend/app/programs/components/ProgramsHeader.tsx
+// frontend/app/content/components/ProgramsHeader.tsx
 import styles from "./ProgramsHeader.module.css";
 
 interface ProgramsHeaderProps {

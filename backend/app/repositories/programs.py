@@ -13,6 +13,7 @@ from app.models.content import Content
 from app.models.event import Event
 from app.models.program import Program
 from app.models.tag import ContentTag
+from app.models.task import Task
 from app.repositories.base import Repository
 from app.repositories.content import (
     ContentStats,
@@ -42,6 +43,11 @@ class ProgramRepository(Repository):
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
                 ),
+                selectinload(Program.tasks).options(
+                    selectinload(Task.author),
+                    selectinload(Task.workspace),
+                    selectinload(Task.content_tags).selectinload(ContentTag.tag),
+                ),
                 selectinload(Program.comments),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
@@ -67,6 +73,11 @@ class ProgramRepository(Repository):
                     selectinload(Event.author),
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
+                ),
+                selectinload(Program.tasks).options(
+                    selectinload(Task.author),
+                    selectinload(Task.workspace),
+                    selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
                 selectinload(Program.comments),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
@@ -193,9 +204,12 @@ class ProgramRepository(Repository):
     async def delete(self, program_id: UUID) -> int:
         now = dt.datetime.now(dt.timezone.utc)
 
-        # Orphan events: clear program_id so events remain as standalone workspace events
+        # Orphan events and direct tasks: clear FK so they remain as standalone workspace items
         await self.session.execute(
             update(Event).where(Event.program_id == program_id).values(program_id=None)
+        )
+        await self.session.execute(
+            update(Task).where(Task.program_id == program_id).values(program_id=None)
         )
 
         # Soft-delete the program itself
