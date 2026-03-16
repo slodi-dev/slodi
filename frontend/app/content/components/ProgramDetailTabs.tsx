@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import styles from "./ProgramDetailTabs.module.css";
 import type { ContentItem } from "@/services/content.service";
 import type { Event } from "@/services/events.service";
@@ -29,18 +29,30 @@ export default function ProgramDetailTabs({ program }: ProgramDetailTabsProps) {
   const programItem = program as ContentItem & { events?: Event[]; tasks?: Task[] };
   const eventItem = program as ContentItem & { tasks?: Task[] };
 
-  const events = (programItem.events ?? []).slice().sort((a, b) => a.position - b.position);
-  const tasks = (isProgram ? (programItem.tasks ?? []) : (eventItem.tasks ?? []))
-    .slice()
-    .sort((a, b) => a.position - b.position);
+  const events = useMemo(
+    () => (programItem.events ?? []).slice().sort((a, b) => a.position - b.position),
+    [programItem.events]
+  );
+  const tasks = useMemo(
+    () =>
+      (isProgram ? (programItem.tasks ?? []) : (eventItem.tasks ?? []))
+        .slice()
+        .sort((a, b) => a.position - b.position),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isProgram, programItem.tasks, eventItem.tasks]
+  );
 
   // For programs: merge events and tasks into a single list ordered by position
-  const programChildren = isProgram
-    ? [
-        ...events.map((ev) => ({ ...ev, childType: "event" as const })),
-        ...tasks.map((t) => ({ ...t, childType: "task" as const })),
-      ].sort((a, b) => a.position - b.position)
-    : [];
+  const programChildren = useMemo(
+    () =>
+      isProgram
+        ? [
+            ...events.map((ev) => ({ ...ev, childType: "event" as const })),
+            ...tasks.map((t) => ({ ...t, childType: "task" as const })),
+          ].sort((a, b) => a.position - b.position)
+        : [],
+    [isProgram, events, tasks]
+  );
 
   const hasChildren = (isProgram && programChildren.length > 0) || (isEvent && tasks.length > 0);
 

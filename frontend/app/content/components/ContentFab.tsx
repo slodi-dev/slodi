@@ -27,26 +27,23 @@ export function ContentFab({ onNewTask, onNewEvent, onNewProgram }: ContentFabPr
     handlers[key]();
   };
 
-  // Close on outside click
+  // Close on outside click or Escape
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
+    const onMouse = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    document.addEventListener("mousedown", onMouse);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onMouse);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   return (

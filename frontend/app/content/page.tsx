@@ -7,7 +7,6 @@ import NewEventForm from "@/app/content/components/NewEventForm";
 import NewTaskForm from "@/app/content/components/NewTaskForm";
 import ProgramGrid from "./components/ProgramGrid";
 import ProgramSort from "./components/ProgramSort";
-import type { SortOption } from "./components/ProgramSort";
 import Pagination from "./components/Pagination";
 import { ContentFab } from "./components/ContentFab";
 import SearchInput from "@/components/filters/SearchInput";
@@ -16,9 +15,7 @@ import ActiveFilterBar from "@/components/filters/ActiveFilterBar";
 import styles from "./programs.module.css";
 import fabStyles from "./content.module.css";
 import useContentItems from "@/hooks/useContentItems";
-import { useUserWorkspace } from "@/hooks/useUserWorkspace";
 import { useProgramFilters } from "@/hooks/useProgramFilters";
-import type { FilterState } from "@/hooks/useProgramFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
@@ -36,20 +33,6 @@ import { deleteTask } from "@/services/tasks.service";
 import ProgramDetailEdit from "@/app/content/[id]/components/ProgramDetailEdit";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
-const SORT_TO_LEGACY: Record<FilterState["sortBy"], SortOption> = {
-  newest: "newest",
-  oldest: "oldest",
-  liked: "most-liked",
-  alpha: "alphabetical",
-};
-
-const LEGACY_TO_SORT: Record<SortOption, FilterState["sortBy"]> = {
-  newest: "newest",
-  oldest: "oldest",
-  "most-liked": "liked",
-  alphabetical: "alpha",
-};
-
 const CONTENT_TYPE_FILTERS: Array<{ value: ContentType | "all"; label: string }> = [
   { value: "all", label: "Allt" },
   { value: "task", label: CONTENT_TYPE_LABELS.task },
@@ -58,16 +41,12 @@ const CONTENT_TYPE_FILTERS: Array<{ value: ContentType | "all"; label: string }>
 ];
 
 function ContentPageInner() {
-  const [showNewTask, setShowNewTask] = useState(false);
-  const [showNewEvent, setShowNewEvent] = useState(false);
-  const [showNewProgram, setShowNewProgram] = useState(false);
+  const [newModalOpen, setNewModalOpen] = useState<"task" | "event" | "program" | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [contentTypeFilter, setContentTypeFilter] = useState<ContentType | "all">("all");
   const filterToggleRef = useRef<HTMLButtonElement>(null);
 
   const defaultWorkspaceId = useDefaultWorkspaceId();
-  const { workspaceId: userWorkspaceId } = useUserWorkspace();
-  void userWorkspaceId;
 
   const { items, loading, error, refetch } = useContentItems(defaultWorkspaceId);
   const { user, getToken } = useAuth();
@@ -136,9 +115,7 @@ function ContentPageInner() {
     usePagination(filtered, PROGRAMS_PER_PAGE);
 
   const handleCreated = async () => {
-    setShowNewTask(false);
-    setShowNewEvent(false);
-    setShowNewProgram(false);
+    setNewModalOpen(null);
     await refetch();
   };
 
@@ -187,29 +164,29 @@ function ContentPageInner() {
     <div className={styles.page}>
       {/* Radial FAB */}
       <ContentFab
-        onNewTask={() => setShowNewTask(true)}
-        onNewEvent={() => setShowNewEvent(true)}
-        onNewProgram={() => setShowNewProgram(true)}
+        onNewTask={() => setNewModalOpen("task")}
+        onNewEvent={() => setNewModalOpen("event")}
+        onNewProgram={() => setNewModalOpen("program")}
       />
 
       {/* Create modals */}
       <Modal
-        open={showNewTask}
-        onClose={() => setShowNewTask(false)}
+        open={newModalOpen === "task"}
+        onClose={() => setNewModalOpen(null)}
         title="Bæta verkefni í bankann"
       >
         <NewTaskForm workspaceId={postWorkspaceId} onCreated={handleCreated} />
       </Modal>
       <Modal
-        open={showNewEvent}
-        onClose={() => setShowNewEvent(false)}
+        open={newModalOpen === "event"}
+        onClose={() => setNewModalOpen(null)}
         title="Bæta viðburði í bankann"
       >
         <NewEventForm workspaceId={postWorkspaceId} onCreated={handleCreated} />
       </Modal>
       <Modal
-        open={showNewProgram}
-        onClose={() => setShowNewProgram(false)}
+        open={newModalOpen === "program"}
+        onClose={() => setNewModalOpen(null)}
         title="Bæta dagskrá í bankann"
       >
         <NewProgramForm workspaceId={postWorkspaceId} onCreated={handleCreated} />
@@ -269,10 +246,7 @@ function ContentPageInner() {
           )}
         </button>
 
-        <ProgramSort
-          value={SORT_TO_LEGACY[filters.sortBy]}
-          onChange={(legacySort) => setFilters({ sortBy: LEGACY_TO_SORT[legacySort] })}
-        />
+        <ProgramSort value={filters.sortBy} onChange={(sortBy) => setFilters({ sortBy })} />
       </div>
 
       {/* Main content area: sidebar + grid */}

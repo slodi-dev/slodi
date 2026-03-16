@@ -1,8 +1,9 @@
 "use client";
 
 import styles from "./ProgramSort.module.css";
+import type { FilterState } from "@/hooks/useProgramFilters";
 
-export type SortOption = "newest" | "oldest" | "most-liked" | "alphabetical";
+export type SortOption = FilterState["sortBy"];
 
 interface ProgramSortProps {
   value: SortOption;
@@ -13,8 +14,8 @@ interface ProgramSortProps {
 const SORT_OPTIONS: Record<SortOption, string> = {
   newest: "Nýjast fyrst",
   oldest: "Elst fyrst",
-  "most-liked": "Vinsælast",
-  alphabetical: "Stafrófsröð",
+  liked: "Vinsælast",
+  alpha: "Stafrófsröð",
 };
 
 export default function ProgramSort({ value, onChange, className = "" }: ProgramSortProps) {

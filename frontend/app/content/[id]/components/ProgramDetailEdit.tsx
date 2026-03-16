@@ -11,17 +11,9 @@ import { useTags } from "@/hooks/useTags";
 import { useAuth } from "@/hooks/useAuth";
 import styles from "./ProgramDetailEdit.module.css";
 
-// ── Constants ────────────────────────────────────────────────────────────────
+import { AGE_GROUPS } from "@/app/content/components/FormSections";
 
-const AGE_GROUPS = [
-  "Hrefnuskátar",
-  "Drekaskátar",
-  "Fálkaskátar",
-  "Dróttskátar",
-  "Rekkaskátar",
-  "Róverskátar",
-  "Vættaskátar",
-];
+// ── Constants ────────────────────────────────────────────────────────────────
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

@@ -48,9 +48,9 @@ export default function FavoriteProgramsPage() {
           return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
         case "oldest":
           return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-        case "most-liked":
+        case "liked":
           return (b.like_count || 0) - (a.like_count || 0);
-        case "alphabetical":
+        case "alpha":
           return a.name.localeCompare(b.name, "is");
         default:
           return 0;

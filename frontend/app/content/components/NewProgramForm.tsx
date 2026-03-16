@@ -12,48 +12,18 @@ import { useTags } from "@/hooks/useTags";
 import { useDraft } from "@/hooks/useDraft";
 import { handleApiErrorIs } from "@/lib/api-utils";
 import { useAuth } from "@/hooks/useAuth";
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-type ProgramDraft = {
-  name: string;
-  description: string;
-  image: string;
-  instructions: string;
-  equipment: string[];
-  durationMin: string;
-  durationMax: string;
-  prepTimeMin: string;
-  prepTimeMax: string;
-  selectedAgeGroups: string[];
-  location: string;
-  countMin: string;
-  countMax: string;
-  price: string;
-  selectedTags: string[];
-};
+import {
+  AGE_GROUPS,
+  INITIAL_CONTENT_DRAFT,
+  SectionBasic,
+  SectionInfo,
+  SectionEquipment,
+  SectionInstructions,
+  SectionExtras,
+  type ContentDraft,
+} from "./FormSections";
 
 type SectionId = "basic" | "info" | "equipment" | "instructions" | "extras" | "children";
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const INITIAL_DRAFT: ProgramDraft = {
-  name: "",
-  description: "",
-  image: "",
-  instructions: "",
-  equipment: [],
-  durationMin: "",
-  durationMax: "",
-  prepTimeMin: "",
-  prepTimeMax: "",
-  selectedAgeGroups: [],
-  location: "",
-  countMin: "",
-  countMax: "",
-  price: "",
-  selectedTags: [],
-};
 
 const SECTIONS: Array<{ id: SectionId; title: string; required?: boolean }> = [
   { id: "basic", title: "Grunnupplýsingar", required: true },
@@ -64,47 +34,29 @@ const SECTIONS: Array<{ id: SectionId; title: string; required?: boolean }> = [
   { id: "children", title: "Dagskrárliðir" },
 ];
 
-const AGE_GROUPS = [
-  "Hrefnuskátar",
-  "Drekaskátar",
-  "Fálkaskátar",
-  "Dróttskátar",
-  "Rekkaskátar",
-  "Róverskátar",
-  "Vættaskátar",
-];
-
-// ── Props ────────────────────────────────────────────────────────────────────
-
 type Props = {
   workspaceId: string;
   onCreated?: (program: Program) => void;
   onCancel?: () => void;
 };
 
-// ── Component ────────────────────────────────────────────────────────────────
-
 export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Props) {
   const { getToken } = useAuth();
   const { tagNames: availableTags } = useTags();
   const displayTags = availableTags ?? [];
 
-  // Draft state — workspace-scoped key so drafts don't bleed between workspaces
   const draftKey = `prog-draft-${workspaceId}`;
-  const { draft, updateDraft, clearDraft } = useDraft<ProgramDraft>(draftKey, INITIAL_DRAFT);
+  const { draft, updateDraft, clearDraft } = useDraft<ContentDraft>(draftKey, INITIAL_CONTENT_DRAFT);
 
-  // Transient UI state (not persisted)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [equipmentInput, setEquipmentInput] = useState("");
   const [openSections, setOpenSections] = useState<SectionId[]>(["basic"]);
   const [showDraftBanner, setShowDraftBanner] = useState(false);
 
-  // Combined event+task picker state
   const [availableChildren, setAvailableChildren] = useState<PickerItem[]>([]);
   const [stagedChildren, setStagedChildren] = useState<PickerItem[]>([]);
 
-  // Load workspace events and tasks for the combined picker
   useEffect(() => {
     if (!workspaceId) return;
     Promise.all([fetchEvents(workspaceId, getToken), fetchTasks(workspaceId, getToken)])
@@ -127,13 +79,12 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
       .catch(() => {});
   }, [workspaceId, getToken]);
 
-  // Show draft-restored banner if localStorage had meaningful content on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const stored = localStorage.getItem(draftKey);
       if (!stored) return;
-      const parsed = JSON.parse(stored) as Partial<ProgramDraft>;
+      const parsed = JSON.parse(stored) as Partial<ContentDraft>;
       const hasContent =
         !!parsed.name ||
         !!parsed.description ||
@@ -146,13 +97,10 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     }
   }, [draftKey]);
 
-  // ── Accordion helpers ──────────────────────────────────────────────────────
-
   const toggleSection = (id: SectionId) => {
     setOpenSections((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   };
 
-  /** Returns true if the section has any filled content. */
   const sectionHasData = (id: SectionId): boolean => {
     switch (id) {
       case "basic":
@@ -180,7 +128,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     }
   };
 
-  /** Short summary shown in the collapsed header when the section has data. */
   const sectionSummary = (id: SectionId): string | null => {
     switch (id) {
       case "basic":
@@ -213,8 +160,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     }
   };
 
-  // ── Equipment helpers ──────────────────────────────────────────────────────
-
   const addEquipmentItem = () => {
     const trimmed = equipmentInput.trim();
     if (!trimmed || draft.equipment.includes(trimmed)) return;
@@ -232,8 +177,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
       addEquipmentItem();
     }
   };
-
-  // ── Submit / Reset ─────────────────────────────────────────────────────────
 
   const handleDiscard = () => {
     clearDraft();
@@ -257,6 +200,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
 
     setLoading(true);
     try {
+      const age = draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g));
       const program = await createProgram(
         {
           name: draft.name.trim(),
@@ -268,10 +212,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
           duration_max: draft.durationMax !== "" ? Number(draft.durationMax) : undefined,
           prep_time_min: draft.prepTimeMin !== "" ? Number(draft.prepTimeMin) : undefined,
           prep_time_max: draft.prepTimeMax !== "" ? Number(draft.prepTimeMax) : undefined,
-          age:
-            draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
-              ? draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
-              : undefined,
+          age: age.length > 0 ? age : undefined,
           location: draft.location.trim() || undefined,
           count_min: draft.countMin !== "" ? Number(draft.countMin) : undefined,
           count_max: draft.countMax !== "" ? Number(draft.countMax) : undefined,
@@ -281,7 +222,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         },
         getToken
       );
-      // Assign staged children (events and tasks) with their unified positions
+
       await Promise.all(
         stagedChildren.map((child, index) =>
           child.type === "event"
@@ -303,11 +244,8 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
     <form className={styles.form} onSubmit={handleSubmit} aria-label="Ný dagskrá">
-      {/* ── Draft restored banner ── */}
       {showDraftBanner && (
         <div className={styles.draftBanner} role="status">
           <span className={styles.draftBannerText}>📝 Óvistuð drög fundust og voru endurheimt</span>
@@ -317,7 +255,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         </div>
       )}
 
-      {/* ── Accordion sections ── */}
       {SECTIONS.map(({ id, title, required }) => {
         const isOpen = openSections.includes(id);
         const hasFilled = sectionHasData(id);
@@ -325,7 +262,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
 
         return (
           <div key={id} className={styles.accordionItem}>
-            {/* Header */}
             <button
               type="button"
               id={`accordion-btn-${id}`}
@@ -354,7 +290,6 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
               />
             </button>
 
-            {/* Animated content */}
             <div
               id={`accordion-${id}`}
               className={`${styles.accordionContent} ${isOpen ? styles.accordionContentOpen : ""}`}
@@ -363,12 +298,28 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
             >
               <div className={styles.accordionContentInner}>
                 <div className={styles.accordionBody}>
-                  {id === "basic" && <SectionBasic draft={draft} updateDraft={updateDraft} />}
-                  {id === "info" && <SectionInfo draft={draft} updateDraft={updateDraft} />}
+                  {id === "basic" && (
+                    <SectionBasic
+                      draft={draft}
+                      updateDraft={updateDraft}
+                      idPrefix="program"
+                      nameLabel="Heiti hugmyndar"
+                      namePlaceholder="t.d. Náttúruganga í skóginum"
+                    />
+                  )}
+                  {id === "info" && (
+                    <SectionInfo
+                      draft={draft}
+                      updateDraft={updateDraft}
+                      idPrefix="program"
+                      showAgeGroupHint
+                    />
+                  )}
                   {id === "equipment" && (
                     <SectionEquipment
                       draft={draft}
                       updateDraft={updateDraft}
+                      idPrefix="program"
                       equipmentInput={equipmentInput}
                       setEquipmentInput={setEquipmentInput}
                       addEquipmentItem={addEquipmentItem}
@@ -377,13 +328,19 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
                     />
                   )}
                   {id === "instructions" && (
-                    <SectionInstructions draft={draft} updateDraft={updateDraft} />
+                    <SectionInstructions
+                      draft={draft}
+                      updateDraft={updateDraft}
+                      idPrefix="program"
+                    />
                   )}
                   {id === "extras" && (
                     <SectionExtras
                       draft={draft}
                       updateDraft={updateDraft}
+                      idPrefix="program"
                       displayTags={displayTags}
+                      imageHint="Slóð á mynd sem lýsir hugmyndinni"
                     />
                   )}
                   {id === "children" && (
@@ -408,14 +365,12 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         );
       })}
 
-      {/* ── Error ── */}
       {error && (
         <div className={styles.error} role="alert">
           {error}
         </div>
       )}
 
-      {/* ── Actions ── */}
       <div className={styles.actions}>
         {onCancel && (
           <button
@@ -444,347 +399,5 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
         </button>
       </div>
     </form>
-  );
-}
-
-// ── Section sub-components ───────────────────────────────────────────────────
-
-type DraftProps = {
-  draft: ProgramDraft;
-  updateDraft: (patch: Partial<ProgramDraft> | ((prev: ProgramDraft) => ProgramDraft)) => void;
-};
-
-function SectionBasic({ draft, updateDraft }: DraftProps) {
-  return (
-    <>
-      <div className={styles.field}>
-        <label htmlFor="program-name" className={styles.label}>
-          Heiti hugmyndar <span className={styles.required}>*</span>
-        </label>
-        <input
-          id="program-name"
-          type="text"
-          className={styles.input}
-          value={draft.name}
-          onChange={(e) => updateDraft({ name: e.target.value })}
-          placeholder="t.d. Náttúruganga í skóginum"
-          required
-          maxLength={100}
-        />
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="program-description" className={styles.label}>
-          Lýsing
-        </label>
-        <textarea
-          id="program-description"
-          className={styles.textarea}
-          value={draft.description}
-          onChange={(e) => updateDraft({ description: e.target.value })}
-          placeholder="Stutt lýsing sem hjálpar öðrum að skilja hugmyndina..."
-          rows={3}
-          maxLength={1000}
-        />
-        <p className={styles.hint}>{draft.description.length}/1000</p>
-      </div>
-    </>
-  );
-}
-
-function SectionInfo({ draft, updateDraft }: DraftProps) {
-  return (
-    <>
-      <div className={styles.fieldGrid}>
-        <div className={styles.field}>
-          <label className={styles.label}>Tímalengd (mín)</label>
-          <div className={styles.rangeRow}>
-            <input
-              id="program-duration-min"
-              type="number"
-              className={styles.input}
-              value={draft.durationMin}
-              onChange={(e) => updateDraft({ durationMin: e.target.value })}
-              placeholder="Frá"
-              min={0}
-              aria-label="Lágmarkstímalengd í mínútum"
-            />
-            <span className={styles.rangeSeparator} aria-hidden="true">
-              –
-            </span>
-            <input
-              id="program-duration-max"
-              type="number"
-              className={styles.input}
-              value={draft.durationMax}
-              onChange={(e) => updateDraft({ durationMax: e.target.value })}
-              placeholder="Til"
-              min={0}
-              aria-label="Hámarkstímalengd í mínútum"
-            />
-          </div>
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.label}>Undirbúningstími (mín)</label>
-          <div className={styles.rangeRow}>
-            <input
-              id="program-prep-min"
-              type="number"
-              className={styles.input}
-              value={draft.prepTimeMin}
-              onChange={(e) => updateDraft({ prepTimeMin: e.target.value })}
-              placeholder="Frá"
-              min={0}
-              aria-label="Lágmarks undirbúningstími í mínútum"
-            />
-            <span className={styles.rangeSeparator} aria-hidden="true">
-              –
-            </span>
-            <input
-              id="program-prep-max"
-              type="number"
-              className={styles.input}
-              value={draft.prepTimeMax}
-              onChange={(e) => updateDraft({ prepTimeMax: e.target.value })}
-              placeholder="Til"
-              min={0}
-              aria-label="Hámarks undirbúningstími í mínútum"
-            />
-          </div>
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="program-location" className={styles.label}>
-            Staðsetning
-          </label>
-          <input
-            id="program-location"
-            type="text"
-            className={styles.input}
-            value={draft.location}
-            onChange={(e) => updateDraft({ location: e.target.value })}
-            placeholder="t.d. Úti, Inni"
-            maxLength={255}
-          />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="program-price" className={styles.label}>
-            Kostnaður
-          </label>
-          <select
-            id="program-price"
-            className={styles.select}
-            value={draft.price}
-            onChange={(e) => updateDraft({ price: e.target.value })}
-          >
-            <option value="">Veldu kostnaðarstig</option>
-            <option value="0">Kostnaðarlaust</option>
-            <option value="1">kr — Lítill kostnaður</option>
-            <option value="2">kr kr — Meðal kostnaður</option>
-            <option value="3">kr kr kr — Hár kostnaður</option>
-          </select>
-        </div>
-      </div>
-
-      <div className={styles.field}>
-        <label className={styles.label}>Fjöldi þátttakenda</label>
-        <div className={styles.rangeRow}>
-          <input
-            id="program-count-min"
-            type="number"
-            className={styles.input}
-            value={draft.countMin}
-            onChange={(e) => updateDraft({ countMin: e.target.value })}
-            placeholder="Frá"
-            min={1}
-            aria-label="Lágmarksfjöldi þátttakenda"
-          />
-          <span className={styles.rangeSeparator} aria-hidden="true">
-            –
-          </span>
-          <input
-            id="program-count-max"
-            type="number"
-            className={styles.input}
-            value={draft.countMax}
-            onChange={(e) => updateDraft({ countMax: e.target.value })}
-            placeholder="Til"
-            min={1}
-            aria-label="Hámarksfjöldi þátttakenda"
-          />
-        </div>
-      </div>
-
-      <div className={styles.field}>
-        <p className={styles.label} id="age-groups-label">
-          Aldurshópar
-        </p>
-        <div className={styles.checkboxGrid} role="group" aria-labelledby="age-groups-label">
-          {AGE_GROUPS.map((group) => (
-            <label key={group} className={styles.checkboxOption}>
-              <input
-                type="checkbox"
-                className={styles.checkboxInput}
-                checked={draft.selectedAgeGroups.includes(group)}
-                onChange={() => {
-                  const next = draft.selectedAgeGroups.includes(group)
-                    ? draft.selectedAgeGroups.filter((g) => g !== group)
-                    : [...draft.selectedAgeGroups, group];
-                  updateDraft({ selectedAgeGroups: next });
-                }}
-              />
-              <span className={styles.checkboxLabel}>{group}</span>
-            </label>
-          ))}
-        </div>
-        {draft.selectedAgeGroups.length > 0 && (
-          <p className={styles.hint}>
-            {draft.selectedAgeGroups.length === AGE_GROUPS.length
-              ? "Allir aldurshópar valdir"
-              : `${draft.selectedAgeGroups.length} aldurshópar valdir`}
-          </p>
-        )}
-      </div>
-    </>
-  );
-}
-
-type SectionEquipmentProps = DraftProps & {
-  equipmentInput: string;
-  setEquipmentInput: (v: string) => void;
-  addEquipmentItem: () => void;
-  removeEquipmentItem: (item: string) => void;
-  handleEquipmentKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-};
-
-function SectionEquipment({
-  draft,
-  equipmentInput,
-  setEquipmentInput,
-  addEquipmentItem,
-  removeEquipmentItem,
-  handleEquipmentKeyDown,
-}: SectionEquipmentProps) {
-  return (
-    <div className={styles.field}>
-      <label htmlFor="program-equipment" className={styles.label}>
-        Búnaðarlisti
-      </label>
-      <div className={styles.equipmentInputRow}>
-        <input
-          id="program-equipment"
-          type="text"
-          className={styles.input}
-          value={equipmentInput}
-          onChange={(e) => setEquipmentInput(e.target.value)}
-          onKeyDown={handleEquipmentKeyDown}
-          placeholder="t.d. Límbandi — Enter til að bæta við"
-          maxLength={100}
-        />
-        <button
-          type="button"
-          className={styles.addButton}
-          onClick={addEquipmentItem}
-          disabled={!equipmentInput.trim()}
-        >
-          Bæta við
-        </button>
-      </div>
-      {draft.equipment.length > 0 && (
-        <div className={styles.equipmentList}>
-          {draft.equipment.map((item) => (
-            <span key={item} className={styles.equipmentTag}>
-              {item}
-              <button
-                type="button"
-                className={styles.equipmentRemove}
-                onClick={() => removeEquipmentItem(item)}
-                aria-label={`Fjarlægja ${item}`}
-              >
-                ✕
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SectionInstructions({ draft, updateDraft }: DraftProps) {
-  return (
-    <div className={styles.field}>
-      <label htmlFor="program-instructions" className={styles.label}>
-        Framkvæmd
-      </label>
-      <textarea
-        id="program-instructions"
-        className={styles.textarea}
-        value={draft.instructions}
-        onChange={(e) => updateDraft({ instructions: e.target.value })}
-        placeholder="Skrifaðu skref-fyrir-skref leiðbeiningar..."
-        rows={6}
-        maxLength={5000}
-      />
-      <p className={styles.hint}>{draft.instructions.length}/5000</p>
-    </div>
-  );
-}
-
-type SectionExtrasProps = DraftProps & { displayTags: string[] };
-
-function SectionExtras({ draft, updateDraft, displayTags }: SectionExtrasProps) {
-  return (
-    <>
-      <div className={styles.field}>
-        {displayTags.length === 0 ? (
-          <p className={styles.hint}>Engir merkimiðar tiltækir</p>
-        ) : (
-          <>
-            <div className={styles.tagGrid}>
-              {displayTags.map((tag) => {
-                const isSelected = draft.selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
-                    onClick={() => {
-                      const next = isSelected
-                        ? draft.selectedTags.filter((t) => t !== tag)
-                        : [...draft.selectedTags, tag];
-                      updateDraft({ selectedTags: next });
-                    }}
-                    aria-pressed={isSelected}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-            {draft.selectedTags.length > 0 && (
-              <p className={styles.hint}>{draft.selectedTags.length} merkimiðar valdir</p>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="program-image" className={styles.label}>
-          Vefslóð myndar
-        </label>
-        <input
-          id="program-image"
-          type="url"
-          className={styles.input}
-          value={draft.image}
-          onChange={(e) => updateDraft({ image: e.target.value })}
-          placeholder="https://example.com/mynd.jpg"
-        />
-        <p className={styles.hint}>Slóð á mynd sem lýsir hugmyndinni</p>
-      </div>
-    </>
   );
 }

@@ -5,51 +5,24 @@ import { ChevronDown } from "lucide-react";
 import styles from "./NewProgramForm.module.css";
 import type { Event } from "@/services/events.service";
 import { createEvent } from "@/services/events.service";
-import { updateTask } from "@/services/tasks.service";
-import { fetchTasks } from "@/services/tasks.service";
+import { updateTask, fetchTasks } from "@/services/tasks.service";
 import { ContentPicker, type PickerItem } from "./ContentPicker";
 import { useTags } from "@/hooks/useTags";
 import { useDraft } from "@/hooks/useDraft";
 import { handleApiErrorIs } from "@/lib/api-utils";
 import { useAuth } from "@/hooks/useAuth";
-
-type EventDraft = {
-  name: string;
-  description: string;
-  image: string;
-  instructions: string;
-  equipment: string[];
-  durationMin: string;
-  durationMax: string;
-  prepTimeMin: string;
-  prepTimeMax: string;
-  selectedAgeGroups: string[];
-  location: string;
-  countMin: string;
-  countMax: string;
-  price: string;
-  selectedTags: string[];
-};
+import {
+  AGE_GROUPS,
+  INITIAL_CONTENT_DRAFT,
+  SectionBasic,
+  SectionInfo,
+  SectionEquipment,
+  SectionInstructions,
+  SectionExtras,
+  type ContentDraft,
+} from "./FormSections";
 
 type SectionId = "basic" | "info" | "equipment" | "instructions" | "extras" | "tasks";
-
-const INITIAL_DRAFT: EventDraft = {
-  name: "",
-  description: "",
-  image: "",
-  instructions: "",
-  equipment: [],
-  durationMin: "",
-  durationMax: "",
-  prepTimeMin: "",
-  prepTimeMax: "",
-  selectedAgeGroups: [],
-  location: "",
-  countMin: "",
-  countMax: "",
-  price: "",
-  selectedTags: [],
-};
 
 const SECTIONS: Array<{ id: SectionId; title: string; required?: boolean }> = [
   { id: "basic", title: "Grunnupplýsingar", required: true },
@@ -57,17 +30,7 @@ const SECTIONS: Array<{ id: SectionId; title: string; required?: boolean }> = [
   { id: "equipment", title: "Gögn og búnaður" },
   { id: "instructions", title: "Leiðbeiningar" },
   { id: "extras", title: "Merkimiðar og mynd" },
-  { id: "tasks", title: "Verkefni" },
-];
-
-const AGE_GROUPS = [
-  "Hrefnuskátar",
-  "Drekaskátar",
-  "Fálkaskátar",
-  "Dróttskátar",
-  "Rekkaskátar",
-  "Róverskátar",
-  "Vættaskátar",
+  { id: "tasks", title: "Dagskrárliðir" },
 ];
 
 type Props = {
@@ -82,7 +45,10 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
   const displayTags = availableTags ?? [];
 
   const draftKey = `event-draft-${workspaceId}`;
-  const { draft, updateDraft, clearDraft } = useDraft<EventDraft>(draftKey, INITIAL_DRAFT);
+  const { draft, updateDraft, clearDraft } = useDraft<ContentDraft>(
+    draftKey,
+    INITIAL_CONTENT_DRAFT
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +56,6 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
   const [openSections, setOpenSections] = useState<SectionId[]>(["basic"]);
   const [showDraftBanner, setShowDraftBanner] = useState(false);
 
-  // Task picker state
   const [availableTasks, setAvailableTasks] = useState<PickerItem[]>([]);
   const [stagedTasks, setStagedTasks] = useState<PickerItem[]>([]);
 
@@ -99,7 +64,7 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
     try {
       const stored = localStorage.getItem(draftKey);
       if (!stored) return;
-      const parsed = JSON.parse(stored) as Partial<EventDraft>;
+      const parsed = JSON.parse(stored) as Partial<ContentDraft>;
       const hasContent = !!parsed.name || !!parsed.description || !!parsed.instructions;
       setShowDraftBanner(hasContent);
     } catch {
@@ -107,7 +72,6 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
     }
   }, [draftKey]);
 
-  // Load workspace tasks for picker
   useEffect(() => {
     if (!workspaceId) return;
     fetchTasks(workspaceId, getToken)
@@ -116,9 +80,7 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
           tasks.map((t) => ({ id: t.id, name: t.name, description: t.description }))
         )
       )
-      .catch(() => {
-        // non-critical
-      });
+      .catch(() => {});
   }, [workspaceId, getToken]);
 
   const toggleSection = (id: SectionId) => {
@@ -218,6 +180,7 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
 
     setLoading(true);
     try {
+      const age = draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g));
       const event = await createEvent(
         {
           name: draft.name.trim(),
@@ -229,10 +192,7 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
           duration_max: draft.durationMax !== "" ? Number(draft.durationMax) : undefined,
           prep_time_min: draft.prepTimeMin !== "" ? Number(draft.prepTimeMin) : undefined,
           prep_time_max: draft.prepTimeMax !== "" ? Number(draft.prepTimeMax) : undefined,
-          age:
-            draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g)).length > 0
-              ? draft.selectedAgeGroups.filter((g) => AGE_GROUPS.includes(g))
-              : undefined,
+          age: age.length > 0 ? age : undefined,
           location: draft.location.trim() || undefined,
           count_min: draft.countMin !== "" ? Number(draft.countMin) : undefined,
           count_max: draft.countMax !== "" ? Number(draft.countMax) : undefined,
@@ -243,7 +203,6 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
         getToken
       );
 
-      // Assign staged tasks to the new event with positions
       await Promise.all(
         stagedTasks.map((task, index) =>
           updateTask(task.id, { event_id: event.id, position: index }, getToken)
@@ -317,12 +276,24 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
             >
               <div className={styles.accordionContentInner}>
                 <div className={styles.accordionBody}>
-                  {id === "basic" && <SectionBasic draft={draft} updateDraft={updateDraft} />}
-                  {id === "info" && <SectionInfo draft={draft} updateDraft={updateDraft} />}
+                  {id === "basic" && (
+                    <SectionBasic
+                      draft={draft}
+                      updateDraft={updateDraft}
+                      idPrefix="event"
+                      nameLabel="Heiti viðburðar"
+                      namePlaceholder="t.d. Leikdagur í skógi"
+                      descPlaceholder="Stutt lýsing á viðburðinum..."
+                    />
+                  )}
+                  {id === "info" && (
+                    <SectionInfo draft={draft} updateDraft={updateDraft} idPrefix="event" />
+                  )}
                   {id === "equipment" && (
                     <SectionEquipment
                       draft={draft}
                       updateDraft={updateDraft}
+                      idPrefix="event"
                       equipmentInput={equipmentInput}
                       setEquipmentInput={setEquipmentInput}
                       addEquipmentItem={addEquipmentItem}
@@ -331,12 +302,13 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
                     />
                   )}
                   {id === "instructions" && (
-                    <SectionInstructions draft={draft} updateDraft={updateDraft} />
+                    <SectionInstructions draft={draft} updateDraft={updateDraft} idPrefix="event" />
                   )}
                   {id === "extras" && (
                     <SectionExtras
                       draft={draft}
                       updateDraft={updateDraft}
+                      idPrefix="event"
                       displayTags={displayTags}
                     />
                   )}
@@ -395,321 +367,5 @@ export default function NewEventForm({ workspaceId, onCreated, onCancel }: Props
         </button>
       </div>
     </form>
-  );
-}
-
-// ── Section sub-components (same as NewTaskForm) ─────────────────────────────
-
-type DraftProps = {
-  draft: EventDraft;
-  updateDraft: (patch: Partial<EventDraft> | ((prev: EventDraft) => EventDraft)) => void;
-};
-
-function SectionBasic({ draft, updateDraft }: DraftProps) {
-  return (
-    <>
-      <div className={styles.field}>
-        <label htmlFor="event-name" className={styles.label}>
-          Heiti viðburðar <span className={styles.required}>*</span>
-        </label>
-        <input
-          id="event-name"
-          type="text"
-          className={styles.input}
-          value={draft.name}
-          onChange={(e) => updateDraft({ name: e.target.value })}
-          placeholder="t.d. Leikdagur í skógi"
-          required
-          maxLength={100}
-        />
-      </div>
-      <div className={styles.field}>
-        <label htmlFor="event-description" className={styles.label}>
-          Lýsing
-        </label>
-        <textarea
-          id="event-description"
-          className={styles.textarea}
-          value={draft.description}
-          onChange={(e) => updateDraft({ description: e.target.value })}
-          placeholder="Stutt lýsing á viðburðinum..."
-          rows={3}
-          maxLength={1000}
-        />
-        <p className={styles.hint}>{draft.description.length}/1000</p>
-      </div>
-    </>
-  );
-}
-
-function SectionInfo({ draft, updateDraft }: DraftProps) {
-  return (
-    <>
-      <div className={styles.fieldGrid}>
-        <div className={styles.field}>
-          <label className={styles.label}>Tímalengd (mín)</label>
-          <div className={styles.rangeRow}>
-            <input
-              type="number"
-              className={styles.input}
-              value={draft.durationMin}
-              onChange={(e) => updateDraft({ durationMin: e.target.value })}
-              placeholder="Frá"
-              min={0}
-              aria-label="Lágmarkstímalengd"
-            />
-            <span className={styles.rangeSeparator} aria-hidden="true">
-              –
-            </span>
-            <input
-              type="number"
-              className={styles.input}
-              value={draft.durationMax}
-              onChange={(e) => updateDraft({ durationMax: e.target.value })}
-              placeholder="Til"
-              min={0}
-              aria-label="Hámarkstímalengd"
-            />
-          </div>
-        </div>
-        <div className={styles.field}>
-          <label className={styles.label}>Undirbúningstími (mín)</label>
-          <div className={styles.rangeRow}>
-            <input
-              type="number"
-              className={styles.input}
-              value={draft.prepTimeMin}
-              onChange={(e) => updateDraft({ prepTimeMin: e.target.value })}
-              placeholder="Frá"
-              min={0}
-              aria-label="Lágmarks undirbúningstími"
-            />
-            <span className={styles.rangeSeparator} aria-hidden="true">
-              –
-            </span>
-            <input
-              type="number"
-              className={styles.input}
-              value={draft.prepTimeMax}
-              onChange={(e) => updateDraft({ prepTimeMax: e.target.value })}
-              placeholder="Til"
-              min={0}
-              aria-label="Hámarks undirbúningstími"
-            />
-          </div>
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="event-location" className={styles.label}>
-            Staðsetning
-          </label>
-          <input
-            id="event-location"
-            type="text"
-            className={styles.input}
-            value={draft.location}
-            onChange={(e) => updateDraft({ location: e.target.value })}
-            placeholder="t.d. Úti, Inni"
-            maxLength={255}
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="event-price" className={styles.label}>
-            Kostnaður
-          </label>
-          <select
-            id="event-price"
-            className={styles.select}
-            value={draft.price}
-            onChange={(e) => updateDraft({ price: e.target.value })}
-          >
-            <option value="">Veldu kostnaðarstig</option>
-            <option value="0">Kostnaðarlaust</option>
-            <option value="1">kr — Lítill kostnaður</option>
-            <option value="2">kr kr — Meðal kostnaður</option>
-            <option value="3">kr kr kr — Hár kostnaður</option>
-          </select>
-        </div>
-      </div>
-      <div className={styles.field}>
-        <label className={styles.label}>Fjöldi þátttakenda</label>
-        <div className={styles.rangeRow}>
-          <input
-            type="number"
-            className={styles.input}
-            value={draft.countMin}
-            onChange={(e) => updateDraft({ countMin: e.target.value })}
-            placeholder="Frá"
-            min={1}
-            aria-label="Lágmarksfjöldi þátttakenda"
-          />
-          <span className={styles.rangeSeparator} aria-hidden="true">
-            –
-          </span>
-          <input
-            type="number"
-            className={styles.input}
-            value={draft.countMax}
-            onChange={(e) => updateDraft({ countMax: e.target.value })}
-            placeholder="Til"
-            min={1}
-            aria-label="Hámarksfjöldi þátttakenda"
-          />
-        </div>
-      </div>
-      <div className={styles.field}>
-        <p className={styles.label} id="event-age-groups-label">
-          Aldurshópar
-        </p>
-        <div className={styles.checkboxGrid} role="group" aria-labelledby="event-age-groups-label">
-          {AGE_GROUPS.map((group) => (
-            <label key={group} className={styles.checkboxOption}>
-              <input
-                type="checkbox"
-                className={styles.checkboxInput}
-                checked={draft.selectedAgeGroups.includes(group)}
-                onChange={() => {
-                  const next = draft.selectedAgeGroups.includes(group)
-                    ? draft.selectedAgeGroups.filter((g) => g !== group)
-                    : [...draft.selectedAgeGroups, group];
-                  updateDraft({ selectedAgeGroups: next });
-                }}
-              />
-              <span className={styles.checkboxLabel}>{group}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-type SectionEquipmentProps = DraftProps & {
-  equipmentInput: string;
-  setEquipmentInput: (v: string) => void;
-  addEquipmentItem: () => void;
-  removeEquipmentItem: (item: string) => void;
-  handleEquipmentKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-};
-
-function SectionEquipment({
-  draft,
-  equipmentInput,
-  setEquipmentInput,
-  addEquipmentItem,
-  removeEquipmentItem,
-  handleEquipmentKeyDown,
-}: SectionEquipmentProps) {
-  return (
-    <div className={styles.field}>
-      <label htmlFor="event-equipment" className={styles.label}>
-        Búnaðarlisti
-      </label>
-      <div className={styles.equipmentInputRow}>
-        <input
-          id="event-equipment"
-          type="text"
-          className={styles.input}
-          value={equipmentInput}
-          onChange={(e) => setEquipmentInput(e.target.value)}
-          onKeyDown={handleEquipmentKeyDown}
-          placeholder="t.d. Límbandi — Enter til að bæta við"
-          maxLength={100}
-        />
-        <button
-          type="button"
-          className={styles.addButton}
-          onClick={addEquipmentItem}
-          disabled={!equipmentInput.trim()}
-        >
-          Bæta við
-        </button>
-      </div>
-      {draft.equipment.length > 0 && (
-        <div className={styles.equipmentList}>
-          {draft.equipment.map((item) => (
-            <span key={item} className={styles.equipmentTag}>
-              {item}
-              <button
-                type="button"
-                className={styles.equipmentRemove}
-                onClick={() => removeEquipmentItem(item)}
-                aria-label={`Fjarlægja ${item}`}
-              >
-                ✕
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SectionInstructions({ draft, updateDraft }: DraftProps) {
-  return (
-    <div className={styles.field}>
-      <label htmlFor="event-instructions" className={styles.label}>
-        Framkvæmd
-      </label>
-      <textarea
-        id="event-instructions"
-        className={styles.textarea}
-        value={draft.instructions}
-        onChange={(e) => updateDraft({ instructions: e.target.value })}
-        placeholder="Skrifaðu skref-fyrir-skref leiðbeiningar..."
-        rows={6}
-        maxLength={5000}
-      />
-      <p className={styles.hint}>{draft.instructions.length}/5000</p>
-    </div>
-  );
-}
-
-type SectionExtrasProps = DraftProps & { displayTags: string[] };
-
-function SectionExtras({ draft, updateDraft, displayTags }: SectionExtrasProps) {
-  return (
-    <>
-      <div className={styles.field}>
-        {displayTags.length === 0 ? (
-          <p className={styles.hint}>Engir merkimiðar tiltækir</p>
-        ) : (
-          <div className={styles.tagGrid}>
-            {displayTags.map((tag) => {
-              const isSelected = draft.selectedTags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  className={`${styles.tagButton} ${isSelected ? styles.tagButtonActive : ""}`}
-                  onClick={() => {
-                    const next = isSelected
-                      ? draft.selectedTags.filter((t) => t !== tag)
-                      : [...draft.selectedTags, tag];
-                    updateDraft({ selectedTags: next });
-                  }}
-                  aria-pressed={isSelected}
-                >
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <div className={styles.field}>
-        <label htmlFor="event-image" className={styles.label}>
-          Vefslóð myndar
-        </label>
-        <input
-          id="event-image"
-          type="url"
-          className={styles.input}
-          value={draft.image}
-          onChange={(e) => updateDraft({ image: e.target.value })}
-          placeholder="https://example.com/mynd.jpg"
-        />
-      </div>
-    </>
   );
 }
