@@ -62,7 +62,7 @@ export default function AboutPage() {
           >
             Skoða á GitHub
           </a>
-          <a href="mailto:slodi@skatarnir.is" className={styles.ctaButtonSecondary}>
+          <a href="mailto:slodi@slodi.is" className={styles.ctaButtonSecondary}>
             Hafa samband
           </a>
         </div>

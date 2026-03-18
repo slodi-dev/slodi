@@ -159,8 +159,8 @@ function UnsubscribeContent() {
               <div className={styles.footer}>
                 <p className={styles.footerText}>
                   Ef þú átt í vandræðum með að afskrá þig, hafðu samband við okkur á{" "}
-                  <a href="mailto:slodi@skatarnir.is" className={styles.mailtoLink}>
-                    slodi@skatarnir.is
+                  <a href="mailto:slodi@slodi.is" className={styles.mailtoLink}>
+                    slodi@slodi.is
                   </a>
                   .
                 </p>
