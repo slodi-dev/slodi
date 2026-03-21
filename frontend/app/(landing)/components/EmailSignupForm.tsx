@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { API_BASE_URL } from "@/constants/config";
 import styles from "./EmailSignupForm.module.css";
 
 function isValidEmail(value: string): boolean {
@@ -28,24 +29,22 @@ export default function EmailSignupForm() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/emaillist", {
+      const response = await fetch(`${API_BASE_URL}/emaillist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
         setStatus("success");
-        setMessage(data.message || "Takk fyrir að skrá þig á póstlistann!");
+        setMessage("Takk fyrir að skrá þig á póstlistann!");
         setEmail("");
       } else if (response.status === 409) {
         setStatus("error");
         setMessage("Þetta netfang er þegar á póstlistanum.");
       } else {
         setStatus("error");
-        setMessage(data.message || "Ekki tókst að skrá þig á póstlistann. Reyndu aftur síðar.");
+        setMessage("Ekki tókst að skrá þig á póstlistann. Reyndu aftur síðar.");
       }
     } catch {
       setStatus("error");
