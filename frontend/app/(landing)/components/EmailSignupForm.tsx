@@ -28,7 +28,7 @@ export default function EmailSignupForm() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/emails", {
+      const response = await fetch("/api/emaillist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
