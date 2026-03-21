@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,5 +35,14 @@ class EmailListService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Email not found in subscription list",
+            )
+        await self.session.commit()
+
+    async def unsubscribe_by_token(self, token: UUID) -> None:
+        deleted_count = await self.repo.delete_by_token(token)
+        if deleted_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invalid or expired unsubscribe token.",
             )
         await self.session.commit()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from uuid import UUID
 
 from sqlalchemy import delete, select
 from sqlalchemy.engine import CursorResult
@@ -24,5 +25,12 @@ class EmailListRepository(Repository):
 
     async def delete(self, email: str) -> int:
         res = await self.session.execute(delete(EmailList).where(EmailList.email == email))
+        assert isinstance(res, CursorResult)
+        return res.rowcount or 0
+
+    async def delete_by_token(self, token: UUID) -> int:
+        res = await self.session.execute(
+            delete(EmailList).where(EmailList.unsubscribe_token == token)
+        )
         assert isinstance(res, CursorResult)
         return res.rowcount or 0

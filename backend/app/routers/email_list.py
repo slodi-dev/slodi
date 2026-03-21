@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,6 +35,12 @@ async def create_email_entry(
     """Subscribe an email address to the mailing list. Public endpoint, no auth required."""
     svc = EmailListService(session)
     await svc.create(body)
+
+
+@router.get("/unsubscribe/{token}", status_code=status.HTTP_204_NO_CONTENT)
+async def unsubscribe_by_token(token: UUID, session: SessionDep) -> None:
+    """Public one-click unsubscribe via token included in broadcast emails."""
+    await EmailListService(session).unsubscribe_by_token(token)
 
 
 @router.delete("/{email}", status_code=status.HTTP_204_NO_CONTENT)

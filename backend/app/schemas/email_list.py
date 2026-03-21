@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints, field_validator
 
@@ -33,3 +34,4 @@ class EmailListOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     email: EmailConstrained
+    unsubscribe_token: UUID

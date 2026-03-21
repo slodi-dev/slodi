@@ -3,6 +3,8 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: slodi-postgres
+    env_file:
+      - ./backend/.env.docker
     environment:
       POSTGRES_DB: slodi_db
       POSTGRES_USER: slodi_user

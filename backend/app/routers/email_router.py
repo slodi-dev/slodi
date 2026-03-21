@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import check_workspace_access, get_current_user, require_permission
 from app.core.db import get_session
-from app.core.email import send_email_background
+from app.core.email import send_batch_background, send_email_background
 from app.domain.enums import Permissions, WorkspaceRole
 from app.schemas.email import (
     BroadcastOut,
@@ -80,20 +80,25 @@ async def broadcast_to_email_list(
 ) -> BroadcastOut:
     """Broadcast an email to all subscribers on the email list. Admin only."""
     subscribers = await EmailListService(session).list()
-    recipients = [entry.email for entry in subscribers]
 
-    if len(recipients) > settings.resend_max_recipients:
+    if len(subscribers) > settings.resend_max_recipients:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Recipient count ({len(recipients)}) exceeds the configured limit ({settings.resend_max_recipients}). Raise RESEND_MAX_RECIPIENTS to proceed.",
+            detail=f"Recipient count ({len(subscribers)}) exceeds the configured limit ({settings.resend_max_recipients}). Raise RESEND_MAX_RECIPIENTS to proceed.",
         )
 
-    if recipients:
-        send_email_background(
-            background_tasks,
-            recipients=recipients,
-            subject=body.subject,
-            html=body.html,
-        )
+    if subscribers:
+        messages = [
+            (
+                entry.email,
+                body.subject,
+                body.html.replace(
+                    "{unsubscribe_url}",
+                    f"https://slodi.is/unsubscribe?token={entry.unsubscribe_token}",
+                ),
+            )
+            for entry in subscribers
+        ]
+        send_batch_background(background_tasks, messages)
 
-    return BroadcastOut(recipients_count=len(recipients))
+    return BroadcastOut(recipients_count=len(subscribers))
