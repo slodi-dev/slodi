@@ -18,7 +18,8 @@ def _send_email(recipients: list[str], subject: str, html: str) -> None:
     resend.api_key = settings.resend_api_key
     params: resend.Emails.SendParams = {
         "from": settings.resend_from_email,
-        "to": recipients,
+        "to": [settings.resend_from_email],
+        "bcc": recipients,
         "subject": subject,
         "html": html,
     }

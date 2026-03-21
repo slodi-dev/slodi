@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     # Resend (email) configuration
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
+    resend_max_recipients: int = Field(50, alias="RESEND_MAX_RECIPIENTS")
 
     # Cache configuration
     cache_backend: str = Field("memory", alias="CACHE_BACKEND")  # "memory" or "redis"

@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import check_workspace_access, get_current_user, require_permission
@@ -20,6 +20,7 @@ from app.schemas.email import (
 from app.schemas.user import UserOut
 from app.services.email_list import EmailListService
 from app.services.workspaces import WorkspaceService
+from app.settings import settings
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
@@ -80,6 +81,12 @@ async def broadcast_to_email_list(
     """Broadcast an email to all subscribers on the email list. Admin only."""
     subscribers = await EmailListService(session).list()
     recipients = [entry.email for entry in subscribers]
+
+    if len(recipients) > settings.resend_max_recipients:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Recipient count ({len(recipients)}) exceeds the configured limit ({settings.resend_max_recipients}). Raise RESEND_MAX_RECIPIENTS to proceed.",
+        )
 
     if recipients:
         send_email_background(
