@@ -1,33 +1,38 @@
+import { readFile } from "fs/promises";
+import { join } from "path";
 import { NextResponse } from "next/server";
 
-const API_BASE = process.env.API_BASE_URL || "http://backend:8000";
+const SEED_KEY = "dagskrarbankinn_workspace_id";
 
 /**
- * Proxy to GET /config/public on the backend.
- * Returns public runtime config so the frontend can resolve values (like
- * default_workspace_id) that are not available at build time in Docker.
+ * Return the default workspace ID for the frontend.
+ *
+ * Resolution order (mirrors backend read_seed_output()):
+ * 1. DEFAULT_WORKSPACE_ID env var (fast path — set in docker-compose or .env)
+ * 2. seed_output.json in SEED_OUTPUT_DIR (written by the seed/migrations container,
+ *    mounted as a shared Docker volume at /app/seed_data)
+ * 3. null — graceful degradation, programs page stays empty
  */
 export async function GET() {
+  const wsId = await resolveWorkspaceId();
+  return NextResponse.json({ default_workspace_id: wsId ?? null });
+}
+
+async function resolveWorkspaceId(): Promise<string | null> {
+  // Fast path: explicit env var
+  const envId = process.env.DEFAULT_WORKSPACE_ID;
+  if (envId) return envId;
+
+  // File path: read seed_output.json from the shared Docker volume
+  const seedDir = process.env.SEED_OUTPUT_DIR;
+  if (!seedDir) return null;
+
   try {
-    const response = await fetch(`${API_BASE}/config/public`, {
-      // 10 s timeout — this is a fast, unauthenticated endpoint
-      signal: AbortSignal.timeout(10_000),
-      headers: { Accept: "application/json" },
-      // Never cache — this may change between container restarts
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch config from backend" },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 503 });
+    const raw = await readFile(join(seedDir, "seed_output.json"), "utf-8");
+    const data = JSON.parse(raw) as Record<string, unknown>;
+    const id = data[SEED_KEY];
+    return typeof id === "string" ? id : null;
+  } catch {
+    return null;
   }
 }

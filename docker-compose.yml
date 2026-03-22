@@ -97,6 +97,10 @@ services:
     container_name: slodi-frontend
     env_file:
       - ./frontend/.env.docker
+    environment:
+      SEED_OUTPUT_DIR: /app/seed_data
+    volumes:
+      - seed_data:/app/seed_data
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
