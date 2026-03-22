@@ -264,17 +264,17 @@ class TestProgramFilters:
         assert "Cooking Challenge" in names
 
     async def test_duration_min_filter(self, http, seed_data):
-        """duration_min=60 excludes programs with duration_min < 60."""
+        """duration_min=61 excludes programs whose duration_max < 61 (no overlap)."""
         sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
-            params={"duration_min": 60},
+            params={"duration_min": 61},
         )
         assert resp.status_code == 200
         names = {p["name"] for p in resp.json()}
-        assert "Outdoor Adventure" not in names  # duration_min=30
-        assert "Cooking Challenge" in names  # duration_min=60
-        assert "Indoor Workshop" in names  # duration_min=120
+        assert "Outdoor Adventure" not in names  # duration_max=60 < 61
+        assert "Cooking Challenge" in names  # duration_max=90 >= 61
+        assert "Indoor Workshop" in names  # duration_max=180 >= 61
 
     async def test_duration_max_filter(self, http, seed_data):
         """duration_max=90 excludes programs with duration_max > 90."""
@@ -378,29 +378,30 @@ class TestProgramFilters:
         assert data[0]["name"] == "Cooking Challenge"
 
     async def test_count_min_filter(self, http, seed_data):
-        """count_min=10 returns only programs with count_min >= 10."""
+        """count_min=11 excludes programs whose count_max < 11 (no overlap)."""
         sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
-            params={"count_min": 10},
+            params={"count_min": 11},
         )
         assert resp.status_code == 200
         names = {p["name"] for p in resp.json()}
-        assert "Indoor Workshop" in names  # count_min=10
-        assert "Outdoor Adventure" not in names  # count_min=5
+        assert "Indoor Workshop" in names  # count_max=30 >= 11
+        assert "Outdoor Adventure" in names  # count_max=20 >= 11
+        assert "Cooking Challenge" not in names  # count_max=10 < 11
 
     async def test_count_max_filter(self, http, seed_data):
-        """count_max=20 returns only programs with count_max <= 20."""
+        """count_max=9 excludes programs whose count_min > 9 (no overlap)."""
         sd = seed_data
         resp = http.get(
             f"/workspaces/{sd['workspace_id']}/programs",
-            params={"count_max": 20},
+            params={"count_max": 9},
         )
         assert resp.status_code == 200
         names = {p["name"] for p in resp.json()}
-        assert "Outdoor Adventure" in names  # count_max=20
-        assert "Cooking Challenge" in names  # count_max=10
-        assert "Indoor Workshop" not in names  # count_max=30
+        assert "Outdoor Adventure" in names  # count_min=5 <= 9
+        assert "Cooking Challenge" in names  # count_min=3 <= 9
+        assert "Indoor Workshop" not in names  # count_min=10 > 9
 
     async def test_prep_time_min_filter(self, http, seed_data):
         """prep_time_min=30 returns only programs with prep_time_min >= 30."""
