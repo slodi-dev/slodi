@@ -1,6 +1,5 @@
 # ruff: noqa: F401
 from app.routers import comments as comments_router
-from app.routers import config as config_router
 from app.routers import email_list as email_list_router
 from app.routers import events as events_router
 from app.routers import groups as groups_router

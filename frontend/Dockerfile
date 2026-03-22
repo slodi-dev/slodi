@@ -32,7 +32,6 @@ FROM deps AS build
 
 # Only NEXT_PUBLIC_* vars that must be baked into the client bundle go here.
 # No env files are copied — they are excluded via .dockerignore.
-# NEXT_PUBLIC_DEFAULT_WORKSPACE_ID is intentionally absent: fetched at runtime via /api/config.
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
