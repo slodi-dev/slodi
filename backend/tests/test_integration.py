@@ -22,6 +22,7 @@ from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.domain.enums import Permissions
 from app.main import create_app
+from app.models.user import User
 from app.schemas.user import UserOut
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -197,3 +198,138 @@ class TestWorkspacePersistence:
         assert resp.status_code == 200
         names = [w["name"] for w in resp.json()]
         assert "User A Only" not in names
+
+
+# ── Event date filtering ──────────────────────────────────────────────────────
+
+# Separate admin identity for event-filtering tests so the user row can be
+# inserted into the DB before any content (FK: content.author_id → users.id).
+_EVT_ADMIN_ID = uuid4()
+_EVT_ADMIN_USER = UserOut(
+    id=_EVT_ADMIN_ID,
+    auth0_id="auth0|evt_filter_admin",
+    email="evt_filter_admin@integration.example.com",
+    name="Event Filter Admin",
+    pronouns=None,
+    permissions=Permissions.admin,
+    preferences=None,
+)
+
+
+def _make_evt_client(db_session) -> TestClient:
+    app = create_app()
+
+    async def override_get_session():
+        yield db_session
+
+    async def override_get_current_user():
+        return _EVT_ADMIN_USER
+
+    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    return TestClient(app)
+
+
+@pytest.fixture
+def http_evt(db):
+    return _make_evt_client(db)
+
+
+@pytest.fixture
+async def evt_workspace(db, http_evt):
+    """
+    Seed the event-filter admin user into the DB, then create a workspace via
+    HTTP. Returns the workspace id as a string.
+    """
+    user = User(
+        id=_EVT_ADMIN_ID,
+        name="Event Filter Admin",
+        auth0_id="auth0|evt_filter_admin",
+        email="evt_filter_admin@integration.example.com",
+    )
+    db.add(user)
+    await db.flush()
+
+    resp = http_evt.post("/users/me/workspaces", json={"name": "Event Filter WS"})
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
+@pytest.mark.integration
+class TestEventDateFiltering:
+    """Event list endpoints respect date_from / date_to query filters."""
+
+    def _create_event(self, http_evt, workspace_id: str, name: str, start_dt: str) -> dict:
+        resp = http_evt.post(
+            f"/workspaces/{workspace_id}/events",
+            json={"name": name, "start_dt": start_dt},
+        )
+        assert resp.status_code == 201
+        return resp.json()
+
+    def test_no_filter_returns_all_events(self, http_evt, evt_workspace):
+        self._create_event(http_evt, evt_workspace, "January", "2025-01-15T10:00:00Z")
+        self._create_event(http_evt, evt_workspace, "June", "2025-06-15T10:00:00Z")
+        self._create_event(http_evt, evt_workspace, "December", "2025-12-15T10:00:00Z")
+
+        resp = http_evt.get(f"/workspaces/{evt_workspace}/events")
+        assert resp.status_code == 200
+        names = {e["name"] for e in resp.json()}
+        assert {"January", "June", "December"}.issubset(names)
+
+    def test_date_from_excludes_earlier_events(self, http_evt, evt_workspace):
+        self._create_event(http_evt, evt_workspace, "Early", "2025-01-15T10:00:00Z")
+        self._create_event(http_evt, evt_workspace, "Late", "2025-09-15T10:00:00Z")
+
+        resp = http_evt.get(
+            f"/workspaces/{evt_workspace}/events",
+            params={"date_from": "2025-06-01T00:00:00Z"},
+        )
+        assert resp.status_code == 200
+        names = {e["name"] for e in resp.json()}
+        assert "Late" in names
+        assert "Early" not in names
+
+    def test_date_to_excludes_later_events(self, http_evt, evt_workspace):
+        self._create_event(http_evt, evt_workspace, "Before", "2025-03-10T10:00:00Z")
+        self._create_event(http_evt, evt_workspace, "After", "2025-11-10T10:00:00Z")
+
+        resp = http_evt.get(
+            f"/workspaces/{evt_workspace}/events",
+            params={"date_to": "2025-06-01T00:00:00Z"},
+        )
+        assert resp.status_code == 200
+        names = {e["name"] for e in resp.json()}
+        assert "Before" in names
+        assert "After" not in names
+
+    def test_date_range_returns_only_matching_events(self, http_evt, evt_workspace):
+        self._create_event(http_evt, evt_workspace, "Too Early", "2025-01-10T10:00:00Z")
+        self._create_event(http_evt, evt_workspace, "In Range", "2025-05-15T10:00:00Z")
+        self._create_event(http_evt, evt_workspace, "Too Late", "2025-10-10T10:00:00Z")
+
+        resp = http_evt.get(
+            f"/workspaces/{evt_workspace}/events",
+            params={
+                "date_from": "2025-04-01T00:00:00Z",
+                "date_to": "2025-07-01T00:00:00Z",
+            },
+        )
+        assert resp.status_code == 200
+        names = {e["name"] for e in resp.json()}
+        assert "In Range" in names
+        assert "Too Early" not in names
+        assert "Too Late" not in names
+
+    def test_date_range_empty_result(self, http_evt, evt_workspace):
+        self._create_event(http_evt, evt_workspace, "Past Event", "2024-06-01T10:00:00Z")
+
+        resp = http_evt.get(
+            f"/workspaces/{evt_workspace}/events",
+            params={
+                "date_from": "2025-01-01T00:00:00Z",
+                "date_to": "2025-12-31T23:59:59Z",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
