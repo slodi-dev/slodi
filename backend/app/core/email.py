@@ -22,35 +22,45 @@ def _send_email(recipients: list[str], subject: str, html: str) -> None:
         "from": settings.resend_from_email,
         "to": [settings.resend_from_email],
         "bcc": recipients,
+        "reply_to": settings.resend_from_email,
         "subject": subject,
         "html": html,
     }
     resend.Emails.send(params)
 
 
-def _send_batch(messages: list[tuple[str, str, str]]) -> None:
-    """Send a batch of individual emails. Each message is (recipient, subject, html).
+def _send_batch(messages: list[tuple[str, str, str, str | None]]) -> None:
+    """Send a batch of individual emails.
 
-    Uses resend.Batch.send() in chunks of up to 100 per API call so each recipient
-    gets their own email (required when the HTML body differs per recipient, e.g.
-    personalised unsubscribe links).
+    Each message is (recipient, subject, html, unsubscribe_url).
+    When unsubscribe_url is provided, List-Unsubscribe headers are added
+    so Gmail/Outlook show a one-click unsubscribe button.
     """
     if not settings.resend_api_key:
-        logger.warning("RESEND_API_KEY not configured — skipping batch of %d emails", len(messages))
+        logger.warning(
+            "RESEND_API_KEY not configured — skipping batch of %d emails",
+            len(messages),
+        )
         return
 
     resend.api_key = settings.resend_api_key
     for i in range(0, len(messages), _BATCH_SIZE):
         chunk = messages[i : i + _BATCH_SIZE]
-        params: list[resend.Emails.SendParams] = [
-            {
+        params: list[resend.Emails.SendParams] = []
+        for recipient, subject, html, unsub_url in chunk:
+            entry: resend.Emails.SendParams = {
                 "from": settings.resend_from_email,
                 "to": [recipient],
+                "reply_to": settings.resend_from_email,
                 "subject": subject,
                 "html": html,
             }
-            for recipient, subject, html in chunk
-        ]
+            if unsub_url:
+                entry["headers"] = {
+                    "List-Unsubscribe": f"<{unsub_url}>",
+                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+                }
+            params.append(entry)
         resend.Batch.send(params)
 
 
@@ -71,7 +81,10 @@ def send_email_background(
 
 def send_batch_background(
     background_tasks: BackgroundTasks,
-    messages: list[tuple[str, str, str]],
+    messages: list[tuple[str, str, str, str | None]],
 ) -> None:
-    """Queue a batch of individual emails (recipient, subject, html) as a background task."""
+    """Queue a batch of individual emails as a background task.
+
+    Each message is (recipient, subject, html, unsubscribe_url).
+    """
     background_tasks.add_task(_send_batch, messages)
