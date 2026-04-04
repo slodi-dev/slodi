@@ -210,8 +210,8 @@ export default function EmailManagement() {
     if (usesBlockEditor(draft.template) && Array.isArray(draft.blocks)) {
       setBlocks(draft.blocks as Block[]);
       setTemplateVars({});
-    } else if (draft.blocks && typeof draft.blocks === "object" && !Array.isArray(draft.blocks)) {
-      setTemplateVars(draft.blocks as unknown as Record<string, string>);
+    } else if (draft.blocks && Array.isArray(draft.blocks) && draft.blocks.length === 1) {
+      setTemplateVars(draft.blocks[0] as Record<string, string>);
       setBlocks([]);
     } else {
       setBlocks([]);
@@ -281,9 +281,9 @@ export default function EmailManagement() {
         .map((e) => e.trim())
         .filter(Boolean);
       // Newsletter uses block array; other templates use flat key/value dict
-      const blocksData = usesBlockEditor(form.template)
+      const blocksData: Record<string, unknown>[] | null = usesBlockEditor(form.template)
         ? blocks.length > 0 ? blocks : null
-        : Object.keys(templateVars).length > 0 ? templateVars : null;
+        : Object.keys(templateVars).length > 0 ? [templateVars as Record<string, unknown>] : null;
       const payload = {
         subject: form.subject,
         preheader: form.preheader || null,
