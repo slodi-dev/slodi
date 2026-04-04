@@ -156,11 +156,7 @@ export default function TemplateTextEditor() {
       })}
 
       <div className={styles.actions}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving || !dirty}
-        >
+        <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !dirty}>
           {saving ? "Vista..." : "Vista breytingar"}
         </button>
         {dirty && <span className={styles.dirtyHint}>Óvistaðar breytingar</span>}

@@ -54,10 +54,7 @@ const EMPTY_FORM = {
 };
 
 /** Templates that use named variables instead of the block editor. */
-const TEMPLATE_VAR_FIELDS: Record<
-  string,
-  { key: string; label: string; placeholder: string }[]
-> = {
+const TEMPLATE_VAR_FIELDS: Record<string, { key: string; label: string; placeholder: string }[]> = {
   welcome: [
     { key: "user_name", label: "Nafn notanda", placeholder: "Jón Jónsson" },
     { key: "login_url", label: "Innskráningarslóð", placeholder: "https://slodi.is" },
@@ -246,9 +243,18 @@ export default function EmailManagement() {
   const addBlock = (type: BlockType) => {
     const base: Block = { type };
     if (type === "heading" || type === "text") base.text = "";
-    if (type === "image") { base.src = ""; base.alt = ""; }
-    if (type === "cta") { base.label = ""; base.url = ""; }
-    if (type === "feature_card") { base.title = ""; base.description = ""; }
+    if (type === "image") {
+      base.src = "";
+      base.alt = "";
+    }
+    if (type === "cta") {
+      base.label = "";
+      base.url = "";
+    }
+    if (type === "feature_card") {
+      base.title = "";
+      base.description = "";
+    }
     setBlocks((prev) => [...prev, base]);
   };
 
@@ -282,8 +288,12 @@ export default function EmailManagement() {
         .filter(Boolean);
       // Newsletter uses block array; other templates use flat key/value dict
       const blocksData: Record<string, unknown>[] | null = usesBlockEditor(form.template)
-        ? blocks.length > 0 ? blocks : null
-        : Object.keys(templateVars).length > 0 ? [templateVars as Record<string, unknown>] : null;
+        ? blocks.length > 0
+          ? blocks
+          : null
+        : Object.keys(templateVars).length > 0
+          ? [templateVars as Record<string, unknown>]
+          : null;
       const payload = {
         subject: form.subject,
         preheader: form.preheader || null,
@@ -401,7 +411,9 @@ export default function EmailManagement() {
           </button>
         ) : (
           <div className={styles.formCard}>
-            <h3 className={styles.formTitle}>{editingDraftId ? "Breyta pósti" : "Setja saman nýjan póst"}</h3>
+            <h3 className={styles.formTitle}>
+              {editingDraftId ? "Breyta pósti" : "Setja saman nýjan póst"}
+            </h3>
 
             <label className={styles.label}>
               Sniðmát
@@ -428,9 +440,7 @@ export default function EmailManagement() {
                 placeholder="Fyrirsögn tölvupósts"
               />
               {form.subject.length > 2 && form.subject === form.subject.toUpperCase() && (
-                <span className={styles.warning}>
-                  Efnislína í hástöfum getur lent í ruslpósti
-                </span>
+                <span className={styles.warning}>Efnislína í hástöfum getur lent í ruslpósti</span>
               )}
             </label>
 
@@ -475,37 +485,106 @@ export default function EmailManagement() {
                     <div className={styles.blockHeader}>
                       <span className={styles.blockType}>{block.type}</span>
                       <div className={styles.blockActions}>
-                        <button type="button" className={styles.blockBtn} onClick={() => moveBlock(i, -1)} disabled={i === 0}>↑</button>
-                        <button type="button" className={styles.blockBtn} onClick={() => moveBlock(i, 1)} disabled={i === blocks.length - 1}>↓</button>
-                        <button type="button" className={styles.blockBtnDanger} onClick={() => removeBlock(i)}>✕</button>
+                        <button
+                          type="button"
+                          className={styles.blockBtn}
+                          onClick={() => moveBlock(i, -1)}
+                          disabled={i === 0}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.blockBtn}
+                          onClick={() => moveBlock(i, 1)}
+                          disabled={i === blocks.length - 1}
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.blockBtnDanger}
+                          onClick={() => removeBlock(i)}
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                     {(block.type === "heading" || block.type === "text") && (
-                      <input className={styles.input} type="text" placeholder={block.type === "heading" ? "Fyrirsögn" : "Texti"} value={(block.text as string) || ""} onChange={(e) => updateBlock(i, "text", e.target.value)} />
+                      <input
+                        className={styles.input}
+                        type="text"
+                        placeholder={block.type === "heading" ? "Fyrirsögn" : "Texti"}
+                        value={(block.text as string) || ""}
+                        onChange={(e) => updateBlock(i, "text", e.target.value)}
+                      />
                     )}
                     {block.type === "image" && (
                       <>
-                        <input className={styles.input} type="text" placeholder="Slóð myndar (URL)" value={(block.src as string) || ""} onChange={(e) => updateBlock(i, "src", e.target.value)} />
-                        <input className={styles.input} type="text" placeholder="Alt-texti" value={(block.alt as string) || ""} onChange={(e) => updateBlock(i, "alt", e.target.value)} />
+                        <input
+                          className={styles.input}
+                          type="text"
+                          placeholder="Slóð myndar (URL)"
+                          value={(block.src as string) || ""}
+                          onChange={(e) => updateBlock(i, "src", e.target.value)}
+                        />
+                        <input
+                          className={styles.input}
+                          type="text"
+                          placeholder="Alt-texti"
+                          value={(block.alt as string) || ""}
+                          onChange={(e) => updateBlock(i, "alt", e.target.value)}
+                        />
                       </>
                     )}
                     {block.type === "cta" && (
                       <>
-                        <input className={styles.input} type="text" placeholder="Texti á hnapp" value={(block.label as string) || ""} onChange={(e) => updateBlock(i, "label", e.target.value)} />
-                        <input className={styles.input} type="text" placeholder="Slóð (URL)" value={(block.url as string) || ""} onChange={(e) => updateBlock(i, "url", e.target.value)} />
+                        <input
+                          className={styles.input}
+                          type="text"
+                          placeholder="Texti á hnapp"
+                          value={(block.label as string) || ""}
+                          onChange={(e) => updateBlock(i, "label", e.target.value)}
+                        />
+                        <input
+                          className={styles.input}
+                          type="text"
+                          placeholder="Slóð (URL)"
+                          value={(block.url as string) || ""}
+                          onChange={(e) => updateBlock(i, "url", e.target.value)}
+                        />
                       </>
                     )}
                     {block.type === "feature_card" && (
                       <>
-                        <input className={styles.input} type="text" placeholder="Titill" value={(block.title as string) || ""} onChange={(e) => updateBlock(i, "title", e.target.value)} />
-                        <input className={styles.input} type="text" placeholder="Lýsing" value={(block.description as string) || ""} onChange={(e) => updateBlock(i, "description", e.target.value)} />
+                        <input
+                          className={styles.input}
+                          type="text"
+                          placeholder="Titill"
+                          value={(block.title as string) || ""}
+                          onChange={(e) => updateBlock(i, "title", e.target.value)}
+                        />
+                        <input
+                          className={styles.input}
+                          type="text"
+                          placeholder="Lýsing"
+                          value={(block.description as string) || ""}
+                          onChange={(e) => updateBlock(i, "description", e.target.value)}
+                        />
                       </>
                     )}
                   </div>
                 ))}
                 <div className={styles.addBlockRow}>
                   {BLOCK_TYPES.map((bt) => (
-                    <button key={bt.value} type="button" className={styles.addBlockBtn} onClick={() => addBlock(bt.value)}>+ {bt.label}</button>
+                    <button
+                      key={bt.value}
+                      type="button"
+                      className={styles.addBlockBtn}
+                      onClick={() => addBlock(bt.value)}
+                    >
+                      + {bt.label}
+                    </button>
                   ))}
                 </div>
               </fieldset>
@@ -607,10 +686,7 @@ export default function EmailManagement() {
                     <td className={styles.td}>
                       <div className={styles.actions}>
                         {d.status === "draft" && (
-                          <button
-                            className={styles.actionBtn}
-                            onClick={() => handleEdit(d)}
-                          >
+                          <button className={styles.actionBtn} onClick={() => handleEdit(d)}>
                             Breyta
                           </button>
                         )}
