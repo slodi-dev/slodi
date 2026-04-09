@@ -12,6 +12,29 @@ function UnsubscribeContent() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    // Token-based unsubscribe from email links
+    const token = searchParams.get("token");
+    if (token) {
+      setStatus("loading");
+      fetch(`/api/emails/unsubscribe?token=${encodeURIComponent(token)}`)
+        .then((res) => {
+          if (res.ok) {
+            setStatus("success");
+            setMessage("Netfangið þitt er ekki lengur á póstlistanum okkar.");
+          } else {
+            return res.json().then((data) => {
+              setStatus("error");
+              setMessage(data.error || "Ekki tókst að afskrá þig. Reyndu aftur síðar.");
+            });
+          }
+        })
+        .catch(() => {
+          setStatus("error");
+          setMessage("Ekki tókst að afskrá þig. Reyndu aftur síðar.");
+        });
+      return;
+    }
+
     // Check if email is provided in URL parameters
     const emailParam = searchParams.get("email");
     if (emailParam) {

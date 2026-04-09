@@ -1,3 +1,4 @@
+import Link from "next/link";
 import UserManagement from "@/components/UserManagement/UserManagement";
 import styles from "./admin.module.css";
 
@@ -8,6 +9,10 @@ export default function AdminPage() {
         <h1 className={styles.title}>Stjórnun</h1>
         <p className={styles.subtitle}>Stjórnaðu kerfinu og notendum.</p>
       </div>
+
+      <nav className={styles.section}>
+        <Link href="/admin/emails">Tölvupóstur →</Link>
+      </nav>
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Notendur</h2>

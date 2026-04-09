@@ -1,0 +1,27 @@
+{
+  "welcome": {
+    "heading": "Verið velkomin í Slóða, {user_name}",
+    "intro": "Við tökum þér fagnandi í nýja dagskrárbankann, sem er svo miklu meira en bara dagskrárbanki. Gríptu tækifærið og skoðaðu það sem kerfið hefur upp á að bjóða.",
+    "bullet_1": "Skipulegðu dagskrá fyrir fundi og útilegur",
+    "bullet_2": "Deildu og skipulagðu með samforingjunum þínum",
+    "bullet_3": "HEIMSYFIRRÁÐ!",
+    "cta_label": "Byrja",
+    "closing": "Ef upp vakna einhverjar spurningar ekki hika við að heyra í okkur slodi@slodi.is"
+  },
+  "workspace_invite": {
+    "heading": "Þú hefur fengið boð!",
+    "intro": "{inviter_name} hefur boðið þér í vinnusvæðið <strong>{workspace_name}</strong> á Slóða.",
+    "cta_label": "Samþykkja boð",
+    "disclaimer": "Ef þú áttir ekki von á þessu pósti geturðu hunsað hann."
+  },
+  "newsletter": {
+    "unsubscribe_label": "Segja upp póstlista"
+  },
+  "new_feature": {
+    "badge_label": "NÝTT",
+    "unsubscribe_label": "Segja upp póstlista"
+  },
+  "footer": {
+    "copyright": "2026 Slodi ehf."
+  }
+}

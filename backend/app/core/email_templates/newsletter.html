@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display:none;font-size:1px;color:#fafafa;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+  {{ preheader }}
+</div>
+{% for block in blocks %}
+  {% if block.type == "heading" %}
+  <h2 style="font-family:'Roboto Condensed',Arial,sans-serif;font-size:22px;font-weight:700;color:#262626;line-height:28px;">{{ block.text }}</h2>
+  {% elif block.type == "text" %}
+  <p style="font-size:16px;color:#262626;line-height:24px;font-family:'Roboto Condensed',Arial,sans-serif;">{{ block.text }}</p>
+  {% elif block.type == "image" %}
+  <img src="{{ block.src }}" width="536" height="auto" alt="{{ block.alt }}" style="display:block;width:536px;" />
+  {% if block.caption %}
+  <p style="font-size:14px;color:#6b7280;line-height:20px;font-family:'Roboto Condensed',Arial,sans-serif;">{{ block.caption }}</p>
+  {% endif %}
+  {% elif block.type == "cta" %}
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding-top:16px;padding-bottom:16px;">
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <td bgcolor="#35a65f" style="padding-top:12px;padding-bottom:12px;padding-left:24px;padding-right:24px;">
+              <a href="{{ block.url }}" style="color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;font-family:'Roboto Condensed',Arial,sans-serif;">{{ block.label }}</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+  {% elif block.type == "divider" %}
+  <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #d9d9d9;padding-top:0;padding-bottom:0;"></td></tr></table>
+  {% elif block.type == "feature_card" %}
+  <table width="100%" cellpadding="0" cellspacing="0" border="1" bordercolor="#d9d9d9">
+    <tr>
+      <td style="padding-top:16px;padding-right:16px;padding-bottom:16px;padding-left:16px;">
+        <p style="font-size:18px;font-weight:700;color:#262626;line-height:24px;font-family:'Roboto Condensed',Arial,sans-serif;">{{ block.title }}</p>
+        <p style="font-size:16px;color:#262626;line-height:24px;font-family:'Roboto Condensed',Arial,sans-serif;">{{ block.description }}</p>
+        {% if block.link_url %}
+        <a href="{{ block.link_url }}" style="color:#35a65f;font-size:16px;font-family:'Roboto Condensed',Arial,sans-serif;text-decoration:none;">{{ block.link_label }}</a>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endif %}
+{% endfor %}
+{% endblock %}
+{% block unsubscribe %}
+  &nbsp;|&nbsp;
+  <a href="{unsubscribe_url}" style="color:#6b7280;text-decoration:underline;">{{ unsubscribe_label|default("Segja upp póstlista") }}</a>
+{% endblock %}

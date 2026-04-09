@@ -2,6 +2,7 @@
 from .base import Base
 from .comment import Comment
 from .content import Content, ContentType
+from .email_draft import EmailDraft
 from .event import Event
 from .group import Group, GroupMembership, GroupRole
 from .program import Program

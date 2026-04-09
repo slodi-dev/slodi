@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="font-family: 'Roboto Condensed', Arial, Helvetica, sans-serif; font-size: 24px; line-height: 32px; color: #262626; font-weight: bold; padding-bottom: 16px;">
+      {{ heading|default("Þú hefur fengið boð!") }}
+    </td>
+  </tr>
+  <tr>
+    <td style="font-family: 'Roboto Condensed', Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #262626; padding-bottom: 24px;">
+      {{ intro|default(inviter_name ~ " hefur boðið þér í vinnusvæðið <strong>" ~ workspace_name ~ "</strong> á Slóða.") }}
+    </td>
+  </tr>
+  {% if personal_note %}
+  <tr>
+    <td style="padding-bottom: 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="border-left: 4px solid #35a65f; padding-left: 16px; font-family: 'Roboto Condensed', Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #262626; font-style: italic;">
+            {{ personal_note }}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  {% endif %}
+  <tr>
+    <td align="center" style="padding-bottom: 24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td bgcolor="#35a65f" align="center" style="padding-top: 12px; padding-right: 32px; padding-bottom: 12px; padding-left: 32px;">
+            <a href="{{ accept_url }}" style="font-family: 'Roboto Condensed', Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #fafafa; text-decoration: none; font-weight: bold; display: inline-block;">{{ cta_label|default("Samþykkja boð") }}</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="font-family: 'Roboto Condensed', Arial, Helvetica, sans-serif; font-size: 12px; line-height: 18px; color: #6b7280;">
+      {{ disclaimer|default("Ef þú áttir ekki von á þessu pósti geturðu hunsað hann.") }}
+    </td>
+  </tr>
+</table>
+{% endblock %}
