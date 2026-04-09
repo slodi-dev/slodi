@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -36,6 +38,12 @@ class Settings(BaseSettings):
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
     resend_max_recipients: int = Field(50, alias="RESEND_MAX_RECIPIENTS")
+
+    # Email template text config path (writable location for save_text_config)
+    email_text_config_path: Path = Field(
+        default=Path(__file__).resolve().parent / "core/email_templates/template_text.json",
+        alias="EMAIL_TEXT_CONFIG_PATH",
+    )
 
     # Cache configuration
     cache_backend: str = Field("memory", alias="CACHE_BACKEND")  # "memory" or "redis"

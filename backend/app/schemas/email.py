@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+TemplateName = Literal["welcome", "newsletter", "new_feature", "workspace_invite"]
 
 
 class EmailSendRequest(BaseModel):
@@ -46,10 +48,9 @@ class RenderRequest(BaseModel):
 class DraftCreate(BaseModel):
     subject: str = Field(..., min_length=1, max_length=200)
     preheader: str | None = Field(None, max_length=200)
-    template: str = Field(..., min_length=1, max_length=100)
+    template: TemplateName
     # Newsletter stores blocks as list[dict]; other templates store context as dict[str, Any]
     blocks: list[dict[str, Any]] | dict[str, Any] | None = None
-    recipient_list_id: UUID | None = None
     manual_recipients: list[EmailStr] | None = None
     scheduled_at: dt.datetime | None = None
 
@@ -57,9 +58,8 @@ class DraftCreate(BaseModel):
 class DraftUpdate(BaseModel):
     subject: str | None = Field(None, min_length=1, max_length=200)
     preheader: str | None = Field(None, max_length=200)
-    template: str | None = Field(None, min_length=1, max_length=100)
+    template: TemplateName | None = None
     blocks: list[dict[str, Any]] | dict[str, Any] | None = None
-    recipient_list_id: UUID | None = None
     manual_recipients: list[EmailStr] | None = None
     scheduled_at: dt.datetime | None = None
 

@@ -29,12 +29,10 @@ def _send_email(recipients: list[str], subject: str, html: str) -> None:
     resend.Emails.send(params)
 
 
-def _send_batch(messages: list[tuple[str, str, str, str | None]]) -> None:
+def _send_batch(messages: list[tuple[str, str, str]]) -> None:
     """Send a batch of individual emails.
 
-    Each message is (recipient, subject, html, unsubscribe_url).
-    When unsubscribe_url is provided, List-Unsubscribe headers are added
-    so Gmail/Outlook show a one-click unsubscribe button.
+    Each message is (recipient, subject, html).
     """
     if not settings.resend_api_key:
         logger.warning(
@@ -47,7 +45,7 @@ def _send_batch(messages: list[tuple[str, str, str, str | None]]) -> None:
     for i in range(0, len(messages), _BATCH_SIZE):
         chunk = messages[i : i + _BATCH_SIZE]
         params: list[resend.Emails.SendParams] = []
-        for recipient, subject, html, unsub_url in chunk:
+        for recipient, subject, html in chunk:
             entry: resend.Emails.SendParams = {
                 "from": settings.resend_from_email,
                 "to": [recipient],
@@ -55,11 +53,6 @@ def _send_batch(messages: list[tuple[str, str, str, str | None]]) -> None:
                 "subject": subject,
                 "html": html,
             }
-            if unsub_url:
-                entry["headers"] = {
-                    "List-Unsubscribe": f"<{unsub_url}>",
-                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-                }
             params.append(entry)
         resend.Batch.send(params)
 
@@ -81,10 +74,10 @@ def send_email_background(
 
 def send_batch_background(
     background_tasks: BackgroundTasks,
-    messages: list[tuple[str, str, str, str | None]],
+    messages: list[tuple[str, str, str]],
 ) -> None:
     """Queue a batch of individual emails as a background task.
 
-    Each message is (recipient, subject, html, unsubscribe_url).
+    Each message is (recipient, subject, html).
     """
     background_tasks.add_task(_send_batch, messages)

@@ -7,10 +7,12 @@ from typing import Any
 import css_inline
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from app.settings import settings
+
 ALLOWED_TEMPLATES: set[str] = {"welcome", "newsletter", "new_feature", "workspace_invite"}
 
 _TEMPLATE_DIR = Path(__file__).resolve().parent
-_TEXT_CONFIG_PATH = _TEMPLATE_DIR / "template_text.json"
+_TEXT_CONFIG_PATH = settings.email_text_config_path
 
 _env = Environment(
     loader=FileSystemLoader(str(_TEMPLATE_DIR)),
@@ -37,6 +39,20 @@ def save_text_config(config: dict[str, dict[str, str]]) -> None:
         json.dumps(config, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def build_render_context(draft: Any) -> dict[str, Any]:
+    """Build the Jinja2 context dict from a draft.
+
+    - ``newsletter`` stores blocks as a list of block dicts → passed as {"blocks": [...]}.
+    - Other templates store their variables as a flat dict → merged directly into context.
+    """
+    context: dict[str, Any] = {"subject": draft.subject, "preheader": draft.preheader}
+    if isinstance(draft.blocks, dict):
+        context.update(draft.blocks)
+    else:
+        context["blocks"] = draft.blocks
+    return context
 
 
 def render(template_name: str, context: dict[str, Any]) -> str:

@@ -25,7 +25,9 @@ class EmailDraft(Base):
     subject: Mapped[str] = mapped_column(String(200), nullable=False)
     preheader: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template: Mapped[str] = mapped_column(String(100), nullable=False)
-    blocks: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+    blocks: Mapped[list[dict[str, Any]] | dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True
+    )
     recipient_list_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
     manual_recipients: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")

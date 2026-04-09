@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
@@ -15,6 +15,7 @@ from app.core.db import get_session
 from app.core.email import send_batch_background, send_email_background
 from app.core.email_templates.renderer import (
     ALLOWED_TEMPLATES,
+    build_render_context,
     get_text_config,
     render,
     save_text_config,
@@ -107,7 +108,7 @@ async def broadcast_to_email_list(
         )
 
     if subscribers:
-        messages: list[tuple[str, str, str, str | None]] = []
+        messages: list[tuple[str, str, str]] = []
         for entry in subscribers:
             unsub_url = f"https://slodi.is/unsubscribe?token={entry.unsubscribe_token}"
             messages.append(
@@ -115,7 +116,6 @@ async def broadcast_to_email_list(
                     entry.email,
                     body.subject,
                     body.html.replace("{unsubscribe_url}", unsub_url),
-                    unsub_url,
                 )
             )
         send_batch_background(background_tasks, messages)
@@ -320,7 +320,6 @@ async def create_draft(
         preheader=body.preheader,
         template=body.template,
         blocks=body.blocks,
-        recipient_list_id=body.recipient_list_id,
         manual_recipients=(
             [str(r) for r in body.manual_recipients] if body.manual_recipients else None
         ),
@@ -390,26 +389,6 @@ async def delete_draft(
     await session.commit()
 
 
-def _build_render_context(draft: EmailDraft) -> dict[str, Any]:
-    """Build the Jinja2 context dict from a draft.
-
-    - ``newsletter`` stores blocks as a list of block dicts → passed as {"blocks": [...]}.
-    - Other templates (welcome, new_feature, workspace_invite) store their
-      variables as a flat dict → merged directly into context.
-    """
-    context: dict[str, Any] = {
-        "subject": draft.subject,
-        "preheader": draft.preheader,
-    }
-    if isinstance(draft.blocks, dict):
-        # Flat key/value context for non-newsletter templates
-        context.update(draft.blocks)
-    else:
-        # Block list for newsletter template
-        context["blocks"] = draft.blocks
-    return context
-
-
 @router.post("/drafts/{draft_id}/send", response_model=DraftOut)
 async def send_draft(
     draft_id: UUID,
@@ -431,20 +410,29 @@ async def send_draft(
     draft.status = "processing"
     await session.commit()
 
-    html = render(draft.template, _build_render_context(draft))
+    try:
+        html = render(draft.template, build_render_context(draft))
+    except Exception:
+        draft.status = "draft"
+        await session.commit()
+        logger.exception("Failed to render draft %s", draft_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Template rendering failed",
+        ) from None
 
-    messages: list[tuple[str, str, str, str | None]] = []
+    messages: list[tuple[str, str, str]] = []
 
     if draft.manual_recipients:
         for recipient in draft.manual_recipients:
             recipient_html = html.replace("{unsubscribe_url}", "https://slodi.is/unsubscribe")
-            messages.append((recipient, draft.subject, recipient_html, None))
+            messages.append((recipient, draft.subject, recipient_html))
     else:
         subscribers = await EmailListService(session).list()
         for subscriber in subscribers:
             unsub_url = f"https://slodi.is/unsubscribe?token={subscriber.unsubscribe_token}"
             subscriber_html = html.replace("{unsubscribe_url}", unsub_url)
-            messages.append((subscriber.email, draft.subject, subscriber_html, unsub_url))
+            messages.append((subscriber.email, draft.subject, subscriber_html))
 
     if messages:
         send_batch_background(background_tasks, messages)
@@ -468,7 +456,7 @@ async def test_send_draft(
     if draft is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
 
-    html = render(draft.template, _build_render_context(draft))
+    html = render(draft.template, build_render_context(draft))
     html = html.replace("{unsubscribe_url}", "https://slodi.is/unsubscribe?token=test")
 
     send_email_background(

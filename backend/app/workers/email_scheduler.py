@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import logging
-from typing import Any
 
 import resend
 from sqlalchemy import update
@@ -20,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
 from app.core.db import get_session_maker
-from app.core.email_templates.renderer import render
+from app.core.email_templates.renderer import build_render_context, render
 from app.models.email_draft import EmailDraft
 from app.services.email_list import EmailListService
 from app.settings import settings
@@ -28,6 +27,22 @@ from app.settings import settings
 logger = logging.getLogger(__name__)
 
 _BATCH_SIZE = 100
+
+
+async def recover_stale_drafts(session: AsyncSession) -> None:
+    """Reset drafts stuck in 'processing' for more than 10 minutes to 'failed'.
+
+    The onupdate hook on updated_at does not fire for bulk UPDATE statements,
+    so updated_at is stamped explicitly in claim_due_drafts(). This function
+    relies on that timestamp to identify stale claims.
+    """
+    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=10)
+    await session.execute(
+        update(EmailDraft)
+        .where(EmailDraft.status == "processing", EmailDraft.updated_at <= cutoff)
+        .values(status="failed")
+    )
+    await session.commit()
 
 
 async def claim_due_drafts(session: AsyncSession) -> list[EmailDraft]:
@@ -38,18 +53,17 @@ async def claim_due_drafts(session: AsyncSession) -> list[EmailDraft]:
             EmailDraft.status == "scheduled",
             EmailDraft.scheduled_at <= func.now(),
         )
-        .values(status="processing")
+        .values(status="processing", updated_at=func.now())
         .returning(EmailDraft)
     )
     await session.commit()
     return list(result.scalars().all())
 
 
-def _send_batch_sync(messages: list[tuple[str, str, str, str | None]]) -> None:
+def _send_batch_sync(messages: list[tuple[str, str, str]]) -> None:
     """Send emails via Resend SDK (blocking).
 
-    Each message is (recipient, subject, html, unsubscribe_url).
-    Adds List-Unsubscribe headers when unsubscribe_url is provided.
+    Each message is (recipient, subject, html).
     """
     if not settings.resend_api_key:
         logger.warning(
@@ -62,7 +76,7 @@ def _send_batch_sync(messages: list[tuple[str, str, str, str | None]]) -> None:
     for i in range(0, len(messages), _BATCH_SIZE):
         chunk = messages[i : i + _BATCH_SIZE]
         params: list[resend.Emails.SendParams] = []
-        for recipient, subject, html, unsub_url in chunk:
+        for recipient, subject, html in chunk:
             entry: resend.Emails.SendParams = {
                 "from": settings.resend_from_email,
                 "to": [recipient],
@@ -70,11 +84,6 @@ def _send_batch_sync(messages: list[tuple[str, str, str, str | None]]) -> None:
                 "subject": subject,
                 "html": html,
             }
-            if unsub_url:
-                entry["headers"] = {
-                    "List-Unsubscribe": f"<{unsub_url}>",
-                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-                }
             params.append(entry)
         resend.Batch.send(params)
 
@@ -82,25 +91,20 @@ def _send_batch_sync(messages: list[tuple[str, str, str, str | None]]) -> None:
 async def process_draft(draft: EmailDraft, session: AsyncSession) -> None:
     """Render, build per-recipient HTML, send, and update status."""
     try:
-        context: dict[str, Any] = {"subject": draft.subject, "preheader": draft.preheader}
-        if isinstance(draft.blocks, dict):
-            context.update(draft.blocks)
-        else:
-            context["blocks"] = draft.blocks
-        html = render(draft.template, context)
+        html = render(draft.template, build_render_context(draft))
 
-        messages: list[tuple[str, str, str, str | None]] = []
+        messages: list[tuple[str, str, str]] = []
 
         if draft.manual_recipients:
             for recipient in draft.manual_recipients:
                 recipient_html = html.replace("{unsubscribe_url}", "https://slodi.is/unsubscribe")
-                messages.append((recipient, draft.subject, recipient_html, None))
+                messages.append((recipient, draft.subject, recipient_html))
         else:
             subscribers = await EmailListService(session).list()
             for subscriber in subscribers:
                 unsub_url = f"https://slodi.is/unsubscribe?token={subscriber.unsubscribe_token}"
                 subscriber_html = html.replace("{unsubscribe_url}", unsub_url)
-                messages.append((subscriber.email, draft.subject, subscriber_html, unsub_url))
+                messages.append((subscriber.email, draft.subject, subscriber_html))
 
         if messages:
             # Run blocking Resend call in a thread to avoid blocking the loop
@@ -124,6 +128,7 @@ async def main() -> None:
     async_session = get_session_maker()
 
     async with async_session() as session:
+        await recover_stale_drafts(session)
         drafts = await claim_due_drafts(session)
         if not drafts:
             logger.info("No scheduled drafts due — exiting.")
