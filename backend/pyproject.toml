@@ -29,6 +29,10 @@ dev = [
     "mypy>=1.11",
     "sqlalchemy[mypy]>=2.0.25",
     "types-python-jose>=3.3.4",
+    # Used only by scripts/generate_heidursordla_dictionary.py to regenerate
+    # backend/app/data/icelandic_5_letter_words.txt from BÍN. The runtime
+    # backend has no dependency on islenska — it loads the static file.
+    "islenska>=1.1",
 ]
 
 [tool.pytest.ini_options]
