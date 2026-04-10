@@ -1,20 +1,47 @@
+/* ═══════════════════════════════════════════════════════════
+   /dev — Devlog (Verkbók) list page shell
+   Uses Slóði design tokens.
+   ═══════════════════════════════════════════════════════════ */
+
 .main {
-  max-width: 48rem;
-  /* ≈ max-w-3xl */
+  max-width: 72rem;
   margin: 0 auto;
-  padding: 2rem 1rem;
-  /* py-8 px-4 */
-  color: hsl(var(--foreground));
-  background: transparent;
+  padding: var(--sl-spacing-section) var(--sl-spacing-inset-lg);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-element);
+  margin-bottom: var(--sl-spacing-component);
+  padding-bottom: var(--sl-spacing-component);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-primary));
 }
 
 .title {
-  margin: 0 0 1.5rem 0;
-  /* mb-6 */
-  font-size: 2rem;
-  /* text-2xl */
-  line-height: 1.2;
-  font-weight: 600;
-  /* font-semibold */
-  color: hsl(var(--text-strong, var(--foreground)));
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-2);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+  letter-spacing: -0.01em;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.lead {
+  margin: 0;
+  max-width: 48rem;
+  font-size: var(--sl-text-body-lg);
+  line-height: var(--sl-line-height-relaxed);
+  color: hsl(var(--sl-color-text-secondary));
 }

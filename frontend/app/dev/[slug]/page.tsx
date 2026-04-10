@@ -1,7 +1,7 @@
 import path from "path";
 import { notFound } from "next/navigation";
 import { mdToHtmlLite } from "@/lib/markdown-lite";
-import { getNeighbors } from "@/lib/devlogs";
+import { getNeighbors, listAllDevlogs } from "@/lib/devlogs";
 import { promises as fs } from "fs";
 import Link from "next/link";
 import styles from "./devpost.module.css";
@@ -9,7 +9,8 @@ import styles from "./devpost.module.css";
 export const runtime = "nodejs";
 export const dynamic = "force-static";
 
-// Tiny front matter parser
+// Tiny front matter parser. Array fields (tags) are read separately via
+// listAllDevlogs so we don't duplicate the YAML parser in lib/devlogs.ts.
 function parseFrontMatter(src: string): {
   meta: { title?: string; date?: string; summary?: string; author?: string };
   body: string;
@@ -40,14 +41,13 @@ function parseFrontMatter(src: string): {
   };
 }
 
+const DATE_FORMATTER = new Intl.DateTimeFormat("is-IS", { dateStyle: "long" });
+
 function formatDate(d?: string): string | undefined {
   if (!d) return undefined;
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return d;
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, "0");
-  const day = String(dt.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return DATE_FORMATTER.format(dt);
 }
 
 export default async function DevPostPage({
@@ -69,27 +69,44 @@ export default async function DevPostPage({
   const html = mdToHtmlLite(body);
   const niceDate = formatDate(meta.date);
 
+  // Pull tags (array field) from the canonical parser so we don't duplicate
+  // YAML-array handling in this file.
+  const current = listAllDevlogs().find((d) => d.slug === slug);
+  const tags = current?.tags ?? [];
+
   const { prev, next } = getNeighbors(slug);
 
   return (
     <main className={styles.main}>
+      <Link href="/dev" className={styles.backLink} aria-label="Til baka á Verkbók">
+        <span aria-hidden>←</span> Verkbók
+      </Link>
+
       {/* Post header */}
       <header className={styles.postHeader}>
+        <p className={styles.eyebrow}>Devlog</p>
+
         {meta.title && <h1 className={styles.title}>{meta.title}</h1>}
 
         {(niceDate || meta.author) && (
           <p className={styles.meta}>
-            {niceDate ? (
-              <>
-                Dags: <time>{niceDate}</time>
-              </>
-            ) : null}
-            {niceDate && meta.author ? " · " : null}
-            {meta.author ? <>Höfundur: {meta.author}</> : null}
+            {niceDate ? <time dateTime={meta.date}>{niceDate}</time> : null}
+            {niceDate && meta.author ? <span className={styles.metaSep}>·</span> : null}
+            {meta.author ? <span>{meta.author}</span> : null}
           </p>
         )}
 
         {meta.summary && <p className={styles.summary}>{meta.summary}</p>}
+
+        {tags.length > 0 && (
+          <ul className={styles.tags} aria-label="Merkingar">
+            {tags.map((t) => (
+              <li key={t} className={styles.tag}>
+                {t}
+              </li>
+            ))}
+          </ul>
+        )}
       </header>
 
       {/* Post content */}
@@ -97,39 +114,33 @@ export default async function DevPostPage({
         <div dangerouslySetInnerHTML={{ __html: html }} />
       </article>
 
-      {/* Footer navigation */}
+      {/* Footer navigation — card-style prev/next with neighbour titles */}
       <nav className={styles.footerNav} aria-label="Færslunavigering">
-        <Link
-          href="/dev"
-          className={styles.btn}
-          aria-label="Til baka á Devlog"
-          title="Til baka á Devlog"
-        >
-          Til baka
-        </Link>
+        {prev ? (
+          <Link
+            href={`/dev/${prev.slug}`}
+            className={styles.navCard}
+            aria-label={`Fyrri færsla: ${prev.title}`}
+          >
+            <span className={styles.navLabel}>← Fyrri færsla</span>
+            <span className={styles.navTitle}>{prev.title}</span>
+          </Link>
+        ) : (
+          <div className={styles.navPlaceholder} aria-hidden />
+        )}
 
-        <div className={styles.navGroup}>
-          {prev && (
-            <Link
-              href={`/dev/${prev.slug}`}
-              className={styles.btn}
-              aria-label="Fyrri færsla"
-              title={prev.title}
-            >
-              Fyrri
-            </Link>
-          )}
-          {next && (
-            <Link
-              href={`/dev/${next.slug}`}
-              className={styles.btn}
-              aria-label="Næsta færsla"
-              title={next.title}
-            >
-              Næsta
-            </Link>
-          )}
-        </div>
+        {next ? (
+          <Link
+            href={`/dev/${next.slug}`}
+            className={`${styles.navCard} ${styles.navCardNext}`}
+            aria-label={`Næsta færsla: ${next.title}`}
+          >
+            <span className={styles.navLabel}>Næsta færsla →</span>
+            <span className={styles.navTitle}>{next.title}</span>
+          </Link>
+        ) : (
+          <div className={styles.navPlaceholder} aria-hidden />
+        )}
       </nav>
     </main>
   );
