@@ -37,6 +37,21 @@ describe("mdToHtmlLite — existing features (regression)", () => {
     expect(squish(out)).toContain("<li>top <ol> <li>nested</li> </ol> </li>");
   });
 
+  it("keeps an ordered list open across blank lines between items", () => {
+    // A blank line between items used to close the list, so every item
+    // became "1." inside its own <ol>. Guard against that regression.
+    const out = mdToHtmlLite("1. one\n\n2. two\n\n3. three");
+    expect((out.match(/<ol>/g) ?? []).length).toBe(1);
+    expect((out.match(/<\/ol>/g) ?? []).length).toBe(1);
+    expect(squish(out)).toContain("<li>one</li> <li>two</li> <li>three</li>");
+  });
+
+  it("closes a list when the blank line is followed by non-list content", () => {
+    const out = mdToHtmlLite("1. one\n\n2. two\n\nAfter.");
+    expect((out.match(/<ol>/g) ?? []).length).toBe(1);
+    expect(out).toContain("<p>After.</p>");
+  });
+
   it("renders horizontal rules", () => {
     expect(mdToHtmlLite("---")).toContain("<hr />");
   });

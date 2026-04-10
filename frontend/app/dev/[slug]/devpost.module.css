@@ -123,6 +123,27 @@
   color: hsl(var(--sl-color-text-primary));
   font-size: var(--sl-text-body);
   line-height: var(--sl-line-height-relaxed);
+  /* Justified body text for a more polished reading view. Hyphenation
+     relies on the `lang="is"` attribute on <html>, which is already set. */
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/* Keep headings, code blocks, and tables left-aligned — justification only
+   makes sense for running prose. */
+.content :where(h1, h2, h3, h4, h5, h6, pre, table, th, td) {
+  text-align: left;
+  hyphens: manual;
+}
+
+@media (max-width: 40rem) {
+  /* Narrow viewports + justify = ugly rivers of whitespace. Fall back to
+     left-aligned on small screens. */
+  .content {
+    text-align: left;
+  }
 }
 
 .content :where(h2, h3, h4, h5, h6) {

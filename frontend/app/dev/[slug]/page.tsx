@@ -2,6 +2,7 @@ import path from "path";
 import { notFound } from "next/navigation";
 import { mdToHtmlLite } from "@/lib/markdown-lite";
 import { getNeighbors, listAllDevlogs } from "@/lib/devlogs";
+import { formatIcelandicDate } from "@/utils/date";
 import { promises as fs } from "fs";
 import Link from "next/link";
 import styles from "./devpost.module.css";
@@ -41,21 +42,16 @@ function parseFrontMatter(src: string): {
   };
 }
 
-const DATE_FORMATTER = new Intl.DateTimeFormat("is-IS", { dateStyle: "long" });
-
-function formatDate(d?: string): string | undefined {
-  if (!d) return undefined;
-  const dt = new Date(d);
-  if (isNaN(dt.getTime())) return d;
-  return DATE_FORMATTER.format(dt);
+export async function generateStaticParams() {
+  return listAllDevlogs().map((d) => ({ slug: d.slug }));
 }
 
 export default async function DevPostPage({
   params,
 }: {
-  params: { slug: string }; // app router passes a plain object; no Promise needed
+  params: Promise<{ slug: string }>; // Next.js 15: params is async
 }) {
-  const { slug } = params;
+  const { slug } = await params;
 
   const file = path.join(process.cwd(), "content", "devlogs", `${slug}.md`);
   try {
@@ -67,7 +63,7 @@ export default async function DevPostPage({
   const md = await fs.readFile(file, "utf8");
   const { meta, body } = parseFrontMatter(md);
   const html = mdToHtmlLite(body);
-  const niceDate = formatDate(meta.date);
+  const niceDate = meta.date ? formatIcelandicDate(meta.date) : undefined;
 
   // Pull tags (array field) from the canonical parser so we don't duplicate
   // YAML-array handling in this file.

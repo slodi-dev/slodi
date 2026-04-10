@@ -223,7 +223,19 @@ export function mdToHtmlLite(md: string): string {
     // Blank line
     if (!line.trim()) {
       flushParagraph();
-      closeAllLists();
+      if (listStack.length > 0) {
+        // Loose list: a blank line inside a list does NOT end the list as
+        // long as the next non-blank line is still a list item. We peek
+        // ahead so `1.\n\n2.\n\n3.` renders as one <ol>, not three.
+        let j = idx + 1;
+        while (j < lines.length && !lines[j].trim()) j += 1;
+        const next = j < lines.length ? lines[j].replace(/\t/g, "    ") : "";
+        if (!/^\s*([-*+]|\d+\.)\s+/.test(next)) {
+          closeAllLists();
+        }
+      } else {
+        closeAllLists();
+      }
       continue;
     }
 

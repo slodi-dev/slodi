@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { DevlogMeta } from "@/lib/devlogs";
+import { formatIcelandicDate } from "@/utils/date";
 import styles from "./devlog.module.css";
 
 type Props = {
@@ -91,7 +92,7 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
               <article className={styles.card}>
                 <p className={styles.eyebrow}>
                   <time className={styles.date} dateTime={post.date}>
-                    {formatDate(post.date)}
+                    {formatIcelandicDate(post.date)}
                   </time>
                   {post.author ? <span aria-hidden>·</span> : null}
                   {post.author ? <span>{post.author}</span> : null}
@@ -112,7 +113,7 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
                   className={styles.stretchedLink}
                   aria-label={`Lesa: ${post.title}`}
                 >
-                  <span className="sr-only">Lesa nánar</span>
+                  <span className="sl-sr-only">Lesa nánar</span>
                 </Link>
               </article>
             </li>
@@ -137,16 +138,4 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
       {done && items.length === 0 && <p className={styles.empty}>Engar færslur fundust.</p>}
     </>
   );
-}
-
-const DATE_FORMATTER = new Intl.DateTimeFormat("is-IS", { dateStyle: "long" });
-
-function formatDate(d: string) {
-  try {
-    const dt = new Date(d);
-    if (isNaN(dt.getTime())) return d;
-    return DATE_FORMATTER.format(dt);
-  } catch {
-    return d;
-  }
 }
