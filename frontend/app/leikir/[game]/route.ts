@@ -4,13 +4,14 @@ import path from "path";
 
 const LEADERBOARD_STYLES = `
 <style id="leaderboard-styles">
-  body { overflow: auto; gap: 24px; }
+  body { overflow: auto; gap: 24px; padding: 16px; flex-wrap: wrap; }
+  #gameCanvas { max-width: min(400px, 100vw); }
   #leaderboard {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px;
     padding: 16px;
-    min-width: 180px;
+    width: 180px;
     height: 600px;
     overflow-y: auto;
     align-self: center;
@@ -46,6 +47,10 @@ const LEADERBOARD_STYLES = `
     text-align: center;
   }
   #login-prompt a { color: #5c6bc0; }
+  @media (max-width: 639px) {
+    body { flex-direction: column; align-items: center; padding: 8px; gap: 12px; }
+    #leaderboard { width: 100%; max-width: 400px; height: auto; max-height: 180px; }
+  }
 </style>`;
 
 const leaderboardHtml = (game: string, origin: string) => `
