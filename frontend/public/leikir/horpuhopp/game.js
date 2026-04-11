@@ -230,7 +230,15 @@ function drawPlayer() {
     // Fallback blob
     ctx.fillStyle = C.green400;
     ctx.beginPath();
-    ctx.ellipse(PLAYER_W / 2, PLAYER_H / 2 + 3, PLAYER_W / 2 - 2, PLAYER_H / 2 - 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(
+      PLAYER_W / 2,
+      PLAYER_H / 2 + 3,
+      PLAYER_W / 2 - 2,
+      PLAYER_H / 2 - 3,
+      0,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
     ctx.fillStyle = "#fff";
     ctx.beginPath();
@@ -326,7 +334,7 @@ function draw() {
   // Sky deepens slightly as difficulty rises (Icelandic sky → evening)
   const d = getDifficulty();
   const topL = Math.round(75 - d * 20); // sky-300 → sky-500
-  const botL = Math.round(93 - d * 8);  // sky-100 → sky-200
+  const botL = Math.round(93 - d * 8); // sky-100 → sky-200
   const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
   bg.addColorStop(0, `hsl(205 89% ${topL}%)`);
   bg.addColorStop(1, `hsl(205 89% ${botL}%)`);
