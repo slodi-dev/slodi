@@ -11,6 +11,12 @@ let imgReady = false;
 charImg.onload = () => (imgReady = true);
 charImg.src = "character.png";
 
+// ── Coin image ───────────────────────────────────────────────────────────────
+const coinImg = new Image();
+let coinImgReady = false;
+coinImg.onload = () => (coinImgReady = true);
+coinImg.src = "coin.png";
+
 // ── Constants ────────────────────────────────────────────────────────────────
 const GRAVITY = 0.45;
 const JUMP_FORCE = -14;
@@ -39,7 +45,9 @@ let state,
   score,
   highScore = 0,
   player,
-  platforms;
+  platforms,
+  coins,
+  tick;
 const keys = {};
 let touchDir = 0;
 
@@ -75,10 +83,20 @@ function spawnPlatform(y) {
   };
 }
 
+// ── Coins ─────────────────────────────────────────────────────────────────────
+const COIN_R = 10;
+const COIN_VALUE = 125; // adds 25 display points (score / 5)
+
+function spawnCoin(x, y) {
+  return { x, y, phase: Math.random() * Math.PI * 2 };
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 function init() {
   state = "playing";
   score = 0;
+  coins = [];
+  tick = 0;
 
   player = {
     x: canvas.width / 2 - PLAYER_W / 2,
@@ -102,6 +120,7 @@ function init() {
 // ── Update ───────────────────────────────────────────────────────────────────
 function update() {
   if (state !== "playing") return;
+  tick++;
 
   const goLeft = keys["ArrowLeft"] || keys["a"] || keys["A"] || touchDir < 0;
   const goRight = keys["ArrowRight"] || keys["d"] || keys["D"] || touchDir > 0;
@@ -166,12 +185,40 @@ function update() {
     for (const p of platforms) p.y += shift;
     platforms = platforms.filter((p) => p.y < canvas.height + PLAT_H + 10);
 
+    for (const c of coins) c.y += shift;
+    coins = coins.filter((c) => c.y < canvas.height + COIN_R * 2);
+
     let topY = Math.min(...platforms.map((p) => p.y));
     while (platforms.length < PLAT_COUNT) {
       topY -= getPlatGap();
-      platforms.push(spawnPlatform(topY));
+      const p = spawnPlatform(topY);
+      platforms.push(p);
+      // 40% chance to spawn a coin above this platform
+      if (Math.random() < 0.4) {
+        coins.push(spawnCoin(p.x + p.w / 2, topY - 28 - Math.random() * 30));
+      }
     }
   }
+
+  // Coin collection
+  const pLeft = player.x + 6;
+  const pRight = player.x + PLAYER_W - 6;
+  const pTop = player.y + 6;
+  const pBottom = player.y + PLAYER_H - 6;
+  coins = coins.filter((c) => {
+    const bob = Math.sin(tick * 0.06 + c.phase) * 3;
+    const cy = c.y + bob;
+    if (
+      c.x + COIN_R > pLeft &&
+      c.x - COIN_R < pRight &&
+      cy + COIN_R > pTop &&
+      cy - COIN_R < pBottom
+    ) {
+      score += COIN_VALUE;
+      return false;
+    }
+    return true;
+  });
 
   // Game over: fell off bottom
   if (player.y > canvas.height + 60) {
@@ -194,6 +241,27 @@ function roundRect(x, y, w, h, r) {
   ctx.lineTo(x, y + r);
   ctx.arcTo(x, y, x + r, y, r);
   ctx.closePath();
+}
+
+function drawCoin(c) {
+  const bob = Math.sin(tick * 0.06 + c.phase) * 3;
+  const cy = c.y + bob;
+  const size = COIN_R * 2;
+  if (coinImgReady) {
+    ctx.drawImage(coinImg, c.x - COIN_R, cy - COIN_R, size, size);
+  } else {
+    ctx.fillStyle = C.drekar500;
+    ctx.beginPath();
+    ctx.arc(c.x, cy, COIN_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "hsl(40 70% 45%)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.beginPath();
+    ctx.arc(c.x - 2, cy - 2, COIN_R * 0.38, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function drawPlatform(p) {
@@ -342,6 +410,7 @@ function draw() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (const p of platforms) drawPlatform(p);
+  for (const c of coins) drawCoin(c);
   drawPlayer();
   drawHUD();
   if (state === "gameover") drawGameOver();
