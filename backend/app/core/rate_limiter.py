@@ -4,9 +4,11 @@ import time
 from collections.abc import Callable
 from typing import NamedTuple
 
-from fastapi import HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
 
+from app.core.auth import get_current_user
 from app.core.cache import _make_cache
+from app.schemas.user import UserOut
 from app.settings import settings
 
 
@@ -52,6 +54,25 @@ def ip_rate_limit(limit: int, window_seconds: int) -> Callable:
     async def dependency(request: Request) -> None:
         client_host = request.client.host if request.client else "unknown"
         key = f"{request.url.path}:{client_host}"
+        allowed, retry_after = await rate_limiter.check(key, limit, window_seconds)
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many requests",
+                headers={"Retry-After": str(retry_after)},
+            )
+
+    return dependency
+
+
+def user_rate_limit(limit: int, window_seconds: int) -> Callable:
+    """Per-user rate limit. Key: f"{path}:user:{user.id}". Depends on get_current_user."""
+
+    async def dependency(
+        request: Request,
+        current_user: UserOut = Depends(get_current_user),  # noqa: B008
+    ) -> None:
+        key = f"{request.url.path}:user:{current_user.id}"
         allowed, retry_after = await rate_limiter.check(key, limit, window_seconds)
         if not allowed:
             raise HTTPException(

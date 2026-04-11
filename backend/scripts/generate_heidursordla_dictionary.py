@@ -42,7 +42,9 @@ from islenska import Bin
 
 ALPHABET = "aábdðeéfghiíjklmnoóprstuúvxyýþæö"
 WORD_LENGTH = 5
-OUTPUT_PATH = Path(__file__).resolve().parent.parent / "app" / "data" / "icelandic_5_letter_words.txt"
+OUTPUT_PATH = (
+    Path(__file__).resolve().parent.parent / "app" / "data" / "icelandic_5_letter_words.txt"
+)
 
 
 def main() -> None:

@@ -29,6 +29,9 @@ export default function Header() {
           <Link href="/about" className={styles.primaryNavLink}>
             Um Slóða
           </Link>
+          <Link href="/skatathing" className={styles.primaryNavLink}>
+            Skátaþing
+          </Link>
           <a
             href={GITHUB_URL}
             target="_blank"
@@ -79,6 +82,9 @@ export default function Header() {
             </Link>
             <Link href="/about" className={styles.drawerNavLink} onClick={closeDrawer}>
               Um Slóða
+            </Link>
+            <Link href="/skatathing" className={styles.drawerNavLink} onClick={closeDrawer}>
+              Skátaþing
             </Link>
             <a
               href={GITHUB_URL}

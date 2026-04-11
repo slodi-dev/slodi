@@ -15,6 +15,7 @@ from app.models import (
     email_list,  # noqa: F401
     event,  # noqa: F401
     group,  # noqa: F401
+    heidursordla,  # noqa: F401
     like,  # noqa: F401
     program,  # noqa: F401
     tag,  # noqa: F401

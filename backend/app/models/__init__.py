@@ -5,6 +5,7 @@ from .content import Content, ContentType
 from .email_draft import EmailDraft
 from .event import Event
 from .group import Group, GroupMembership, GroupRole
+from .heidursordla import HeidursordlaAttempt, HeidursordlaPuzzle
 from .program import Program
 from .tag import ContentTag, Tag
 from .task import Task

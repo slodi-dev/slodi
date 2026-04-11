@@ -29,6 +29,11 @@ vi.mock("next/navigation", () => ({
 // ── Mock program fixtures ────────────────────────────────────────────────────
 
 function createProgram(overrides: Partial<Program> = {}): Program {
+  // Keep the denormalized author_id / author_name fields in sync with the
+  // nested `author` object. When a test overrides `author`, the top-level
+  // fields have to follow or `useProgramFilters` (which reads `author_name`
+  // first via `??`) won't see the override.
+  const author = overrides.author ?? { id: "a1", name: "Author One", email: "a@test.is" };
   return {
     id: "p-" + Math.random().toString(36).slice(2, 8),
     content_type: "program",
@@ -38,11 +43,11 @@ function createProgram(overrides: Partial<Program> = {}): Program {
     like_count: 0,
     liked_by_me: false,
     created_at: "2026-01-01T00:00:00Z",
-    author_id: "a1",
-    author_name: "Author One",
+    author_id: author.id,
+    author_name: author.name,
     image: null,
     workspace_id: "w1",
-    author: { id: "a1", name: "Author One", email: "a@test.is" },
+    author,
     workspace: { id: "w1", name: "Workspace" },
     ...overrides,
   };

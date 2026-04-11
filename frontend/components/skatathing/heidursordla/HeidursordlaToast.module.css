@@ -1,0 +1,19 @@
+/*
+ * Toast renders inside the .toastSlot in HeidursordlaPlayView which reserves
+ * vertical space, so the toast is positioned normally within its parent
+ * rather than fixed to the viewport. This keeps it out of the way of the
+ * active guess row when a first-guess error fires.
+ */
+.root {
+  padding: var(--sl-spacing-xs) var(--sl-spacing-md);
+  background: hsl(var(--sl-color-text-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  border-radius: var(--sl-radius-md);
+  box-shadow: var(--sl-shadow-modal);
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-medium);
+  pointer-events: none;
+  max-width: calc(100vw - var(--sl-spacing-md));
+  text-align: center;
+  white-space: nowrap;
+}
