@@ -17,10 +17,22 @@ const JUMP_FORCE = -14;
 const PLAYER_SPEED = 6;
 const PLAYER_W = 56;
 const PLAYER_H = 56;
-const PLAT_W = 70;
 const PLAT_H = 14;
 const PLAT_COUNT = 12;
-const SCROLL_Y = canvas.height * 0.42; // player Y that triggers scrolling
+const SCROLL_Y = canvas.height * 0.42;
+
+// ── Slóði color palette ───────────────────────────────────────────────────────
+const C = {
+  green500: "hsl(142 50% 42%)",
+  green400: "hsl(142 50% 55%)",
+  green600: "hsl(142 50% 35%)",
+  forest500: "hsl(160 42% 32%)",
+  drekar500: "hsl(48 77% 61%)",
+  neutral900: "hsl(0 0% 10%)",
+  neutral700: "hsl(0 0% 40%)",
+  warning: "hsl(35 100% 64%)",
+};
+const FONT = "'Roboto Condensed', Arial, sans-serif";
 
 // ── State ────────────────────────────────────────────────────────────────────
 let state,
@@ -29,7 +41,39 @@ let state,
   player,
   platforms;
 const keys = {};
-let touchDir = 0; // -1 = left, 0 = none, 1 = right
+let touchDir = 0;
+
+// ── Difficulty ───────────────────────────────────────────────────────────────
+// Ramps from 0 → 1 over 2000 display points
+function getDifficulty() {
+  return Math.min(Math.floor(score / 5) / 2000, 1);
+}
+
+// Platform width: 70 → 45 px
+function getPlatW() {
+  return Math.round(70 - getDifficulty() * 25);
+}
+
+// Vertical gap between platforms: max grows from 100 → 180 px
+function getPlatGap() {
+  const d = getDifficulty();
+  return 55 + Math.random() * (45 + d * 80);
+}
+
+// Spawn a single platform at the given y, applying current difficulty
+function spawnPlatform(y) {
+  const d = getDifficulty();
+  const w = getPlatW();
+  const movingChance = Math.min(Math.max(0, (d - 0.35) * 1.2), 0.7);
+  const moving = Math.random() < movingChance;
+  const speed = moving ? (1 + d * 2.5) * (Math.random() < 0.5 ? 1 : -1) : 0;
+  return {
+    x: Math.random() * (canvas.width - w),
+    y,
+    w,
+    vx: speed,
+  };
+}
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 function init() {
@@ -40,17 +84,18 @@ function init() {
     x: canvas.width / 2 - PLAYER_W / 2,
     y: canvas.height - 250,
     vx: 0,
-    vy: JUMP_FORCE, // start mid-jump
-    facing: 1, // 1 = right, -1 = left (for sprite flip)
+    vy: JUMP_FORCE,
+    facing: 1,
   };
 
-  platforms = [];
-  platforms.push({ x: canvas.width / 2 - PLAT_W / 2, y: canvas.height - 170 });
+  // Starting platform: always static and full-width directly under player
+  platforms = [{ x: canvas.width / 2 - 35, y: canvas.height - 170, w: 70, vx: 0 }];
 
+  // Fill upward — score=0 so getDifficulty()=0; spawnPlatform gives easy platforms
   let topY = canvas.height - 170;
   for (let i = 1; i < PLAT_COUNT; i++) {
     topY -= 55 + Math.random() * 45;
-    platforms.push({ x: Math.random() * (canvas.width - PLAT_W), y: topY });
+    platforms.push(spawnPlatform(topY));
   }
 }
 
@@ -58,7 +103,6 @@ function init() {
 function update() {
   if (state !== "playing") return;
 
-  // Input
   const goLeft = keys["ArrowLeft"] || keys["a"] || keys["A"] || touchDir < 0;
   const goRight = keys["ArrowRight"] || keys["d"] || keys["D"] || touchDir > 0;
 
@@ -72,7 +116,6 @@ function update() {
     player.vx = 0;
   }
 
-  // Physics
   const prevBottom = player.y + PLAYER_H;
   player.vy += GRAVITY;
   player.x += player.vx;
@@ -82,13 +125,28 @@ function update() {
   if (player.x + PLAYER_W < 0) player.x = canvas.width;
   if (player.x > canvas.width) player.x = -PLAYER_W;
 
+  // Move sliding platforms and bounce off walls
+  for (const p of platforms) {
+    if (p.vx !== 0) {
+      p.x += p.vx;
+      if (p.x <= 0) {
+        p.x = 0;
+        p.vx *= -1;
+      }
+      if (p.x + p.w >= canvas.width) {
+        p.x = canvas.width - p.w;
+        p.vx *= -1;
+      }
+    }
+  }
+
   // Platform collision (only while falling)
   if (player.vy > 0) {
     const curBottom = player.y + PLAYER_H;
     for (const p of platforms) {
       if (
         player.x + PLAYER_W > p.x + 5 &&
-        player.x < p.x + PLAT_W - 5 &&
+        player.x < p.x + p.w - 5 &&
         prevBottom <= p.y + 2 &&
         curBottom >= p.y
       ) {
@@ -106,19 +164,16 @@ function update() {
     score += shift;
 
     for (const p of platforms) p.y += shift;
-
-    // Remove platforms that fell off the bottom
     platforms = platforms.filter((p) => p.y < canvas.height + PLAT_H + 10);
 
-    // Spawn new platforms at the top
     let topY = Math.min(...platforms.map((p) => p.y));
     while (platforms.length < PLAT_COUNT) {
-      topY -= 55 + Math.random() * 45;
-      platforms.push({ x: Math.random() * (canvas.width - PLAT_W), y: topY });
+      topY -= getPlatGap();
+      platforms.push(spawnPlatform(topY));
     }
   }
 
-  // Game over: fell below screen
+  // Game over: fell off bottom
   if (player.y > canvas.height + 60) {
     state = "gameover";
     if (score > highScore) highScore = score;
@@ -142,18 +197,18 @@ function roundRect(x, y, w, h, r) {
 }
 
 function drawPlatform(p) {
-  ctx.fillStyle = "#4db84d";
-  roundRect(p.x, p.y, PLAT_W, PLAT_H, 7);
+  // Moving platforms use drekar (gold) to signal danger
+  ctx.fillStyle = p.vx !== 0 ? C.drekar500 : C.green500;
+  roundRect(p.x, p.y, p.w, PLAT_H, 7);
   ctx.fill();
-  // top shine
+  // shine strip
   ctx.fillStyle = "rgba(255,255,255,0.38)";
-  roundRect(p.x + 7, p.y + 3, PLAT_W - 14, 4, 3);
+  roundRect(p.x + 5, p.y + 3, p.w - 10, 4, 3);
   ctx.fill();
 }
 
 function drawPlayer() {
   ctx.save();
-  // Flip horizontally when facing left
   ctx.translate(player.x + PLAYER_W / 2, player.y + PLAYER_H / 2);
   ctx.scale(player.facing, 1);
   ctx.translate(-PLAYER_W / 2, -PLAYER_H / 2);
@@ -172,8 +227,8 @@ function drawPlayer() {
     const dy = (PLAYER_H - dh) / 2;
     ctx.drawImage(charImg, dx, dy, dw, dh);
   } else {
-    // Fallback: simple creature blob
-    ctx.fillStyle = "#6BCB77";
+    // Fallback blob
+    ctx.fillStyle = C.green400;
     ctx.beginPath();
     ctx.ellipse(
       PLAYER_W / 2,
@@ -185,14 +240,12 @@ function drawPlayer() {
       Math.PI * 2
     );
     ctx.fill();
-    // eyes (white)
     ctx.fillStyle = "#fff";
     ctx.beginPath();
     ctx.ellipse(PLAYER_W / 2 - 9, PLAYER_H / 2, 6, 7, 0, 0, Math.PI * 2);
     ctx.ellipse(PLAYER_W / 2 + 9, PLAYER_H / 2, 6, 7, 0, 0, Math.PI * 2);
     ctx.fill();
-    // pupils
-    ctx.fillStyle = "#333";
+    ctx.fillStyle = C.neutral900;
     ctx.beginPath();
     ctx.ellipse(PLAYER_W / 2 - 8, PLAYER_H / 2 + 1, 3, 4, 0, 0, Math.PI * 2);
     ctx.ellipse(PLAYER_W / 2 + 10, PLAYER_H / 2 + 1, 3, 4, 0, 0, Math.PI * 2);
@@ -201,24 +254,43 @@ function drawPlayer() {
   ctx.restore();
 }
 
+function getLevel() {
+  const ds = Math.floor(score / 5);
+  if (ds < 500) return 1;
+  if (ds < 1000) return 2;
+  if (ds < 2000) return 3;
+  if (ds < 3500) return 4;
+  return 5;
+}
+
 function drawHUD() {
   const displayScore = Math.floor(score / 5);
+  const level = getLevel();
 
   // Score pill
   ctx.fillStyle = "rgba(0,0,0,0.32)";
   roundRect(8, 8, 138, 36, 10);
   ctx.fill();
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 18px Arial";
+  ctx.font = `bold 18px ${FONT}`;
   ctx.textAlign = "left";
-  ctx.fillText(`Score: ${displayScore}`, 18, 32);
+  ctx.fillText(`Stig: ${displayScore}`, 18, 32);
+
+  // Level badge
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
+  roundRect(canvas.width - 90, 8, 82, 36, 10);
+  ctx.fill();
+  ctx.fillStyle = C.drekar500;
+  ctx.font = `bold 16px ${FONT}`;
+  ctx.textAlign = "right";
+  ctx.fillText(`Þrep ${level}`, canvas.width - 14, 32);
 
   // Controls hint (only at the very start)
   if (score < 150) {
     ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.font = "13px Arial";
+    ctx.font = `13px ${FONT}`;
     ctx.textAlign = "center";
-    ctx.fillText("← → or A D   ·   tap left / right half", canvas.width / 2, canvas.height - 12);
+    ctx.fillText("← → eða A D  ·  smelltu vinstri/hægri", canvas.width / 2, canvas.height - 12);
   }
 }
 
@@ -236,33 +308,36 @@ function drawGameOver() {
 
   ctx.textAlign = "center";
 
-  ctx.fillStyle = "#5c6bc0";
-  ctx.font = "bold 22px Arial";
+  ctx.fillStyle = C.green600;
+  ctx.font = `bold 22px ${FONT}`;
   ctx.fillText("Hörpuhopp", cx, cy - 112);
 
-  ctx.fillStyle = "#e53935";
-  ctx.font = "bold 44px Arial";
+  ctx.fillStyle = C.forest500;
+  ctx.font = `bold 44px ${FONT}`;
   ctx.fillText("Leik lokið", cx, cy - 62);
 
-  ctx.fillStyle = "#333";
-  ctx.font = "bold 26px Arial";
+  ctx.fillStyle = C.neutral900;
+  ctx.font = `bold 26px ${FONT}`;
   ctx.fillText(`Stig: ${Math.floor(score / 5)}`, cx, cy - 14);
 
-  ctx.fillStyle = "#e67e22";
-  ctx.font = "bold 20px Arial";
+  ctx.fillStyle = C.warning;
+  ctx.font = `bold 20px ${FONT}`;
   ctx.fillText(`Best: ${Math.floor(highScore / 5)}`, cx, cy + 24);
 
-  ctx.fillStyle = "#666";
-  ctx.font = "15px Arial";
+  ctx.fillStyle = C.neutral700;
+  ctx.font = `15px ${FONT}`;
   ctx.fillText("Space / Enter / Smelltu til að spila aftur", cx, cy + 82);
 }
 
 // ── Draw ─────────────────────────────────────────────────────────────────────
 function draw() {
-  // Sky gradient
+  // Sky deepens slightly as difficulty rises (Icelandic sky → evening)
+  const d = getDifficulty();
+  const topL = Math.round(75 - d * 20); // sky-300 → sky-500
+  const botL = Math.round(93 - d * 8); // sky-100 → sky-200
   const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  bg.addColorStop(0, "#87CEEB");
-  bg.addColorStop(1, "#d4eeff");
+  bg.addColorStop(0, `hsl(205 89% ${topL}%)`);
+  bg.addColorStop(1, `hsl(205 89% ${botL}%)`);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -295,7 +370,6 @@ canvas.addEventListener("click", () => {
   if (state === "gameover") init();
 });
 
-// Touch: tap left half = go left, right half = go right
 canvas.addEventListener(
   "touchstart",
   (e) => {
