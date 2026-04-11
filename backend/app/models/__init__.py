@@ -4,6 +4,7 @@ from .comment import Comment
 from .content import Content, ContentType
 from .email_draft import EmailDraft
 from .event import Event
+from .game_score import GameScore
 from .group import Group, GroupMembership, GroupRole
 from .heidursordla import HeidursordlaAttempt, HeidursordlaPuzzle
 from .program import Program

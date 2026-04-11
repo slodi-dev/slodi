@@ -62,6 +62,7 @@ const PROGRAMS: Program[] = [
     price: 0,
     like_count: 10,
     created_at: "2026-01-10T00:00:00Z",
+    author_name: "Jón Jónsson",
     author: { id: "a1", name: "Jón Jónsson", email: "jon@test.is" },
     location: "Reykjavík",
     tags: [{ id: "t1", name: "Útileikur" }],
@@ -78,6 +79,7 @@ const PROGRAMS: Program[] = [
     price: 2000,
     like_count: 5,
     created_at: "2026-02-15T00:00:00Z",
+    author_name: "Anna Sigurdsson",
     author: { id: "a2", name: "Anna Sigurdsson", email: "anna@test.is" },
     location: "Akureyri",
     tags: [{ id: "t2", name: "Gönguferð" }],
@@ -94,6 +96,7 @@ const PROGRAMS: Program[] = [
     price: 500,
     like_count: 20,
     created_at: "2026-03-01T00:00:00Z",
+    author_name: "Guðrún Helga",
     author: { id: "a3", name: "Guðrún Helga", email: "gudrun@test.is" },
     location: "Reykjavík",
     tags: [

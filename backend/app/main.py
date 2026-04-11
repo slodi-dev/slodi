@@ -10,6 +10,7 @@ from app.routers import (
     email_list_router,
     email_router,
     events_router,
+    game_scores_router,
     groups_router,
     heidursordla_router,
     likes_router,
@@ -48,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(comments_router.router)
     app.include_router(likes_router.router)
     app.include_router(heidursordla_router.router)
+    app.include_router(game_scores_router.router)
 
     @app.get("/healthz")
     async def healthz() -> dict[str, bool]:

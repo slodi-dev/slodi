@@ -97,7 +97,7 @@ export async function fetchPrograms(
   workspaceId: string,
   getToken: () => Promise<string | null>
 ): Promise<Program[]> {
-  const url = buildApiUrl(`/workspaces/${workspaceId}/programs`);
+  const url = buildApiUrl(`/workspaces/${workspaceId}/programs?limit=200`);
   const data = await fetchWithAuth<ProgramsResponse>(
     url,
     {
