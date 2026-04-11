@@ -14,6 +14,7 @@ from app.models import (
     content,  # noqa: F401
     email_list,  # noqa: F401
     event,  # noqa: F401
+    game_score,  # noqa: F401
     group,  # noqa: F401
     like,  # noqa: F401
     program,  # noqa: F401
