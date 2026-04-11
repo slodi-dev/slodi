@@ -53,18 +53,17 @@ const LEADERBOARD_STYLES = `
   }
 </style>`;
 
-const leaderboardHtml = (game: string, origin: string) => `
+const leaderboardHtml = () => `
 <div id="leaderboard">
   <h2>Stigatafla</h2>
   <ol id="leaderboard-list"><li style="color:#aaa;font-size:12px">Hleður...</li></ol>
   <div id="login-prompt" style="display:none">
-    <a href="/api/auth/login?returnTo=${encodeURIComponent(`${origin}/leikir/${game}`)}">Skráðu þig inn</a> til að vista stig
+    <a href="/api/auth/login">Skráðu þig inn</a> til að vista stig
   </div>
 </div>`;
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ game: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ game: string }> }) {
   const { game } = await params;
-  const origin = new URL(req.url).origin;
   const filePath = path.join(process.cwd(), "public", "leikir", game, "index.html");
 
   try {
@@ -74,7 +73,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ game
         "<head>",
         `<head>\n  <base href="/leikir/${game}/">\n  <script>window.LEIKIR_GAME="${game}";</script>${LEADERBOARD_STYLES}`
       )
-      .replace("</canvas>", `</canvas>${leaderboardHtml(game, origin)}`);
+      .replace("</canvas>", `</canvas>${leaderboardHtml()}`);
     return new NextResponse(injected, {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
