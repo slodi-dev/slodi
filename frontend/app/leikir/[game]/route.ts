@@ -57,10 +57,7 @@ const leaderboardHtml = (game: string) => `
   </div>
 </div>`;
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ game: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ game: string }> }) {
   const { game } = await params;
   const filePath = path.join(process.cwd(), "public", "leikir", game, "index.html");
 
