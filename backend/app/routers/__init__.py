@@ -2,6 +2,7 @@
 from app.routers import comments as comments_router
 from app.routers import email_list as email_list_router
 from app.routers import events as events_router
+from app.routers import game_scores as game_scores_router
 from app.routers import groups as groups_router
 from app.routers import likes as likes_router
 from app.routers import programs as programs_router
