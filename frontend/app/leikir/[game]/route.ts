@@ -4,13 +4,14 @@ import path from "path";
 
 const LEADERBOARD_STYLES = `
 <style id="leaderboard-styles">
-  body { overflow: auto; gap: 24px; }
+  body { overflow: auto; gap: 24px; padding: 16px; flex-wrap: wrap; }
+  #gameCanvas { max-width: min(400px, 100vw); }
   #leaderboard {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px;
     padding: 16px;
-    min-width: 180px;
+    width: 180px;
     height: 600px;
     overflow-y: auto;
     align-self: center;
@@ -46,19 +47,24 @@ const LEADERBOARD_STYLES = `
     text-align: center;
   }
   #login-prompt a { color: #5c6bc0; }
+  @media (max-width: 639px) {
+    body { flex-direction: column; align-items: center; padding: 8px; gap: 12px; }
+    #leaderboard { width: 100%; max-width: 400px; height: auto; max-height: 180px; }
+  }
 </style>`;
 
-const leaderboardHtml = (game: string) => `
+const leaderboardHtml = (game: string, origin: string) => `
 <div id="leaderboard">
   <h2>Stigatafla</h2>
   <ol id="leaderboard-list"><li style="color:#aaa;font-size:12px">Hleður...</li></ol>
   <div id="login-prompt" style="display:none">
-    <a href="/api/auth/login?returnTo=/leikir/${game}">Skráðu þig inn</a> til að vista stig
+    <a href="/api/auth/login?returnTo=${encodeURIComponent(`${origin}/leikir/${game}`)}">Skráðu þig inn</a> til að vista stig
   </div>
 </div>`;
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ game: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ game: string }> }) {
   const { game } = await params;
+  const origin = new URL(req.url).origin;
   const filePath = path.join(process.cwd(), "public", "leikir", game, "index.html");
 
   try {
@@ -68,7 +74,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ gam
         "<head>",
         `<head>\n  <base href="/leikir/${game}/">\n  <script>window.LEIKIR_GAME="${game}";</script>${LEADERBOARD_STYLES}`
       )
-      .replace("</canvas>", `</canvas>${leaderboardHtml(game)}`);
+      .replace("</canvas>", `</canvas>${leaderboardHtml(game, origin)}`);
     return new NextResponse(injected, {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });

@@ -1,7 +1,7 @@
 """add game scores leaderboard
 
 Revision ID: ab250ef64e42
-Revises: b2c3d4e5f6a7
+Revises: a7b8c9d0e1f2
 Create Date: 2026-04-11 10:58:13.979213
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'ab250ef64e42'
-down_revision: Union[str, Sequence[str], None] = 'b2c3d4e5f6a7'
+down_revision: Union[str, Sequence[str], None] = 'a7b8c9d0e1f2'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
