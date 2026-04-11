@@ -98,6 +98,9 @@ function init() {
   coins = [];
   tick = 0;
 
+  var lb = document.getElementById("leaderboard");
+  if (lb) lb.classList.remove("active");
+
   player = {
     x: canvas.width / 2 - PLAYER_W / 2,
     y: canvas.height - 250,
@@ -481,9 +484,13 @@ function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function renderLeaderboard(scores) {
+function renderLeaderboard(scores, show) {
   var list = document.getElementById("leaderboard-list");
   if (!list) return;
+  if (show) {
+    var lb = document.getElementById("leaderboard");
+    if (lb) lb.classList.add("active");
+  }
   if (!scores || scores.length === 0) {
     list.innerHTML = '<li style="color:#aaa;font-size:12px">Engar færslur</li>';
     return;
@@ -528,12 +535,14 @@ function submitScore(finalScore) {
       if (res.status === 401) {
         var prompt = document.getElementById("login-prompt");
         if (prompt) prompt.style.display = "block";
+        var lb = document.getElementById("leaderboard");
+        if (lb) lb.classList.add("active");
         return null;
       }
       return res.json();
     })
     .then(function (data) {
-      if (data) renderLeaderboard(data);
+      if (data) renderLeaderboard(data, true);
     })
     .catch(function () {});
 }
