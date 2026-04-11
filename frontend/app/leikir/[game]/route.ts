@@ -72,7 +72,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ game
     const injected = html
       .replace(
         "<head>",
-        `<head>\n  <base href="/leikir/${game}/">\n  <script>window.LEIKIR_GAME="${game}";</script>${LEADERBOARD_STYLES}`
+        `<head>\n  <base href="/leikir/${game}/">\n  <script>window.LEIKIR_GAME="${game}";</script>${LEADERBOARD_STYLES}`,
       )
       .replace("</canvas>", `</canvas>${leaderboardHtml(game, origin)}`);
     return new NextResponse(injected, {
