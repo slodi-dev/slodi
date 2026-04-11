@@ -83,3 +83,30 @@ class Pronouns(str, Enum):
     they_them = "they/them"
     other = "other"
     prefer_not_to_say = "prefer not to say"
+
+
+# ------------ #
+# Heiðursorðla #
+# ------------ #
+
+
+class HeidursordlaAttemptStatus(str, Enum):
+    in_progress = "in_progress"
+    won = "won"
+    lost = "lost"
+
+
+class GuessColor(str, Enum):
+    """Per-letter feedback colour for a Heiðursorðla guess.
+
+    - ``green``  — letter is in the answer at this position
+    - ``yellow`` — letter is in the answer at a different position (and not
+      already accounted for by an earlier green/yellow on the same answer
+      letter)
+    - ``gray``   — letter is not in the answer (or the position is already
+      accounted for)
+    """
+
+    green = "green"
+    yellow = "yellow"
+    gray = "gray"

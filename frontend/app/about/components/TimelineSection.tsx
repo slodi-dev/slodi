@@ -24,9 +24,9 @@ export default function TimelineSection() {
     },
     {
       title: "Útgáfa á lágmarksafurð",
-      date: "Mars 2026",
-      targetDate: new Date(2026, 2, 31),
-      location: "Skátaþing",
+      date: "Apríl 2026",
+      targetDate: new Date(2026, 3, 12),
+      location: "Skátaþing (frestað frá mars vegna veðurs)",
       notes: [
         "Markmiðið er að kynna lágmarksafurðina fyrir sjálfboðaliðum skátahreyfingarinnar.",
         "Vinnuópar endurnýjaðir",

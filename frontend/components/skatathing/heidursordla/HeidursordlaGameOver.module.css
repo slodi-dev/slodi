@@ -1,0 +1,51 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: hsl(var(--sl-color-background) / 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sl-spacing-md);
+  padding-bottom: calc(var(--sl-spacing-md) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--sl-z-modal);
+}
+
+.card {
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-lg);
+  box-shadow: var(--sl-shadow-modal);
+  padding: var(--sl-spacing-lg);
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-md);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--sl-text-heading-3);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.score {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+  font-variant-numeric: tabular-nums;
+}
+
+.answer {
+  margin: 0;
+  font-size: var(--sl-text-body-lg);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.answer strong {
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-text-primary));
+  letter-spacing: 0.05em;
+}

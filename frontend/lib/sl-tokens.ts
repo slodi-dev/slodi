@@ -87,6 +87,14 @@ export const tokens = {
   colorInfoSubtle: "var(--sl-color-info-subtle)",
   colorInfoText: "var(--sl-color-info-text)",
 
+  // --- Color: Heiðursorðla tile states ---
+  colorHeidursordlaCorrect: "var(--sl-color-heidursordla-correct)",
+  colorHeidursordlaCorrectForeground: "var(--sl-color-heidursordla-correct-foreground)",
+  colorHeidursordlaPresent: "var(--sl-color-heidursordla-present)",
+  colorHeidursordlaPresentForeground: "var(--sl-color-heidursordla-present-foreground)",
+  colorHeidursordlaAbsent: "var(--sl-color-heidursordla-absent)",
+  colorHeidursordlaAbsentForeground: "var(--sl-color-heidursordla-absent-foreground)",
+
   // --- Spacing ---
   spacingXs: "var(--sl-spacing-xs)",
   spacingSm: "var(--sl-spacing-sm)",

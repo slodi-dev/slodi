@@ -375,7 +375,28 @@ async def get_current_user(
         name = email.split("@")[0]
 
     user_data = UserCreate(auth0_id=auth0_id, email=email, name=name)
-    user = await user_service.create(user_data)
+    try:
+        user = await user_service.create(user_data)
+    except HTTPException as exc:
+        # Race guard: two parallel authenticated requests on first login
+        # (React StrictMode double-effects, a page that fires both
+        # `getCurrentUser()` and a data `fetchWithAuth(...)` simultaneously,
+        # or any QR-code burst during a real event) both miss the cache
+        # and DB lookup, both call `UserService.create`, one wins, and the
+        # loser hits the (email, auth0_id) unique constraint which surfaces
+        # here as HTTPException 409. In that case the user row exists — we
+        # just need to return it. Only re-raise if the re-lookup also
+        # fails, which would indicate a genuine conflict (e.g. the email
+        # already belongs to a different auth0_id).
+        if exc.status_code != status.HTTP_409_CONFLICT:
+            raise
+        user = await user_service.get_by_auth0_id(auth0_id)
+        if user is None:
+            raise
+        logger.info(
+            "User %s already created by a concurrent request — returning existing row",
+            user.id,
+        )
 
     if _DEFAULT_WORKSPACE_ID:
         try:

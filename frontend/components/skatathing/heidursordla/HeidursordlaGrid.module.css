@@ -1,0 +1,84 @@
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  align-items: center;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(48px, 1fr));
+  gap: var(--sl-spacing-xs);
+  width: 100%;
+}
+
+.cell {
+  aspect-ratio: 1 / 1;
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: 1.75rem;
+  font-weight: var(--sl-font-weight-semibold);
+  text-transform: uppercase;
+  border-radius: var(--sl-radius-sm);
+  user-select: none;
+  transition:
+    transform var(--sl-transition-fast),
+    background-color var(--sl-transition-base),
+    border-color var(--sl-transition-base);
+}
+
+.cellFilled {
+  border-color: hsl(var(--sl-color-border-strong));
+}
+
+.cellRevealed {
+  color: hsl(var(--sl-color-text-inverse));
+  border-color: transparent;
+}
+
+.cellCorrect {
+  background: hsl(var(--sl-color-heidursordla-correct));
+  color: hsl(var(--sl-color-heidursordla-correct-foreground));
+}
+
+.cellPresent {
+  background: hsl(var(--sl-color-heidursordla-present));
+  color: hsl(var(--sl-color-heidursordla-present-foreground));
+}
+
+.cellAbsent {
+  background: hsl(var(--sl-color-heidursordla-absent));
+  color: hsl(var(--sl-color-heidursordla-absent-foreground));
+}
+
+@keyframes hzShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.rowShake {
+  animation: hzShake 400ms ease-in-out;
+}

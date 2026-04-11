@@ -469,6 +469,18 @@
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-50);
   --sl-color-patrol-adrir-muted: var(--sl-primitive-adrir-100);
 
+  /* ===== HEIÐURSORÐLA TILE COLORS =====
+     Semantic tile states for the Heiðursorðla word-guessing game.
+     correct = letter in right position (green)
+     present = letter in word but wrong position (yellow)
+     absent  = letter not in word (gray) */
+  --sl-color-heidursordla-correct: var(--sl-primitive-green-500);
+  --sl-color-heidursordla-correct-foreground: var(--sl-primitive-neutral-0);
+  --sl-color-heidursordla-present: var(--sl-primitive-warning-500);
+  --sl-color-heidursordla-present-foreground: var(--sl-primitive-neutral-0);
+  --sl-color-heidursordla-absent: var(--sl-primitive-neutral-600);
+  --sl-color-heidursordla-absent-foreground: var(--sl-primitive-neutral-0);
+
   /* ===== OVERLAY COLORS ===== */
   --sl-color-overlay-light: 0 0% 0% / 0.25;
   --sl-color-overlay-base: 0 0% 0% / 0.5;
@@ -862,6 +874,11 @@
   --sl-color-patrol-adrir: var(--sl-primitive-adrir-400);
   --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-300);
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-900);
+
+  /* ===== HEIÐURSORÐLA TILE COLORS (Dark) ===== */
+  --sl-color-heidursordla-correct: var(--sl-primitive-green-400);
+  --sl-color-heidursordla-present: var(--sl-primitive-warning-500);
+  --sl-color-heidursordla-absent: var(--sl-primitive-neutral-700);
 
   /* ===== OVERLAYS (Dark) ===== */
   --sl-color-overlay-light: 0 0% 0% / 0.5;

@@ -1,0 +1,36 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-sm);
+  align-items: stretch;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-xs);
+  padding-bottom: calc(var(--sl-spacing-md) + env(safe-area-inset-bottom, 0px));
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.title {
+  margin: 0;
+  text-align: center;
+  font-size: var(--sl-text-heading-5);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/*
+ * Reserves vertical space for the transient toast so it never overlaps the
+ * active guess row. When no toast is shown the slot is still present,
+ * preventing layout shift when an error appears/disappears.
+ */
+.toastSlot {
+  position: relative;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}

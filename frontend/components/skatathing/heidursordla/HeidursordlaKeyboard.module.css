@@ -1,0 +1,75 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: var(--sl-spacing-xs) 0;
+  padding-bottom: calc(var(--sl-spacing-xs) + env(safe-area-inset-bottom, 0px));
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  width: 100%;
+}
+
+.key {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 4px;
+  border: none;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-secondary));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-semibold);
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
+}
+
+.key:active {
+  background: hsl(var(--sl-color-surface-active));
+  transform: scale(0.96);
+}
+
+.key:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.keyWide {
+  /*
+   * Enter (↵) and Backspace (⌫) take the same width as letter keys so the
+   * row-3 letter grid isn't compressed. The larger glyph and aria-label
+   * carry the affordance instead.
+   */
+  flex: 1 1 0;
+  font-size: var(--sl-text-heading-5);
+}
+
+.keyCorrect {
+  background: hsl(var(--sl-color-heidursordla-correct));
+  color: hsl(var(--sl-color-heidursordla-correct-foreground));
+}
+
+.keyPresent {
+  background: hsl(var(--sl-color-heidursordla-present));
+  color: hsl(var(--sl-color-heidursordla-present-foreground));
+}
+
+.keyAbsent {
+  background: hsl(var(--sl-color-heidursordla-absent));
+  color: hsl(var(--sl-color-heidursordla-absent-foreground));
+}

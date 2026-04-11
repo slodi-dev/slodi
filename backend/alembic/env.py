@@ -16,6 +16,7 @@ from app.models import (
     event,  # noqa: F401
     game_score,  # noqa: F401
     group,  # noqa: F401
+    heidursordla,  # noqa: F401
     like,  # noqa: F401
     program,  # noqa: F401
     tag,  # noqa: F401

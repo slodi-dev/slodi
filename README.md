@@ -70,7 +70,7 @@ Verkfæri til að fara yfir liðna viðburði og greina fjölbreytni dagskrár. 
 
 - Smiðja um dagskrárgerð og safna endurgjöf frá foringjum.
 
-**Kynning og útgáfa á lágmarksafurð:** mars 2026 á Skátaþingi.
+**Kynning og útgáfa á lágmarksafurð:** apríl 2026 á Skátaþingi (frestað frá mars vegna veðurs).
 
 - Markmiðið er að kynna lágmarksafurðina fyrir sjálfboðaliðum skátahreyfingarinnar.
 
