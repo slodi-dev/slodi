@@ -75,13 +75,13 @@ const LEADERBOARD_STYLES = `
   }
 </style>`;
 
-const leaderboardHtml = () => `
+const leaderboardHtml = (game: string) => `
 <div id="leaderboard">
   <div id="lb-handle" onclick="document.getElementById('leaderboard').classList.remove('active')" role="button" aria-label="Loka stigatöflu"></div>
   <h2>Stigatafla</h2>
   <ol id="leaderboard-list"><li style="color:#aaa;font-size:12px">Hleður...</li></ol>
   <div id="login-prompt" style="display:none">
-    <a href="/api/auth/login">Skráðu þig inn</a> til að vista stig
+    <a href="/auth/login?returnTo=/leikir/${game}">Skráðu þig inn</a> til að vista stig
   </div>
 </div>`;
 
@@ -96,7 +96,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ gam
         "<head>",
         `<head>\n  <base href="/leikir/${game}/">\n  <script>window.LEIKIR_GAME="${game}";</script>${LEADERBOARD_STYLES}`
       )
-      .replace("</canvas>", `</canvas>${leaderboardHtml()}`);
+      .replace("</canvas>", `</canvas>${leaderboardHtml(game)}`);
     return new NextResponse(injected, {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });

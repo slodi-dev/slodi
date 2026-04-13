@@ -533,6 +533,9 @@ function submitScore(finalScore) {
   })
     .then(function (res) {
       if (res.status === 401) {
+        try {
+          sessionStorage.setItem("leikir_pending_score_" + game, String(finalScore));
+        } catch {}
         var prompt = document.getElementById("login-prompt");
         if (prompt) prompt.style.display = "block";
         var lb = document.getElementById("leaderboard");
@@ -547,7 +550,46 @@ function submitScore(finalScore) {
     .catch(function () {});
 }
 
+function submitPendingScore() {
+  var game = window.LEIKIR_GAME;
+  if (!game) return;
+  var key = "leikir_pending_score_" + game;
+  var pending;
+  try {
+    pending = sessionStorage.getItem(key);
+  } catch {}
+  if (!pending) return;
+  var finalScore = parseInt(pending, 10);
+  if (!finalScore || finalScore <= 0) {
+    try {
+      sessionStorage.removeItem(key);
+    } catch {}
+    return;
+  }
+  fetch("/api/leikir/" + game + "/scores", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ score: finalScore }),
+  })
+    .then(function (res) {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {}
+      if (res.status === 401) return null;
+      return res.json();
+    })
+    .then(function (data) {
+      if (data) renderLeaderboard(data, true);
+    })
+    .catch(function () {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {}
+    });
+}
+
 // ── Start ────────────────────────────────────────────────────────────────────
 init();
 loop();
 fetchLeaderboard();
+submitPendingScore();
