@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class GameScoreCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    score: int = Field(ge=0)
+    score: int = Field(ge=1, le=999_999)
 
 
 class GameScoreOut(BaseModel):

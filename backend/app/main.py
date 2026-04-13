@@ -1,8 +1,11 @@
 # app/main.py
 from __future__ import annotations
 
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.core.logging import configure_logging
 from app.routers import (
@@ -23,6 +26,8 @@ from app.routers import (
 )
 from app.settings import settings
 
+_log = logging.getLogger(__name__)
+
 
 def create_app() -> FastAPI:
     configure_logging()
@@ -36,6 +41,23 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Starlette's CORSMiddleware does not reliably add CORS headers when an
+    # unhandled Python exception propagates out of a route handler (the
+    # response is never "started", so the middleware's send-wrapper never
+    # fires).  Registering an explicit handler here converts every such
+    # exception into a proper JSONResponse *before* it reaches the CORS
+    # layer, guaranteeing the browser always gets the expected header and can
+    # read the error body — rather than seeing a misleading CORS failure that
+    # hides the real problem.
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        _log.exception("Unhandled exception for %s %s", request.method, request.url)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+        )
+
     app.include_router(email_list_router.router)
     app.include_router(email_router.router)
     app.include_router(users_router.router)

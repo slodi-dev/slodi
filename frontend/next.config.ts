@@ -1,6 +1,24 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // Permanent redirects for the old /skatathing game hub and its sub-routes.
+      // These exist so that any bookmarked or shared links continue to work after
+      // the hub moved to /leikir.
+      { source: "/skatathing", destination: "/leikir", permanent: true },
+      {
+        source: "/skatathing/heidursordla",
+        destination: "/leikir/heidursordla",
+        permanent: true,
+      },
+      {
+        source: "/skatathing/heidursordla/:puzzleId",
+        destination: "/leikir/heidursordla/:puzzleId",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     // TODO: Wildcard allows any HTTPS image URL, which exposes the Next.js image
     // endpoint to SSRF and bandwidth abuse. This is acceptable short-term given

@@ -42,7 +42,7 @@ from app.schemas.user import UserOut
 from app.services.heidursordla import HeidursordlaService
 
 router = APIRouter(
-    prefix="/skatathing/heidursordla",
+    prefix="/leikir/heidursordla",
     tags=["heidursordla"],
 )
 SessionDep = Annotated[AsyncSession, Depends(get_session)]

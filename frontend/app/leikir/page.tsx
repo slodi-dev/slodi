@@ -1,16 +1,16 @@
 import Link from "next/link";
-import styles from "./skatathing.module.css";
+import styles from "./leikir.module.css";
 
 export const metadata = {
-  title: "Skátaþing — Slóði",
+  title: "Leikir — Slóði",
 };
 
-export default function SkatathingHubPage() {
+export default function LeikirHubPage() {
   return (
     <div className={styles.hub}>
-      <h1 className={styles.hubTitle}>Skátaþing</h1>
+      <h1 className={styles.hubTitle}>Leikir</h1>
       <div className={styles.tileGrid}>
-        <Link href="/skatathing/heidursordla" className={`${styles.tile} ${styles.tileActive}`}>
+        <Link href="/leikir/heidursordla" className={`${styles.tile} ${styles.tileActive}`}>
           <span className={styles.tileTitle}>Heiðursorðla</span>
           <span className={styles.tileSubtitle}>Spila</span>
         </Link>

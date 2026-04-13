@@ -1,0 +1,27 @@
+/* The canvas fills as much of the container height as possible while
+   respecting its 2:3 intrinsic ratio (400×600 game pixels). */
+
+.canvas {
+  display: block;
+  /* aspect-ratio lets width derive from max-height and vice versa */
+  aspect-ratio: 400 / 600;
+  /* Fill as much vertical space as available (container is 100% viewport height) */
+  height: 100%;
+  max-height: calc(100dvh - 60px - 2 * var(--sl-spacing-lg, 24px));
+  /* Never overflow horizontally */
+  max-width: 100%;
+  width: auto;
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 639px) {
+  .canvas {
+    /* Fill full width on mobile; height follows aspect ratio */
+    width: 100%;
+    height: auto;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

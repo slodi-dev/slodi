@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.core.db import get_session
+from app.core.rate_limiter import user_rate_limit
 from app.schemas.game_score import GameScoreCreate, GameScoreOut
 from app.schemas.user import UserOut
 from app.services.game_scores import GameScoreService
@@ -32,10 +33,9 @@ async def submit_score(
     game_slug: str,
     body: GameScoreCreate,
     current_user: UserOut = Depends(get_current_user),
+    _: None = Depends(user_rate_limit(10, 60)),
 ) -> list[GameScoreOut]:
     svc = GameScoreService(session)
-    if body.score <= 0:
-        return await svc.get_top_scores(game_slug)
     return await svc.submit_score(
         user_id=current_user.id,
         user_name=current_user.name,

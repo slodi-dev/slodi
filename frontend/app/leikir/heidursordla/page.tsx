@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import styles from "../skatathing.module.css";
-import NextPuzzleCountdown from "@/components/skatathing/heidursordla/NextPuzzleCountdown";
+import styles from "./heidursordla.module.css";
+import tileStyles from "../leikir.module.css";
+import NextPuzzleCountdown from "@/components/leikir/heidursordla/NextPuzzleCountdown";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchToday, type TodayResponse } from "@/services/heidursordla.service";
 
@@ -84,11 +85,11 @@ export default function HeidursordlaIndexPage() {
     <div className={styles.indexRoot}>
       <h1 className={styles.archiveTitle}>Heiðursorðla</h1>
       <Link
-        href={`/skatathing/heidursordla/${data.puzzle.id}`}
-        className={`${styles.tile} ${styles.tileActive}`}
+        href={`/leikir/heidursordla/${data.puzzle.id}`}
+        className={`${tileStyles.tile} ${tileStyles.tileActive}`}
       >
-        <span className={styles.tileTitle}>Þraut #{data.puzzle.puzzle_number}</span>
-        <span className={styles.tileSubtitle}>Spila núna</span>
+        <span className={tileStyles.tileTitle}>Þraut #{data.puzzle.puzzle_number}</span>
+        <span className={tileStyles.tileSubtitle}>Spila núna</span>
       </Link>
     </div>
   );

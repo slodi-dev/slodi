@@ -123,7 +123,7 @@ export type GuessResult = GuessSuccess | GuessFailure;
 // Endpoint helpers
 // ─────────────────────────────────────────────────────────────────────────
 
-const BASE = "/skatathing/heidursordla";
+const BASE = "/leikir/heidursordla";
 
 export async function fetchToday(getToken: () => Promise<string | null>): Promise<TodayResponse> {
   const url = buildApiUrl(`${BASE}/today`);

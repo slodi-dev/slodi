@@ -1,0 +1,148 @@
+/* ── Desktop sidebar ────────────────────────────────────────────────────── */
+
+.leaderboard {
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  box-shadow: var(--sl-shadow-card);
+  padding: var(--sl-spacing-md);
+  width: 200px;
+  flex-shrink: 0;
+  align-self: center;
+  overflow-y: auto;
+  /* Cap at canvas height so it never overflows the page */
+  max-height: calc(100dvh - 60px - 2 * var(--sl-spacing-lg, 24px));
+}
+
+.handle {
+  display: none;
+}
+
+.title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: hsl(var(--sl-color-primary));
+  margin: 0 0 var(--sl-spacing-sm);
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.empty {
+  font-size: 0.8rem;
+  color: hsl(var(--sl-color-text-secondary));
+  text-align: center;
+  margin: 0;
+  padding: var(--sl-spacing-md) 0;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 2px;
+  border-bottom: 1px solid hsl(var(--sl-color-border) / 0.5);
+  font-size: 0.82rem;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rank {
+  color: hsl(var(--sl-color-text-secondary));
+  min-width: 20px;
+  font-size: 0.75rem;
+}
+
+.name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.score {
+  color: hsl(var(--sl-color-primary));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.loginPrompt {
+  margin-top: var(--sl-spacing-sm);
+  font-size: 0.78rem;
+  color: hsl(var(--sl-color-text-secondary));
+  text-align: center;
+}
+
+.loginPrompt a {
+  color: hsl(var(--sl-color-primary));
+  text-decoration: underline;
+}
+
+.errorPrompt {
+  margin-top: var(--sl-spacing-sm);
+  font-size: 0.78rem;
+  color: hsl(var(--sl-color-error-text));
+  text-align: center;
+}
+
+/* ── Mobile bottom sheet ────────────────────────────────────────────────── */
+
+@media (max-width: 639px) {
+  .leaderboard {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 55dvh;
+    height: auto;
+    border-radius: 20px 20px 0 0;
+    z-index: 20;
+    padding: 8px 20px 32px;
+    /* Override desktop surface: keep high contrast over the game canvas */
+    background: hsl(var(--sl-color-surface));
+    border: 1px solid hsl(var(--sl-color-border));
+    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(12px);
+    overflow-y: auto;
+    align-self: unset;
+    /* reset desktop width/max-height */
+    width: 100%;
+  }
+
+  .leaderboard.active {
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: hsl(var(--sl-color-border));
+    border-radius: 2px;
+    margin: 0 auto 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

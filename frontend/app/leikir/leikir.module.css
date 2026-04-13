@@ -1,0 +1,62 @@
+/* Hub layout — shared by the /leikir hub page and borrowed by
+   heidursordla/page.tsx for the active-puzzle tile card. */
+
+.hub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-lg);
+  padding: var(--sl-spacing-lg) var(--sl-spacing-md);
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hubTitle {
+  margin: 0;
+  font-size: var(--sl-text-heading-2);
+  color: hsl(var(--sl-color-text-primary));
+  text-align: center;
+}
+
+.tileGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-md);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  padding: var(--sl-spacing-lg);
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  text-decoration: none;
+  color: hsl(var(--sl-color-text-primary));
+  min-height: 96px;
+  box-shadow: var(--sl-shadow-card);
+  transition:
+    transform var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+}
+
+.tileActive:active {
+  transform: scale(0.98);
+}
+
+.tileDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tileTitle {
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.tileSubtitle {
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-secondary));
+}
