@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import styles from "../../skatathing.module.css";
-import NextPuzzleCountdown from "@/components/skatathing/heidursordla/NextPuzzleCountdown";
-import HeidursordlaPlayView from "@/components/skatathing/heidursordla/HeidursordlaPlayView";
+import styles from "../heidursordla.module.css";
+import NextPuzzleCountdown from "@/components/leikir/heidursordla/NextPuzzleCountdown";
+import HeidursordlaPlayView from "@/components/leikir/heidursordla/HeidursordlaPlayView";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchPuzzleState, type PuzzleStateResponse } from "@/services/heidursordla.service";
 
