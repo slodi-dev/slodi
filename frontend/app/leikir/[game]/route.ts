@@ -62,6 +62,9 @@ const LEADERBOARD_STYLES = `
       transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 10;
       padding: 8px 16px 24px;
+      background: rgba(18, 24, 38, 0.92);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
     }
     #leaderboard.active { transform: translateY(0); }
     #lb-handle {
