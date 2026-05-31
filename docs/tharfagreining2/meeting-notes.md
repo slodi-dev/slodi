@@ -8,9 +8,28 @@
 > data); facilitator interpretation is in English. Number each ábending so we can
 > keep appending fast and cross-reference later.
 
-## Attendees
+## Attendees & Padlet-handle key
 
-- _TBD — fill from §3 checklist (troop, role, experience, uses Slóði y/n)_
+> Padlet assigned random handles in the morning; several people switched to real
+> names after lunch — so one person = two handles in places. Mapping confirmed with
+> Halldór (5/31/26). Per-entry `Source:` reconciliation is a **post-processing TODO**
+> (see `post-processing.md`) — including correcting **#14 / #16 / #18** (mislabeled
+> "Aron" in the live relay; actually PEACEFUL BUG and Rafnar).
+
+| Name | Padlet handle(s) |
+|---|---|
+| **Aron** | CREEPER |
+| **Signý** | SIGNÝ |
+| **Halldór** (facilitator) | HALLDÓR |
+| **Rafnar** | SLEEPY EAGLE + SHY AARDVARK |
+| **Ásgerður** | ÁSGERDUR + SUPPORTIVE OTTER |
+| **Steinar** | BEAUTIFUL CENTIPEDE |
+| **Valur** | SVALUR |
+| **Freyja Björgvinsdóttir** | FREYJABJORGVINS |
+| **Viktor** | GRACEFUL LYNX _(from live relay)_ |
+| _unidentified_ | SEEDLING PLANTER (#2/#3/#4) · PEACEFUL BUG (#14) · HELPFUL TIGER (#34) · PEACEFUL PLATYPUS (#42) |
+
+_Noise-only (jokes): SLEEPY BADGER, COURAGEOUS FERRET._
 
 ---
 
