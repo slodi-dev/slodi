@@ -14,19 +14,19 @@
 > names after lunch — so one person = two handles in places. Mapping confirmed with
 > Halldór (5/31/26). Per-entry `Source:` reconciliation is a **post-processing TODO**
 > (see `post-processing.md`) — including correcting **#14 / #16 / #18** (mislabeled
-> "Aron" in the live relay; actually PEACEFUL BUG and Rafnar).
+> "Foringi A" in the live relay; actually PEACEFUL BUG and Foringi B).
 
 | Name | Padlet handle(s) |
 |---|---|
-| **Aron** | CREEPER |
+| **Foringi A** | CREEPER |
 | **Signý** | SIGNÝ |
 | **Halldór** (facilitator) | HALLDÓR |
-| **Rafnar** | SLEEPY EAGLE + SHY AARDVARK |
-| **Ásgerður** | ÁSGERDUR + SUPPORTIVE OTTER |
-| **Steinar** | BEAUTIFUL CENTIPEDE |
-| **Valur** | SVALUR |
-| **Freyja Björgvinsdóttir** | FREYJABJORGVINS |
-| **Viktor** | GRACEFUL LYNX _(from live relay)_ |
+| **Foringi B** | SLEEPY EAGLE + SHY AARDVARK |
+| **Foringi C** | ÁSGERDUR + SUPPORTIVE OTTER |
+| **Foringi D** | BEAUTIFUL CENTIPEDE |
+| **Foringi E** | SVALUR |
+| **Foringi F** | FREYJABJORGVINS |
+| **Foringi G** | GRACEFUL LYNX _(from live relay)_ |
 | _unidentified_ | SEEDLING PLANTER (#2/#3/#4) · PEACEFUL BUG (#14) · HELPFUL TIGER (#34) · PEACEFUL PLATYPUS (#42) |
 
 _Noise-only (jokes): SLEEPY BADGER, COURAGEOUS FERRET._
@@ -328,7 +328,7 @@ meeting should be* and *what they need*.
 - **Frequency:** per fundur
 - **Source:** _TBD_
 
-### #11 — (Steinar) Distribute dagskrá across meetings + avoid resource clashes between flokkar 🆕
+### #11 — (Foringi D) Distribute dagskrá across meetings + avoid resource clashes between flokkar 🆕
 
 > "Það þarf að dreifa dagskrá á milli funda og það þarf að passa að eldhúsið sé
 > ekki notað þrisvar af sama flokki. Eftir að skátar koma með fullt af hugmyndum
@@ -364,7 +364,7 @@ meeting should be* and *what they need*.
     the group-leader persona who wants oversight, §5.2).
 - **Pain today:** ~4/5 — "mesta vesenið," needs Excel. **Highest concrete pain so far.**
 - **Frequency:** monthly (term layout) / ongoing
-- **Source:** **Steinar**
+- **Source:** **Foringi D**
 
 ### #12 — Félag-level búnaðarskráning + booking + reach other félög 🆕
 
@@ -390,13 +390,13 @@ meeting should be* and *what they need*.
   - *coordinate/borrow across groups* when you lack something.
 - **Maps to:** the candidate **`Resource` entity** (#11) — now clearly **gear +
   bookings + cross-group**, at **félag scope** (#1). Confirms resources are a
-  recurring, real theme, not a one-off from Steinar.
+  recurring, real theme, not a one-off from Foringi D.
 - **Scope watch:** equipment management + inter-félag lending is a **big** surface.
   Capture the need; do **not** let it balloon phase-2 scope. Likely *later* than
   the core Planner — note for prioritisation, not build-first.
 - **Pain today:** _/5 — solution-space; underlying inventory/clash pain is real (cf #11 ~4/5)_
 - **Frequency:** _TBD_
-- **Source:** _TBD (follows Steinar's #11)_
+- **Source:** _TBD (follows Foringi D's #11)_
 
 ### #13 — Leader interests drive content too; register leader skills (who can run klifur); Safe from Harm 🆕
 
@@ -458,11 +458,11 @@ meeting should be* and *what they need*.
   (templates as flexible starting points), §5.1 (theme entry point).
 - **Pain today:** n/a — this is a *value*/method, told positively.
 - **Frequency:** ongoing ethos
-- **Source:** **Aron** (same quote re-stated with attribution in #15)
+- **Source:** **Foringi A** (same quote re-stated with attribution in #15)
 
-### #15 — (Aron) Full annual operating model: heildarmynd → cycles → typed meetings, roles, governance, procurement ⭐⭐ centerpiece
+### #15 — (Foringi A) Full annual operating model: heildarmynd → cycles → typed meetings, roles, governance, procurement ⭐⭐ centerpiece
 
-> "[Youth-collab quote, see #14.] Hefur verið foringi með Rafnari og Signýu og
+> "[Youth-collab quote, see #14.] Hefur verið foringi með Foringi Bi og Signýu og
 > sett upp **heildarmynd fyrir árið með Excel** og **undirsíður** — geðveikt töff.
 > Setja upp **starfsárið í dagskrárhringjum** með **skipulagsfundum, sveitarfundum,
 > flokksfundum og uppskeruhátíð.** Stundum voru uppskeruhátíðir eins og að fara
@@ -475,7 +475,7 @@ meeting should be* and *what they need*.
 > Eftir fundi voru **sveitaráðsfundir** með flokksforingjum (eftir nánast hvern
 > fund): farið yfir hvað er framundan, hvort allt gengi vel. Stundum voru
 > sveitarforingjar í byrjun fundar til að **miðla verkefnunum.** **Flokksforingjar
-> róteraðir hvern dagskrárhring.** 'Það er svo auðvelt að vera foringi,' segir Aron."
+> róteraðir hvern dagskrárhring.** 'Það er svo auðvelt að vera foringi,' segir Foringi A."
 
 **Interpretation — the clearest whole-system picture of the day. Treat as a
 reference model to test the data model against.**
@@ -517,7 +517,7 @@ Role assignment is **per-cycle and changes**.
 **(h) Pedagogy** — "styð þau við að muna, ekki bara þjónusta": leader as **enabler**;
 the tool should help kids **own/remember**, not do it for them (cf. #10, #14).
 
-**(i) Aron's closer** — "Það er svo auðvelt að vera foringi" — likely **wry** given
+**(i) Foringi A's closer** — "Það er svo auðvelt að vera foringi" — likely **wry** given
 the machinery; or genuine that **good structure makes it manageable.** Either way:
 leaders carry a **heavy coordination load** that structure tames → the value prop.
 
@@ -531,9 +531,9 @@ leaders carry a **heavy coordination load** that structure tames → the value p
   **planned inside** the year (informs §5.1 scale 3 / §9 "separate tool?").
 - **Pain today:** high coordination load (~4/5), Excel-bound (cf #11).
 - **Frequency:** yearly (setup) → per-cycle (rotation) → per-meeting (council review)
-- **Source:** **Aron** (co-leads with **Rafnar** and **Signý**)
+- **Source:** **Foringi A** (co-leads with **Foringi B** and **Signý**)
 
-### #16 — (Aron) Last-mile detailing with co-leaders; search online; everyone "með á nótunum"
+### #16 — (Foringi A) Last-mile detailing with co-leaders; search online; everyone "með á nótunum"
 
 > "Ræða við meðforingja. Við erum með þetta heildarskipulag, við erum með þetta
 > dagatal, og svo erum við með daginn í dag — við erum alltaf með fundi og kannski
@@ -563,9 +563,9 @@ leaders carry a **heavy coordination load** that structure tames → the value p
   (zoom levels; theme/leikir as late-bound), §5.3/§4 (idea search).
 - **Pain today:** _/5 — coordination/alignment need_
 - **Frequency:** every meeting (last-mile) 
-- **Source:** **Aron**
+- **Source:** **Foringi A**
 
-### #17 — (Aron) Check-in/out retro = endurmat; setning & slit carry lög og gildi + info
+### #17 — (Foringi A) Check-in/out retro = endurmat; setning & slit carry lög og gildi + info
 
 > "Þá var farið yfir check-in og check-out — hvað var skemmtilegast og hvað hefði
 > mátt fara betur. Gott að nota slit og setningu í að læra lög og gildi og fara
@@ -589,7 +589,7 @@ leaders carry a **heavy coordination load** that structure tames → the value p
   §5.3 (slot templates carry standard purpose), ÆSKA/values.
 - **Pain today:** n/a — method/structure, positive.
 - **Frequency:** every meeting
-- **Source:** **Aron**
+- **Source:** **Foringi A**
 
 ### #18 — Heildardagatal: the master calendar is the integration + discussion surface
 
@@ -618,11 +618,11 @@ leaders carry a **heavy coordination load** that structure tames → the value p
   scheduling.
 - **Pain today:** _/5 — currently done in Excel (#11/#15) → real pain to beat_
 - **Frequency:** yearly setup → ongoing reference
-- **Source:** **Aron** (continuing) / general
+- **Source:** **Foringi A** (continuing) / general
 
 ## Prompt 2 — "Hvernig sé ég dagskrá?" (visualisation / §5.1 scale 2: dagskrárhringur)
 
-### #19 — (Aron) A dagskrárhringur IS a grid: tími (Y-ás) × flokkar (X-ás) ⭐⭐⭐ model-defining + image
+### #19 — (Foringi A) A dagskrárhringur IS a grid: tími (Y-ás) × flokkar (X-ás) ⭐⭐⭐ model-defining + image
 
 > "Dróttskátafundur — skipulag fyrir önnina **frá janúar í maí**, hvað við erum að
 > gera **í hverri viku**, útilegur og páskaútilega og **öll frí sem eru í gangi
@@ -630,7 +630,7 @@ leaders carry a **heavy coordination load** that structure tames → the value p
 > "Það er búið að **skipta niður í dagskrárhringi og skipulagsfundi og
 > uppskerufundir** og fleira." · **"Sér tíma í y-ás og flokka á x-ás."**
 
-📎 **Artifact:** `assets/aron-dagskrarhringur-grid.avif` (Aron's real term sheet,
+📎 **Artifact:** `assets/foringi-a-dagskrarhringur-grid.avif` (Foringi A's real term sheet,
 Jan–May, Vika 1–16). The single most informative item of the day — **treat as the
 reference layout for the dagskrárhringur scale.**
 
@@ -665,7 +665,7 @@ reference layout for the dagskrárhringur scale.**
 - **Patrol autonomy** — each flokkur plans its column; "agreed to plan their
   following two meetings." Youth self-direction within the frame (#8/#14/#15g).
   Youth-chosen patrol names (Mojo dojo casa hás 😄).
-- **Leader availability noted** — "Aron í DK", "Aron í Færeyjum" — absence affects
+- **Leader availability noted** — "Foringi A í DK", "Foringi A í Færeyjum" — absence affects
   the plan.
 
 **Model implications — major:**
@@ -680,13 +680,13 @@ reference layout for the dagskrárhringur scale.**
 - The **#18 overview/build-first candidate** is concretely **this grid view.**
 - Activities need **multi-week spanning** + **status** + **scope** — none in today's `Task`.
 - **Pain:** maintained **by hand in Excel** — high. Strongest case yet for the Planner.
-- **Source:** **Aron**
+- **Source:** **Foringi A**
 
 **Reactions (spurningar / pælingar):**
-- **Viktor:** "Magnað." → positive validation of the grid model from the room.
-- (Ásgerður's "vantar K í…" → djók, see Léttmeti.)
+- **Foringi G:** "Magnað." → positive validation of the grid model from the room.
+- (Foringi C's "vantar K í…" → djók, see Léttmeti.)
 
-### #20 — (Aron) Audiences for the plan: taught at foringjanámskeið; parents view (lightly); scouts view + suggest
+### #20 — (Foringi A) Audiences for the plan: taught at foringjanámskeið; parents view (lightly); scouts view + suggest
 
 > "Dagskráin er kynnt á fyrsta **foringja- og aðstoðarforingjanámskeiði** og notuð
 > svona að ákveðnu leyti. Spurning: Fá **foreldrar** að sjá þetta? Svar: **Já, en
@@ -717,20 +717,20 @@ reference layout for the dagskrárhringur scale.**
     #15g age-based agency.
 - **Pain today:** n/a — describes current practice/audiences.
 - **Frequency:** per year (námskeið) / ongoing (viewing)
-- **Source:** **Aron**
+- **Source:** **Foringi A**
 
 ### #21 — (Signý) Single-flokkur timeline: tími á x-ás, fundir flowing along it 🆕 contrasting view
 
 > "Signý sér fundina og dagskrárhringina og **hvernig einn flokkur er.** Tíminn er
 > á **x-ás** og svo eru fundir og **hvernig þetta keyrir.**"
 
-**Interpretation — a *different* visualisation from Aron's grid.**
+**Interpretation — a *different* visualisation from Foringi A's grid.**
 - Signý pictures **ONE flokkur over time**: time on the **X-axis**, **fundir laid
   along it** = a **timeline / line for a single patrol** — "hvernig þetta keyrir"
   (how it flows). Still sees **fundir + dagskrárhringir** as the units (consistent
   with #15/#19 hierarchy).
-- **Contrast with #19 (Aron):**
-  - **Aron = overview/GRID** — all flokkar × weeks (troop-wide, time on Y).
+- **Contrast with #19 (Foringi A):**
+  - **Foringi A = overview/GRID** — all flokkar × weeks (troop-wide, time on Y).
   - **Signý = focused/TIMELINE** — one patrol's sequence (time on X).
 - 🪡 **This is exactly the §5.1/§6 "seam"** — the mental model **changes between
   people/scope**. The product almost certainly needs **both**:
@@ -740,7 +740,7 @@ reference layout for the dagskrárhringur scale.**
 - **Maps to:** §5.1 scale 2 visualisation; **#18 overview need → now "overview
   *and* focused"**; data model: **single model, multiple projections** (grid vs
   line) — design the data so both render.
-- **💬 Room discussion (contrast w/ Aron #19):** Signý's timeline is **"einfaldara
+- **💬 Room discussion (contrast w/ Foringi A #19):** Signý's timeline is **"einfaldara
   að sjá fundina"** — *easier to read the individual meetings.* Names the trade-off
   directly:
   - **Grid (#19)** = dense **overview**, all patrols at once, but harder to read a
@@ -753,13 +753,13 @@ reference layout for the dagskrárhringur scale.**
 - **Pain today:** n/a — visualisation/mental model.
 - **Source:** **Signý**
 
-### #22 — (Aron) Same grid structure reused across years (2022 ≈ 2024), only the flokkar change
+### #22 — (Foringi A) Same grid structure reused across years (2022 ≈ 2024), only the flokkar change
 
-> "Aron aftur, nema það var **2022** — **sama skipulag, sama uppsetning, nema aðrir
+> "Foringi A aftur, nema það var **2022** — **sama skipulag, sama uppsetning, nema aðrir
 > flokkar.**"
 
 **Interpretation — the year-grid is itself a reusable annual template.**
-- Aron ran the **same layout/structure** in **2022** as in 2024 (#19); the only thing
+- Foringi A ran the **same layout/structure** in **2022** as in 2024 (#19); the only thing
   that changed year-to-year is **which flokkar fill the columns.** The *scaffold*
   (weeks × flokkar grid, typed section bands, Innkaup/ATH columns, cycle/skipulags/
   uppskeru rhythm) is **stable and reused.**
@@ -774,22 +774,22 @@ reference layout for the dagskrárhringur scale.**
 - ⚠️ **Capture caveat (honesty):** the "2022" image was **not actually received** —
   the file at `~/Downloads/image.avif` was **byte-identical (same md5) to #19's 2024
   sheet**, so I could **not visually verify** a distinct 2022 layout. The point above
-  is recorded **from Aron's verbal description**, not a second artifact. _If the 2022
+  is recorded **from Foringi A's verbal description**, not a second artifact. _If the 2022
   sheet is worth keeping, re-send it and I'll diff it against #19._
 - **Pain today:** n/a — reuse method (and a *positive*: structure is durable).
 - **Frequency:** yearly (re-template)
-- **Source:** **Aron**
+- **Source:** **Foringi A**
 
-### #23 — (Aron) "Heildarmynd á öllu": a month-calendar view (Sep–Dec) — 3rd projection + image
+### #23 — (Foringi A) "Heildarmynd á öllu": a month-calendar view (Sep–Dec) — 3rd projection + image
 
-> "Aron, mynd 3 — **heildarmyndin á öllu.**"
+> "Foringi A, mynd 3 — **heildarmyndin á öllu.**"
 
-📎 **Artifact:** `assets/aron-heildarmynd.avif` (autumn term **September–December**,
+📎 **Artifact:** `assets/foringi-a-heildarmynd.avif` (autumn term **September–December**,
 classic month calendar: weekdays × weeks).
 
 **What it shows — a *third* way to see the same plan:**
 - **A standard month-grid calendar** (Mán–Sun columns, weekend shading) spanning the
-  **whole autumn term at a glance.** This is the **heildarmynd / overview** Aron kept
+  **whole autumn term at a glance.** This is the **heildarmynd / overview** Foringi A kept
   referencing (#15, #18) — concretely a **calendar projection.**
 - **Meetings are numbered & sequential — Fundur 01…13** across the term — each with a
   **VENUE** 🆕: *Skátaheimilið, Hleðra, Öskjuhlíð, Laugardalslaug, Rush.* **Venues
@@ -805,9 +805,9 @@ classic month calendar: weekdays × weeks).
 - **Special events** marked inline: **Skátapepp** (16–17), camps, afmæli.
 
 **Why this matters — three projections of ONE dataset now confirmed:**
-1. **Flokkar-grid** (weeks × patrols) — **#19 Aron** — *who does what* lens.
+1. **Flokkar-grid** (weeks × patrols) — **#19 Foringi A** — *who does what* lens.
 2. **Per-flokkur timeline** (time → meetings) — **#21 Signý** — *legible single-patrol* lens.
-3. **Month calendar** (days × weeks) — **#23 Aron** — *when / scheduling / around-holidays* lens.
+3. **Month calendar** (days × weeks) — **#23 Foringi A** — *when / scheduling / around-holidays* lens.
 → The product should render **one model in multiple views**; the **calendar** is the
    natural home for **scheduling, venues, holidays, tentative events.**
 
@@ -820,21 +820,21 @@ classic month calendar: weekdays × weeks).
   starfsár of cycles.)
 
 - **Pain today:** maintained by hand (Excel/calendar) — overview is valued.
-- **Source:** **Aron**
+- **Source:** **Foringi A**
 
-### #24 — (Ásgerður) A fundur has 3 phases: Undirbúningur → Fundur → Eftir á; "?" = what's undecided + image
+### #24 — (Foringi C) A fundur has 3 phases: Undirbúningur → Fundur → Eftir á; "?" = what's undecided + image
 
-> "Svona sér Ásgerður fundi fyrir sér. **Spurningamerkin eru mikilvæg — þau þýða
+> "Svona sér Foringi C fundi fyrir sér. **Spurningamerkin eru mikilvæg — þau þýða
 > hvað þarf að gera.** Svo er farið í hvað þarf og hvað er planið, **peppa sig í
 > gang.** Svo er fundur: **setning – megindagskrá – flipp – tiltekt – slit.** Eftir
 > á þarf að **hringja í einhvern**. **Hvað gekk vel (endurmat).**"
 
-📎 **Artifact:** `assets/asgerdur-fundur.avif` (handwritten). Three labelled blocks:
+📎 **Artifact:** `assets/foringi-c-fundur.avif` (handwritten). Three labelled blocks:
 **UNDIRBÚNINGUR** ("?????", "HVAÐ ÞARF?", circled "PEPP") → **FUNDUR** (setning –
 megindagskrá – flipp – tiltekt – slit) → **EFTIR Á** ("þarf að hringja í einhvern?
 hvað gekk vel").
 
-**Interpretation — single-meeting scale (cf #6 Aron), 2nd data point.**
+**Interpretation — single-meeting scale (cf #6 Foringi A), 2nd data point.**
 - 🆕 **A fundur is 3 phases, not just the meeting:**
   1. **Undirbúningur (before):** *hvað þarf?* (gear/materials — ties #10/#15/#23),
      confirm the plan, **"peppa sig í gang"** (get ready / motivate).
@@ -848,8 +848,8 @@ hvað gekk vel").
   planning" cells, #16 progressive detailing, #23 tentative status.** Strong,
   recurring need: **mark what isn't decided yet.**
 - **Corroborates the beinagrind (#6/#17) — but with a DIFFERENT slot set:**
-  - Aron #6: setning / dagskrá / **leikur** / slit / **endurmat**
-  - Ásgerður #24: setning / **megindagskrá** / **flipp** / **tiltekt** / slit (+endurmat in "eftir á")
+  - Foringi A #6: setning / dagskrá / **leikur** / slit / **endurmat**
+  - Foringi C #24: setning / **megindagskrá** / **flipp** / **tiltekt** / slit (+endurmat in "eftir á")
   → **The skeleton is customisable per leader/troop**, not one hardcoded structure.
   **Design: editable slot templates**, with common slots (setning/slit/endurmat)
   as defaults. **tiltekt (cleanup)** as a slot ties #11 resource-care.
@@ -857,7 +857,7 @@ hvað gekk vel").
   (editable slot templates), #16/#19/#23 (status/undecided), procurement (hvað þarf).
 - **Pain today:** n/a — mental model; but the **pre/post wrapper + "?" tracking**
   are real unmet needs.
-- **Source:** **Ásgerður**
+- **Source:** **Foringi C**
 
 ### #25 — (Signý) Grid sketch (dags × flokkar) with troop-wide rows spanning — independently corroborates #19 + links to samnýting aðfanga + image
 
@@ -921,7 +921,7 @@ building blocks** — just at different scales:
 - **Source:** **Halldór** (facilitator synthesis — flag as *our* framing, not a
   participant need; validate it against leaders, don't lead them to it per §7).
 
-### #27 — (Rafnar) The whole dagskrá is "hjúpuð með ÆSKU" — ÆSKA is the wrapper, not a field ⭐
+### #27 — (Foringi B) The whole dagskrá is "hjúpuð með ÆSKU" — ÆSKA is the wrapper, not a field ⭐
 
 > "Dagskráin er **öll hjúpuð með ÆSKU** — fundir skipulagðir af skátum, **merki** og
 > allt það er **inni í Æsku.**"
@@ -929,7 +929,7 @@ building blocks** — just at different scales:
 **Interpretation — recontextualises the "greater purpose" dimension.**
 - **ÆSKA is the _enveloping framework_, not one optional field.** §5.1 framed
   ÆSKA/þroskasvið as the **5th dimension** ("toward what greater purpose") of a
-  single liður. Rafnar elevates it: the **whole programme is wrapped in ÆSKA** —
+  single liður. Foringi B elevates it: the **whole programme is wrapped in ÆSKA** —
   everything sits **inside** it.
 - **Everything maps back to ÆSKA:**
   - **merki (badges)** (#3/#9) are **expressions of ÆSKA** developmental areas, not
@@ -955,7 +955,7 @@ building blocks** — just at different scales:
   (**resolved: it's the envelope**); #3/#9 badges; #5 markmið; #26 legó.
 - **Pain today:** n/a — conceptual framing; but **ÆSKA-coverage tooling** is a real
   latent need.
-- **Source:** **Rafnar**
+- **Source:** **Foringi B**
 
 ### #28 — "Fundarhugmyndir" sheet: scouts write down the next 4 meetings (rolling horizon)
 
@@ -984,7 +984,7 @@ building blocks** — just at different scales:
   §5.3 (sheet template), #16/#19/#24 (rolling/draft planning).
 - **Pain today:** _/5 — current practice on paper_
 - **Frequency:** rolling (every few meetings)
-- **Source:** _TBD (presenter — confirm; possibly Rafnar/continuing)_
+- **Source:** _TBD (presenter — confirm; possibly Foringi B/continuing)_
 
 ### #29 — "Leikjaskjal": a games bank/library document leaders pull from
 
@@ -1065,9 +1065,9 @@ building blocks** — just at different scales:
 - **Frequency:** every meeting
 - **Source:** **Signý**
 
-### #31 — (Valur Kári) Sit side-by-side and brainstorm out loud; capture in a Drive doc
+### #31 — (Foringi E) Sit side-by-side and brainstorm out loud; capture in a Drive doc
 
-> "Valur Kári: **Sitja hlið við hlið og brainstorma upphátt.**" · "**Drive skjal.**"
+> "Foringi E: **Sitja hlið við hlið og brainstorma upphátt.**" · "**Drive skjal.**"
 
 **Interpretation — a *different* collaboration mode from Signý's (#30).**
 - **Synchronous, co-located, verbal.** Planning happens **in person, out loud,
@@ -1078,7 +1078,7 @@ building blocks** — just at different scales:
 
 - **Key contrast — collaboration mode varies by leader:**
   - **#30 Signý** — *async*, shared **Sheets editor access**, JIT verbal roles.
-  - **#31 Valur Kári** — *sync*, **face-to-face verbal brainstorm**, doc = capture.
+  - **#31 Foringi E** — *sync*, **face-to-face verbal brainstorm**, doc = capture.
   → **Don't assume all co-planning is real-time co-editing _in the tool_.** For
   verbal brainstormers the tool's job is to **capture the outcome** (and support
   the in-person session), not host the thinking. (Reinforces the #16 caution:
@@ -1094,7 +1094,7 @@ building blocks** — just at different scales:
 - **Pain today:** _/5 — works; friction is getting the verbal result into a usable
   doc_
 - **Frequency:** per planning session
-- **Source:** **Valur Kári**
+- **Source:** **Foringi E**
 
 ### #32 — Whiteboard ("töflutúss fundur") — planning on a physical tafla
 
@@ -1119,7 +1119,7 @@ building blocks** — just at different scales:
 - **Pain today:** _/5 — analog; capture/transfer is the friction_
 - **Source:** _TBD (continuing collaboration-tools round)_
 
-### #33 — (Viktor) PAIN: bad at informing co-leaders & splitting tasks → 5-min-before scramble ⭐ high-pain
+### #33 — (Foringi G) PAIN: bad at informing co-leaders & splitting tasks → 5-min-before scramble ⭐ high-pain
 
 > "Ég er **ógeðslega lélegur** í að **upplýsa aðstoðarforingjana** og **deila
 > verkefnum á milli**, þannig þetta er oft eitthvað svona **fimm mínútur fyrir
@@ -1136,7 +1136,7 @@ building blocks** — just at different scales:
 
 - **⭐ This is the collaboration value-prop made concrete.** A feature that lets a
   leader **share the plan with co-leaders ahead of time + assign tasks** (push
-  "here's Thursday's plan + your tasks") would **directly relieve Viktor's pain.**
+  "here's Thursday's plan + your tasks") would **directly relieve Foringi G's pain.**
   The 5-min scramble is a *symptom of no good distribution mechanism.*
   - **Assign tasks to people** per fundur (#15e/#30) + **notify** co-leaders.
   - **"Your role/tasks for the next meeting"** glanceable view (#30 JIT view).
@@ -1146,7 +1146,7 @@ building blocks** — just at different scales:
 - **Pain today:** **~4/5** — "ógeðslega lélegur", explicit frustration. **Top
   collaboration pain so far — strong build-first candidate within collaboration.**
 - **Frequency:** every meeting
-- **Source:** **Viktor**
+- **Source:** **Foringi G**
 
 ### #34 — Plan in person, save everything on Drive
 
@@ -1180,14 +1180,14 @@ building blocks** — just at different scales:
 - **Design implications:**
   - A **minutes/notes field per fundur** (and per council meeting), kept and
     searchable — the **history** side of the plan, distinct from the **plan** side.
-  - Connects to the **ATH/notes column** in Aron's grid (#19) and endurmat (#17).
+  - Connects to the **ATH/notes column** in Foringi A's grid (#19) and endurmat (#17).
   - Useful for **continuity** when flokksforingjar rotate (#15f) — the record
     carries context across role changes.
 - **Maps to:** §5.2 (oversight/governance), #15/#17/#24, #19 ATH notes.
 - **Pain today:** _/5 — scattered; continuity/recall is the value_
 - **Source:** _TBD (continuing round)_
 
-### #36 — (Valur) Pool different experience & ideas; get advice from other leaders 🆕 cross-leader scope
+### #36 — (Foringi E) Pool different experience & ideas; get advice from other leaders 🆕 cross-leader scope
 
 > "Leggja saman **mismunandi reynslu og hugmyndir.** Mismunandi foringjar eru með
 > **mismunandi leiðir til að sjá fyrir sér starfið** og mismunandi reynslu af
@@ -1196,7 +1196,7 @@ building blocks** — just at different scales:
 
 **Interpretation — opens a SECOND collaboration scope.**
 - Collaboration so far (#30–#33) = **within-team** (co-leaders/youth on *one*
-  dagskrá). Valur points at **across-leaders / movement-wide:** pool **different
+  dagskrá). Foringi E points at **across-leaders / movement-wide:** pool **different
   experience + ideas**, **get advice (ráð) from others**, **mix approaches** to
   build something better.
 - **Validates the morning's "seam":** "mismunandi leiðir til að sjá fyrir sér
@@ -1217,7 +1217,7 @@ building blocks** — just at different scales:
 - **Maps to:** §5.2 FR-B6/B7 super-workspace, §5.3 shared templates, #29 bank,
   #22/#26 reuse.
 - **Pain today:** _/5 — opportunity/aspiration more than pain ("gott að geta")_
-- **Source:** **Valur**
+- **Source:** **Foringi E**
 
 ### #37 — Skipulagsfundur: term-start, set up the template, fill in after the kids plan
 
@@ -1263,7 +1263,7 @@ late.
 - **Pain today:** ~3/5 — recognised as too-late ("nei, gera tímanlega").
 - **Source:** _TBD_
 
-### #40 — (Steinar) A structured collaborative-planning process (ideate → assign → draft → decide → own)
+### #40 — (Foringi D) A structured collaborative-planning process (ideate → assign → draft → decide → own)
 
 > "Vinna með fólk: **vinna saman → hugmyndavinna → hlutverkaskipting → grunn plan →
 > endurmat → ákvörðun → plan komið → hver tekur ábyrgð á hverju.**"
@@ -1281,7 +1281,7 @@ late.
   explicit per-item ownership). Corroborates #33's pain with a *structure* to support.
 - **Maps to:** §5.2 process, #33/#30/#15e assignment, #17 endurmat.
 - **Pain today:** n/a — method; but encodes the assignment need.
-- **Source:** **Steinar**
+- **Source:** **Foringi D**
 
 ---
 
@@ -1456,7 +1456,7 @@ routine fundir.
 - **Maps to:** #45 (written→feed-forward), #46 (archive), #15f rotation, #22 reuse;
   §5.2 oversight; §9 mót handling.
 - **Pain today:** ~4/5 — repeated mistakes across rotating leadership.
-- **Source:** _TBD (mót context — confirm; poss. Steinar)_
+- **Source:** _TBD (mót context — confirm; poss. Foringi D)_
 
 ---
 
@@ -1475,7 +1475,7 @@ two-sided retro already seen in #17/#24 ("hvað var skemmtilegast / hvað gekk v
 
 ---
 
-### #50 — (Valur) Sometimes plan solo, then get constructive criticism (review mode) [→ collaboration]
+### #50 — (Foringi E) Sometimes plan solo, then get constructive criticism (review mode) [→ collaboration]
 
 > "Stundum er gott að **skipuleggja sjálfur** og fá **uppbyggilega gagnrýni.**"
 > _(tagged: → "hvernig skipulegg ég með öðrum")_
@@ -1499,7 +1499,7 @@ two-sided retro already seen in #17/#24 ("hvað var skemmtilegast / hvað gekk v
   ties #20 suggest tier; a lightweight review/approve flow.
 - **Maps to:** §5.2 review/approve; #20/#30/#36/#41 modes.
 - **Pain today:** _/5 — preference; lack of a review/comment channel today_
-- **Source:** **Valur**
+- **Source:** **Foringi E**
 
 ---
 
@@ -1628,7 +1628,7 @@ requirements:
 
 **Interpretation — copy-and-edit reuse at the largest scale yet (a whole camp).**
 - An **entire multi-day útilega exists as a sniðmát** (the recurring Easter camp seen
-  in Aron's grid/calendar — #19/#23 "Páskaútilega Skjöldunga, Vestmannaeyjar").
+  in Foringi A's grid/calendar — #19/#23 "Páskaútilega Skjöldunga, Vestmannaeyjar").
 - **"Sama útilegan með smávægilegum breytingum"** — each year = **clone last year +
   minor tweaks.** ↻ Confirms copy-and-edit (#2/#3/#6/#54) and reuse-the-structure
   (#22) **at event/camp scale.**
@@ -1643,7 +1643,7 @@ requirements:
 - **Maps to:** §5.3 templates (whole-event), §5.1 scale 3 útilega, §9 útilega/mót
   handling, #22/#54 reuse, #48/#45 endurmat loop, #19/#23 grid/calendar.
 - **Pain today:** _/5 — already works via copy; Slóði should make clone+tweak first-class_
-- **Source:** _TBD (Skjöldungar — Aron's troop; confirm)_
+- **Source:** _TBD (Skjöldungar — Foringi A's troop; confirm)_
 
 ---
 
@@ -2261,15 +2261,15 @@ _(model test: does `Event → ordered Tasks` fit?)_
 
 - "Ég stend upp og labba um og hugsa." 🚶 _(flagged djók miði — though, honestly,
   walking-and-thinking is a real planning style for some. Left as a joke per the room.)_
-- Ásgerður: "vantar K í…" 😄 _(djók during the Q&A on Aron's grid #19; spelling gag.)_
-- Aron "að teikna upp hugmynd" — ímyndar sér að hann sé í jakkafötum og báðhentur. 🤵✌️ _(djók.)_
-- Viktor: "Foss!" 💧 _(djók / cryptic interjection. Possible "waterfall-method" software
+- Foringi C: "vantar K í…" 😄 _(djók during the Q&A on Foringi A's grid #19; spelling gag.)_
+- Foringi A "að teikna upp hugmynd" — ímyndar sér að hann sé í jakkafötum og báðhentur. 🤵✌️ _(djók.)_
+- Foringi G: "Foss!" 💧 _(djók / cryptic interjection. Possible "waterfall-method" software
   pun, or a cascade-view idea — left as joke; revisit if it resurfaces with meaning.)_
 - "Sitja saman í dimmu herbergi með ouija-borði til að fá hugmyndir frá djöflinum." 🔮😈 _(djók — a collaboration "method".)_
 
 ## Findings against the open questions (§9)
 
-- **Entity above `Program`? → CONFIRMED, and it's multi-level.** **#15 (Aron)**
+- **Entity above `Program`? → CONFIRMED, and it's multi-level.** **#15 (Foringi A)**
   gives the explicit stack: **starfsár → dagskrárhringur → Event(typed) → Task**;
   **#1** (félag-year starfsáætlun) and **#5** (markmið at cycle level) agree. Today's
   `Program → Event → Task` is **missing ≥1 level on top** (starfsár / heildarmynd).
@@ -2312,7 +2312,7 @@ _(model test: does `Event → ordered Tasks` fit?)_
   (dróttskátar+ may see the **dagskrá**, *not* innri mál; **drekar/fálkar = none**).
   Parents view-only (#20). **De-risks the safeguarding/persónuvernd worry (K/#71)** —
   no minor-account/edit system needed for v1. (Was Signý's pæling via #8.)
-- **🆕 Resource scheduling / clash detection across flokkar?** → **#11 (Steinar):**
+- **🆕 Resource scheduling / clash detection across flokkar?** → **#11 (Foringi D):**
   shared resources (eldhús, rooms, gear) collide when many patrols run in
   parallel — "mesta vesenið." **Not in today's model.** Candidate new entity
   (`Resource` + bookings). Re-weights §9 "linear model breaks" — it breaks **in

@@ -6,7 +6,7 @@ capture** into **decision-ready, buildable artifacts** — faithfully, separatin
 
 ## Inputs
 - `meeting-notes.md` — 97 ábendingar (#1–#97) + closing vote tally + a first synthesis.
-- `assets/` — 4 participant sketches (Aron grid/calendar, Ásgerður fundur, Signý grid).
+- `assets/` — 4 participant sketches (Foringi A grid/calendar, Foringi C fundur, Signý grid).
 - Padlet export PDF (in `~/Downloads`) — board snapshot up to ~13:52 (jokes stripped).
 - `tharfagreining2.md` (the plan), `adr-001-dagskra-vs-program.md`.
 
@@ -21,7 +21,7 @@ prioritised, model-decided, scoped.
 - [ ] **1. Reconcile capture.**
   - Apply the **handle→name key** (top of `meeting-notes.md`) to all `Source:` fields;
     fill the `_TBD_` sources from the Padlet authors.
-  - Fix the 3 known mislabels: **#14** → PEACEFUL BUG (unidentified), **#16/#17/#18** → Rafnar.
+  - Fix the 3 known mislabels: **#14** → PEACEFUL BUG (unidentified), **#16/#17/#18** → Foringi B.
   - 4 handles stay **unidentified** (SEEDLING PLANTER, PEACEFUL BUG, HELPFUL TIGER,
     PEACEFUL PLATYPUS) — leave as-is.
   - Note: #51–#64 (templates) and #90–#97 were **verbal/post-export** — board doesn't cover them.
@@ -53,9 +53,9 @@ prioritised, model-decided, scoped.
   shaped the decisions (sustains engagement for the template dot-vote round).
 
 ## Small leftovers to fold in
-- Scroll-position UX (Freyja): preserve position on back-nav (don't jump to top).
-- Emphatic "SNIÐMÁT" vote (Viktor) → extra weight to **B**.
-- Resolved already: **🅰️ youth-as-users (#97)** = leaders' tool; youth view-only, age-gated.
+- Scroll-position UX (Foringi F): preserve position on back-nav (don't jump to top).
+- Emphatic "SNIÐMÁT" vote (Foringi G) → extra weight to **B**.
+- Resolved already: **🅰️ youth-as-users (#97)** = leaders' tool; youth view-only. Age-appropriateness is honour-system guidance, **no technical age lock** (D8, `decisions-log.md`).
 
 ## Open decision
 - **Privacy:** `meeting-notes.md` + sketches name real people on a **public** repo;
