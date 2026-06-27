@@ -1,7 +1,8 @@
 ---
 artifact: adr
-version: "1.0"
+version: "1.1"
 created: 2026-06-01
+updated: 2026-06-27
 status: accepted
 ---
 
@@ -9,17 +10,37 @@ status: accepted
 
 ## Status
 
-**Accepted** — 2026-06-01.
+**Accepted** — 2026-06-01. **Amended 2026-06-27** (see Amendment below).
 
-**Date:** 2026-06-01 (from the phase-2 needs workshop)
+**Date:** 2026-06-01 (from the phase-2 needs workshop) → 2026-06-27 (confirmed model)
 **Deciders:** Halldór Valberg, Signý
 
 > Eventual home: `docs/decisions/`. Kept in `docs/tharfagreining2/` for now.
 > Built with the `develop-adr` skill (Nygard format).
 >
-> **Builds on** [ADR-001](./adr-001-dagskra-vs-program.md) (the
-> `WorkYear → Cycle → Event → Task` hierarchy). **Defers resources to**
+> **Builds on** [ADR-001](./adr-001-dagskra-vs-program.md) (amended spine
+> `Heildardagskrá → Season → Program → Event → Task`). **Defers resources to**
 > [ADR-003](./adr-003-resources-and-registries.md).
+
+## Amendment (2026-06-27) — `mót` is a Program, `útilega` is fractal, columns are Patrols
+
+Reconciling with the confirmed model ([`terms-and-datamodel.md`](./terms-and-datamodel.md)).
+**Where this disagrees with the Decision below, this wins.**
+
+- **`útilega` and `mót` are NOT `Event.type`s — they are always `Program`s**
+  (`Program.kind ∈ {dagskrárhringur, útilega, mót}`), because a camp/rally must
+  *contain* events. Drop both from the `Event.type` enum.
+- **Amended `Event.type` enum:** `skipulags · sveitar · flokks · uppskeru · dagsferð`
+  (single events; útilega/mót removed).
+- **New `Program.kind` enum:** `dagskrárhringur · útilega · mót` (the grouping
+  discriminator; mirrors `Event.type`).
+- **Grid columns are `Patrol`s.** The "week × flokkur" grid's flokkur axis = the
+  **`Patrol`** entity (the code's `Troop` model renamed — see
+  `terms-and-datamodel.md` §3 / Appendix A). Org ladder:
+  `Member → Patrol → Troop → Division → Group`.
+- **`Task` ordering is a real gap.** `Task` has **no `order_index` and no timing**
+  today, yet the ordered-elements model (§3 below) assumes it. Add `order_index`
+  (+ per-element timing) — it is a build item, not an existing capability.
 
 ## Context
 

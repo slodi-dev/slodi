@@ -644,7 +644,7 @@ in part by #97 making youth view-only.)*
 
 ---
 
-## L — Gamification / engagement (nice-to-have, not build-first)
+## L — Gamification / engagement (**Tier 1** — promoted; drives adoption)
 
 ### L1 — Achievement badges for leaders using Slóði
 **As a** foringi **I want** achievement badges / points / levels (and Slóðaverðlaun)
@@ -772,7 +772,6 @@ scope):
 - **Community super-workspace (M)** — high enthusiasm but the biggest surface;
   **phase 2.5/3**, after A/B/J exist to share from (#76/#83/#84/#86/#87).
 - **Integrations (N)** — Abler.io/BÍS/Drive: valuable but big; **later** (#91/#82/#83).
-- **Gamification (L)** — nice-to-have, not core (#74/#75/#95).
 - **Resource clash detection (H2)** — high pain but a new entity (`Resource`); **after
   the core grid** (#11).
 - **Pedagogy-only pains** with no clear tool fit — e.g. mixed-ambition groups (#7):

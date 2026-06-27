@@ -1,8 +1,8 @@
 ---
 artifact: adr
-version: "1.1"
+version: "1.2"
 created: 2026-05-31
-updated: 2026-06-01
+updated: 2026-06-27
 status: accepted
 ---
 
@@ -10,10 +10,50 @@ status: accepted
 
 ## Status
 
-**Accepted** — 2026-06-01.
+**Accepted** — 2026-06-01. **Amended 2026-06-27** (see Amendment below).
 
 **Date:** 2026-05-31 (drafted) → 2026-06-01 (accepted from phase-2 needs workshop)
+→ 2026-06-27 (model confirmed against the existing schema)
 **Deciders:** Halldór Valberg, Signý
+
+## Amendment (2026-06-27) — confirmed model supersedes the `Cycle` proposal
+
+Validating the original decision against the live schema (`backend/app/models`) and
+Halldór's confirmation changed two things. **Where this amendment and the original
+Decision below disagree, this amendment wins.** Full mapping in
+[`terms-and-datamodel.md`](./terms-and-datamodel.md).
+
+**1. No new `Cycle` entity — `Program` *is* the dagskrárhringur.** The existing
+`Content → Program → Event → Task` chain already maps cleanly:
+
+| Model | = term | defined as |
+|---|---|---|
+| `Content` (base) | **dagskrá** | umbrella for all content |
+| `Task` | **dagskrárliður** | a small unit (leikur, setning) |
+| `Event` | **skátafundur** | a collection of Tasks |
+| `Program` | **dagskrárhringur** / **útilega** / **mót** | a collection of Events/Tasks (`Program.kind`) |
+
+So we adopt the refined form of original **Alternative A/B** (reuse `Program`), not a
+parallel `Cycle`.
+
+**2. Two new levels are added *above* `Program`, not one.** Each is a collection of
+the level below:
+- **`Season`** (starfsár) — a collection of Programs. Carries optional `start_dt`/
+  `end_dt`; an **undated `Season` is the "scratchpad"** sandbox (kind ∈ { starfsár,
+  scratchpad }). See `terms-and-datamodel.md` §11.
+- **`Heildardagskrá`** — a collection of Seasons (one or more); the whole programme.
+
+**Amended spine:**
+
+```
+Heildardagskrá → Season{starfsár | scratchpad} → Program{dagskrárhringur | útilega | mót} → Event → Task
+```
+
+A `Workspace` still **owns** its Programs directly (`workspace_id`, mandatory);
+`Season`/`Heildardagskrá` are groupings on top (`Program.season_id` nullable).
+`mót` and the camp/grid details move to [ADR-002](./adr-002-event-typing-and-grid.md)
+(also amended). The original Context/Decision/Alternatives below are kept for the
+reasoning trail.
 
 > Eventual home: `docs/decisions/` in the slodi repo. Kept in
 > `docs/tharfagreining2/` for now alongside the workshop record. Built with the

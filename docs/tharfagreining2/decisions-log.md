@@ -166,6 +166,32 @@ answers it. Don't build curation tooling until there's community content to cura
   the analysis rests on aggregate signal, not individual attribution. (The afternoon
   post-its #65–#96 were never attributed.)
 
+## D12 — Promote cluster L (gamification) to Tier 1 ✅ ✔︎ ACCEPTED (Halldór, 2026-06-27)
+**Decision:** Move **L — Gamification / engagement** from **Tier 3 → Tier 1**.
+Applied to `roadmap.md` (Tier 1 item 7), `prioritisation.md` (removed from non-goals),
+`user-stories.md` (L header + non-goals), and the Shortcut backlog (`prio:tier-1`).
+**Why:** L drew only 3 dots and read as "nice-to-have" *at the workshop*, but the value
+is in **adoption/retention** — usage badges/points/Slóðaverðlaun pull leaders back into
+A–E daily. It is cheap to add and reinforces the core, so it earns a Tier-1 slot.
+**Note:** the **`meeting-notes.md` vote tally is left unchanged** (it records the
+workshop as it happened — 3 dots, "nice-to-have"); this is a *post-workshop* priority
+decision, logged here.
+**Affects:** `roadmap.md`, `prioritisation.md`, `user-stories.md`, Shortcut.
+
+## D13 — Participant (þátttakendur) data: store-and-scope vs. units-only 🔒 ⚠️ OPEN
+**Question:** Do we want **þátttakendur (participant / scout) personal information in
+the system at all?** Two options:
+- **(a) store-and-scope** — hold member/personal data, keep it strictly félag-internal
+  (the original J8 framing).
+- **(b) units-only / no personal data** — never hold participant personal data; assign
+  content to *units* (`Patrol` / `Troop` / `Division`, §11) rather than named individuals.
+**Why it matters:** per **#97** (youth are view-only, not users) and the **K
+safeguarding / persónuvernd** guardrail, option (b) de-risks the entire safeguarding
+surface and simplifies the parked Member/Scout registry (ADR-003).
+**Status:** **Open — needs a human/team decision (Halldór + Signý).** Replaces the J8
+story, which was removed from the build backlog (this is a decision, not build work).
+**Affects:** J/G clusters, `terms-and-datamodel.md` (`Scout`/registry), ADR-003, K.
+
 ---
 
 ## What needs a real human/team decision (don't let me settle these)

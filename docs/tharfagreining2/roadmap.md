@@ -19,9 +19,9 @@ by month 6 simply rolls forward — nothing here is "cut," only **ordered**.
 
 | Tier | Meaning | Clusters |
 |---|---|---|
-| **1 — Most needed** | The core that delivers the value; the product is not useful without it. | **A · D · E · J · B · C** |
+| **1 — Most needed** | The core that delivers the value; the product is not useful without it. | **A · D · E · J · B · C · L** |
 | **2 — Nice to have** | Real, valuable, build if Tier 1 lands with time to spare. | **F · I · H · M(discovery) · N(import) · X2** |
-| **3 — Extra / for fun** | Delight, engagement, polish — no harm if it never ships in phase 2. | **L · M(social/boards)** |
+| **3 — Extra / for fun** | Delight, engagement, polish — no harm if it never ships in phase 2. | **M(social/boards)** |
 
 **Constraints (apply across all tiers, not tiers themselves):** mobile-first
 responsive web / **PWA** (D3), **K safeguarding** guardrail (#71/#97), accessibility
@@ -49,6 +49,10 @@ The order below is the burn-down order; parallel tracks noted.
    launcher (#65); badges-as-templates (#60). *Consumes A; after/with J.*
 6. **C — Assign & notify ahead.** Per-meeting task/role assignment + lead-time push;
    derived procurement send (#33 ~4/5, #39). *Rides on A + J — cheap once they exist.*
+7. **L — Gamification / engagement.** Usage badges, points/levels, Slóðaverðlaun for
+   *leaders* (#74/#75/#95). **Promoted to Tier 1** — drives adoption/retention of A–E;
+   cheap to add and reinforces daily use. *(Value is in adoption, not the 3 dots it
+   drew at the workshop.)*
 
 **Quick wins (anytime, cheap):** scroll-position preservation on back-nav (X3); the
 Innkaup/procurement *generation* and ÆSKA *tags* captured during A (so the Tier-2
@@ -71,9 +75,10 @@ views have data to render).
 
 ## Tier 3 — Extra / for fun (only if there's room)
 
-- **L — Gamification** for leaders — usage badges, points, Slóðaverðlaun (#74/#75/#95).
 - **M — Social flourishes** — follow specific leaders (#76), Pinterest-style idea
   boards (#87/M5). The playful half of community, distinct from plain discovery.
+
+*(**L — Gamification** was promoted **Tier 3 → Tier 1** — see Tier 1 item 7.)*
 
 ---
 

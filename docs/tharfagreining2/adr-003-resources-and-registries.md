@@ -1,7 +1,8 @@
 ---
 artifact: adr
-version: "1.0"
+version: "1.1"
 created: 2026-06-01
+updated: 2026-06-27
 status: proposed
 ---
 
@@ -9,10 +10,15 @@ status: proposed
 
 ## Status
 
-**Proposed** — later phase, explicitly **not build-first**.
+**Proposed** — later phase, explicitly **not build-first**. **Note added 2026-06-27.**
 
 **Date:** 2026-06-01 (from the phase-2 needs workshop)
 **Deciders:** Halldór Valberg, Signý (to revisit when the core Planner exists)
+
+> **Naming note (2026-06-27):** the org units referenced below use the settled English
+> names — `Member`(skáti) · `Patrol`(flokkur) · `Troop`(sveit) · `Division`(deild) ·
+> `Group`(félag). The "Members" registry is the `Member` entity. See
+> [`terms-and-datamodel.md`](./terms-and-datamodel.md) §3 / Appendix A.
 
 > Eventual home: `docs/decisions/`. Kept in `docs/tharfagreining2/` for now.
 > Built with the `develop-adr` skill (Nygard format).
