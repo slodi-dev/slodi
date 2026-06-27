@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     cache_tags_ttl_seconds: int = Field(600, alias="CACHE_TAGS_TTL_SECONDS")
     rate_limit_max_window_seconds: int = Field(3600, alias="RATE_LIMIT_MAX_WINDOW_SECONDS")
 
+    # Blob storage (one account, two containers)
+    azure_storage_account: str = Field(..., alias="AZURE_STORAGE_ACCOUNT")
+    azure_storage_key: str = Field(..., alias="AZURE_STORAGE_KEY")
+    # Public container: images served directly via <img> (anonymous blob read).
+    azure_storage_container_images: str = Field(..., alias="AZURE_STORAGE_CONTAINER_IMAGES")
+    # Private container: documents are only reachable via a download SAS.
+    azure_storage_container_documents: str = Field(..., alias="AZURE_STORAGE_CONTAINER_DOCUMENTS")
+
     @property
     def admin_email_list(self) -> list[str]:
         return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]

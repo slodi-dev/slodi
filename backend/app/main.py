@@ -21,6 +21,7 @@ from app.routers import (
     tags_router,
     tasks_router,
     troops_router,
+    uploads_router,
     users_router,
     workspaces_router,
 )
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(likes_router.router)
     app.include_router(heidursordla_router.router)
     app.include_router(game_scores_router.router)
+    app.include_router(uploads_router.router)
 
     @app.get("/healthz")
     async def healthz() -> dict[str, bool]:
