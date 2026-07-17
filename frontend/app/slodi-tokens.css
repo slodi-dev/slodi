@@ -20,13 +20,13 @@
   /* ===== PRIMITIVE COLORS ===== */
 
   /* Natural Palette - Modern Neutral with Green */
-  --sl-primitive-neutral-light-50: 0 0% 99%;
-  --sl-primitive-neutral-light-100: 0 0% 96%;
-  --sl-primitive-neutral-light-200: 0 0% 93%;
-  --sl-primitive-neutral-light-300: 0 0% 90%; /* Light neutral base */
-  --sl-primitive-neutral-light-400: 0 0% 85%;
-  --sl-primitive-neutral-light-500: 0 0% 80%;
-  --sl-primitive-neutral-light-600: 0 0% 70%;
+  --sl-primitive-neutral-light-50: 150 20% 99%;
+  --sl-primitive-neutral-light-100: 150 18% 96%;
+  --sl-primitive-neutral-light-200: 150 16% 93%;
+  --sl-primitive-neutral-light-300: 150 14% 90%; /* Light neutral base */
+  --sl-primitive-neutral-light-400: 150 12% 85%;
+  --sl-primitive-neutral-light-500: 150 11% 80%;
+  --sl-primitive-neutral-light-600: 150 10% 70%;
 
   --sl-primitive-green-50: 142 50% 96%;
   --sl-primitive-green-100: 142 50% 90%;
@@ -50,16 +50,16 @@
   --sl-primitive-forest-800: 160 42% 15%;
   --sl-primitive-forest-900: 160 42% 10%;
 
-  --sl-primitive-neutral-dark-50: 0 0% 90%;
-  --sl-primitive-neutral-dark-100: 0 0% 80%;
-  --sl-primitive-neutral-dark-200: 0 0% 70%;
-  --sl-primitive-neutral-dark-300: 0 0% 60%;
-  --sl-primitive-neutral-dark-400: 0 0% 50%;
-  --sl-primitive-neutral-dark-500: 0 0% 40%;
-  --sl-primitive-neutral-dark-600: 0 0% 30%; /* Neutral dark - borders */
-  --sl-primitive-neutral-dark-700: 0 0% 22%;
-  --sl-primitive-neutral-dark-800: 0 0% 15%;
-  --sl-primitive-neutral-dark-900: 0 0% 10%;
+  --sl-primitive-neutral-dark-50: 150 10% 90%;
+  --sl-primitive-neutral-dark-100: 150 10% 80%;
+  --sl-primitive-neutral-dark-200: 150 10% 70%;
+  --sl-primitive-neutral-dark-300: 150 9% 60%;
+  --sl-primitive-neutral-dark-400: 150 9% 50%;
+  --sl-primitive-neutral-dark-500: 150 10% 40%;
+  --sl-primitive-neutral-dark-600: 150 12% 30%; /* Neutral dark - borders */
+  --sl-primitive-neutral-dark-700: 150 14% 22%;
+  --sl-primitive-neutral-dark-800: 150 16% 15%;
+  --sl-primitive-neutral-dark-900: 150 18% 10%;
 
   --sl-primitive-sky-50: 205 89% 98%;
   --sl-primitive-sky-100: 205 89% 93%; /* Base sky mist */
@@ -143,24 +143,24 @@
   --sl-primitive-adrir-on: 0 0% 100%;
 
   /* Semantic State Colors - Primitives */
-  --sl-primitive-success-500: 142 50% 42%; /* Using fresh green */
-  --sl-primitive-warning-500: 35 100% 64%; /* Campfire orange */
-  --sl-primitive-error-500: 0 79% 65%; /* Red */
-  --sl-primitive-info-500: 195 83% 66%; /* Using rekkar cyan */
+  --sl-primitive-success-500: 142 50% 42%; /* Fresh green */
+  --sl-primitive-warning-500: 36 85% 55%; /* Campfire amber — desaturated for comfort */
+  --sl-primitive-error-500: 4 72% 58%; /* Warm red */
+  --sl-primitive-info-500: 190 72% 45%; /* Teal — consolidated with alert cyan */
 
   /* Neutral Primitives */
   --sl-primitive-neutral-0: 0 0% 100%; /* Pure white */
-  --sl-primitive-neutral-50: 0 0% 98%;
-  --sl-primitive-neutral-100: 0 0% 95%;
-  --sl-primitive-neutral-200: 0 0% 90%;
-  --sl-primitive-neutral-300: 0 0% 80%;
-  --sl-primitive-neutral-400: 0 0% 70%;
-  --sl-primitive-neutral-500: 0 0% 60%;
-  --sl-primitive-neutral-600: 0 0% 50%;
-  --sl-primitive-neutral-700: 0 0% 40%;
-  --sl-primitive-neutral-800: 0 0% 20%;
-  --sl-primitive-neutral-900: 0 0% 10%;
-  --sl-primitive-neutral-950: 0 0% 5%;
+  --sl-primitive-neutral-50: 150 20% 98%;
+  --sl-primitive-neutral-100: 150 16% 95%;
+  --sl-primitive-neutral-200: 150 14% 90%;
+  --sl-primitive-neutral-300: 150 11% 80%;
+  --sl-primitive-neutral-400: 150 10% 70%;
+  --sl-primitive-neutral-500: 150 9% 58%;
+  --sl-primitive-neutral-600: 150 10% 45%;
+  --sl-primitive-neutral-700: 150 12% 31%; /* text secondary/tertiary — AAA on tinted bg */
+  --sl-primitive-neutral-800: 150 16% 20%;
+  --sl-primitive-neutral-900: 150 20% 12%; /* text primary — green-black */
+  --sl-primitive-neutral-950: 150 22% 6%;
   --sl-primitive-neutral-1000: 0 0% 0%; /* Pure black */
 
   /* ===== PRIMITIVE SPACING ===== */
@@ -382,10 +382,10 @@
   --sl-color-surface-inverse: var(--sl-primitive-neutral-900);
 
   /* ===== BORDER COLORS ===== */
-  --sl-color-border: 0 0% 85%;
+  --sl-color-border: 150 12% 85%;
   --sl-color-border-hover: var(--sl-primitive-neutral-dark-200);
   --sl-color-border-focus: var(--sl-primitive-green-500);
-  --sl-color-border-subtle: 0 0% 90%;
+  --sl-color-border-subtle: 150 14% 90%;
   --sl-color-border-strong: var(--sl-primitive-neutral-dark-400);
   --sl-color-border-inverse: var(--sl-primitive-neutral-700);
 
@@ -397,8 +397,8 @@
   ); /* Fixed: neutral-600 (50%) was ~4.0:1, neutral-700 (40%) is ~5.7:1 — WCAG AA compliant */
   --sl-color-text-disabled: var(--sl-primitive-neutral-400);
   --sl-color-text-inverse: var(--sl-primitive-neutral-0);
-  --sl-color-text-link: var(--sl-primitive-green-600);
-  --sl-color-text-link-hover: var(--sl-primitive-green-700);
+  --sl-color-text-link: 142 55% 25%; /* deep forest green — AAA (7.1:1) on bg */
+  --sl-color-text-link-hover: 142 60% 20%;
   --sl-color-text-link-visited: var(--sl-primitive-forest-600);
 
   /* ===== SEMANTIC STATE COLORS ===== */
@@ -409,22 +409,22 @@
   --sl-color-success-text: var(--sl-primitive-green-800);
 
   --sl-color-warning: var(--sl-primitive-warning-500);
-  --sl-color-warning-hover: 35 100% 55%;
-  --sl-color-warning-subtle: 35 100% 95%;
-  --sl-color-warning-muted: 35 100% 90%;
-  --sl-color-warning-text: 35 100% 30%;
+  --sl-color-warning-hover: 36 85% 46%;
+  --sl-color-warning-subtle: 40 85% 94%;
+  --sl-color-warning-muted: 38 82% 88%;
+  --sl-color-warning-text: 32 90% 25%; /* AAA (7.3:1) on warning-subtle */
 
   --sl-color-error: var(--sl-primitive-error-500);
-  --sl-color-error-hover: 0 79% 55%;
-  --sl-color-error-subtle: 0 79% 95%;
-  --sl-color-error-muted: 0 79% 90%;
-  --sl-color-error-text: 0 79% 40%;
+  --sl-color-error-hover: 4 68% 50%;
+  --sl-color-error-subtle: 6 78% 95%;
+  --sl-color-error-muted: 6 72% 90%;
+  --sl-color-error-text: 4 70% 34%; /* AAA (7.3:1) on error-subtle */
 
   --sl-color-info: var(--sl-primitive-info-500);
-  --sl-color-info-hover: 195 83% 55%;
-  --sl-color-info-subtle: var(--sl-primitive-rekkar-50);
-  --sl-color-info-muted: var(--sl-primitive-rekkar-100);
-  --sl-color-info-text: var(--sl-primitive-rekkar-800);
+  --sl-color-info-hover: 190 72% 38%;
+  --sl-color-info-subtle: 188 55% 94%;
+  --sl-color-info-muted: 188 52% 88%;
+  --sl-color-info-text: 190 85% 21%; /* AAA (7.7:1) on info-subtle — consolidated teal */
 
   /* ===== PATROL COLORS (Semantic) ===== */
   --sl-color-patrol-drekar: var(--sl-primitive-drekar-500);
@@ -805,31 +805,31 @@
   --sl-color-accent-active: var(--sl-primitive-drekar-200);
 
   /* ===== SURFACE COLORS (Dark) ===== */
-  --sl-color-background: 0 0% 9%;
-  --sl-color-background-secondary: 0 0% 12%;
-  --sl-color-background-tertiary: 0 0% 15%;
+  --sl-color-background: 150 12% 9%;
+  --sl-color-background-secondary: 150 12% 12%;
+  --sl-color-background-tertiary: 150 11% 15%;
   --sl-color-background-inverse: var(--sl-primitive-neutral-50);
 
-  --sl-color-surface: 0 0% 11%;
-  --sl-color-surface-hover: 0 0% 14%;
-  --sl-color-surface-active: 0 0% 17%;
-  --sl-color-surface-secondary: 0 0% 14%;
-  --sl-color-surface-tertiary: 0 0% 17%;
+  --sl-color-surface: 150 12% 11%;
+  --sl-color-surface-hover: 150 11% 14%;
+  --sl-color-surface-active: 150 10% 17%;
+  --sl-color-surface-secondary: 150 11% 14%;
+  --sl-color-surface-tertiary: 150 10% 17%;
   --sl-color-surface-inverse: var(--sl-primitive-neutral-0);
 
   /* ===== BORDER COLORS (Dark) ===== */
-  --sl-color-border: 0 0% 25%;
-  --sl-color-border-hover: 0 0% 35%;
+  --sl-color-border: 150 8% 25%;
+  --sl-color-border-hover: 150 8% 35%;
   --sl-color-border-focus: var(--sl-primitive-green-400);
-  --sl-color-border-subtle: 0 0% 20%;
-  --sl-color-border-strong: 0 0% 45%;
+  --sl-color-border-subtle: 150 8% 20%;
+  --sl-color-border-strong: 150 8% 45%;
   --sl-color-border-inverse: var(--sl-primitive-neutral-300);
 
   /* ===== TEXT COLORS (Dark) ===== */
-  --sl-color-text-primary: 0 0% 95%;
-  --sl-color-text-secondary: 0 0% 80%;
-  --sl-color-text-tertiary: 0 0% 65%;
-  --sl-color-text-disabled: 0 0% 45%;
+  --sl-color-text-primary: 150 8% 95%;
+  --sl-color-text-secondary: 150 7% 78%;
+  --sl-color-text-tertiary: 150 6% 65%;
+  --sl-color-text-disabled: 150 6% 45%;
   --sl-color-text-inverse: var(--sl-primitive-neutral-900);
   --sl-color-text-link: var(--sl-primitive-green-400);
   --sl-color-text-link-hover: var(--sl-primitive-green-300);
@@ -839,16 +839,16 @@
   --sl-color-success-subtle: var(--sl-primitive-green-900);
   --sl-color-success-text: var(--sl-primitive-green-300);
 
-  --sl-color-warning-subtle: 35 100% 15%;
-  --sl-color-warning-text: 35 100% 70%;
+  --sl-color-warning-subtle: 36 55% 14%;
+  --sl-color-warning-text: 38 90% 70%;
 
   --sl-color-error: var(--sl-primitive-error-500);
-  --sl-color-error-subtle: 0 79% 15%;
-  --sl-color-error-text: 0 79% 70%;
+  --sl-color-error-subtle: 6 50% 16%;
+  --sl-color-error-text: 6 85% 78%;
 
   --sl-color-info: var(--sl-primitive-info-500);
-  --sl-color-info-subtle: var(--sl-primitive-rekkar-900);
-  --sl-color-info-text: var(--sl-primitive-rekkar-300);
+  --sl-color-info-subtle: 190 45% 15%;
+  --sl-color-info-text: 190 65% 70%;
 
   /* ===== PATROL COLORS (Dark adjustments) ===== */
   --sl-color-patrol-drekar: var(--sl-primitive-drekar-400);
