@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
+import Button from "@/components/Button/Button";
+import Alert from "@/components/Alert/Alert";
 import styles from "./palette.module.css";
 
 // Small helper
@@ -105,46 +107,6 @@ const TokenInspector: React.FC<{
 };
 
 /** Buttons use Slóði tokens */
-const UIButton: React.FC<{
-  variant?: "primary" | "secondary" | "ghost";
-  size?: "sm" | "md" | "lg";
-  children: React.ReactNode;
-}> = ({ variant = "primary", size = "md", children }) => {
-  const variantClass =
-    variant === "primary"
-      ? styles.btnPrimary
-      : variant === "secondary"
-        ? styles.btnSecondary
-        : styles.btnGhost;
-
-  const sizeClass = size === "sm" ? styles.btnSm : size === "lg" ? styles.btnLg : styles.btnMd;
-
-  return <button className={cx(styles.btn, variantClass, sizeClass)}>{children}</button>;
-};
-
-/** Alerts/Banners use semantic tokens */
-const UIAlert: React.FC<{
-  tone: "success" | "warning" | "error" | "info";
-  title: string;
-  body: string;
-}> = ({ tone, title, body }) => {
-  const toneClass =
-    tone === "success"
-      ? styles.alertSuccess
-      : tone === "warning"
-        ? styles.alertWarning
-        : tone === "error"
-          ? styles.alertError
-          : styles.alertInfo;
-
-  return (
-    <div className={cx(styles.alert, toneClass)}>
-      <div className={styles.alertTitle}>{title}</div>
-      <div className={styles.alertBody}>{body}</div>
-    </div>
-  );
-};
-
 /** Patrol badge */
 const PatrolBadge: React.FC<{ name: string; token: string; fgToken: string }> = ({
   name,
@@ -497,20 +459,12 @@ export default function PalettePage() {
               <div className={styles.componentGroup}>
                 <h4 className={styles.componentTitle}>Hnappar</h4>
                 <div className={styles.componentRow}>
-                  <UIButton variant="primary">Aðalhnappur</UIButton>
-                  <UIButton variant="secondary">Aukahnappur</UIButton>
-                  <UIButton variant="ghost">Dulinn</UIButton>
-                </div>
-                <div className={styles.componentRow}>
-                  <UIButton variant="primary" size="sm">
-                    Lítill
-                  </UIButton>
-                  <UIButton variant="primary" size="md">
-                    Miðlungs
-                  </UIButton>
-                  <UIButton variant="primary" size="lg">
-                    Stór
-                  </UIButton>
+                  <Button variant="primary">Aðalhnappur</Button>
+                  <Button variant="secondary">Aukahnappur</Button>
+                  <Button variant="muted">Afrita</Button>
+                  <Button variant="danger">Eyða</Button>
+                  <Button variant="ghost">Dulinn</Button>
+                  <Button variant="info">Nánar</Button>
                 </div>
               </div>
 
@@ -543,18 +497,18 @@ export default function PalettePage() {
         {/* Alerts */}
         <Section title="Viðvaranir og tilkynningar">
           <div className={styles.grid2}>
-            <UIAlert tone="success" title="Tókst" body="Aðgerð kláraðist án vandræða." />
-            <UIAlert
-              tone="warning"
-              title="Aðvörun"
-              body="Athugaðu þetta áður en þú heldur áfram."
-            />
-            <UIAlert tone="error" title="Villa" body="Eitthvað fór úrskeiðis. Reyndu aftur." />
-            <UIAlert
-              tone="info"
-              title="Upplýsingar"
-              body="Hér eru viðbótarupplýsingar fyrir notendur."
-            />
+            <Alert variant="success" title="Tókst">
+              Aðgerð kláraðist án vandræða.
+            </Alert>
+            <Alert variant="warning" title="Aðvörun">
+              Athugaðu þetta áður en þú heldur áfram.
+            </Alert>
+            <Alert variant="error" title="Villa">
+              Eitthvað fór úrskeiðis. Reyndu aftur.
+            </Alert>
+            <Alert variant="info" title="Upplýsingar">
+              Hér eru viðbótarupplýsingar fyrir notendur.
+            </Alert>
           </div>
         </Section>
 
