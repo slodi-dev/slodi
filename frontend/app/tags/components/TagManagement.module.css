@@ -1,0 +1,200 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TAG MANAGEMENT PAGE
+   Responsive layout matching programs page patterns.
+   All values reference --sl-* design tokens.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE WRAPPER
+   ═══════════════════════════════════════════════════════════ */
+
+.section {
+  max-width: var(--sl-content-max-width, 720px);
+  margin: 0 auto;
+  padding: var(--sl-spacing-inset-lg, 16px) var(--sl-spacing-inset-md, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-element);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADING
+   ═══════════════════════════════════════════════════════════ */
+
+.heading {
+  font-size: var(--sl-text-heading-h2);
+  color: hsl(var(--sl-color-text-primary));
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOOLBAR — search + count
+   ═══════════════════════════════════════════════════════════ */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-element);
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: hsl(var(--sl-color-border-focus));
+  box-shadow: var(--sl-input-shadow-focus);
+}
+
+.searchInput:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.totalCount {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ERROR / LOADING / EMPTY
+   ═══════════════════════════════════════════════════════════ */
+
+.error {
+  color: hsl(var(--sl-alert-text-error));
+  background: hsl(var(--sl-alert-background-error));
+  border: 1px solid hsl(var(--sl-alert-border-error));
+  border-radius: var(--sl-alert-radius);
+  padding: var(--sl-alert-padding);
+  font-size: var(--sl-alert-font-size);
+  margin: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: var(--sl-primitive-space-6);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--sl-primitive-space-8);
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: var(--sl-text-body-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAG LIST
+   ═══════════════════════════════════════════════════════════ */
+
+.tagList {
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGINATION
+   ═══════════════════════════════════════════════════════════ */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-element);
+}
+
+.pageBtn {
+  padding: var(--sl-primitive-space-2) var(--sl-primitive-space-3);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--sl-transition-fast);
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.pageBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.pageBtn:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESS DENIED
+   ═══════════════════════════════════════════════════════════ */
+
+.accessDenied {
+  padding: var(--sl-primitive-space-8);
+  text-align: center;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: <= 640px
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .section {
+    padding: var(--sl-spacing-inset-md, 12px) var(--sl-spacing-inset-sm, 8px);
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .totalCount {
+    text-align: right;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .pageBtn {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .searchInput,
+  .pageBtn {
+    border-width: 2px;
+  }
+
+  .tagList {
+    border-width: 2px;
+  }
+}
