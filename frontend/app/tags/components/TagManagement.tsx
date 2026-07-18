@@ -121,8 +121,7 @@ export default function TagManagement() {
           aria-label="Leita að flokkum"
         />
         <span className={styles.totalCount} aria-live="polite">
-          {filteredTags.length}{" "}
-          {filteredTags.length === 1 ? "flokkur" : "flokkar"}
+          {filteredTags.length} {filteredTags.length === 1 ? "flokkur" : "flokkar"}
         </span>
       </div>
 
@@ -184,9 +183,7 @@ export default function TagManagement() {
               </span>
               <button
                 className={styles.pageBtn}
-                onClick={() =>
-                  setPage((p) => Math.min(totalPages - 1, p + 1))
-                }
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
               >
                 Næsta &#8594;

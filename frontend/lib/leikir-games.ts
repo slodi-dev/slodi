@@ -60,8 +60,7 @@ export const GAMES: GameDef[] = [
   {
     slug: "arnor-clicker",
     name: "Arnór-Clicker",
-    tagline:
-      "Leikur frá Skátaþingi 2024 þar sem þú hjálpar Arnóri stýra fundinum og rista brauð.",
+    tagline: "Leikur frá Skátaþingi 2024 þar sem þú hjálpar Arnóri stýra fundinum og rista brauð.",
     emblem: "👆",
     emblemKind: "glyph",
     accent: "rekkar",

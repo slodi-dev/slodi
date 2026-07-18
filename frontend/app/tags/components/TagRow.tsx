@@ -111,12 +111,7 @@ export default function TagRow({
           >
             Já, eyða
           </button>
-          <button
-            type="button"
-            className={styles.cancelBtn}
-            onClick={onCancel}
-            disabled={isSaving}
-          >
+          <button type="button" className={styles.cancelBtn} onClick={onCancel} disabled={isSaving}>
             Hætta við
           </button>
         </div>
@@ -154,12 +149,7 @@ export default function TagRow({
           >
             {isSaving ? "..." : "Vista"}
           </button>
-          <button
-            type="button"
-            className={styles.cancelBtn}
-            onClick={onCancel}
-            disabled={isSaving}
-          >
+          <button type="button" className={styles.cancelBtn} onClick={onCancel} disabled={isSaving}>
             Hætta
           </button>
         </div>

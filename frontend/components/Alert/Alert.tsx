@@ -28,11 +28,7 @@ export default function Alert({
     .join(" ");
 
   return (
-    <div
-      role={role ?? (variant === "error" ? "alert" : "status")}
-      className={classes}
-      {...rest}
-    >
+    <div role={role ?? (variant === "error" ? "alert" : "status")} className={classes} {...rest}>
       {title ? <p className={styles.alertTitle}>{title}</p> : null}
       {children}
     </div>

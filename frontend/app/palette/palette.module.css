@@ -449,11 +449,21 @@
   font-size: 0.68rem;
   color: var(--ink-3);
 }
-.e1 { box-shadow: var(--sl-primitive-shadow-xs); }
-.e2 { box-shadow: var(--sl-primitive-shadow-sm); }
-.e3 { box-shadow: var(--sl-primitive-shadow-md); }
-.e4 { box-shadow: var(--sl-primitive-shadow-lg); }
-.e5 { box-shadow: var(--sl-primitive-shadow-xl); }
+.e1 {
+  box-shadow: var(--sl-primitive-shadow-xs);
+}
+.e2 {
+  box-shadow: var(--sl-primitive-shadow-sm);
+}
+.e3 {
+  box-shadow: var(--sl-primitive-shadow-md);
+}
+.e4 {
+  box-shadow: var(--sl-primitive-shadow-lg);
+}
+.e5 {
+  box-shadow: var(--sl-primitive-shadow-xl);
+}
 
 /* ── Component showcase ───────────────────── */
 .compCard {

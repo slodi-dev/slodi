@@ -21,12 +21,7 @@ const ThemeToggle: React.FC = () => {
   };
 
   return (
-    <button
-      className={styles.toggle}
-      onClick={toggle}
-      type="button"
-      aria-pressed={isDark}
-    >
+    <button className={styles.toggle} onClick={toggle} type="button" aria-pressed={isDark}>
       {isDark ? "☀️ Ljóst þema" : "🌙 Dökkt þema"}
     </button>
   );
@@ -133,9 +128,9 @@ export default function PalettePage() {
             fetað eftir slóðanum.
           </h1>
           <p className={styles.lede}>
-            Ein miðlæg síða fyrir litakerfi Slóða og íhlutasafnið. Litirnir eiga rætur í
-            íslenskri víðerni — mosa, furu og birki — valdir til að vera mjúkir á augað og
-            standast AAA-aðgengisstaðal.
+            Ein miðlæg síða fyrir litakerfi Slóða og íhlutasafnið. Litirnir eiga rætur í íslenskri
+            víðerni — mosa, furu og birki — valdir til að vera mjúkir á augað og standast
+            AAA-aðgengisstaðal.
           </p>
           <div className={styles.heroAnchor}>
             {NATURE.slice(0, 4).map((c) => (
@@ -452,7 +447,12 @@ export default function PalettePage() {
               <div className={styles.compGroup}>
                 <p className={styles.compLabel}>Gluggi (modal)</p>
                 <div className={styles.modalStage}>
-                  <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+                  <div
+                    className={styles.dialog}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="dlg-t"
+                  >
                     <div className={styles.dhead}>
                       <h4 id="dlg-t">Eyða dagskrá?</h4>
                       <button className={styles.x} type="button" aria-label="Loka">
@@ -475,7 +475,9 @@ export default function PalettePage() {
             <div className={styles.secHead}>
               <span className={styles.secNum}>09 — Rauntími</span>
               <h2 className={styles.secTitle}>Táknaskoðari</h2>
-              <p className={styles.secSub}>Reiknuð gildi tákna í rauntíma — uppfærast með þemanu.</p>
+              <p className={styles.secSub}>
+                Reiknuð gildi tákna í rauntíma — uppfærast með þemanu.
+              </p>
             </div>
             <div className={cx(styles.grid, styles.gPatrol)}>
               <TokenInspector token="--sl-color-primary" label="Aðallitur" type="color" />

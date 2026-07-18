@@ -63,7 +63,10 @@ export default function GamePodium({ slug }: { slug: string }) {
       {state.status === "ready" && (
         <ol className={styles.podium}>
           {state.entries.map((entry, i) => (
-            <li key={`${entry.user_name}-${i}`} className={`${styles.row} ${styles[`rank${i + 1}`]}`}>
+            <li
+              key={`${entry.user_name}-${i}`}
+              className={`${styles.row} ${styles[`rank${i + 1}`]}`}
+            >
               <span className={styles.medal}>{i + 1}</span>
               <span className={styles.name}>{entry.user_name}</span>
               <span className={styles.score}>{numberFormatter.format(entry.score)}</span>
