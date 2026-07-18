@@ -32,45 +32,6 @@ const ThemeToggle: React.FC = () => {
   );
 };
 
-/** Full theme selector (incl. the three alternative themes). */
-const ThemeSelector: React.FC = () => {
-  const [theme, setTheme] = useState("light");
-
-  const themes = [
-    { value: "light", label: "☀️ Ljóst", attr: null as string | null },
-    { value: "dark", label: "🌙 Dökkt", attr: "dark" },
-    { value: "forest-night", label: "🌲 Skóganótt", attr: "forest-night" },
-    { value: "campfire", label: "🔥 Bál", attr: "campfire" },
-    { value: "northern-lights", label: "✨ Norðurljós", attr: "northern-lights" },
-  ];
-
-  const handleChange = (value: string) => {
-    const selected = themes.find((t) => t.value === value);
-    if (!selected) return;
-    const root = document.documentElement;
-    root.classList.remove("dark");
-    root.removeAttribute("data-theme");
-    if (selected.attr === "dark") root.classList.add("dark");
-    else if (selected.attr) root.setAttribute("data-theme", selected.attr);
-    setTheme(value);
-  };
-
-  return (
-    <div className={styles.themeSelector}>
-      {themes.map((t) => (
-        <button
-          key={t.value}
-          type="button"
-          onClick={() => handleChange(t.value)}
-          className={cx(styles.themeButton, theme === t.value && styles.themeButtonActive)}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
-};
-
 /** Live token inspector — reads computed values in the browser. */
 const TokenInspector: React.FC<{
   token: string;
@@ -185,7 +146,6 @@ export default function PalettePage() {
               </div>
             ))}
           </div>
-          <ThemeSelector />
         </div>
       </header>
 

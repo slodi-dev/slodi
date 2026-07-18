@@ -659,29 +659,6 @@
   gap: 0.5rem;
 }
 
-/* ── Theme selector (alt themes) ──────────── */
-.themeSelector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 2rem;
-}
-.themeButton {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: var(--sl-radius-pill);
-  background: var(--surface);
-  color: var(--ink-2);
-  cursor: pointer;
-}
-.themeButtonActive {
-  border-color: hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-primary));
-  background: hsl(var(--sl-color-primary-subtle));
-}
-
 /* ── Token inspector ──────────────────────── */
 .tokenInspector {
   border: 1px solid var(--line);
