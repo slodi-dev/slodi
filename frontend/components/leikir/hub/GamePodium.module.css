@@ -1,0 +1,96 @@
+.board {
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+  padding: var(--sl-spacing-xs) var(--sl-spacing-md) var(--sl-spacing-sm);
+}
+
+.podium {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  padding: 1px 6px;
+  border-radius: var(--sl-radius-sm);
+  line-height: 1.3;
+}
+
+.medal {
+  flex: none;
+  width: 12px;
+  text-align: center;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  font-variant-numeric: tabular-nums;
+}
+.rank1 .medal {
+  color: hsl(var(--sl-medal-gold));
+}
+.rank2 .medal {
+  color: hsl(var(--sl-medal-silver));
+}
+.rank3 .medal {
+  color: hsl(var(--sl-medal-bronze));
+}
+
+.name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.score {
+  flex: none;
+  font-family: var(--sl-primitive-font-family-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sl-spacing-xs) 0;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-tertiary));
+  text-align: center;
+}
+
+/* Loading skeleton bars stand in for name/score while fetching. */
+.skeleton {
+  height: 0.72em;
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-background-tertiary));
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.name.skeleton {
+  max-width: 40%;
+}
+.score.skeleton {
+  width: 32px;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

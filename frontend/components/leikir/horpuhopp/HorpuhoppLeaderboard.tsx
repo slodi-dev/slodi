@@ -1,11 +1,9 @@
 "use client";
 
+import type { ScoreEntry } from "@/lib/leikir-games";
 import styles from "./HorpuhoppLeaderboard.module.css";
 
-export interface ScoreEntry {
-  user_name: string;
-  score: number;
-}
+export type { ScoreEntry };
 
 interface Props {
   entries: ScoreEntry[];
