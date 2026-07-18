@@ -1,0 +1,156 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  box-shadow: var(--sl-shadow-card);
+  overflow: hidden;
+}
+
+/* Clickable play area — cover + body, stacked. */
+.link {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--sl-transition-fast);
+}
+a.link:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: -2px;
+}
+a.link:active {
+  transform: scale(0.995);
+}
+
+/* Cover — the future screenshot slot; the emblem is the placeholder. */
+.cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--accent-subtle));
+  color: hsl(var(--accent));
+  overflow: hidden;
+}
+/* Placeholder glyph sizes are deliberate one-offs — no --sl-text-* token maps
+   to this display scale, and the whole emblem is replaced by a screenshot
+   once one exists. */
+.emblem {
+  font-size: 2.6rem;
+  line-height: 1;
+  user-select: none;
+  transition: transform var(--sl-transition-fast);
+}
+.emblem.letter {
+  font-family: var(--sl-primitive-font-family-sans);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: 2.8rem;
+  text-transform: uppercase;
+}
+a.link:hover .emblem {
+  transform: scale(1.05);
+}
+
+/* Play cue — a pill that fades up over the cover on hover/focus. */
+.playCue {
+  position: absolute;
+  right: var(--sl-spacing-sm);
+  bottom: var(--sl-spacing-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--sl-transition-fast),
+    transform var(--sl-transition-fast);
+}
+a.link:hover .playCue,
+a.link:focus-visible .playCue {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.body {
+  padding: var(--sl-spacing-md);
+}
+.name {
+  margin: 0;
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+.tagline {
+  margin: 2px 0 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* Coming-soon variant. */
+.soon {
+  opacity: 0.82;
+}
+.soon .emblem {
+  opacity: 0.7;
+}
+.soon .link {
+  cursor: default;
+}
+.soonPill {
+  position: absolute;
+  top: var(--sl-spacing-sm);
+  right: var(--sl-spacing-sm);
+  padding: 3px 10px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-background) / 0.85);
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+  white-space: nowrap;
+}
+
+/* Per-game accents drawn from the scout-patrol ramps. Each sets --accent
+   (play cue / emblem) and --accent-subtle (cover background). */
+.accentHeidursordla {
+  --accent: var(--sl-color-heidursordla-correct);
+  --accent-foreground: var(--sl-color-heidursordla-correct-foreground);
+  --accent-subtle: var(--sl-color-primary-subtle);
+}
+.accentFalkar {
+  --accent: var(--sl-color-patrol-falkar);
+  --accent-foreground: var(--sl-color-patrol-falkar-foreground);
+  --accent-subtle: var(--sl-color-patrol-falkar-subtle);
+}
+.accentRekkar {
+  --accent: var(--sl-color-patrol-rekkar);
+  --accent-foreground: var(--sl-color-patrol-rekkar-foreground);
+  --accent-subtle: var(--sl-color-patrol-rekkar-subtle);
+}
+.accentDrekar {
+  --accent: var(--sl-color-patrol-drekar);
+  --accent-foreground: var(--sl-color-patrol-drekar-foreground);
+  --accent-subtle: var(--sl-color-patrol-drekar-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link,
+  .emblem,
+  .playCue {
+    transition: none;
+  }
+  a.link:active {
+    transform: none;
+  }
+}
