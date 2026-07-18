@@ -1,0 +1,108 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TAG CREATE INPUT
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-primitive-space-2);
+}
+
+.inputRow {
+  display: flex;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: hsl(var(--sl-color-border-focus));
+  box-shadow: var(--sl-input-shadow-focus);
+}
+
+.input:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.input:disabled {
+  opacity: var(--sl-opacity-disabled);
+}
+
+.submitBtn {
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border: none;
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity var(--sl-transition-fast);
+}
+
+.submitBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.submitBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.submitBtn:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-alert-text-error));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: <= 640px — stack input and button
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .inputRow {
+    flex-direction: column;
+  }
+
+  .submitBtn {
+    align-self: flex-end;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .submitBtn {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .input {
+    border-width: 2px;
+  }
+
+  .submitBtn {
+    border: 2px solid hsl(var(--sl-color-primary));
+  }
+}
