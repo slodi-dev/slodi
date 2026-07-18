@@ -31,11 +31,7 @@
 .hero {
   position: relative;
   padding: clamp(1.5rem, 4vw, 2.5rem) 0 clamp(2.5rem, 6vw, 4.5rem);
-  background:
-    radial-gradient(120% 90% at 88% -10%, hsl(var(--sl-color-primary) / 0.14), transparent 60%),
-    linear-gradient(180deg, hsl(var(--sl-color-secondary) / 0.06), transparent 40%);
   border-bottom: 1px solid var(--line);
-  overflow: hidden;
 }
 .topbar {
   display: flex;
