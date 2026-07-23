@@ -1,0 +1,238 @@
+<!-- @dsCard group="Pages" title="Arnór-Clicker — hi-fi" -->
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Arnór-Clicker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../tokens.css" />
+<style>
+  /* Hi-fi Arnór-Clicker screen — consumes the real Slóði token system (tokens.css).
+     Static, near-final game-screen mockup. Signature: Arnór's face dead-centre,
+     orbited by concentric rings of worker tokens (the "workforce odometer"). */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--sl-primitive-font-family-sans);
+    color: hsl(var(--sl-color-text-primary));
+    background: hsl(var(--sl-color-background));
+    line-height: var(--sl-line-height-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { margin: 0; line-height: var(--sl-line-height-heading); }
+  p { margin: 0; }
+
+  /* ── site nav (60px, matches the app frame) ── */
+  .nav { height: var(--sl-navbar-height); display: flex; align-items: center; justify-content: space-between;
+    padding: 0 var(--sl-primitive-space-6); border-bottom: 1px solid hsl(var(--sl-navbar-border));
+    background: hsl(var(--sl-navbar-background)); }
+  .logo { font-weight: 800; font-size: var(--sl-text-heading-5); letter-spacing: -.02em; color: hsl(var(--sl-color-primary)); }
+  .navlinks { display: flex; gap: var(--sl-navbar-gap); font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-secondary)); }
+  .navlinks a { text-decoration: none; color: inherit; }
+  .navlinks a.active { color: hsl(var(--sl-color-primary)); font-weight: var(--sl-font-weight-emphasis); }
+
+  /* ── game frame ── */
+  .game { display: flex; height: calc(100vh - var(--sl-navbar-height)); min-height: 640px; }
+
+  /* play area */
+  .play { position: relative; flex: 1; overflow: hidden; display: grid; place-items: center;
+    background:
+      radial-gradient(760px 520px at 50% 42%, hsl(var(--sl-color-primary-subtle)) 0%, transparent 70%),
+      hsl(var(--sl-color-background)); }
+
+  /* score readout — quiet overlay, top-left */
+  .readout { position: absolute; top: var(--sl-primitive-space-8, 32px); left: var(--sl-primitive-space-8, 32px); z-index: 4; }
+  .readout .k { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider);
+    color: hsl(var(--sl-color-text-tertiary)); font-weight: var(--sl-font-weight-emphasis); }
+  .readout .n { font-size: var(--sl-text-heading-1); font-weight: 800; letter-spacing: var(--sl-primitive-letter-spacing-tighter);
+    font-variant-numeric: tabular-nums; line-height: 1.02; }
+  .readout .n sup { font-size: .5em; font-weight: 700; }
+  .readout .r { margin-top: 4px; font-size: var(--sl-text-body); color: hsl(var(--sl-color-primary)); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* orbit field */
+  .orbit { position: absolute; top: 50%; left: 50%; width: 0; height: 0; z-index: 1; }
+  .ringline { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 50%;
+    border: 1px solid hsl(var(--sl-color-border) / .55); }
+  .wtoken { position: absolute; top: 50%; left: 50%; width: 34px; height: 34px; transform: translate(-50%, -50%);
+    display: grid; place-items: center; border-radius: 50%; font-size: 12px; font-weight: 700; letter-spacing: -.01em;
+    background: hsl(var(--tc) / .16); color: hsl(var(--tc)); border: 1.5px solid hsl(var(--tc) / .9);
+    box-shadow: 0 1px 3px hsl(var(--sl-color-text-primary) / .12); }
+
+  /* Arnór — the face, standing alone */
+  .arnor { position: relative; z-index: 3; border: none; background: none; padding: 0; cursor: pointer;
+    filter: drop-shadow(0 10px 20px hsl(var(--sl-color-text-primary) / .28)); }
+  .arnor img { display: block; width: 210px; height: auto; }
+  .hint { position: absolute; z-index: 3; bottom: 26%; left: 50%; transform: translateX(-50%);
+    font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-tertiary)); }
+
+  /* golden Arnór */
+  .golden { position: absolute; z-index: 4; top: 16%; right: 20%; width: 92px; }
+  .golden img { display: block; width: 100%; height: auto;
+    filter: sepia(.7) saturate(2.7) hue-rotate(2deg) brightness(1.1) drop-shadow(0 0 12px hsl(44 95% 55% / .8)); }
+  .golden .tag { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    background: hsl(44 95% 52%); color: hsl(28 60% 16%); font-weight: 800; font-size: 12px; padding: 2px 9px; border-radius: 999px;
+    box-shadow: 0 2px 6px hsl(28 60% 16% / .3); }
+
+  /* ── side panel ── */
+  .panel { flex: none; width: 360px; display: flex; flex-direction: column;
+    border-left: 1px solid hsl(var(--sl-color-border)); background: hsl(var(--sl-color-background-secondary)); }
+  .ptabs { display: flex; gap: 2px; padding: var(--sl-primitive-space-3) var(--sl-primitive-space-4, 16px) 0; }
+  .ptab { flex: 1; padding: 11px 6px; border: none; background: none; cursor: pointer; font: inherit;
+    font-size: var(--sl-text-body-sm); font-weight: 700; color: hsl(var(--sl-color-text-secondary));
+    border-bottom: 2px solid transparent; }
+  .ptab.active { color: hsl(var(--sl-color-text-primary)); border-bottom-color: hsl(var(--sl-color-patrol-rekkar)); }
+  .qline { display: flex; align-items: center; gap: 10px; padding: var(--sl-primitive-space-4, 16px); }
+  .qline .lbl { font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-tertiary)); }
+  .seg { display: inline-flex; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-pill);
+    overflow: hidden; background: hsl(var(--sl-color-surface)); margin-left: auto; }
+  .seg button { font: inherit; font-size: var(--sl-text-body-sm); font-weight: 700; padding: 6px 13px; border: none;
+    background: none; color: hsl(var(--sl-color-text-secondary)); cursor: pointer; font-variant-numeric: tabular-nums; }
+  .seg button + button { border-left: 1px solid hsl(var(--sl-color-border) / .6); }
+  .seg button.on { background: hsl(var(--sl-color-patrol-rekkar)); color: hsl(var(--sl-color-patrol-rekkar-foreground)); }
+
+  .cards { flex: 1; overflow-y: auto; padding: 4px var(--sl-primitive-space-4, 16px) var(--sl-primitive-space-4, 16px);
+    display: flex; flex-direction: column; gap: 8px; }
+  .wcard { display: flex; align-items: center; gap: 12px; padding: 11px 13px; border-radius: var(--sl-radius-card);
+    background: hsl(var(--sl-color-surface)); border: 1px solid hsl(var(--sl-color-border)); cursor: pointer; }
+  .wcard.ok { border-color: hsl(var(--sl-color-primary)); box-shadow: 0 0 0 1px hsl(var(--sl-color-primary) / .25); }
+  .wcard.no { opacity: .5; }
+  .wcard .tok { flex: none; width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+    font-weight: 800; font-size: 13px; background: hsl(var(--tc) / .16); color: hsl(var(--tc)); border: 1.5px solid hsl(var(--tc) / .8); }
+  .wcard .bd { flex: 1; min-width: 0; }
+  .wcard .nm { font-weight: 700; font-size: var(--sl-text-body); }
+  .wcard .mt { font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-secondary)); font-variant-numeric: tabular-nums; }
+  .wcard .own { flex: none; min-width: 34px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums;
+    color: hsl(var(--tc)); }
+  .wcard .cost { flex: none; text-align: right; }
+  .wcard .cost .c { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .wcard .cost .u { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: hsl(var(--sl-color-text-tertiary)); }
+
+  .prestige { padding: var(--sl-primitive-space-4, 16px); border-top: 1px solid hsl(var(--sl-color-border)); }
+  .prestige button { width: 100%; font: inherit; font-weight: 700; font-size: var(--sl-text-body); padding: 11px;
+    border-radius: var(--sl-radius-button); border: 1px solid hsl(var(--sl-color-patrol-rekkar));
+    background: hsl(var(--sl-color-patrol-rekkar) / .12); color: hsl(var(--sl-color-text-primary)); cursor: pointer; }
+  .prestige .sub { margin-top: 6px; font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-tertiary)); text-align: center; }
+
+  @media (max-width: 860px) {
+    .game { flex-direction: column; height: auto; }
+    .play { min-height: 460px; }
+    .panel { width: auto; border-left: none; border-top: 1px solid hsl(var(--sl-color-border)); }
+    .arnor img { width: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="logo">SLÓÐI</span>
+  <div class="navlinks">
+    <a href="#">Hugmyndir</a><a href="#">Dagskrá</a><a href="#" class="active">Leikir</a><a href="#">Um okkur</a>
+  </div>
+  <span class="navlinks"><a href="#">Halldór V.</a></span>
+</nav>
+
+<div class="game">
+  <!-- PLAY AREA -->
+  <div class="play">
+    <div class="readout">
+      <div class="k">fundarstig</div>
+      <div class="n">3,42 · 10<sup>15</sup></div>
+      <div class="r">+1,24 ma./sek</div>
+    </div>
+
+    <div class="orbit" id="orbit"></div>
+
+    <button class="arnor" aria-label="Smella á Arnór">
+      <img src="../games/arnor.png" alt="Arnór fundarstjóri" draggable="false" />
+    </button>
+    <div class="hint">Smelltu á Arnór til að afgreiða málin</div>
+
+    <div class="golden">
+      <img src="../games/arnor.png" alt="Gullinn Arnór" />
+      <span class="tag">Fundarhiti ×7</span>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <aside class="panel">
+    <div class="ptabs">
+      <button class="ptab active">Fundarsköp</button>
+      <button class="ptab">Uppfærslur</button>
+      <button class="ptab">Þing</button>
+    </div>
+    <div class="qline">
+      <span class="lbl">Kaupa í einu</span>
+      <div class="seg">
+        <button>1</button><button>5</button><button class="on">10</button><button>25</button><button>100</button>
+      </div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="prestige">
+      <button>Slíta þingi og boða til nýs</button>
+      <div class="sub">Þú færð 18 grunngildi · +36% varanlega</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+  // Worker types: colour token + monogram (patrol palette keeps them cohesive & distinct).
+  var W = [
+    { c: "var(--sl-color-primary)",         m: "Þf", nm: "Þingfulltrúi",   rate: "0,1/sek",  own: 142, cost: "1,86 þ.",  ok: true  },
+    { c: "var(--sl-color-warning)",         m: "Ka", nm: "Kaffipása",       rate: "1/sek",    own: 38,  cost: "9,4 þ.",   ok: true  },
+    { c: "var(--sl-color-patrol-rekkar)",   m: "Um", nm: "Umræðuhópar",     rate: "8/sek",    own: 21,  cost: "44 þ.",    ok: true  },
+    { c: "var(--sl-color-patrol-falkar)",   m: "Ri", nm: "Rifrildi í pontu",rate: "47/sek",   own: 12,  cost: "132 þ.",   ok: false },
+    { c: "var(--sl-color-patrol-drekar)",   m: "Fj", nm: "Fjármálaumræður", rate: "260/sek",  own: 5,   cost: "1,1 m.",   ok: false },
+    { c: "var(--sl-color-patrol-drott)",    m: "Al", nm: "Allsherjarnefnd", rate: "1,4 þ./sek",own: 2,  cost: "18 m.",    ok: false },
+    { c: "var(--sl-color-patrol-adrir)",    m: "Ön", nm: "Önnur mál",       rate: "7,8 þ./sek",own: 1,  cost: "260 m.",   ok: false },
+    { c: "hsl(160 42% 32%)",                m: "Sk", nm: "Skátahöfðingi",   rate: "44 þ./sek", own: 0,  cost: "3,4 ma.",  ok: false }
+  ];
+
+  // Orbit odometer showcase — inner rings dense (many small workers), outer rings sparse
+  // (few, high-magnitude). Each entry: ring radius + the worker indices shown on it.
+  var RINGS = [
+    { R: 96,  items: [0, 0, 1, 0, 2, 1, 0] },
+    { R: 150, items: [1, 2, 3, 0, 2] },
+    { R: 206, items: [3, 4, 2] },
+    { R: 262, items: [5, 4] },
+    { R: 318, items: [6] }
+  ];
+
+  (function () {
+    var orbit = document.getElementById("orbit");
+    RINGS.forEach(function (ring) {
+      var line = document.createElement("div");
+      line.className = "ringline";
+      line.style.width = line.style.height = 2 * ring.R + "px";
+      orbit.appendChild(line);
+      var n = ring.items.length, offset = -Math.PI / 2 + (ring.R / 200); // slight stagger per ring
+      ring.items.forEach(function (idx, i) {
+        var a = offset + (2 * Math.PI / n) * i;
+        var t = document.createElement("div");
+        t.className = "wtoken";
+        t.style.setProperty("--tc", W[idx].c);
+        t.style.left = (ring.R * Math.cos(a)) + "px";
+        t.style.top = (ring.R * Math.sin(a)) + "px";
+        t.textContent = W[idx].m;
+        orbit.appendChild(t);
+      });
+    });
+
+    var cards = document.getElementById("cards");
+    W.slice(0, 6).forEach(function (w) {
+      var el = document.createElement("div");
+      el.className = "wcard " + (w.ok ? "ok" : "no");
+      el.style.setProperty("--tc", w.c);
+      el.innerHTML =
+        '<span class="tok">' + w.m + '</span>' +
+        '<span class="bd"><span class="nm">' + w.nm + '</span><br><span class="mt">' + w.rate + ' · hver</span></span>' +
+        '<span class="own">' + w.own + '</span>' +
+        '<span class="cost"><span class="c">' + w.cost + '</span><br><span class="u">×10</span></span>';
+      cards.appendChild(el);
+    });
+  })();
+</script>
+</body>
+</html>

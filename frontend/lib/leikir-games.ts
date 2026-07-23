@@ -64,8 +64,8 @@ export const GAMES: GameDef[] = [
     emblem: "👆",
     emblemKind: "glyph",
     accent: "rekkar",
-    status: "soon",
-    hasLeaderboard: false,
+    status: "live",
+    hasLeaderboard: true,
   },
   {
     slug: "laddi-bird",
