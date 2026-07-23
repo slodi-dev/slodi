@@ -10,12 +10,10 @@
 // ring) counts and diff against them each render, and give every orbital a
 // stable key so React only mounts (and thus only animates) the genuinely new ones.
 
-import { Fragment, memo, useEffect, useRef, type CSSProperties } from "react";
-import { WORKERS, decomposeToRings } from "./gameData";
+import { Fragment, memo, useEffect, useRef } from "react";
+import { WORKERS, decomposeToRings, type Vars } from "./gameData";
 import { WorkerIcon, type IconKey } from "./icons";
 import styles from "./arnorClicker.module.css";
-
-type Vars = CSSProperties & Record<string, string>;
 
 const TOTAL_ICON_CAP = 72;
 
@@ -115,32 +113,32 @@ function OrbitField({ counts }: { counts: number[] }) {
             />
             <div className={styles.ring} style={ringStyle}>
               {tokens.map((t, i) => {
-              const a = offset + ((2 * Math.PI) / n) * i;
-              const state = anim[t.key];
-              const popClass =
-                state === "merge"
-                  ? `${styles.orbitalPop} ${styles.orbitalMerge}`
-                  : state === "enter"
-                    ? `${styles.orbitalPop} ${styles.orbitalEnter}`
-                    : styles.orbitalPop;
-              const style: Vars = {
-                left: `${R * Math.cos(a)}px`,
-                top: `${R * Math.sin(a)}px`,
-                animationDelay: `${-(i * 0.3)}s`,
-                "--tc": t.color,
-                "--tfg": t.fg,
-                "--dur": `${2.4 + (i % 4) * 0.5}s`,
-                "--rdur": dur,
-                "--idir": cw ? "reverse" : "normal",
-              };
-              return (
-                <div key={t.key} className={styles.orbital} style={style}>
-                  <span className={popClass}>
-                    <WorkerIcon name={t.icon} />
-                  </span>
-                </div>
-              );
-            })}
+                const a = offset + ((2 * Math.PI) / n) * i;
+                const state = anim[t.key];
+                const popClass =
+                  state === "merge"
+                    ? `${styles.orbitalPop} ${styles.orbitalMerge}`
+                    : state === "enter"
+                      ? `${styles.orbitalPop} ${styles.orbitalEnter}`
+                      : styles.orbitalPop;
+                const style: Vars = {
+                  left: `${R * Math.cos(a)}px`,
+                  top: `${R * Math.sin(a)}px`,
+                  animationDelay: `${-(i * 0.3)}s`,
+                  "--tc": t.color,
+                  "--tfg": t.fg,
+                  "--dur": `${2.4 + (i % 4) * 0.5}s`,
+                  "--rdur": dur,
+                  "--idir": cw ? "reverse" : "normal",
+                };
+                return (
+                  <div key={t.key} className={styles.orbital} style={style}>
+                    <span className={popClass}>
+                      <WorkerIcon name={t.icon} />
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </Fragment>
         );

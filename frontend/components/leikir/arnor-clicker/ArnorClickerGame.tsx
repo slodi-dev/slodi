@@ -12,7 +12,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import Image from "next/image";
@@ -27,7 +26,13 @@ import {
   fmt,
   scoreParts,
   thingstigFor,
+  baseRateOf,
+  clickMult,
+  prestigeMult,
+  goldenMultiplier,
+  GOLDEN_MULT,
   PRESTIGE_MULT_PER_POINT,
+  type Vars,
 } from "./gameData";
 import styles from "./arnorClicker.module.css";
 
@@ -51,8 +56,6 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-type Vars = CSSProperties & Record<string, string>;
-
 interface SaveState {
   v: 1;
   score: number;
@@ -64,14 +67,6 @@ interface SaveState {
   things: number;
   at: number;
 }
-
-const workMult = (ups: Set<string>) =>
-  UPGRADES.reduce((m, u) => (u.work && ups.has(u.key) ? m * u.work : m), 1);
-const clickMult = (ups: Set<string>) =>
-  UPGRADES.reduce((m, u) => (u.click && ups.has(u.key) ? m * u.click : m), 1);
-const prestigeMult = (tsCur: number) => 1 + PRESTIGE_MULT_PER_POINT * tsCur;
-const baseRateOf = (counts: number[], ups: Set<string>, tsCur: number) =>
-  WORKERS.reduce((s, w, i) => s + w.out * (counts[i] ?? 0), 0) * workMult(ups) * prestigeMult(tsCur);
 
 export default function ArnorClickerGame() {
   const { user } = useUser();
@@ -92,6 +87,7 @@ export default function ArnorClickerGame() {
   const [offline, setOffline] = useState<number | null>(null);
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loginHref, setLoginHref] = useState<string | null>(null);
+  const [submitFailed, setSubmitFailed] = useState(false);
 
   // Refs mirror state for the animation loop (no stale closures, no re-subscribe).
   const scoreRef = useRef(0);
@@ -105,7 +101,18 @@ export default function ArnorClickerGame() {
   const mutedRef = useRef(false);
   const loadedRef = useRef(false);
   const acRef = useRef<AudioContext | null>(null);
+  // True once the audio context has been closed on unmount, so a blip scheduled
+  // just before unmount (e.g. claimGolden's delayed buzz) can't resurrect it.
+  const audioClosedRef = useRef(false);
   const popLayer = useRef<HTMLDivElement | null>(null);
+  // Passive rate, recomputed only when counts/ups/tsCur change (see effect
+  // below) so the per-frame loop reads a ref instead of re-reducing every frame.
+  const passiveRateRef = useRef(0);
+  // Cached play-area rect so a click doesn't force a layout (getBoundingClientRect)
+  // on every tap; refreshed on resize/scroll, which is when it can actually move.
+  const playRectRef = useRef<DOMRect | null>(null);
+  // Last score we tried to submit, so the "retry" affordance can resend it.
+  const lastSubmitRef = useRef(0);
 
   countsRef.current = counts;
   upsRef.current = ups;
@@ -143,7 +150,10 @@ export default function ArnorClickerGame() {
       setTsTot(saved.tsTot);
       setThings(saved.things);
       const away = Math.max(0, (Date.now() - saved.at) / 1000);
-      const gain = baseRateOf(saved.counts, savedUps, saved.tsCur) * Math.min(away, OFFLINE_CAP_S) * OFFLINE_RATE;
+      const gain =
+        baseRateOf(saved.counts, savedUps, saved.tsCur) *
+        Math.min(away, OFFLINE_CAP_S) *
+        OFFLINE_RATE;
       if (gain >= 1) {
         scoreRef.current += gain;
         runRef.current += gain;
@@ -167,6 +177,12 @@ export default function ArnorClickerGame() {
     refreshBoard();
   }, [refreshBoard]);
 
+  // Recompute the passive rate only when its inputs change; the animation loop
+  // and sync tick then just read `passiveRateRef` instead of reducing every frame.
+  useEffect(() => {
+    passiveRateRef.current = baseRateOf(counts, ups, tsCur);
+  }, [counts, ups, tsCur]);
+
   // ── main loop: passive production + display sync ───────────────────────────
   useEffect(() => {
     let raf = 0;
@@ -174,8 +190,8 @@ export default function ArnorClickerGame() {
     const step = (t: number) => {
       const dt = (t - last) / 1000;
       last = t;
-      const gmult = Date.now() < goldenUntilRef.current ? 7 : 1;
-      const gain = baseRateOf(countsRef.current, upsRef.current, tsCurRef.current) * gmult * dt;
+      const gmult = goldenMultiplier(goldenUntilRef.current, Date.now());
+      const gain = passiveRateRef.current * gmult * dt;
       scoreRef.current += gain;
       runRef.current += gain;
       raf = requestAnimationFrame(step);
@@ -183,13 +199,39 @@ export default function ArnorClickerGame() {
     raf = requestAnimationFrame(step);
     const sync = setInterval(() => {
       setScoreView(scoreRef.current);
-      const g = Date.now() < goldenUntilRef.current ? 7 : 1;
-      setRateView(baseRateOf(countsRef.current, upsRef.current, tsCurRef.current) * g);
+      const gmult = goldenMultiplier(goldenUntilRef.current, Date.now());
+      setRateView(passiveRateRef.current * gmult);
       setBuffLeft(Math.max(0, Math.ceil((goldenUntilRef.current - Date.now()) / 1000)));
     }, 120);
     return () => {
       cancelAnimationFrame(raf);
       clearInterval(sync);
+    };
+  }, []);
+
+  // Cache the play-area rect; refresh only on resize/scroll (when it can move).
+  useEffect(() => {
+    const measure = () => {
+      playRectRef.current = popLayer.current?.getBoundingClientRect() ?? null;
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, []);
+
+  // Release the Web Audio context when the game unmounts (route change). Reset
+  // the closed flag on (re)mount so React Strict Mode's dev remount re-enables
+  // audio after its throwaway first cleanup.
+  useEffect(() => {
+    audioClosedRef.current = false;
+    return () => {
+      audioClosedRef.current = true;
+      acRef.current?.close().catch(() => {});
+      acRef.current = null;
     };
   }, []);
 
@@ -248,9 +290,11 @@ export default function ArnorClickerGame() {
 
   // ── audio blipp ────────────────────────────────────────────────────────────
   const blip = useCallback((freq: number, gain: number) => {
-    if (mutedRef.current) return;
+    if (mutedRef.current || audioClosedRef.current) return;
     try {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ac = (acRef.current ??= new AC());
       if (ac.state === "suspended") void ac.resume();
       const o = ac.createOscillator();
@@ -270,25 +314,22 @@ export default function ArnorClickerGame() {
   }, []);
 
   // ── click Arnór ────────────────────────────────────────────────────────────
-  const clickGain = useMemo(
-    () => 1 * clickMult(ups) * prestigeMult(tsCur),
-    [ups, tsCur],
-  );
+  const clickGain = useMemo(() => 1 * clickMult(ups) * prestigeMult(tsCur), [ups, tsCur]);
   const clickGainRef = useRef(clickGain);
   clickGainRef.current = clickGain;
 
   const onArnor = useCallback(
     (e: ReactPointerEvent<HTMLButtonElement>) => {
-      const g = Date.now() < goldenUntilRef.current ? 7 : 1;
-      const gain = clickGainRef.current * g;
+      const gmult = goldenMultiplier(goldenUntilRef.current, Date.now());
+      const gain = clickGainRef.current * gmult;
       scoreRef.current += gain;
       runRef.current += gain;
       setScoreView(scoreRef.current);
       setTapped(true);
       blip(460 + Math.random() * 100, 0.07);
       const layer = popLayer.current;
-      if (layer) {
-        const rect = layer.getBoundingClientRect();
+      const rect = playRectRef.current ?? layer?.getBoundingClientRect();
+      if (layer && rect) {
         const pop = document.createElement("div");
         pop.className = styles.pop;
         pop.textContent = `+${fmt(gain)}`;
@@ -298,7 +339,7 @@ export default function ArnorClickerGame() {
         window.setTimeout(() => pop.remove(), 900);
       }
     },
-    [blip],
+    [blip]
   );
 
   // ── buying ─────────────────────────────────────────────────────────────────
@@ -311,7 +352,7 @@ export default function ArnorClickerGame() {
       setCounts((c) => c.map((n, idx) => (idx === i ? n + buyQty : n)));
       blip(230, 0.08);
     },
-    [buyQty, blip],
+    [buyQty, blip]
   );
 
   const buyUpgrade = useCallback(
@@ -322,7 +363,7 @@ export default function ArnorClickerGame() {
       setUps((s) => new Set(s).add(key));
       blip(320, 0.08);
     },
-    [blip],
+    [blip]
   );
 
   // ── golden Arnór ───────────────────────────────────────────────────────────
@@ -359,6 +400,7 @@ export default function ArnorClickerGame() {
   const submitScore = useCallback((totalThingstig: number) => {
     const value = Math.min(Math.floor(totalThingstig), CAP);
     if (value < 1) return;
+    lastSubmitRef.current = value;
     fetch(SCORES_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -375,11 +417,27 @@ export default function ArnorClickerGame() {
           setLoginHref(`/auth/login?returnTo=/leikir/${GAME}`);
           return null;
         }
-        return res.ok ? (res.json() as Promise<ScoreEntry[]>) : null;
+        if (!res.ok) throw new Error(`Score submit failed: ${res.status}`);
+        return res.json() as Promise<ScoreEntry[]>;
       })
-      .then((d) => Array.isArray(d) && setScores(d.slice(0, 10)))
-      .catch(() => {});
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setScores(d.slice(0, 10));
+          setSubmitFailed(false);
+        }
+      })
+      .catch(() => {
+        // Non-401 failure (network/server): the run was already spent locally,
+        // so tell the player their Þingstig didn't reach the board and offer a
+        // retry, rather than silently dropping it.
+        setSubmitFailed(true);
+      });
   }, []);
+
+  const retrySubmit = useCallback(() => {
+    setSubmitFailed(false);
+    if (lastSubmitRef.current > 0) submitScore(lastSubmitRef.current);
+  }, [submitScore]);
 
   const doPrestige = useCallback(() => {
     const gain = thingstigFor(runRef.current);
@@ -425,15 +483,11 @@ export default function ArnorClickerGame() {
   // Which Fundarsköp cards to show: all affordable-so-far + the first locked "next".
   const visibleWorkers = useMemo(() => {
     const out: number[] = [];
-    let lockedShown = false;
     for (let i = 0; i < WORKERS.length; i++) {
       const unlocked = i === 0 || counts[i - 1] > 0 || counts[i] > 0;
-      if (unlocked) out.push(i);
-      else if (!lockedShown) {
-        out.push(i);
-        lockedShown = true;
-        break;
-      } else break;
+      out.push(i);
+      // Show the first locked "next" card as a teaser, then stop.
+      if (!unlocked) break;
     }
     return out;
   }, [counts]);
@@ -509,7 +563,9 @@ export default function ArnorClickerGame() {
 
           {buffLeft > 0 && (
             <div className={styles.buffs}>
-              <span className={styles.buff}>Fundarhiti ×7 · {buffLeft}s</span>
+              <span className={styles.buff}>
+                Fundarhiti ×{GOLDEN_MULT} · {buffLeft}s
+              </span>
             </div>
           )}
 
@@ -536,8 +592,13 @@ export default function ArnorClickerGame() {
               onClick={claimGolden}
               aria-label="Gullinn Arnór — Fundarhiti"
             >
-              <Image src="/leikir/arnor-clicker/arnor.png" alt="Gullinn Arnór" width={96} height={121} />
-              <span className={styles.tag}>Fundarhiti ×7</span>
+              <Image
+                src="/leikir/arnor-clicker/arnor.png"
+                alt="Gullinn Arnór"
+                width={96}
+                height={121}
+              />
+              <span className={styles.tag}>Fundarhiti ×{GOLDEN_MULT}</span>
             </button>
           )}
 
@@ -552,7 +613,10 @@ export default function ArnorClickerGame() {
                   const rankClass =
                     i === 0 ? styles.r1 : i === 1 ? styles.r2 : i === 2 ? styles.r3 : "";
                   return (
-                    <li key={i} className={`${rankClass} ${isMe ? styles.me : ""}`.trim()}>
+                    <li
+                      key={`${s.user_name}-${s.score}-${i}`}
+                      className={`${rankClass} ${isMe ? styles.me : ""}`.trim()}
+                    >
                       <span className={styles.rk}>{i + 1}</span>
                       <span className={styles.who}>{s.user_name}</span>
                       <span className={styles.sc}>{s.score.toLocaleString("is-IS")}</span>
@@ -564,6 +628,14 @@ export default function ArnorClickerGame() {
             {loginHref && (
               <p className={styles.lboardLogin}>
                 <a href={loginHref}>Skráðu þig inn</a> til að vista Þingstig
+              </p>
+            )}
+            {submitFailed && !loginHref && (
+              <p className={styles.lboardError} role="status">
+                Tókst ekki að vista Þingstig.{" "}
+                <button type="button" onClick={retrySubmit}>
+                  Reyna aftur
+                </button>
               </p>
             )}
           </div>
@@ -610,7 +682,11 @@ export default function ArnorClickerGame() {
                 <span className={styles.qlbl}>Kaupa í einu</span>
                 <div className={styles.seg}>
                   {QTYS.map((q) => (
-                    <button key={q} className={buyQty === q ? styles.segOn : ""} onClick={() => setBuyQty(q)}>
+                    <button
+                      key={q}
+                      className={buyQty === q ? styles.segOn : ""}
+                      onClick={() => setBuyQty(q)}
+                    >
                       {q}
                     </button>
                   ))}
@@ -650,7 +726,10 @@ export default function ArnorClickerGame() {
                   : UPGRADES.map((u) => {
                       const owned = ups.has(u.key);
                       const affordable = !owned && scoreView >= u.cost;
-                      const cardVars: Vars = { "--tc": "hsl(var(--sl-color-patrol-rekkar))", "--tfg": "currentColor" };
+                      const cardVars: Vars = {
+                        "--tc": "hsl(var(--sl-color-patrol-rekkar))",
+                        "--tfg": "currentColor",
+                      };
                       return (
                         <button
                           key={u.key}

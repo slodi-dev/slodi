@@ -338,7 +338,8 @@
   width: 100%;
   height: auto;
   pointer-events: none;
-  filter: sepia(0.7) saturate(3) hue-rotate(2deg) brightness(1.08) drop-shadow(0 0 14px hsl(44 95% 55% / 0.9));
+  filter: sepia(0.7) saturate(3) hue-rotate(2deg) brightness(1.08)
+    drop-shadow(0 0 14px hsl(44 95% 55% / 0.9));
 }
 .golden .tag {
   position: absolute;
@@ -501,6 +502,21 @@
 .lboardLogin a {
   color: hsl(var(--sl-color-primary));
   font-weight: 800;
+}
+.lboardError {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--sl-color-error));
+}
+.lboardError button {
+  color: hsl(var(--sl-color-primary));
+  font-weight: 800;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 /* active buff chip */
@@ -876,28 +892,58 @@
 }
 
 @keyframes hop {
-  0%, 100% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-14px) rotate(1deg); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-14px) rotate(1deg);
+  }
 }
 @keyframes orbitspin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 @keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 @keyframes wiggle {
-  0%, 100% { transform: rotate(-6deg) scale(1); }
-  50% { transform: rotate(6deg) scale(1.06); }
+  0%,
+  100% {
+    transform: rotate(-6deg) scale(1);
+  }
+  50% {
+    transform: rotate(6deg) scale(1.06);
+  }
 }
 @keyframes drift {
-  from { left: -120px; }
-  to { left: calc(100% + 120px); }
+  from {
+    left: -120px;
+  }
+  to {
+    left: calc(100% + 120px);
+  }
 }
 @keyframes floatup {
-  0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
-  20% { opacity: 1; transform: translate(-50%, -10px) scale(1.1); }
-  100% { transform: translate(-50%, -70px) scale(1); opacity: 0; }
+  0% {
+    transform: translate(-50%, 0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1.1);
+  }
+  100% {
+    transform: translate(-50%, -70px) scale(1);
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

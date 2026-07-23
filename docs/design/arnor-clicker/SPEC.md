@@ -245,3 +245,22 @@ Debuffs are kept mild and skippable so the game never feels punishing — they a
 - **Backend score cap — RESOLVED:** leaderboard score = **total Þingstig (prestige points)**, which grows as `√(lifetime)` and so stays well under `999 999` — submitted and displayed literally, no encoding, no backend change. See §8.
 - Exact `K`/`SCALE` for prestige and final growth-rate tuning — playtest.
 - Abbreviation set for long-scale suffixes — confirm with team.
+
+## 14. Leaderboard integrity (anti-cheat) — accepted posture
+
+The score is computed client-side and POSTed, so a determined user **can** submit a
+forged score from the browser console. This is inherent to any client-scored game
+and cannot be fully prevented without the server simulating the economy
+(out of scope). We accept this for an internal scout leaderboard, backed by the
+existing server-side guardrails, which are the appropriate bar here:
+
+- **Auth required** — only logged-in users can submit (`get_current_user`).
+- **Bounds** — score clamped to `1…999_999` server-side (`GameScoreCreate`).
+- **Rate-limited** — 10 submissions / 60s / user.
+- **Keep-max upsert** — a lower score never overwrites a higher one, so nobody
+  can lower another player's (or their own) standing.
+
+Because the Þingstig cap is reachable by design (~tier 17, §9), the board reads
+more as "who finished" than a tight ranking, which further lowers the stakes of a
+forged max. If that changes, revisit with server-side sanity heuristics (cap by
+elapsed time / account age, reject impossible jumps) before full server authority.
