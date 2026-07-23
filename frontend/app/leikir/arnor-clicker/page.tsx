@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 // keeps the game logic out of the server bundle.
 const ArnorClickerGame = dynamic(
   () => import("@/components/leikir/arnor-clicker/ArnorClickerGame"),
-  { ssr: false },
+  { ssr: false }
 );
 
 export default function Page() {
