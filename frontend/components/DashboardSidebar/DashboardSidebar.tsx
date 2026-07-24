@@ -27,6 +27,7 @@ import {
   Hammer, // Vinnubekkurinn (Builder)
   MessageSquare, // Veggurinn (Social wall)
   BarChart3, // Greining (Analytics)
+  Tags, // Merkimiðar (Tags)
   Shield, // Stjórnun (Admin)
   User, // Prófíll (Profile)
   Settings, // Stillingar (Settings)
@@ -122,6 +123,13 @@ const NAV_ITEMS: NavItem[] = [
     icon: BarChart3,
     group: "secondary",
     disabled: true, // Not yet implemented
+  },
+  {
+    label: "Flokkar",
+    path: "/tags",
+    icon: Tags,
+    group: "secondary",
+    roleRequired: "editor",
   },
   {
     label: "Stjórnun",

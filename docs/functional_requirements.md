@@ -57,6 +57,8 @@ Slóði is an open-source web platform where scout leaders can plan meetings, ca
 - FR-E3: Event data includes name, description, location, and start/end timestamps.
 - FR-E4: Deleting an event cascades deletion to its tasks and troop participation records.
 - FR-E5: Event creation automatically applies workspace defaults for time and duration when not explicitly provided.
+- FR-E6: Events carry a `type` discriminator (`skipulags`/`sveitar`/`flokks`/`uppskeru`/`útilega`/`dagsferð`/`mót`) that drives default slot sets and behaviour. (Workshop change — ADR-002; #15, #57)
+- FR-E7: Events carry a `scope` (`troop-wide` vs `per-flokkur`): troop-wide events span all grid columns, per-flokkur events occupy a single patrol's column, allowing parallel flokksfundir in the same period. (Workshop change — ADR-002; #19, #25, #11)
 
 ### 4.5 Tasks
 
@@ -64,6 +66,10 @@ Slóði is an open-source web platform where scout leaders can plan meetings, ca
 - FR-T2: Fields include name, description, estimated duration, participant ranges, equipment, and media JSON objects.
 - FR-T3: Tasks are ordered within an event using order_index.
 - FR-T4: The planner validates total duration and overlap warnings.
+- FR-T5: Tasks carry a `status` (`tentative`/`draft`/`confirmed`) plus a first-class `?`/to-fill marker for undecided content, supporting progressive detailing of a plan. (Workshop change — ADR-002; #19, #23, #24)
+- FR-T6: Tasks carry a venue/location that can differ per meeting (rotating venues). (Workshop change — ADR-002; #23)
+- FR-T7: A task/element may span multiple weeks (e.g. badge Part 1/Part 2, multi-meeting projects) rather than being confined to one event. (Workshop change — ADR-002; #19, #90)
+- FR-T8: A task/element carries its context envelope — theme, markmið, ÆSKA/þroskasvið, and underlying learning — not just the bare activity. (Workshop change — ADR-002; #52, #27, #5)
 
 ### 4.6 Content and Comments
 
@@ -92,6 +98,152 @@ Slóði is an open-source web platform where scout leaders can plan meetings, ca
 - FR-ADM1: Admin dashboard provides metrics on usage, troop activity, and popular content.
 - FR-ADM2: Audit log records workspace-level administrative actions.
 - FR-ADM3: Analytics data can be exported as CSV for offline analysis.
+
+### 4.10 Phase-2 Planner (dagskrárgerð)
+
+Requirements from the phase-2 needs-analysis workshop (1 June 2026). Each is traceable
+to a user story (`docs/tharfagreining2/user-stories.md`) and the raw ábendingar (`#N`,
+`docs/tharfagreining2/meeting-notes.md`), and prioritised with MoSCoW aligned to the
+capped build-first set (A · J · B · C · E) and the non-goals in
+`docs/tharfagreining2/prioritisation.md`. This is a volunteer project (a ~15-person
+team, ≈5 developers); the cap of five build-first clusters is deliberate and the
+non-goals are explicit permission to cut.
+
+#### 4.10.1 Temporal hierarchy above Program (ADR-001)
+
+- FR-P1 (Must): A multi-level temporal hierarchy sits above the meeting level —
+  `WorkYear → Cycle → Event{type, scope} → Task(+context)`. The `Cycle`
+  (cycle/term) is a first-class entity that subsumes today's `Program` at term scale.
+  (US A2/A4; ADR-001; #15, #19)
+- FR-P2 (Must): `WorkYear` (work year / heildarmynd) is the top-level container holding
+  year-level goals and the assembled master view. (US A5/A6; ADR-001; #15, #1)
+- FR-P3 (Should): A `Cycle` is copyable as an annual scaffold — last year's
+  cycle layout can be cloned and re-peopled, only changing the flokkar. (US A2/B5; ADR-001; #22)
+- FR-P4 (Could): Slóði can generate the félag's annual `starfsáætlun` as a by-product of
+  the content already entered. (US A6/I2; #1, #15)
+- FR-P5 (Should): The upper levels (WorkYear, Cycle) are optional — a casual,
+  low-frequency leader can work at the meeting level alone without being forced through
+  the full hierarchy. (ADR-001 kill caveat; #15)
+
+#### 4.10.2 Shared master plan / one source of truth (Cluster A — build-first #1)
+
+- FR-P6 (Must): The plan is one authoritative dataset that every co-leader works from,
+  replacing scattered Excel/Sheets/Drive/whiteboard copies. (US A1; #38, #16, #18, #82, #94, #11)
+- FR-P7 (Must): A `Cycle` is stored once as a 2-D grid (weeks Y × flokkar X)
+  plus utility columns (ATH/notes, Innkaup/procurement). (US A2/A3; ADR-002; #19, #25)
+- FR-P8 (Must): The single dataset is rendered as three projections — grid (weeks × flokkar),
+  per-flokkur timeline, and month calendar — that are filters/views, not separate tools or
+  duplicated data. (US A4; ADR-002; #19, #21, #23)
+- FR-P9 (Should): A grid-like, Sheets-style editing UX lets leaders edit per-fundur,
+  per-flokkur cells fast enough to beat the Excel/Sheets workflow it replaces. (US A3; #82, #19, #25)
+- FR-P10 (Should): A rolling "next-N-meetings" working window (per flokkur) is available,
+  not only the whole-year view. (US A7; #28, #19, #21)
+- FR-P11 (Could): The plan supports version history so leaders can see how it evolved and
+  recover earlier states. (US X2; #77, #35)
+
+#### 4.10.3 Roles, access tiers & sharing (Cluster J — build-first #2)
+
+- FR-P12 (Must): Co-leaders (samforingjar) can be granted edit access to a dagskrá so a
+  team co-edits one plan. Builds on the existing `owner/admin/editor/viewer` RBAC. (US J1; #67, #30, #94)
+- FR-P13 (Must): A "view + receive tasks" tier lets an aðstoðarforingi see the plan and
+  receive their assigned tasks/fyrirmæli without full edit rights. (US J2; #68, #30, #33)
+- FR-P14 (Should): A foringi can grant a partial view (some of the plan, not all) so the
+  plan can be shared without exposing innri mál. (US J3; #69, #20, #97)
+- FR-P15 (Should): The dagskrá (programme only — not innri mál: planning notes, endurmat,
+  assignments, council) can be shared as a read-only link with older youth and parents.
+  **No technical age lock (D8)** — age-appropriateness is honour-system guidance to the
+  leader; the content boundary is enforced. Youth/parents are never account-holding users.
+  (US G1/J4; #97, #20, #69, #79, D8)
+- FR-P16 (Should): A `starfsráð` (staff council) access tier lets the council work directly
+  inside Slóði instead of a separate starfsráðsmappa. (US J6; #93, #15, #46)
+- FR-P17 (Must): Member, badge-progress, and personal data are visible only inside the félag,
+  never to outsiders — the safeguarding-compatible line that lets programs/ideas be shared
+  openly while keeping people's data private. (US J8/K1; #79, #78, #72, #71)
+- FR-P18 (Could): Each person has an individual profile and can view the master plan. (US J5; #80, #38)
+
+#### 4.10.4 Templates / sniðmát — copy-and-edit blocks (Cluster B — build-first #3)
+
+- FR-P19 (Must): Reusable blocks behave as composable "legó" — typed slots assembled into a
+  plan, copy-and-edit (clone-and-tweak), never frozen. (US B1/B4; ADR-002; #6, #24, #51, #56)
+- FR-P20 (Must): A meeting starts from a fixed slot skeleton (beinagrind:
+  setning → dagskrá → leikur → slit → endurmat) into which activities are puzzled. (US B1/B13; #6, #24, #17)
+- FR-P21 (Should): A type-aware "create…" launcher ("hvað viltu gera í dag?" → búa til fund /
+  útilegu / mót) loads the right slot skeleton and templates per event type. (US B2; #65, #6, #61)
+- FR-P22 (Should): A generic base block can be re-skinned by a theme parameter to produce many
+  variants without re-authoring (parametrised templates). (US B6; #62, #61, #57)
+- FR-P23 (Should): A whole event (útilega / mót / kvöldvaka) can be saved as a template and
+  cloned next time ("same camp, swap the theme"). (US B5; #55, #61, #54)
+- FR-P24 (Could): Færnimerki are available as runnable, adaptable program templates with their
+  leiðbeiningar, addable to a fundur/dagskrá, with completion trackable. (US B8/B9; #60, #3, #92)
+- FR-P25 (Could): Program elements (liðir) can be linked/related into series or dependencies
+  (e.g. badge Part 1 → Part 2), supporting multi-week projects (see FR-T7). (US B10; #90, #66, #19)
+
+#### 4.10.5 Assign & notify ahead (Cluster C — build-first #4, pain pick)
+
+- FR-P26 (Must): A foringi can assign tasks/roles per meeting to co-leaders and push the plan
+  to them with lead time, killing the "5 minutes before the meeting" scramble. (US C1/C3; #33, #30, #40, #68)
+- FR-P27 (Should): An aðstoðarforingi has a glanceable "your role/tasks today" view for the
+  next fundur. (US C2; #68, #30, #33)
+- FR-P28 (Should): A procurement/innkaup worklist is derived from the plan (the Innkaup column)
+  rather than free-typed, and can be sent to the staff buyer with lead time. (US C4/I2; ADR-002; #39, #19, #15)
+
+#### 4.10.6 Activity / games bank + search (Cluster E — build-first #5)
+
+- FR-P29 (Must): A searchable activity/games bank lets a foringi find activities to pull from
+  when planning or when scouts get stuck. (US E1/E2; #29, #10, #85)
+- FR-P30 (Should): The bank is usable on mobile for in-the-moment quick-grab use (filter by
+  duration, energy, age, gear). (US E1/X1; #53, #29, #88)
+- FR-P31 (Should): Bank content has rich tags (filling gaps like "eldur") and good search/filter.
+  (US E3; #73, #53, #29)
+- FR-P32 (Should): Users can bookmark/favourite programs and activities for quick retrieval.
+  (US E4; #81, #53, #87)
+- FR-P33 (Could): The bank models scouting-specific content types (hróp, kvöldvökur, songs,
+  ceremonies), ready-made and editable, not just generic activities. (US E6; #54, #53, #29)
+- FR-P34 (Could): The bank prevents/curates duplicate entries as community contributions grow.
+  (US E5; #89, #84, #87)
+
+#### 4.10.7 Endurmat loop — bundled-lightweight (Cluster D)
+
+- FR-P35 (Should): A written endurmat note can attach to a block / fundur / event / cycle, is
+  retained, and resurfaces when the same thing is planned again (clone-last-year carries its
+  lessons). Implemented on the block/event data model (FR-T8, FR-P19), not as a standalone
+  feature. (US D1/D2/D3; #45, #48, #46)
+- FR-P36 (Could): Endurmat is scale-appropriate — quick/optional for routine fundir, structured
+  for events (filed to the council archive), prompting both "hvað gekk vel" and "hvað hefði mátt
+  fara betur". (US D4; #46, #47, #49)
+
+#### 4.10.8 ÆSKA coverage — latent (Cluster F)
+
+- FR-P37 (Could): ÆSKA/þroskasvið is modelled as the envelope around the plan (not a single
+  field; see FR-T8); a coverage/balance view over the cycle's tagged data can be added later.
+  Tags can be captured now, the view added cheaply later. (US F1; #27, #60, #92)
+
+#### 4.10.9 Outputs / generation (Cluster I)
+
+- FR-P38 (Could): Leaders can print/export fundir, the starfsáætlun, and templates as paper
+  artifacts. Flagged "mikilvægt" but small; derived worklists are covered by FR-P28. (US I1; #96, #10, #1)
+
+#### 4.10.10 Cross-cutting constraints
+
+- FR-P39 (Must): Slóði is a leaders' tool. Youth and parents are never account-holding users;
+  youth get view-only access to the dagskrá only. **No technical age lock (D8)** — leaders are
+  asked (not forced) to share with older youth (drótt/rekar) and not drekar/fálkar. No
+  minor-account or youth-edit system in v1. (RESOLVED #97, D8; US G1/G4; #97, #20, #69, #79)
+- FR-P40 (Must): Safeguarding is a guardrail on every youth-facing or sharing feature: minors'
+  persónuvernd is protected, there are no open youth-to-youth channels, and neteinelti is
+  prevented. Gates FR-P13–FR-P15. (US K1; #71, #13, #79, #97)
+- FR-P41 (Should): The planner is mobile-usable (in-the-moment use is phone; planning may be
+  desktop). Confirm native-app vs responsive-web/PWA intent. (US X1; #88, #53, #82)
+
+> **Phase-2 non-goals (explicit — do not silently re-smuggle into scope).** Youth accounts /
+> youth-as-users (RESOLVED #97); real-time Google-Docs co-editing (shared-read of one source
+> may suffice — #16); full equipment registry + inter-félag lending and resource clash detection
+> (a later `Resource` entity — #11/#12); mót planning as a dedicated target (útilega is an Event
+> type; mót is not a phase-2 planner target); gamification / leader engagement (cluster L —
+> #74/#75/#95); a rich parent portal (parents "skoða lítið" — #20); community / cross-org
+> discovery as a build-first item (cluster M — biggest surface, target phase 2.5/3, needs A/B/J
+> first — #76/#83/#84); integrations (cluster N — Drive/BÍS/Abler, later — #91/#82/#83). See
+> `docs/tharfagreining2/prioritisation.md` §(d).
 
 ## 5. Non-Functional Requirements
 

@@ -51,6 +51,7 @@ const DASHBOARD_ROUTES = [
   "/builder",
   "/social",
   "/analytics",
+  "/tags",
   "/admin",
   "/profile",
   "/settings",

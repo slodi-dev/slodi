@@ -1,0 +1,254 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TAG ROW
+   View / Edit / Delete-confirm states for a single tag.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  padding: var(--sl-primitive-space-3) var(--sl-primitive-space-3);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  min-height: 3rem;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW STATE
+   ═══════════════════════════════════════════════════════════ */
+
+.tagName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+  overflow-wrap: break-word;
+}
+
+.tagCount {
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-tertiary));
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACTIONS
+   ═══════════════════════════════════════════════════════════ */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  flex-shrink: 0;
+}
+
+.editBtn,
+.saveBtn {
+  padding: var(--sl-primitive-space-1) var(--sl-primitive-space-3);
+  border: 1px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-primitive-radius-sm);
+  background: transparent;
+  color: hsl(var(--sl-color-primary));
+  font-size: var(--sl-text-caption);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--sl-transition-fast);
+  white-space: nowrap;
+}
+
+.editBtn:hover:not(:disabled),
+.saveBtn:hover:not(:disabled) {
+  background: hsl(var(--sl-color-primary) / 0.08);
+}
+
+.editBtn:focus-visible,
+.saveBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.editBtn:disabled,
+.saveBtn:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.deleteBtn {
+  padding: var(--sl-primitive-space-1) var(--sl-primitive-space-3);
+  border: 1px solid hsl(var(--sl-color-error));
+  border-radius: var(--sl-primitive-radius-sm);
+  background: transparent;
+  color: hsl(var(--sl-color-error));
+  font-size: var(--sl-text-caption);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--sl-transition-fast);
+  white-space: nowrap;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: hsl(var(--sl-color-error) / 0.08);
+}
+
+.deleteBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-error));
+  outline-offset: 2px;
+}
+
+.deleteBtn:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DELETE CONFIRM
+   ═══════════════════════════════════════════════════════════ */
+
+.confirmBtn {
+  padding: var(--sl-primitive-space-1) var(--sl-primitive-space-3);
+  border: 1px solid hsl(var(--sl-color-error));
+  border-radius: var(--sl-primitive-radius-sm);
+  background: hsl(var(--sl-color-error));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-caption);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.confirmBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-error));
+  outline-offset: 2px;
+}
+
+.confirmBtn:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.cancelBtn {
+  padding: var(--sl-primitive-space-1) var(--sl-primitive-space-3);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-primitive-radius-sm);
+  background: transparent;
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: var(--sl-text-caption);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cancelBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.deleteMessage {
+  flex: 1;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-error));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EDIT STATE
+   ═══════════════════════════════════════════════════════════ */
+
+.editWrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-primitive-space-1);
+}
+
+.editInput {
+  width: 100%;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body-sm);
+  font-family: inherit;
+}
+
+.editInput:focus {
+  outline: none;
+  border-color: hsl(var(--sl-color-border-focus));
+  box-shadow: var(--sl-input-shadow-focus);
+}
+
+.editInput:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: 2px;
+}
+
+.editInput:disabled {
+  opacity: var(--sl-opacity-disabled);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-alert-text-error));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: <= 640px — stack row vertically
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .tagName {
+    flex: 1 1 auto;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .editWrapper {
+    flex: 1 1 100%;
+  }
+
+  .deleteMessage {
+    flex: 1 1 100%;
+    margin-bottom: var(--sl-primitive-space-1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .editBtn,
+  .saveBtn,
+  .deleteBtn {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .editBtn,
+  .saveBtn,
+  .deleteBtn,
+  .confirmBtn,
+  .cancelBtn,
+  .editInput {
+    border-width: 2px;
+  }
+}
