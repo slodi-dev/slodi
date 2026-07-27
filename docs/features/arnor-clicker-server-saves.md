@@ -86,9 +86,47 @@ Both require `get_current_user`. `PUT` is rate limited per user — the deploy
 already has `user_rate_limit`; `30/60` gives ample headroom over the intended
 one-per-30s while stopping a loop hammering it.
 
-Layering follows the existing game-scores path exactly: router → service (owns
-the commit) → repository → model, with the frontend reaching it through the
-`/api/leikir/[game]/save` proxy that already exists for scores.
+Layering follows the existing game-scores path: router → service (owns the
+commit) → repository → model.
+
+### Called directly, not through the Next proxy
+
+The client calls `api.slodi.is` with a Bearer token, via the existing
+`fetchWithAuth`/`buildApiUrl` path that `programs`, `workspaces` and `users`
+already use — **not** the same-origin `/api/leikir/[game]/…` proxy that the
+scores endpoint goes through.
+
+This is not a style preference. Auth0's session cookie is host-only on
+`slodi.is`, so a same-origin request carries the whole chunked
+`__session.0/.1/.2…` set, while a cross-origin one to `api.slodi.is` carries
+none of it. The session is several KB; the save is 1.3 KB at its largest. Going
+through the proxy would mean the headers outweigh the payload several times
+over, and the server speaks HTTP/1.1, so there is no HPACK compression to
+soften it — the full header block goes out on every write.
+
+It also means this endpoint cannot hit the `Request Header Or Cookie Too Large`
+400 that the proxied scores endpoint can, which is the failure that started
+this whole thread.
+
+Because the backend is reached directly, `game_slug` has to be validated
+**server-side**. The scores endpoint gets that for free from the proxy's
+`KNOWN_GAMES` allowlist; without a proxy there is nothing in front, so an
+arbitrary slug would create arbitrary rows. A domain constant holds the
+allowlist.
+
+### WebSockets were considered and declined
+
+They would shrink per-message overhead further — 2–14 bytes of framing instead
+of a header block. But the traffic is two writes a minute, and a socket costs a
+held connection per player for hours of idle play, which is the worse resource
+profile at this cadence. `sendBeacon` also cannot use one, and that is the write
+that most often saves someone's progress, so HTTP would be needed anyway.
+Reconnection, heartbeats and nginx upgrade proxying are real complexity for no
+practical gain here.
+
+Where a socket would earn its keep is pushing **live leaderboard updates** —
+genuinely push-shaped, and badly served by polling. That is a separate feature
+with its own case.
 
 ## When the client writes
 
