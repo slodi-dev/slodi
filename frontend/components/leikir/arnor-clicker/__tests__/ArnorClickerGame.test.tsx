@@ -101,7 +101,7 @@ describe("ArnorClickerGame", () => {
       expect(within(chairCard("Aron")).getByText("Virkur")).toBeInTheDocument();
       expect(within(chairCard("Arnór")).getByText("Velja")).toBeInTheDocument();
       // 100 - 50, and the permanent boost falls with it: 50 × 0.5% = 25%.
-      expect(stat("Þingstig í handraðanum")).toBe("50");
+      expect(stat("Óeydd Þingstig — á töflunni")).toBe("50");
       expect(stat("Varanleg uppörvun")).toBe("+25%");
     });
 
@@ -113,7 +113,7 @@ describe("ArnorClickerGame", () => {
       fireEvent.click(chairCard("Arnór"));
 
       expect(within(chairCard("Arnór")).getByText("Virkur")).toBeInTheDocument();
-      expect(stat("Þingstig í handraðanum")).toBe("100"); // nothing spent
+      expect(stat("Óeydd Þingstig — á töflunni")).toBe("100"); // nothing spent
     });
 
     it("persists the chair roster so a reload keeps who you bought", () => {

@@ -1,7 +1,7 @@
 // Arnór-Clicker — assist Arnór, the fundarstjóri, in running a Skátaþing.
 // Idle clicker: tap Arnór's face for fundarstig, recruit Fundarsköp workers
 // (which orbit him as a place-value odometer), buy upgrades, ride golden Arnórs,
-// and "fresta þingfundi" to prestige for Þingstig. Leaderboard = total Þingstig.
+// and "fresta þingfundi" to prestige for Þingstig. Leaderboard = Þingstig held.
 // Arcade visual identity per docs/design/arnor-clicker (approved hi-fi).
 
 "use client";
@@ -32,11 +32,13 @@ import {
   baseRateOf,
   clickPower,
   loadSave,
+  SCORE_CAP,
   signSave,
   offlineSeconds,
   OFFLINE_RATE,
   upgradeUnlocked,
   upgradeEffect,
+  totalWorkers,
   liveBuff,
   buffFromGolden,
   lumpSeconds,
@@ -63,7 +65,6 @@ const GAME = "arnor-clicker";
 const SCORES_URL = `/api/leikir/${GAME}/scores`;
 const PENDING_KEY = `leikir_pending_score_${GAME}`;
 const SAVE_KEY = "arnor_clicker_save_v2"; // v2: 20-worker roster (old saves mis-map)
-const CAP = 999_999;
 // Golden Arnórar stay gated until the player has real production going — no
 // boosts in the opening clicks. First eligible once lifetime fundarstig this
 // run crosses this threshold.
@@ -173,8 +174,9 @@ export default function ArnorClickerGame() {
   // Cached play-area rect so a click doesn't force a layout (getBoundingClientRect)
   // on every tap; refreshed on resize/scroll, which is when it can actually move.
   const playRectRef = useRef<DOMRect | null>(null);
-  // Last score we tried to submit, so the "retry" affordance can resend it.
-  const lastSubmitRef = useRef(0);
+  // Last value we tried to submit, so "reyna aftur" can resend it. null until
+  // the first attempt — 0 is a legitimate score, not an absence.
+  const lastSubmitRef = useRef<number | null>(null);
 
   countsRef.current = counts;
   upsRef.current = ups;
@@ -294,6 +296,51 @@ export default function ArnorClickerGame() {
   useEffect(() => {
     refreshBoard();
   }, [refreshBoard]);
+
+  // ── leaderboard submission ─────────────────────────────────────────────────
+  // The board ranks on Þingstig currently held, so this is called on prestige
+  // (earning them) and on hiring a fundarstjóri (spending them) alike. The
+  // backend stores arnor-clicker scores by replacement rather than by max, so
+  // a submission that is lower than the last one really does move the player
+  // down the table.
+  const submitScore = useCallback((heldThingstig: number) => {
+    // Held Þingstig, not lifetime — spending on a fundarstjóri has to be able
+    // to send the value down as well as up. Zero is a legitimate standing (you
+    // spent everything), so it is submitted rather than skipped.
+    const value = Math.min(Math.max(Math.floor(heldThingstig), 0), SCORE_CAP);
+    lastSubmitRef.current = value;
+    fetch(SCORES_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score: value }),
+      keepalive: true,
+    })
+      .then((res) => {
+        if (res.status === 401) {
+          try {
+            sessionStorage.setItem(PENDING_KEY, String(value));
+          } catch {
+            /* ignore */
+          }
+          setLoginHref(`/auth/login?returnTo=/leikir/${GAME}`);
+          return null;
+        }
+        if (!res.ok) throw new Error(`Score submit failed: ${res.status}`);
+        return res.json() as Promise<ScoreEntry[]>;
+      })
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setScores(d.slice(0, 10));
+          setSubmitFailed(false);
+        }
+      })
+      .catch(() => {
+        // Non-401 failure (network/server): the run was already spent locally,
+        // so tell the player their Þingstig didn't reach the board and offer a
+        // retry, rather than silently dropping it.
+        setSubmitFailed(true);
+      });
+  }, []);
 
   // Recompute the passive rate only when its inputs change; the animation loop
   // and sync tick then just read `passiveRateRef` instead of reducing every frame.
@@ -612,12 +659,16 @@ export default function ArnorClickerGame() {
     (key: string) => {
       const c = chairByKey(key);
       if (chairsRef.current.has(key) || tsCurRef.current < c.cost) return;
-      setTsCur((n) => n - c.cost);
+      const left = tsCurRef.current - c.cost;
+      tsCurRef.current = left;
+      setTsCur(left);
       setChairs((s) => new Set(s).add(key));
       setChairKey(key);
+      // The board ranks on what you hold, so hiring shows up there immediately.
+      submitScore(left);
       blip(560, 0.09);
     },
-    [blip]
+    [blip, submitScore]
   );
 
   const pickChair = useCallback(
@@ -635,54 +686,21 @@ export default function ArnorClickerGame() {
 
   // ── prestige (fresta þingfundi) ─────────────────────────────────────────────
   const prestigeGain = thingstigFor(runRef.current);
-  const submitScore = useCallback((totalThingstig: number) => {
-    const value = Math.min(Math.floor(totalThingstig), CAP);
-    if (value < 1) return;
-    lastSubmitRef.current = value;
-    fetch(SCORES_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ score: value }),
-      keepalive: true,
-    })
-      .then((res) => {
-        if (res.status === 401) {
-          try {
-            sessionStorage.setItem(PENDING_KEY, String(value));
-          } catch {
-            /* ignore */
-          }
-          setLoginHref(`/auth/login?returnTo=/leikir/${GAME}`);
-          return null;
-        }
-        if (!res.ok) throw new Error(`Score submit failed: ${res.status}`);
-        return res.json() as Promise<ScoreEntry[]>;
-      })
-      .then((d) => {
-        if (Array.isArray(d)) {
-          setScores(d.slice(0, 10));
-          setSubmitFailed(false);
-        }
-      })
-      .catch(() => {
-        // Non-401 failure (network/server): the run was already spent locally,
-        // so tell the player their Þingstig didn't reach the board and offer a
-        // retry, rather than silently dropping it.
-        setSubmitFailed(true);
-      });
-  }, []);
 
   const retrySubmit = useCallback(() => {
     setSubmitFailed(false);
-    if (lastSubmitRef.current > 0) submitScore(lastSubmitRef.current);
+    // null means nothing has been submitted yet. Zero is a real standing — the
+    // player spent every Þingstig — so it must stay retryable.
+    if (lastSubmitRef.current !== null) submitScore(lastSubmitRef.current);
   }, [submitScore]);
 
   const doPrestige = useCallback(() => {
     const gain = thingstigFor(runRef.current);
     if (gain < 1) return;
-    const newTot = tsTot + gain;
-    setTsTot(newTot);
-    setTsCur((c) => c + gain);
+    setTsTot(tsTot + gain);
+    const held = tsCurRef.current + gain;
+    tsCurRef.current = held;
+    setTsCur(held);
     setThings((n) => n + 1);
     scoreRef.current = 0;
     runRef.current = 0;
@@ -695,7 +713,7 @@ export default function ArnorClickerGame() {
     comboRef.current = 0;
     setCombo(0);
     setGolden(null);
-    submitScore(newTot);
+    submitScore(held);
   }, [tsTot, submitScore]);
 
   // Submit any score stashed before a login redirect.
@@ -728,7 +746,14 @@ export default function ArnorClickerGame() {
   // Anything gated behind a worker count, a lifetime total, a completed þing or
   // another fundarstjóri simply isn't listed yet.
   const shopUpgrades = useMemo(() => {
-    const ctx = { counts, lifetime: runView, things, chair: chairKey };
+    // Sum the roster once for the whole pass, not once per upgrade.
+    const ctx = {
+      counts,
+      totalWorkers: totalWorkers(counts),
+      lifetime: runView,
+      things,
+      chair: chairKey,
+    };
     return UPGRADES.filter((u) => !ups.has(u.key) && upgradeUnlocked(u, ctx)).sort(
       (a, b) => a.cost - b.cost
     );
@@ -878,7 +903,13 @@ export default function ArnorClickerGame() {
           )}
 
           <div className={styles.lboard} aria-label="Þingstig-tafla">
-            <div className={styles.lboardH}>Þingstig-tafla</div>
+            <div className={styles.lboardH}>
+              Þingstig-tafla
+              {/* The board ranks on Þingstig held, not earned, so hiring a
+                  fundarstjóri moves you down it. Without saying so, the gap
+                  between this and "Þingstig samtals" reads as a bug. */}
+              <small>óeydd Þingstig</small>
+            </div>
             {scores.length === 0 ? (
               <p className={styles.lboardEmpty}>Engar færslur enn</p>
             ) : (
@@ -936,13 +967,15 @@ export default function ArnorClickerGame() {
               <div className={styles.board}>
                 <h3>Þín þing</h3>
                 <ol>
+                  {/* Held first: it is what the table ranks on. Lifetime sits
+                      below as the historical figure it is. */}
                   <li>
-                    <span>Þingstig samtals</span>
-                    <span>{tsTot}</span>
+                    <span>Óeydd Þingstig — á töflunni</span>
+                    <span>{tsCur}</span>
                   </li>
                   <li>
-                    <span>Þingstig í handraðanum</span>
-                    <span>{tsCur}</span>
+                    <span>Þingstig unnin samtals</span>
+                    <span>{tsTot}</span>
                   </li>
                   <li>
                     <span>Fjöldi þinga</span>

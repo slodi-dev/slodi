@@ -34,6 +34,8 @@ import {
   signSave,
   offlineSeconds,
   OFFLINE_CAP_S,
+  SCORE_CAP,
+  totalWorkers,
   scoreParts,
   fmt,
   type SaveState,
@@ -372,9 +374,9 @@ describe("comboParams / comboMult", () => {
 
   it("scales window, cap and step from the Aron upgrades", () => {
     const p = comboParams(new Set(["taktur", "haerrathak", "snarpari"]));
-    expect(p.window).toBeCloseTo(COMBO_BASE.window * 1.8, 10);
-    expect(p.cap).toBe(Math.round(COMBO_BASE.cap * 2.5));
-    expect(p.step).toBeCloseTo(COMBO_BASE.step * 2, 10);
+    expect(p.window).toBeCloseTo(COMBO_BASE.window * 1.4, 10);
+    expect(p.cap).toBe(Math.round(COMBO_BASE.cap * 1.5));
+    expect(p.step).toBeCloseTo(COMBO_BASE.step * 1.25, 10);
   });
 
   it("keeps the cap a whole number", () => {
@@ -384,6 +386,73 @@ describe("comboParams / comboMult", () => {
   it("a zero combo is no bonus at all", () => {
     expect(comboMult(0, 0.1)).toBe(1);
     expect(comboMult(20, 0.1)).toBeCloseTo(3, 10);
+  });
+});
+
+// ── the two fundarstjórar must stay in the same power band ────────────────────
+// Aron once reached ×41 click power against Arnór's bursts, and the multiplier
+// only touched the flat tap, so it was simultaneously far too strong on paper
+// and worthless once passive production ran away. Both halves are pinned here.
+describe("Arnór and Aron are balanced against each other", () => {
+  const ARON_ABILITY = ["taktur", "haerrathak", "snarpari", "aroniham", "oslitin", "fullkomin"];
+  const CLICK_AND_SHARE = [
+    "ristabraud",
+    "fundarhamar",
+    "mikrofonn",
+    "vatnsglas",
+    "fundarstjorastoll",
+    "hamarshogg",
+    "lesasalinn",
+    "klappa",
+    "standandi",
+  ];
+
+  /** Aron's sustained uplift as a multiple of the passive rate. */
+  const aronUplift = (ups: Set<string>, clicksPerSec: number, rate: number) => {
+    const p = comboParams(ups);
+    return (clickPower(ups, 0, rate, NO_BUFF, p.cap, p.step) * clicksPerSec) / rate;
+  };
+
+  it("the combo tops out near ×4, not an order of magnitude beyond", () => {
+    const full = comboParams(new Set(ARON_ABILITY));
+    expect(comboMult(full.cap, full.step)).toBeGreaterThan(3);
+    expect(comboMult(full.cap, full.step)).toBeLessThan(5);
+  });
+
+  it("the base combo is a modest ×2", () => {
+    const base = comboParams(new Set());
+    expect(comboMult(base.cap, base.step)).toBeCloseTo(2, 10);
+  });
+
+  it("holding the combo still needs regular clicking", () => {
+    // A window this side of ~3s means you cannot park the combo and walk away.
+    expect(comboParams(new Set(ARON_ABILITY)).window).toBeLessThan(3000);
+  });
+
+  it("the combo scales the share of production, not just the flat tap", () => {
+    // This is what keeps Aron relevant once passive output dwarfs a raw click.
+    const ups = new Set(["lesasalinn"]); // 1% of rate per click
+    const rate = 1e9;
+    const noCombo = clickPower(ups, 0, rate, NO_BUFF, 0, 0.05);
+    const withCombo = clickPower(ups, 0, rate, NO_BUFF, 20, 0.05);
+    expect(withCombo / noCombo).toBeCloseTo(2, 6); // combo ×2 doubles the whole click
+  });
+
+  it("fully upgraded, Aron lands in the same band as Arnór at a human click rate", () => {
+    // Arnór's fully-upgraded goldens are worth roughly +490% of passive output.
+    // Aron should reach comparable ground at ~6 clicks/sec — not 10× it.
+    const ups = new Set([...CLICK_AND_SHARE, ...ARON_ABILITY]);
+    const uplift = aronUplift(ups, 6, 1e9);
+    expect(uplift).toBeGreaterThan(3);
+    expect(uplift).toBeLessThan(8);
+  });
+
+  it("clicking faster pays more, and slower pays less", () => {
+    const ups = new Set([...CLICK_AND_SHARE, ...ARON_ABILITY]);
+    const slow = aronUplift(ups, 4, 1e9);
+    const fast = aronUplift(ups, 10, 1e9);
+    expect(slow).toBeLessThan(aronUplift(ups, 6, 1e9));
+    expect(fast).toBeGreaterThan(aronUplift(ups, 6, 1e9));
   });
 });
 
@@ -414,16 +483,24 @@ describe("upgradeUnlocked", () => {
     expect(upgradeUnlocked(u, ctx({ counts: enough }))).toBe(true);
   });
 
+  /** A workforce large enough that only the gate under test can block. */
+  const staffed = WORKERS.map(() => 20);
+
   it("a lifetime-gated upgrade waits for the run to produce enough", () => {
     const u = byKey("dagskrain");
-    expect(upgradeUnlocked(u, ctx({ lifetime: 199_999 }))).toBe(false);
-    expect(upgradeUnlocked(u, ctx({ lifetime: 200_000 }))).toBe(true);
+    expect(upgradeUnlocked(u, ctx({ counts: staffed, lifetime: 199_999 }))).toBe(false);
+    expect(upgradeUnlocked(u, ctx({ counts: staffed, lifetime: 200_000 }))).toBe(true);
   });
 
   it("a þing-gated upgrade waits for that many prestiges", () => {
     const u = byKey("thingforseti");
-    expect(upgradeUnlocked(u, ctx())).toBe(false);
-    expect(upgradeUnlocked(u, ctx({ things: 1 }))).toBe(true);
+    expect(upgradeUnlocked(u, ctx({ counts: staffed }))).toBe(false);
+    expect(upgradeUnlocked(u, ctx({ counts: staffed, things: 1 }))).toBe(true);
+  });
+
+  it("a worker gate still blocks even when everything else is satisfied", () => {
+    const u = byKey("dagskrain");
+    expect(upgradeUnlocked(u, ctx({ lifetime: 1e30, things: 99 }))).toBe(false);
   });
 
   it("chair upgrades only show for the fundarstjóri currently chairing", () => {
@@ -434,6 +511,44 @@ describe("upgradeUnlocked", () => {
     expect(upgradeUnlocked(arnor, ctx({ ...rich, chair: "aron" }))).toBe(false);
     expect(upgradeUnlocked(aron, ctx({ ...rich, chair: "aron" }))).toBe(true);
     expect(upgradeUnlocked(aron, ctx({ ...rich, chair: "arnor" }))).toBe(false);
+  });
+});
+
+// ── leaderboard cap ───────────────────────────────────────────────────────────
+describe("SCORE_CAP", () => {
+  it("sits well inside the INTEGER column it is stored in", () => {
+    // game_scores.score is a Postgres INTEGER: 2,147,483,647.
+    expect(SCORE_CAP).toBeLessThan(2_147_483_647 / 2);
+    expect(Number.isInteger(SCORE_CAP)).toBe(true);
+  });
+
+  it("is a genuine endgame ceiling, not a mid-game wall", () => {
+    // Reaching it should take a lifetime around the last worker's price rather
+    // than being hit while the ladder is still being climbed.
+    const lifetimeNeeded = Math.pow(SCORE_CAP / 10, 2) * 1e8;
+    const lastWorker = WORKERS[WORKERS.length - 1];
+    expect(lifetimeNeeded).toBeGreaterThan(lastWorker.baseCost / 100);
+  });
+
+  it("the save sanitiser tolerates totals above the cap", () => {
+    // The board stops counting at SCORE_CAP, but a player's own total may run
+    // past it — sanitising must not clamp real progress down to the cap.
+    const counts = WORKERS.map(() => 0);
+    const save: SaveState = {
+      v: 1,
+      score: 0,
+      run: 0,
+      counts,
+      ups: [],
+      tsCur: SCORE_CAP + 1000,
+      tsTot: SCORE_CAP + 1000,
+      things: 0,
+      at: 0,
+      chairs: ["arnor"],
+      chair: "arnor",
+    };
+    const out = loadSave(JSON.stringify({ ...save, sig: signSave(save) }))!;
+    expect(out.save.tsTot).toBe(SCORE_CAP + 1000);
   });
 });
 
@@ -598,6 +713,104 @@ describe("signSave", () => {
     expect(signSave({ ...base, tsTot: 1 })).not.toBe(sig);
     expect(signSave({ ...base, at: 1 })).not.toBe(sig);
     expect(signSave({ ...base, chair: "aron" })).not.toBe(sig);
+  });
+});
+
+// ── upgrades must be worth buying when offered ────────────────────────────────
+// An upgrade that multiplies worker output is worthless without workers, and a
+// price that isn't tied to the workers it requires makes some tiers free and
+// others unaffordable. Both were real bugs; these keep them fixed.
+describe("upgrades are gated on the workers they act on", () => {
+  const noWorkers = {
+    counts: WORKERS.map(() => 0),
+    lifetime: 1e30,
+    things: 99,
+    chair: "arnor",
+  };
+
+  it("nothing that scales worker output is on offer with no workers", () => {
+    const offered = UPGRADES.filter((u) => upgradeUnlocked(u, noWorkers));
+    for (const u of offered) {
+      expect(u.work, `${u.key} multiplies all fundarsköp`).toBeUndefined();
+      expect(u.share, `${u.key} skims the production rate`).toBeUndefined();
+      expect(u.boosts, `${u.key} boosts a worker`).toBeUndefined();
+    }
+  });
+
+  it("click and ability upgrades stay available — they work without workers", () => {
+    const offered = UPGRADES.filter((u) => upgradeUnlocked(u, noWorkers));
+    expect(offered.length).toBeGreaterThan(0);
+    expect(offered.some((u) => u.click)).toBe(true);
+  });
+
+  it("every work and share upgrade states a worker requirement", () => {
+    for (const u of UPGRADES.filter((x) => x.work || x.share)) {
+      const r = u.req ?? {};
+      expect(
+        r.totalWorkers !== undefined || r.worker !== undefined,
+        `${u.key} has no worker requirement`
+      ).toBe(true);
+    }
+  });
+
+  it("totalWorkers sums the roster, tolerating gaps", () => {
+    expect(totalWorkers([])).toBe(0);
+    expect(totalWorkers([3, 4, 5])).toBe(12);
+    expect(totalWorkers(WORKERS.map(() => 2))).toBe(WORKERS.length * 2);
+  });
+
+  it("a precomputed total is used in place of re-summing the roster", () => {
+    // The shop passes the sum in once for the whole pass; when it does, that
+    // value is authoritative.
+    const u = UPGRADES.find((x) => x.key === "dagskrain")!; // needs 25 total
+    const base = { counts: WORKERS.map(() => 0), lifetime: 1e30, things: 99, chair: "arnor" };
+    expect(upgradeUnlocked(u, { ...base, totalWorkers: 25 })).toBe(true);
+    expect(upgradeUnlocked(u, { ...base, totalWorkers: 24 })).toBe(false);
+  });
+
+  it("a totalWorkers gate counts fundarsköp of every kind together", () => {
+    const kaffi = UPGRADES.find((u) => u.key === "dagskrain")!; // needs 25 total
+    const spread = WORKERS.map((_, i) => (i < 5 ? 4 : 0)); // 20 across five kinds
+    expect(upgradeUnlocked(kaffi, { ...noWorkers, counts: spread })).toBe(false);
+    const enough = WORKERS.map((_, i) => (i < 5 ? 5 : 0)); // 25
+    expect(upgradeUnlocked(kaffi, { ...noWorkers, counts: enough })).toBe(true);
+  });
+
+  it("the 53-delegate upgrade really wants 53 Þingfulltrúar", () => {
+    const u = UPGRADES.find((x) => x.key === "fulltruar53")!;
+    const at = (n: number) => {
+      const counts = WORKERS.map(() => 0);
+      counts[0] = n;
+      return upgradeUnlocked(u, { ...noWorkers, counts });
+    };
+    expect(at(52)).toBe(false);
+    expect(at(53)).toBe(true);
+  });
+});
+
+describe("worker upgrade pricing", () => {
+  it("every tier costs the same fraction of the workers it requires", () => {
+    // A flat multiple of baseCost drifted from 0.07 to 1.23 across the ladder,
+    // because worker growth runs 1.15 down to 1.07. Pricing off the requirement
+    // holds the ratio constant, so no tier is a freebie or a wall.
+    for (const w of WORKERS) {
+      const tiers = UPGRADES.filter((u) => u.boosts === w.key);
+      tiers.forEach((u, t) => {
+        const required = costOf(w, 0, WORKER_TIER_AT[t]);
+        expect(u.cost / required, `${u.key}`).toBeCloseTo(0.5, 2);
+      });
+    }
+  });
+
+  it("the second tier always costs more than the first", () => {
+    for (const w of WORKERS) {
+      const [t1, t2] = UPGRADES.filter((u) => u.boosts === w.key);
+      expect(t2.cost, w.key).toBeGreaterThan(t1.cost);
+    }
+  });
+
+  it("costs stay whole numbers", () => {
+    for (const u of UPGRADES) expect(Number.isInteger(u.cost), u.key).toBe(true);
   });
 });
 
