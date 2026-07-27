@@ -8,13 +8,6 @@ import type { IconKey } from "./icons";
 /** Inline-style object that also carries CSS custom properties (`--foo`). */
 export type Vars = CSSProperties & Record<string, string>;
 
-/** Fundarhiti boost: a golden Arnór multiplies click + passive output by this. */
-export const GOLDEN_MULT = 7;
-/** The active boost multiplier: GOLDEN_MULT while the buff is live, else 1. */
-export function goldenMultiplier(goldenUntil: number, now: number): number {
-  return now < goldenUntil ? GOLDEN_MULT : 1;
-}
-
 export interface Worker {
   key: string;
   name: string;
@@ -238,40 +231,709 @@ export const WORKERS: Worker[] = [
   },
 ];
 
+// ── Fundarstjórar ────────────────────────────────────────────────────────────
+// The player picks who chairs the þing. Each chair brings one ability, bought
+// once with Þingstig and kept forever (switching between owned chairs is free).
+// Paying in Þingstig is a real trade: every point spent is 0.5% permanent boost
+// given up. Chair-specific upgrades live in UPGRADES behind `req.chair`.
+
+export type ChairAbility = "golden" | "combo";
+
+export interface Chair {
+  key: string;
+  name: string;
+  /** Line under the name on the Þing tab. */
+  title: string;
+  /** In-character line: who this fundarstjóri is at the þing. */
+  flavour: string;
+  /** What the ability actually does, mechanically. */
+  desc: string;
+  /** Price in Þingstig. Arnór is free — he is who you start with. */
+  cost: number;
+  /** Portrait. Falls back to Arnór's, tinted with `hue`, if the file is absent. */
+  img: string;
+  /** The portrait's intrinsic pixel size — next/image needs the real aspect. */
+  w: number;
+  h: number;
+  /** Hue-rotate applied to the fallback portrait, in degrees. */
+  hue: number;
+  /** Accent colour for the chair card and ability chrome. */
+  color: string;
+  ability: ChairAbility;
+}
+
+export const CHAIRS: Chair[] = [
+  {
+    key: "arnor",
+    name: "Arnór",
+    title: "Gullnir Arnórar",
+    flavour:
+      "Arnór er snöggur með gullmolana upp í pontu, þeir hjálpa við að halda fundinum gangandi.",
+    desc: "Gullnir Arnórar skjótast yfir þingsalinn. Smelltu á þá fyrir eina af sjö uppörvunum — sumar sjaldgæfari en aðrar.",
+    cost: 0,
+    img: "/leikir/arnor-clicker/arnor.png",
+    w: 480,
+    h: 607,
+    hue: 0,
+    color: "hsl(44 95% 52%)",
+    ability: "golden",
+  },
+  {
+    key: "aron",
+    name: "Aron",
+    title: "Samfella",
+    flavour: "Aron vill afgreiða sem flest í einu, þannig að fundurinn flýgur áfram í settum.",
+    desc: "Hraðir smellir hlaða upp samfellu sem margfaldar smellikraftinn. Hættu að smella og hún fellur niður.",
+    cost: 50,
+    img: "/leikir/arnor-clicker/aron.png",
+    w: 274,
+    h: 392,
+    hue: 165,
+    color: "hsl(205 66% 48%)",
+    ability: "combo",
+  },
+];
+
+export const DEFAULT_CHAIR = CHAIRS[0].key;
+export const chairByKey = (key: string): Chair => CHAIRS.find((c) => c.key === key) ?? CHAIRS[0];
+
+// ── Gullnir Arnórar ──────────────────────────────────────────────────────────
+// Seven variants, drawn by weight. `tier` is the rarity band: "Heppnir Arnórar"
+// raises the odds of the higher tiers without ever removing the common ones.
+
+export interface GoldenVariant {
+  key: string;
+  name: string;
+  /** Spawn share within its tier, before the luck multiplier. */
+  weight: number;
+  /** Rarity band, 0 = common. Effective weight is `weight × luck^tier`. */
+  tier: number;
+  /** Sprite hue-rotate, degrees off the gold base. */
+  hue: number;
+  /** Buff duration in ms. 0 means it pays out instantly instead. */
+  ms: number;
+  /** Multiplies everything — passive and clicks alike. */
+  all?: number;
+  /** Multiplies click power only. */
+  click?: number;
+  /** Multiplies worker output only. */
+  work?: number;
+  /** Clicks additionally earn this fraction of the current fundarstig/sek. */
+  share?: number;
+  /** Instant payout, in seconds of current production. */
+  lump?: number;
+}
+
+export const GOLDENS: GoldenVariant[] = [
+  {
+    key: "fundarhiti",
+    name: "Fundarhiti",
+    weight: 30,
+    tier: 0,
+    hue: 0,
+    ms: 9_000,
+    all: 7,
+  },
+  {
+    key: "kaffiskot",
+    name: "Kaffiskot",
+    weight: 22,
+    tier: 0,
+    hue: -22,
+    ms: 20_000,
+    click: 15,
+  },
+  {
+    key: "dagskrarlidur",
+    name: "Dagskrárliður afgreiddur",
+    weight: 16,
+    tier: 0,
+    hue: 78,
+    ms: 0,
+    lump: 420,
+  },
+  {
+    key: "samhljoda",
+    name: "Samhljóða samþykkt",
+    weight: 12,
+    tier: 1,
+    hue: 118,
+    ms: 6_000,
+    all: 20,
+  },
+  {
+    key: "kjorbref",
+    name: "Kjörbréfin komin",
+    weight: 9,
+    tier: 1,
+    hue: 168,
+    ms: 30_000,
+    work: 3,
+  },
+  {
+    key: "hradafgreidsla",
+    name: "Hraðafgreiðsla",
+    weight: 7,
+    tier: 1,
+    hue: -70,
+    ms: 15_000,
+    click: 2,
+    share: 1,
+  },
+  {
+    key: "skataandinn",
+    name: "Skátaandinn",
+    weight: 4,
+    tier: 2,
+    hue: 285,
+    ms: 7_000,
+    all: 77,
+  },
+];
+
+/** Base seconds between golden spawn attempts (a window, not a fixed beat). */
+export const GOLDEN_EVERY_MIN_S = 180;
+export const GOLDEN_EVERY_MAX_S = 300;
+/** How long a golden stays on screen before it drifts off. */
+export const GOLDEN_ON_SCREEN_MS = 9_000;
+
+/**
+ * Draw a variant. `r` is a uniform 0–1 sample; `luck` (≥1) tilts the draw
+ * toward the rarer tiers — each tier's weight is scaled by `luck^tier`.
+ */
+export function pickGolden(r: number, luck = 1): GoldenVariant {
+  const weights = GOLDENS.map((g) => g.weight * Math.pow(luck, g.tier));
+  const total = weights.reduce((s, w) => s + w, 0);
+  let acc = 0;
+  const target = Math.min(Math.max(r, 0), 0.999999) * total;
+  for (let i = 0; i < GOLDENS.length; i++) {
+    acc += weights[i];
+    if (target < acc) return GOLDENS[i];
+  }
+  return GOLDENS[GOLDENS.length - 1];
+}
+
+// ── Active buff ──────────────────────────────────────────────────────────────
+/** A live boost. Neutral values are 1 (multipliers) and 0 (share). */
+export interface Buff {
+  key: string;
+  name: string;
+  /** Epoch ms at which the buff stops applying. */
+  until: number;
+  all: number;
+  click: number;
+  work: number;
+  share: number;
+}
+
+export const NO_BUFF: Buff = { key: "", name: "", until: 0, all: 1, click: 1, work: 1, share: 0 };
+
+/** The buff as it applies right now — neutral once it has expired. */
+export function liveBuff(b: Buff, now: number): Buff {
+  return now < b.until ? b : NO_BUFF;
+}
+
+/**
+ * Resolve a golden variant into a buff, with the Arnór upgrades applied.
+ * `power` scales the multipliers, `dur` the duration. A variant with `ms: 0`
+ * grants no buff — the caller pays out `lumpSeconds` instead.
+ */
+export function buffFromGolden(v: GoldenVariant, now: number, power = 1, dur = 1): Buff {
+  const amp = (m: number | undefined) => (m === undefined ? 1 : 1 + (m - 1) * power);
+  return {
+    key: v.key,
+    name: v.name,
+    until: now + v.ms * dur,
+    all: amp(v.all),
+    click: amp(v.click),
+    work: amp(v.work),
+    share: (v.share ?? 0) * power,
+  };
+}
+
+/** Seconds of production a variant instantly pays out (0 if it is a buff). */
+export const lumpSeconds = (v: GoldenVariant, power = 1) => (v.lump ?? 0) * power;
+
+// ── Samfella (Aron's combo) ──────────────────────────────────────────────────
+/** Base combo tuning; the Aron upgrades scale each of these. */
+export const COMBO_BASE = { window: 1_400, cap: 20, step: 0.1 };
+
+export interface ComboParams {
+  /** Max ms between clicks before the combo drops. */
+  window: number;
+  /** Highest combo reachable. */
+  cap: number;
+  /** Click-power bonus per combo step. */
+  step: number;
+}
+
+/** Click power multiplier from the current combo. */
+export const comboMult = (combo: number, step: number) => 1 + combo * step;
+
 export interface Upgrade {
   key: string;
   name: string;
   desc: string;
   cost: number;
+  icon: IconKey;
   /** Multiply click power. */
   click?: number;
-  /** Multiply all worker output. */
+  /** Multiply every worker's output. */
   work?: number;
+  /** Multiply one worker's output — the worker's `key`. */
+  boosts?: string;
+  /** Multiplier applied to `boosts`. */
+  by?: number;
+  /** Each click also earns this fraction of the current fundarstig/sek. */
+  share?: number;
+  /** Gullnir Arnórar: duration, power, spawn frequency, rarity odds. */
+  goldenDur?: number;
+  goldenPower?: number;
+  /** Multiplies the spawn interval — below 1 means goldens come more often. */
+  goldenRate?: number;
+  goldenLuck?: number;
+  /** Samfella: how forgiving, how high, how steep. */
+  comboWindow?: number;
+  comboCap?: number;
+  comboStep?: number;
+  /** What has to be true before the card appears in the shop. */
+  req?: UpgradeReq;
 }
 
-export const UPGRADES: Upgrade[] = [
+export interface UpgradeReq {
+  /** Requires this many of `worker` owned. */
+  worker?: string;
+  owned?: number;
+  /** Requires this much lifetime fundarstig in the current run. */
+  lifetime?: number;
+  /** Requires this many completed þing (prestiges). */
+  things?: number;
+  /** Requires this fundarstjóri to be the one chairing right now. */
+  chair?: string;
+}
+
+// Two tiers per worker, unlocked at 10 and 50 owned, each doubling that
+// worker's output. Names are grounded in how a Skátaþing actually runs —
+// kjörbréf, nefndarálit, fundarsköp, the fastaráð and their year's work.
+const WORKER_UPGRADE_TIERS: Record<string, [string, string][]> = {
+  thingfulltrui: [
+    ["Kjörbréfin yfirfarin", "Kjörnefnd staðfestir umboðin og allir fá að greiða atkvæði."],
+    ["Rúta norður á Akureyri", "Sameiginleg ferð á þingið — enginn mætir of seint."],
+  ],
+  kosning: [
+    ["Rafræn atkvæðagreiðsla", "Enginn þarf lengur að telja seðla í höndunum."],
+    ["Handauppréttingar æfðar", "Salurinn kann handbragðið orðið utanbókar."],
+  ],
+  kaffipasa: [
+    ["Kleinur með kaffinu", "Þingheimur mætir hressari úr hléinu."],
+    ["Endalaus kanna", "Kaffið klárast aldrei, sama hvað líður á daginn."],
+  ],
+  umraeduhopar: [
+    ["Flettitafla og tússpennar", "Hugmyndirnar rata loksins á blað."],
+    ["Hópstjóri í hverjum hóp", "Umræðan heldur sér við dagskrárliðinn."],
+  ],
+  lagabreytingartillaga: [
+    ["Tillögur sendar tímanlega", "Skilafresturinn virtur — 20. febrúar kl. 20:30."],
+    ["Tveir þriðju á hreinu", "Aukinn meirihluti tryggður fyrir lagabreytingunni."],
+  ],
+  rifrildi: [
+    ["Ræðutími styttur í tvær mínútur", "Fundarstjóri heldur salnum á tánum."],
+    ["Bjallan á borði fundarstjóra", "Eitt högg og pontan þagnar."],
+  ],
+  ritari: [
+    ["Fundargerð í rauntíma", "Ekkert glatast á milli dagskrárliða."],
+    ["Tveir ritarar á vakt", "Annar skrifar á meðan hinn hvílir fingurna."],
+  ],
+  kjornefnd: [
+    ["Kjörseðlar taldir tvisvar", "Enginn vafi um niðurstöðuna."],
+    ["Kjörgögn frá öllum félögunum", "Fimmtán skátafélög, öll með sín umboð í lagi."],
+  ],
+  fjarmal: [
+    ["Ársreikningar samþykktir", "Skoðunarmaður reikninga gaf grænt ljós."],
+    ["Gjaldkeri með glærur", "Súluritin gera töluna loksins skiljanlega."],
+  ],
+  arsskyrsla: [
+    ["Myndir í ársskýrslunni", "Enginn sofnar undir myndasýningunni."],
+    ["Skátahöfðingi flytur skýrsluna", "Flutningurinn heldur salnum vakandi."],
+  ],
+  allsherjar: [
+    ["Nefndarálit sent út fyrirfram", "Þingheimur mætir lesinn í málið."],
+    ["Afgreiðslunefnd að störfum", "Málin ganga hraðar gegnum þingið."],
+  ],
+  uppstillingarnefnd: [
+    ["Fimm manna nefnd fullskipuð", "Uppstillingarnefndin er komin með fulla áhöfn."],
+    ["Frambjóðendur kynna sig", "Öll embætti fá loksins mótframboð."],
+  ],
+  taeknilegir: [
+    ["Varaskjávarpi í salnum", "Þegar sá fyrri gefst upp tekur hinn við."],
+    ["Tæknimaður á staðnum", "Snúran finnst áður en nokkur tekur eftir."],
+  ],
+  onnurmal: [
+    ["Fundarhlé tekið", "Fimm mínútur og allir koma endurnærðir."],
+    ["Dagskrárliður framlengdur", "Það kemst allt að, líka önnur mál."],
+  ],
+  utilifsrad: [
+    ["Útilegan á Úlfljótsvatni", "Ráðið sannar að útilífið byrjar heima."],
+    ["Prímusar og bakpokar yfirfarnir", "Búnaðurinn klár fyrir næsta útilegusumar."],
+  ],
+  ungmennarad: [
+    ["Ungmennaþing haldið", "Rödd 25 ára og yngri kemst á dagskrá."],
+    ["Fulltrúar á þátttökualdri", "Tuttugu og sjö ungir fulltrúar með atkvæðisrétt."],
+  ],
+  althjodarad: [
+    ["Jamboree-hópur skráður", "Íslenskir skátar á leið út í heim."],
+    ["Fulltrúar á heimsþingi WOSM", "Ísland fær sæti við borðið."],
+  ],
+  starfsrad: [
+    ["Dagskrárvefurinn 2.0", "Slóði kemur dagskránni til allra foringja."],
+    ["Starfsáætlun 2026–2030", "Fimm ára stefna samþykkt á þinginu."],
+  ],
+  skataskolinn: [
+    ["Gilwell-námskeið haldið", "Foringjar snúa aftur með viðarbútana."],
+    ["Foringjaþjálfun um land allt", "Námskeið í hverjum landsfjórðungi."],
+  ],
+  skataandinn: [
+    ["Skátaheitið endurtekið", "Salurinn stendur upp og fer með heitið."],
+    ["Ávallt viðbúin", "Kjörorðið á sínum stað — hvað sem dagskráin býður."],
+  ],
+};
+
+/** Owned counts at which each worker's two upgrades unlock. */
+export const WORKER_TIER_AT = [10, 50];
+/** Cost of each tier, as a multiple of the worker's base cost. */
+const WORKER_TIER_COST = [10, 500];
+/** Output multiplier granted by each tier. */
+const WORKER_TIER_MULT = [2, 2];
+
+const workerUpgrades = (): Upgrade[] =>
+  WORKERS.flatMap((w) =>
+    (WORKER_UPGRADE_TIERS[w.key] ?? []).map(([name, desc], t) => ({
+      key: `${w.key}-${t + 1}`,
+      name,
+      desc,
+      cost: Math.ceil(w.baseCost * WORKER_TIER_COST[t]),
+      icon: w.icon,
+      boosts: w.key,
+      by: WORKER_TIER_MULT[t],
+      req: { worker: w.key, owned: WORKER_TIER_AT[t] },
+    }))
+  );
+
+// Global upgrades: click power, whole-þing output, click/production share, and
+// the two fundarstjóri ability trees. Ordering here is cosmetic — the shop
+// sorts by cost and hides anything whose `req` is not met yet.
+const GLOBAL_UPGRADES: Upgrade[] = [
+  // — smellikraftur —
   {
     key: "ristabraud",
     name: "Ristabrauð handa Arnóri",
-    desc: "Tvöfaldar smellikraft Arnórs.",
+    desc: "Fundarstjóri á fastandi maga afgreiðir ekkert.",
     cost: 500,
+    icon: "coffee",
     click: 2,
   },
   {
     key: "fundarhamar",
     name: "Nýr fundarhamar",
-    desc: "Þrefaldar smellikraft.",
+    desc: "Sá gamli brotnaði í miðri atkvæðagreiðslu.",
     cost: 25_000,
+    icon: "hand",
     click: 3,
   },
   {
+    key: "mikrofonn",
+    name: "Míkrófónn sem virkar",
+    desc: "Aftasta röðin heyrir loksins hvað er verið að samþykkja.",
+    cost: 400_000,
+    icon: "mega",
+    click: 2,
+    req: { lifetime: 250_000 },
+  },
+  {
+    key: "vatnsglas",
+    name: "Vatnsglas í pontu",
+    desc: "Röddin heldur út allan dagskrárliðinn.",
+    cost: 9_000_000,
+    icon: "hand",
+    click: 2,
+    req: { lifetime: 5_000_000 },
+  },
+  {
+    key: "fundarstjorastoll",
+    name: "Fundarstjórastóllinn",
+    desc: "Hár bakstuðningur, gott útsýni yfir salinn.",
+    cost: 200_000_000,
+    icon: "user",
+    click: 2,
+    req: { lifetime: 120_000_000 },
+  },
+  {
+    key: "hamarshogg",
+    name: "Hamarshögg sem heyrist",
+    desc: "Eitt högg og málið er afgreitt.",
+    cost: 6_000_000_000,
+    icon: "hand",
+    click: 3,
+    req: { things: 1 },
+  },
+  // — smellir sækja í framleiðsluna —
+  {
+    key: "lesasalinn",
+    name: "Arnór les salinn",
+    desc: "Hver smellur sækir brot af því sem þingið framleiðir.",
+    cost: 5_000_000,
+    icon: "users",
+    share: 0.01,
+    req: { lifetime: 3_000_000 },
+  },
+  {
+    key: "klappa",
+    name: "Þingheimur klappar með",
+    desc: "Salurinn tekur undir í hvert sinn sem þú smellir.",
+    cost: 20_000_000_000,
+    icon: "hand",
+    share: 0.05,
+    req: { lifetime: 1e10 },
+  },
+  {
+    key: "standandi",
+    name: "Salurinn stendur upp",
+    desc: "Standandi lófatak við hvern einasta smell.",
+    cost: 5e14,
+    icon: "users",
+    share: 0.15,
+    req: { things: 2 },
+  },
+  // — öll fundarsköp —
+  {
     key: "kaffi",
     name: "Kaffi á könnunni",
-    desc: "+50% á öll fundarsköp.",
+    desc: "Grunnforsenda þess að nokkuð gerist á skátaþingi.",
     cost: 60_000,
+    icon: "coffee",
     work: 1.5,
   },
+  {
+    key: "dagskrain",
+    name: "Dagskráin send út tímanlega",
+    desc: "Stjórnin skilar gögnum fyrir 6. mars kl. 20:30, eins og lögin segja.",
+    cost: 300_000,
+    icon: "file",
+    work: 1.4,
+    req: { lifetime: 200_000 },
+  },
+  {
+    key: "akureyri",
+    name: "Skátaþing á Akureyri",
+    desc: "Þingið haldið fyrir norðan — ný orka í salinn.",
+    cost: 5_000_000,
+    icon: "flag",
+    work: 1.5,
+    req: { lifetime: 3_000_000 },
+  },
+  {
+    key: "skraning",
+    name: "Skráning á skraning.skatarnir.is",
+    desc: "Allir skráðir fyrir lokafrestinn, enginn í biðröð við dyrnar.",
+    cost: 40_000_000,
+    icon: "clipboard",
+    work: 1.5,
+    req: { lifetime: 25_000_000 },
+  },
+  {
+    key: "streymi",
+    name: "Streymt frá þingsalnum",
+    desc: "Þeir sem komust ekki norður fylgjast með heiman frá sér.",
+    cost: 900_000_000,
+    icon: "globe",
+    work: 1.6,
+    req: { lifetime: 500_000_000 },
+  },
+  {
+    key: "frestad",
+    name: "Þinginu frestað til 10.–12. apríl",
+    desc: "Þremur vikum meira til að undirbúa sig. Allir mæta betur lesnir.",
+    cost: 2e10,
+    icon: "scroll",
+    work: 1.8,
+    req: { lifetime: 1e10 },
+  },
+  {
+    key: "thingforseti",
+    name: "Þingforseti með fulla stjórn",
+    desc: "Dagskráin heldur, þrátt fyrir allt.",
+    cost: 8e11,
+    icon: "userCheck",
+    work: 2,
+    req: { things: 1 },
+  },
+  {
+    key: "fulltruar53",
+    name: "Allir 53 fulltrúarnir mættir",
+    desc: "Fimmtán skátafélög, fullskipuð umboð, ekkert autt sæti.",
+    cost: 4e13,
+    icon: "users",
+    work: 2,
+    req: { lifetime: 2e13 },
+  },
+  {
+    key: "thingsett",
+    name: "Skátaþing 2026 sett",
+    desc: "Fánar dregnir að húni og þingið formlega sett.",
+    cost: 1e16,
+    icon: "flag",
+    work: 2.5,
+    req: { things: 2 },
+  },
+  // — Arnór: gullnir Arnórar —
+  {
+    key: "gljafagdur",
+    name: "Gljáfægður fundarhamar",
+    desc: "Glampinn kallar gullna Arnóra fram mun oftar.",
+    cost: 2_000_000,
+    icon: "sparkles",
+    goldenRate: 0.6,
+    req: { chair: "arnor", lifetime: 1_000_000 },
+  },
+  {
+    key: "lengrihiti",
+    name: "Lengri fundarhiti",
+    desc: "Uppörvanir gullnu Arnóranna endast helmingi lengur.",
+    cost: 20_000_000,
+    icon: "coffee",
+    goldenDur: 1.5,
+    req: { chair: "arnor", lifetime: 12_000_000 },
+  },
+  {
+    key: "sterkarihiti",
+    name: "Sterkari fundarhiti",
+    desc: "Hver uppörvun bítur fastar á þingsalnum.",
+    cost: 300_000_000,
+    icon: "mega",
+    goldenPower: 1.4,
+    req: { chair: "arnor", lifetime: 180_000_000 },
+  },
+  {
+    key: "heppnir",
+    name: "Heppnir Arnórar",
+    desc: "Sjaldgæfustu Arnórarnir — og sjálfur Skátaandinn — verða miklu líklegri.",
+    cost: 5e9,
+    icon: "sparkles",
+    goldenLuck: 1.8,
+    req: { chair: "arnor", lifetime: 3e9 },
+  },
+  {
+    key: "arnoralls",
+    name: "Arnór alls staðar",
+    desc: "Það er varla þverfótað fyrir gullnum Arnórum.",
+    cost: 1e12,
+    icon: "users",
+    goldenRate: 0.6,
+    req: { chair: "arnor", things: 1 },
+  },
+  {
+    key: "salurlogar",
+    name: "Þingsalurinn logar",
+    desc: "Fundarhitinn er kominn út fyrir öll velsæmismörk.",
+    cost: 8e14,
+    icon: "alert",
+    goldenPower: 1.6,
+    req: { chair: "arnor", things: 2 },
+  },
+  // — Aron: samfella —
+  {
+    key: "taktur",
+    name: "Taktur í salnum",
+    desc: "Samfellan þolir lengra hlé á milli smella.",
+    cost: 2_000_000,
+    icon: "hand",
+    comboWindow: 1.8,
+    req: { chair: "aron", lifetime: 1_000_000 },
+  },
+  {
+    key: "haerrathak",
+    name: "Hærra þak",
+    desc: "Samfellan nær tvisvar og hálfum sinnum hærra.",
+    cost: 20_000_000,
+    icon: "list",
+    comboCap: 2.5,
+    req: { chair: "aron", lifetime: 12_000_000 },
+  },
+  {
+    key: "snarpari",
+    name: "Snarpari samfella",
+    desc: "Hvert stig í samfellunni telur tvöfalt.",
+    cost: 300_000_000,
+    icon: "mega",
+    comboStep: 2,
+    req: { chair: "aron", lifetime: 180_000_000 },
+  },
+  {
+    key: "aroniham",
+    name: "Aron í ham",
+    desc: "Þakinu lyft aftur — samfellan á sér varla takmörk.",
+    cost: 5e9,
+    icon: "sparkles",
+    comboCap: 2,
+    req: { chair: "aron", lifetime: 3e9 },
+  },
+  {
+    key: "oslitin",
+    name: "Óslitin röð",
+    desc: "Samfellan lifir af heilt fundarhlé.",
+    cost: 1e12,
+    icon: "clipboard",
+    comboWindow: 1.6,
+    req: { chair: "aron", things: 1 },
+  },
+  {
+    key: "fullkomin",
+    name: "Fullkomin samfella",
+    desc: "Hvert einasta stig telur tvöfalt á við það sem áður var.",
+    cost: 8e14,
+    icon: "sparkles",
+    comboStep: 2,
+    req: { chair: "aron", things: 2 },
+  },
 ];
+
+export const UPGRADES: Upgrade[] = [...GLOBAL_UPGRADES, ...workerUpgrades()];
+
+/** Worker upgrades indexed by the worker they boost, so lookups stay O(1). */
+const BOOSTS_BY_WORKER = UPGRADES.reduce<Record<string, Upgrade[]>>((m, u) => {
+  if (u.boosts) (m[u.boosts] ??= []).push(u);
+  return m;
+}, {});
+
+const WORKER_INDEX: Record<string, number> = WORKERS.reduce<Record<string, number>>((m, w, i) => {
+  m[w.key] = i;
+  return m;
+}, {});
+
+/** Everything the shop needs to decide whether an upgrade is on offer yet. */
+export interface UnlockCtx {
+  counts: number[];
+  /** Lifetime fundarstig produced in the current run. */
+  lifetime: number;
+  /** Completed þing (prestiges). */
+  things: number;
+  /** The fundarstjóri currently chairing. */
+  chair: string;
+}
+
+/** Is this upgrade visible in the shop yet? Owned-ness is checked separately. */
+export function upgradeUnlocked(u: Upgrade, ctx: UnlockCtx): boolean {
+  const r = u.req;
+  if (!r) return true;
+  if (r.chair && r.chair !== ctx.chair) return false;
+  if (r.things !== undefined && ctx.things < r.things) return false;
+  if (r.lifetime !== undefined && ctx.lifetime < r.lifetime) return false;
+  if (r.worker !== undefined) {
+    const i = WORKER_INDEX[r.worker];
+    if (i === undefined || (ctx.counts[i] ?? 0) < (r.owned ?? 1)) return false;
+  }
+  return true;
+}
 
 // ── Economy ────────────────────────────────────────────────────────────────
 /** Closed-form cost of buying `qty` more of a worker currently owned `owned`. */
@@ -297,20 +959,225 @@ export function thingstigFor(lifetime: number): number {
 /** Each Þingstig gives +0.5% to everything (compounds across prestiges). */
 export const PRESTIGE_MULT_PER_POINT = 0.005;
 
+// ── Save state ───────────────────────────────────────────────────────────────
+// The save lives in localStorage, which the player fully controls — none of
+// what follows is security, and it can't be. Anyone willing to open devtools
+// can set any value they like, and the only real defence is server-side (the
+// backend caps a submitted score at 1..999,999, only ever raises it, and rate
+// limits per user). What this layer buys is that a *tampered or corrupt* save
+// can't put the game into a nonsensical state — NaN scores, negative counts,
+// upgrade keys that no longer exist — and that clock-based offline farming
+// costs more than changing a system setting.
+
+export interface SaveState {
+  v: 1;
+  score: number;
+  /** Lifetime fundarstig produced in the current run. */
+  run: number;
+  counts: number[];
+  ups: string[];
+  tsCur: number;
+  tsTot: number;
+  things: number;
+  /** When the save was written, on the server's clock where one was known. */
+  at: number;
+  chairs: string[];
+  chair: string;
+  /** Tamper-evidence over the fields above. See `signSave`. */
+  sig?: string;
+}
+
+/** Owning more of one worker than this is not reachable by playing. */
+const MAX_COUNT = 100_000;
+/** Þingstig far beyond the 999,999 leaderboard cap — a generous ceiling. */
+const MAX_THINGSTIG = 1e9;
+const MAX_THINGS = 1e6;
+
+const clampInt = (v: unknown, max: number): number => {
+  const n = typeof v === "number" && Number.isFinite(v) ? Math.floor(v) : 0;
+  return Math.min(Math.max(n, 0), max);
+};
+const clampNum = (v: unknown): number =>
+  typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0;
+
+const UPGRADE_KEYS = new Set(UPGRADES.map((u) => u.key));
+const CHAIR_KEYS = new Set(CHAIRS.map((c) => c.key));
+
+/**
+ * Deterministic 32-bit FNV-1a over the save's meaningful fields.
+ *
+ * This is tamper *evidence*, not protection: the algorithm ships in the client
+ * bundle, so anyone who reads it can forge a signature. It exists so that the
+ * common case — editing the JSON by hand in devtools — is detectable, and the
+ * game can decline to hand out offline earnings on a save it can't vouch for.
+ */
+export function signSave(s: SaveState): string {
+  const canon = [
+    s.v,
+    Math.floor(s.score),
+    Math.floor(s.run),
+    s.counts.join(","),
+    [...s.ups].sort().join(","),
+    s.tsCur,
+    s.tsTot,
+    s.things,
+    s.at,
+    [...s.chairs].sort().join(","),
+    s.chair,
+  ].join("|");
+  let h = 0x811c9dc5;
+  for (let i = 0; i < canon.length; i++) {
+    h ^= canon.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+}
+
+export interface LoadedSave {
+  save: SaveState;
+  /** False when the signature is absent or doesn't match the contents. */
+  trusted: boolean;
+}
+
+/**
+ * Parse and sanitise a raw save. Every field is coerced into its legal range
+ * and unknown upgrade/chair keys are dropped, so a hand-edited save yields a
+ * playable state rather than a broken one. Returns null when there is nothing
+ * usable to load at all.
+ */
+export function loadSave(raw: string | null): LoadedSave | null {
+  if (!raw) return null;
+  let parsed: Partial<SaveState> & { v?: number };
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null; // corrupt JSON — start fresh
+  }
+  if (!parsed || typeof parsed !== "object" || parsed.v !== 1) return null;
+
+  const counts = WORKERS.map((_, i) =>
+    clampInt(Array.isArray(parsed.counts) ? parsed.counts[i] : 0, MAX_COUNT)
+  );
+  const ups = Array.isArray(parsed.ups)
+    ? [
+        ...new Set(
+          parsed.ups.filter((k): k is string => typeof k === "string" && UPGRADE_KEYS.has(k))
+        ),
+      ]
+    : [];
+  // The starting fundarstjóri is always owned; anything unrecognised is dropped.
+  const chairs = [
+    ...new Set([
+      DEFAULT_CHAIR,
+      ...(Array.isArray(parsed.chairs)
+        ? parsed.chairs.filter((k): k is string => typeof k === "string" && CHAIR_KEYS.has(k))
+        : []),
+    ]),
+  ];
+  const chair =
+    typeof parsed.chair === "string" && chairs.includes(parsed.chair)
+      ? parsed.chair
+      : DEFAULT_CHAIR;
+
+  const tsTot = clampInt(parsed.tsTot, MAX_THINGSTIG);
+  const score = clampNum(parsed.score);
+  const save: SaveState = {
+    v: 1,
+    score,
+    // Lifetime can never be behind the bank it produced.
+    run: Math.max(clampNum(parsed.run), score),
+    counts,
+    ups,
+    // Unspent Þingstig cannot exceed what was ever earned.
+    tsCur: Math.min(clampInt(parsed.tsCur, MAX_THINGSTIG), tsTot),
+    tsTot,
+    things: clampInt(parsed.things, MAX_THINGS),
+    at: typeof parsed.at === "number" && Number.isFinite(parsed.at) ? parsed.at : 0,
+    chairs,
+    chair,
+  };
+  return { save, trusted: typeof parsed.sig === "string" && parsed.sig === signSave(save) };
+}
+
+// ── Offline earnings ─────────────────────────────────────────────────────────
+/** Longest stretch away that still pays out. */
+export const OFFLINE_CAP_S = 8 * 3600;
+/** Away time earns at this fraction of the live rate. */
+export const OFFLINE_RATE = 0.5;
+
+/**
+ * Seconds of away-time to pay for, given when the save was written and the
+ * most trustworthy "now" available.
+ *
+ * `now` should come from the server where possible — reading it from the
+ * device clock is exactly what lets someone wind their calendar forward and
+ * collect a full offline payout on demand. A save timestamped in the future
+ * (clock wound back, or edited) earns nothing.
+ */
+export function offlineSeconds(savedAt: number, now: number): number {
+  if (!Number.isFinite(savedAt) || !Number.isFinite(now)) return 0;
+  const away = (now - savedAt) / 1000;
+  if (away <= 0) return 0;
+  return Math.min(away, OFFLINE_CAP_S);
+}
+
 // ── Live multipliers (pure) ──────────────────────────────────────────────────
+/** Product of the owned upgrades' values for one numeric field (×1 if none). */
+const productOf = (ups: Set<string>, field: keyof Upgrade) =>
+  UPGRADES.reduce((m, u) => {
+    const v = u[field];
+    return typeof v === "number" && ups.has(u.key) ? m * v : m;
+  }, 1);
+
 /** Product of all owned work-multiplier upgrades (×1 if none). */
-export const workMult = (ups: Set<string>) =>
-  UPGRADES.reduce((m, u) => (u.work && ups.has(u.key) ? m * u.work : m), 1);
+export const workMult = (ups: Set<string>) => productOf(ups, "work");
 /** Product of all owned click-multiplier upgrades (×1 if none). */
-export const clickMult = (ups: Set<string>) =>
-  UPGRADES.reduce((m, u) => (u.click && ups.has(u.key) ? m * u.click : m), 1);
+export const clickMult = (ups: Set<string>) => productOf(ups, "click");
+/** Product of the owned upgrades boosting one specific worker (×1 if none). */
+export const workerMult = (workerKey: string, ups: Set<string>) =>
+  (BOOSTS_BY_WORKER[workerKey] ?? []).reduce((m, u) => (ups.has(u.key) ? m * (u.by ?? 1) : m), 1);
+/** Fraction of the current rate each click also earns, from owned upgrades. */
+export const clickShare = (ups: Set<string>) =>
+  UPGRADES.reduce((s, u) => (u.share && ups.has(u.key) ? s + u.share : s), 0);
 /** Permanent prestige multiplier from current Þingstig. */
 export const prestigeMult = (tsCur: number) => 1 + PRESTIGE_MULT_PER_POINT * tsCur;
 /** Passive fundarstig/sec from owned workers, with upgrade + prestige multipliers. */
 export const baseRateOf = (counts: number[], ups: Set<string>, tsCur: number) =>
-  WORKERS.reduce((s, w, i) => s + w.out * (counts[i] ?? 0), 0) *
+  WORKERS.reduce((s, w, i) => s + w.out * (counts[i] ?? 0) * workerMult(w.key, ups), 0) *
   workMult(ups) *
   prestigeMult(tsCur);
+
+/**
+ * Fundarstig from one click. `rate` is the live passive rate, which the
+ * "share" upgrades (and the Hraðafgreiðsla golden) skim a fraction of.
+ */
+export function clickPower(
+  ups: Set<string>,
+  tsCur: number,
+  rate: number,
+  buff: Buff,
+  combo = 0,
+  step = COMBO_BASE.step
+): number {
+  const tap = clickMult(ups) * prestigeMult(tsCur) * comboMult(combo, step);
+  return tap * buff.all * buff.click + rate * (clickShare(ups) + buff.share);
+}
+
+// ── Fundarstjóri ability tuning (pure) ───────────────────────────────────────
+/** Gullnir Arnórar: duration ×, power ×, spawn-interval ×, rarity luck. */
+export const goldenTuning = (ups: Set<string>) => ({
+  dur: productOf(ups, "goldenDur"),
+  power: productOf(ups, "goldenPower"),
+  rate: productOf(ups, "goldenRate"),
+  luck: productOf(ups, "goldenLuck"),
+});
+
+/** Samfella tuning after the owned Aron upgrades. */
+export const comboParams = (ups: Set<string>): ComboParams => ({
+  window: COMBO_BASE.window * productOf(ups, "comboWindow"),
+  cap: Math.round(COMBO_BASE.cap * productOf(ups, "comboCap")),
+  step: COMBO_BASE.step * productOf(ups, "comboStep"),
+});
 
 // ── Orbit odometer ───────────────────────────────────────────────────────────
 // Base-5 place-value ring ladder: five orbitals on a ring combine into one on
@@ -398,6 +1265,36 @@ export function scoreParts(v: number): ScoreParts {
       };
   }
   return { num: isNum(Math.floor(v), 0), suf: "", name: "fundarstig", pow: "" };
+}
+
+// ── Upgrade effect labels ────────────────────────────────────────────────────
+/** "×3" for whole multipliers, "+40%" for the fractional ones. */
+function multLabel(m: number): string {
+  return Number.isInteger(m) ? `×${m}` : `+${isNum(Math.round((m - 1) * 100), 0)}%`;
+}
+
+/**
+ * One-line summary of what an upgrade actually does, rendered under its name.
+ * Derived from the data so a new upgrade never needs a hand-written label.
+ */
+export function upgradeEffect(u: Upgrade): string {
+  const bits: string[] = [];
+  if (u.boosts) {
+    const w = WORKERS.find((x) => x.key === u.boosts);
+    bits.push(`${multLabel(u.by ?? 1)} ${w ? w.name : u.boosts}`);
+  }
+  if (u.work) bits.push(`${multLabel(u.work)} öll fundarsköp`);
+  if (u.click) bits.push(`${multLabel(u.click)} smellikraftur`);
+  if (u.share) bits.push(`+${isNum(u.share * 100)}% af framleiðslu á smell`);
+  if (u.goldenDur) bits.push(`Uppörvanir ${multLabel(u.goldenDur)} lengri`);
+  if (u.goldenPower) bits.push(`Uppörvanir ${multLabel(u.goldenPower)} sterkari`);
+  if (u.goldenRate)
+    bits.push(`Gullnir Arnórar +${isNum(Math.round(100 / u.goldenRate - 100), 0)}% oftar`);
+  if (u.goldenLuck) bits.push(`Sjaldgæfir Arnórar ${multLabel(u.goldenLuck)} líklegri`);
+  if (u.comboWindow) bits.push(`Samfellugluggi ${multLabel(u.comboWindow)}`);
+  if (u.comboCap) bits.push(`Samfelluþak ${multLabel(u.comboCap)}`);
+  if (u.comboStep) bits.push(`Samfelluþrep ${multLabel(u.comboStep)}`);
+  return bits.join(" · ");
 }
 
 /** Compact one-line format, e.g. "1,24 m." — for rates, costs, worker output. */
