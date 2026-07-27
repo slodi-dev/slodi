@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 type Theme = "light" | "dark" | "forest-night" | "campfire" | "northern-lights";
 type PatrolColor = "drekar" | "falkar" | "drott" | "rekkar" | "rover" | "adrir";
@@ -40,8 +41,8 @@ export default function ThemeProvider({
 
   // Load saved theme on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem(storageKey) as Theme;
-    const savedPatrol = localStorage.getItem("slodi-patrol") as PatrolColor;
+    const savedTheme = safeLocalStorage.getItem(storageKey) as Theme;
+    const savedPatrol = safeLocalStorage.getItem("slodi-patrol") as PatrolColor;
 
     if (savedTheme) {
       setThemeState(savedTheme);
@@ -76,7 +77,7 @@ export default function ThemeProvider({
     }
 
     // Save to localStorage
-    localStorage.setItem(storageKey, theme);
+    safeLocalStorage.setItem(storageKey, theme);
   }, [theme, mounted, storageKey]);
 
   // Apply patrol color as primary accent
@@ -101,7 +102,7 @@ export default function ThemeProvider({
         `var(--sl-color-patrol-${patrolColor}-muted)`
       );
 
-      localStorage.setItem("slodi-patrol", patrolColor);
+      safeLocalStorage.setItem("slodi-patrol", patrolColor);
     } else {
       // Reset to default primary (moss green)
       root.style.removeProperty("--sl-color-primary");
@@ -109,7 +110,7 @@ export default function ThemeProvider({
       root.style.removeProperty("--sl-color-primary-subtle");
       root.style.removeProperty("--sl-color-primary-muted");
 
-      localStorage.removeItem("slodi-patrol");
+      safeLocalStorage.removeItem("slodi-patrol");
     }
   }, [patrolColor, mounted]);
 
