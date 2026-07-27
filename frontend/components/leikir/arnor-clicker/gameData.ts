@@ -231,6 +231,17 @@ export const WORKERS: Worker[] = [
   },
 ];
 
+// ── Economy ────────────────────────────────────────────────────────────────
+// Declared before UPGRADES on purpose: the worker-upgrade prices are derived
+// from costOf while the module initialises. It survives as a hoisted function
+// declaration today, but moving it below — or rewriting it as a const arrow —
+// would break module init with a temporal-dead-zone error.
+/** Closed-form cost of buying `qty` more of a worker currently owned `owned`. */
+export function costOf(w: Worker, owned: number, qty: number): number {
+  const g = w.growth;
+  return Math.ceil((w.baseCost * Math.pow(g, owned) * (Math.pow(g, qty) - 1)) / (g - 1));
+}
+
 // ── Fundarstjórar ────────────────────────────────────────────────────────────
 // The player picks who chairs the þing. Each chair brings one ability, bought
 // once with Þingstig and kept forever (switching between owned chairs is free).
@@ -455,8 +466,22 @@ export function buffFromGolden(v: GoldenVariant, now: number, power = 1, dur = 1
 export const lumpSeconds = (v: GoldenVariant, power = 1) => (v.lump ?? 0) * power;
 
 // ── Samfella (Aron's combo) ──────────────────────────────────────────────────
-/** Base combo tuning; the Aron upgrades scale each of these. */
-export const COMBO_BASE = { window: 1_400, cap: 20, step: 0.1 };
+// Tuned against Arnór, who is the yardstick: his goldens are worth roughly
+// +50% of passive production at base and around +490% fully upgraded, paid out
+// in bursts you have to be present to catch.
+//
+// Aron has to land in the same band by a different route — sustained clicking
+// rather than caught bursts — so the combo tops out near ×2 at base and ×4
+// fully upgraded. It used to reach ×41, which was both far past Arnór and
+// beside the point, because the multiplier only touched the flat tap and so
+// counted for nothing once passive production ran away. It now multiplies the
+// whole click, including the share-of-rate the "share" upgrades grant, which
+// is what keeps it meaningful at every stage.
+//
+// Cookie Clicker's mid-game benchmark — a click worth ~10–13% of CpS — is the
+// sanity check: at ~6 clicks/sec with the full share stack, Aron lands close to
+// Arnór's fully-upgraded uplift rather than dwarfing it.
+export const COMBO_BASE = { window: 1_400, cap: 20, step: 0.05 };
 
 export interface ComboParams {
   /** Max ms between clicks before the combo drops. */
@@ -504,6 +529,15 @@ export interface UpgradeReq {
   /** Requires this many of `worker` owned. */
   worker?: string;
   owned?: number;
+  /**
+   * Requires this many fundarsköp owned in total, of any kind.
+   *
+   * Anything that multiplies worker output — the global `work` upgrades and
+   * the `share` ones that skim a fraction of the rate — is worthless without
+   * workers to multiply. Gating on a real workforce keeps them off the shelf
+   * until they can actually do something.
+   */
+  totalWorkers?: number;
   /** Requires this much lifetime fundarstig in the current run. */
   lifetime?: number;
   /** Requires this many completed þing (prestiges). */
@@ -600,8 +634,14 @@ const WORKER_UPGRADE_TIERS: Record<string, [string, string][]> = {
 
 /** Owned counts at which each worker's two upgrades unlock. */
 export const WORKER_TIER_AT = [10, 50];
-/** Cost of each tier, as a multiple of the worker's base cost. */
-const WORKER_TIER_COST = [10, 500];
+/**
+ * Each tier costs this fraction of what its required workers cost to buy from
+ * scratch. Pricing off the requirement rather than off `baseCost` is what keeps
+ * the ladder consistent: worker growth runs from 1.15 down to 1.07, so a flat
+ * multiple of `baseCost` made the early tiers nearly free (7% of the workers
+ * they needed) while the late ones cost more than the workers themselves.
+ */
+const WORKER_TIER_PRICE = [0.5, 0.5];
 /** Output multiplier granted by each tier. */
 const WORKER_TIER_MULT = [2, 2];
 
@@ -611,7 +651,7 @@ const workerUpgrades = (): Upgrade[] =>
       key: `${w.key}-${t + 1}`,
       name,
       desc,
-      cost: Math.ceil(w.baseCost * WORKER_TIER_COST[t]),
+      cost: Math.ceil(costOf(w, 0, WORKER_TIER_AT[t]) * WORKER_TIER_PRICE[t]),
       icon: w.icon,
       boosts: w.key,
       by: WORKER_TIER_MULT[t],
@@ -684,7 +724,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 5_000_000,
     icon: "users",
     share: 0.01,
-    req: { lifetime: 3_000_000 },
+    req: { totalWorkers: 20, lifetime: 3_000_000 },
   },
   {
     key: "klappa",
@@ -693,7 +733,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 20_000_000_000,
     icon: "hand",
     share: 0.05,
-    req: { lifetime: 1e10 },
+    req: { totalWorkers: 60, lifetime: 1e10 },
   },
   {
     key: "standandi",
@@ -702,7 +742,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 5e14,
     icon: "users",
     share: 0.15,
-    req: { things: 2 },
+    req: { totalWorkers: 120, things: 2 },
   },
   // — öll fundarsköp —
   {
@@ -712,6 +752,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 60_000,
     icon: "coffee",
     work: 1.5,
+    req: { worker: "kaffipasa", owned: 1, totalWorkers: 10 },
   },
   {
     key: "dagskrain",
@@ -720,7 +761,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 300_000,
     icon: "file",
     work: 1.4,
-    req: { lifetime: 200_000 },
+    req: { totalWorkers: 25, lifetime: 200_000 },
   },
   {
     key: "akureyri",
@@ -729,7 +770,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 5_000_000,
     icon: "flag",
     work: 1.5,
-    req: { lifetime: 3_000_000 },
+    req: { totalWorkers: 50, lifetime: 3_000_000 },
   },
   {
     key: "skraning",
@@ -738,7 +779,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 40_000_000,
     icon: "clipboard",
     work: 1.5,
-    req: { lifetime: 25_000_000 },
+    req: { totalWorkers: 75, lifetime: 25_000_000 },
   },
   {
     key: "streymi",
@@ -747,7 +788,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 900_000_000,
     icon: "globe",
     work: 1.6,
-    req: { lifetime: 500_000_000 },
+    req: { totalWorkers: 100, lifetime: 500_000_000 },
   },
   {
     key: "frestad",
@@ -756,7 +797,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 2e10,
     icon: "scroll",
     work: 1.8,
-    req: { lifetime: 1e10 },
+    req: { totalWorkers: 125, lifetime: 1e10 },
   },
   {
     key: "thingforseti",
@@ -765,7 +806,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 8e11,
     icon: "userCheck",
     work: 2,
-    req: { things: 1 },
+    req: { totalWorkers: 150, things: 1 },
   },
   {
     key: "fulltruar53",
@@ -774,7 +815,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 4e13,
     icon: "users",
     work: 2,
-    req: { lifetime: 2e13 },
+    req: { worker: "thingfulltrui", owned: 53, lifetime: 2e13 },
   },
   {
     key: "thingsett",
@@ -783,7 +824,7 @@ const GLOBAL_UPGRADES: Upgrade[] = [
     cost: 1e16,
     icon: "flag",
     work: 2.5,
-    req: { things: 2 },
+    req: { totalWorkers: 200, things: 2 },
   },
   // — Arnór: gullnir Arnórar —
   {
@@ -844,55 +885,55 @@ const GLOBAL_UPGRADES: Upgrade[] = [
   {
     key: "taktur",
     name: "Taktur í salnum",
-    desc: "Samfellan þolir lengra hlé á milli smella.",
+    desc: "Samfellan þolir 40% lengra hlé á milli smella.",
     cost: 2_000_000,
     icon: "hand",
-    comboWindow: 1.8,
+    comboWindow: 1.4,
     req: { chair: "aron", lifetime: 1_000_000 },
   },
   {
     key: "haerrathak",
     name: "Hærra þak",
-    desc: "Samfellan nær tvisvar og hálfum sinnum hærra.",
+    desc: "Samfellan nær helmingi hærra.",
     cost: 20_000_000,
     icon: "list",
-    comboCap: 2.5,
+    comboCap: 1.5,
     req: { chair: "aron", lifetime: 12_000_000 },
   },
   {
     key: "snarpari",
     name: "Snarpari samfella",
-    desc: "Hvert stig í samfellunni telur tvöfalt.",
+    desc: "Hvert stig í samfellunni telur fjórðungi meira.",
     cost: 300_000_000,
     icon: "mega",
-    comboStep: 2,
+    comboStep: 1.25,
     req: { chair: "aron", lifetime: 180_000_000 },
   },
   {
     key: "aroniham",
     name: "Aron í ham",
-    desc: "Þakinu lyft aftur — samfellan á sér varla takmörk.",
+    desc: "Þakinu lyft enn hærra — samfellan nær alla leið upp í 40.",
     cost: 5e9,
     icon: "sparkles",
-    comboCap: 2,
+    comboCap: 1.333,
     req: { chair: "aron", lifetime: 3e9 },
   },
   {
     key: "oslitin",
     name: "Óslitin röð",
-    desc: "Samfellan lifir af heilt fundarhlé.",
+    desc: "Samfellan lifir af lengri þögn í salnum.",
     cost: 1e12,
     icon: "clipboard",
-    comboWindow: 1.6,
+    comboWindow: 1.3,
     req: { chair: "aron", things: 1 },
   },
   {
     key: "fullkomin",
     name: "Fullkomin samfella",
-    desc: "Hvert einasta stig telur tvöfalt á við það sem áður var.",
+    desc: "Síðasta fínstillingin á samfellunni.",
     cost: 8e14,
     icon: "sparkles",
-    comboStep: 2,
+    comboStep: 1.2,
     req: { chair: "aron", things: 2 },
   },
 ];
@@ -919,7 +960,16 @@ export interface UnlockCtx {
   things: number;
   /** The fundarstjóri currently chairing. */
   chair: string;
+  /**
+   * Sum of `counts`, precomputed. The shop checks every upgrade against one
+   * context, so it passes this in rather than have each check re-add the
+   * roster. Derived from `counts` when absent.
+   */
+  totalWorkers?: number;
 }
+
+/** Total fundarsköp owned, of any kind. */
+export const totalWorkers = (counts: number[]) => counts.reduce((s, n) => s + (n || 0), 0);
 
 /** Is this upgrade visible in the shop yet? Owned-ness is checked separately. */
 export function upgradeUnlocked(u: Upgrade, ctx: UnlockCtx): boolean {
@@ -928,6 +978,10 @@ export function upgradeUnlocked(u: Upgrade, ctx: UnlockCtx): boolean {
   if (r.chair && r.chair !== ctx.chair) return false;
   if (r.things !== undefined && ctx.things < r.things) return false;
   if (r.lifetime !== undefined && ctx.lifetime < r.lifetime) return false;
+  if (r.totalWorkers !== undefined) {
+    const owned = ctx.totalWorkers ?? totalWorkers(ctx.counts);
+    if (owned < r.totalWorkers) return false;
+  }
   if (r.worker !== undefined) {
     const i = WORKER_INDEX[r.worker];
     if (i === undefined || (ctx.counts[i] ?? 0) < (r.owned ?? 1)) return false;
@@ -935,19 +989,12 @@ export function upgradeUnlocked(u: Upgrade, ctx: UnlockCtx): boolean {
   return true;
 }
 
-// ── Economy ────────────────────────────────────────────────────────────────
-/** Closed-form cost of buying `qty` more of a worker currently owned `owned`. */
-export function costOf(w: Worker, owned: number, qty: number): number {
-  const g = w.growth;
-  return Math.ceil((w.baseCost * Math.pow(g, owned) * (Math.pow(g, qty) - 1)) / (g - 1));
-}
-
 // ── Prestige (Þingstig) ──────────────────────────────────────────────────────
 // Tuned so you grab a satisfying first haul early — first prestige ~tier 7–8
 // yields ~10 Þingstig — then it gets harder and harder: on a √ curve each extra
 // point needs quadratically more lifetime (the P-th point costs ∝ P). Þingstig
-// reaches the 999,999 leaderboard cap around tier ~17, so the top few tiers are
-// pure multiplier flex.
+// reaches SCORE_CAP only in the deep endgame, so the top tiers stay a genuine
+// climb rather than a plateau of tied maximums.
 export const PRESTIGE_UNLOCK = 1e8;
 const K = 10;
 const SCALE = 1e8;
@@ -958,6 +1005,21 @@ export function thingstigFor(lifetime: number): number {
 }
 /** Each Þingstig gives +0.5% to everything (compounds across prestiges). */
 export const PRESTIGE_MULT_PER_POINT = 0.005;
+
+/**
+ * Highest Þingstig the leaderboard will store.
+ *
+ * The `game_scores.score` column is a Postgres INTEGER, so the hard ceiling is
+ * 2,147,483,647; this sits an order of magnitude inside it, leaving room for
+ * any future arithmetic without risking overflow. Reaching it takes roughly
+ * 1e22 lifetime fundarstig — about where Skátaandinn becomes affordable — so it
+ * caps the very end of the game rather than compressing the top of the table,
+ * which the old 999,999 did from tier ~17 onwards.
+ *
+ * The backend enforces the same bound in `GameScoreCreate`; the two have to be
+ * changed together.
+ */
+export const SCORE_CAP = 999_999_999;
 
 // ── Save state ───────────────────────────────────────────────────────────────
 // The save lives in localStorage, which the player fully controls — none of
@@ -989,8 +1051,11 @@ export interface SaveState {
 
 /** Owning more of one worker than this is not reachable by playing. */
 const MAX_COUNT = 100_000;
-/** Þingstig far beyond the 999,999 leaderboard cap — a generous ceiling. */
-const MAX_THINGSTIG = 1e9;
+/**
+ * Save-file sanity bound on Þingstig. Deliberately above `SCORE_CAP`: the board
+ * stops counting there, but a player's own total may legitimately run past it.
+ */
+const MAX_THINGSTIG = SCORE_CAP * 10;
 const MAX_THINGS = 1e6;
 
 const clampInt = (v: unknown, max: number): number => {
@@ -1159,8 +1224,11 @@ export function clickPower(
   combo = 0,
   step = COMBO_BASE.step
 ): number {
-  const tap = clickMult(ups) * prestigeMult(tsCur) * comboMult(combo, step);
-  return tap * buff.all * buff.click + rate * (clickShare(ups) + buff.share);
+  const tap = clickMult(ups) * prestigeMult(tsCur);
+  const earned = tap * buff.all * buff.click + rate * (clickShare(ups) + buff.share);
+  // Samfella multiplies everything the click earns, not just the flat tap —
+  // otherwise it stops mattering the moment passive production outgrows taps.
+  return earned * comboMult(combo, step);
 }
 
 // ── Fundarstjóri ability tuning (pure) ───────────────────────────────────────

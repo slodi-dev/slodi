@@ -430,6 +430,17 @@
   font-weight: 800;
   color: hsl(var(--sl-color-text-tertiary));
   margin-bottom: 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* Names what the table ranks on, so spending Þingstig doesn't look like a bug. */
+.lboardH small {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+  opacity: 0.8;
 }
 .lboard ol {
   list-style: none;

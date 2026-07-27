@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.game_score_policy import score_replaces
 from app.repositories.game_scores import GameScoreRepository
 from app.schemas.game_score import GameScoreOut
 
@@ -21,7 +22,11 @@ class GameScoreService:
         score: int,
     ) -> list[GameScoreOut]:
         await self.repo.upsert(
-            user_id=user_id, user_name=user_name, game_slug=game_slug, score=score
+            user_id=user_id,
+            user_name=user_name,
+            game_slug=game_slug,
+            score=score,
+            replace=score_replaces(game_slug),
         )
         await self.session.commit()
         return await self.get_top_scores(game_slug)
