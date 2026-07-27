@@ -2,6 +2,38 @@
 
 A comprehensive guide to branch naming best practices for maintaining clean and organized repositories.
 
+## Where to branch from — and why it matters here
+
+**Branch off `main`, and open the pull request against `main`.** One branch per
+piece of work, deleted once it merges. Do not accumulate work on a long-lived
+shared branch and then open a PR from that.
+
+This is not style preference — it follows from the fact that this repository
+**squash-merges** pull requests. A squash creates a brand new commit on `main`;
+it never absorbs the branch's own commits. For a short-lived branch that is
+fine, because the branch is deleted straight afterwards. A long-lived branch,
+though, survives with commits that are now permanently unreachable from `main`,
+and **every later PR from that branch re-lists all of them** — a list that only
+grows.
+
+That is what happened to `dev`: PR #125 listed **30 commits for a 10-file
+change**, because 28 of them had been squashed away in earlier merges and can
+never be reachable from `main`. The Files Changed tab stayed correct throughout
+— it is computed from the merge base — so the symptom is a misleading Commits
+tab rather than a wrong diff.
+
+`dev` is kept as an integration branch for local and exploratory work, but is no
+longer the source of pull requests into `main`.
+
+### Two related gotchas when syncing
+
+- Merging `main` back into a long-lived branch produces **spurious add/add
+  conflicts**, because main's squash commit looks like an unrelated addition of
+  files the branch already has. Check `git diff <branch> origin/main` first: if
+  it is empty, `main` carries nothing the branch lacks.
+- "Commits ahead of `main`" badly overstates unlanded work for the same reason.
+  Compare trees, not commit counts.
+
 ## Standard Branch Prefixes
 
 ### Core Types (Most Common)
@@ -163,9 +195,9 @@ chore/     # Maintenance tasks
 ### Creating a Feature Branch
 
 ```bash
-# Update your main/dev branch
-git checkout dev
-git pull origin dev
+# Start from an up-to-date main — see "Where to branch from" above
+git checkout main
+git pull origin main
 
 # Create feature branch
 git checkout -b feature/add-user-profile
@@ -181,9 +213,9 @@ git push origin feature/add-user-profile
 ### Creating a Bugfix Branch
 
 ```bash
-# Create from dev/main
-git checkout dev
-git pull origin dev
+# Create from main
+git checkout main
+git pull origin main
 git checkout -b bugfix/fix-login-error
 
 # Fix the bug
@@ -345,5 +377,5 @@ When contributing to projects using these conventions:
 
 ---
 
-**Last Updated:** January 2026  
-**Version:** 1.0.0
+**Last Updated:** July 2026  
+**Version:** 1.1.0
