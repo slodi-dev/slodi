@@ -267,10 +267,13 @@
 .arnor:active {
   transform: scale(0.9) rotate(-2deg);
 }
+/* Sized by height, not width: the portraits are head cutouts with different
+   aspect ratios, and matching their heights is what keeps every fundarstjóri
+   the same apparent size on the pedestal. */
 .arnor img {
   display: block;
-  width: 220px;
-  height: auto;
+  width: auto;
+  height: 278px;
   -webkit-user-drag: none;
   pointer-events: none;
 }
@@ -329,16 +332,21 @@
   border: none;
   background: none;
   padding: 0;
+  /* `drift` must last exactly as long as the sprite is kept mounted — the
+     duration comes from GOLDEN_ON_SCREEN_MS so the two can't drift apart. A
+     longer mount would park the golden off-screen right, still clickable. */
   animation:
     wiggle 1.6s ease-in-out infinite,
-    drift 9s linear forwards;
+    drift var(--golden-ms) linear forwards;
 }
+/* Each golden variant is the same sprite pushed to its own hue, so the seven
+   read as distinct at a glance without seven separate images. */
 .golden img {
   display: block;
   width: 100%;
   height: auto;
   pointer-events: none;
-  filter: sepia(0.7) saturate(3) hue-rotate(2deg) brightness(1.08)
+  filter: sepia(0.7) saturate(3) hue-rotate(calc(2deg + var(--g-hue, 0deg))) brightness(1.08)
     drop-shadow(0 0 14px hsl(44 95% 55% / 0.9));
 }
 .golden .tag {
@@ -529,7 +537,8 @@
   display: flex;
   gap: 8px;
 }
-.buff {
+.buff,
+.comboChip {
   background: hsl(44 95% 52%);
   color: hsl(28 60% 16%);
   border: 2px solid hsl(var(--ink));
@@ -539,6 +548,57 @@
   font-weight: 800;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+/* Wears the active fundarstjóri's own colour, so the chip always matches the
+   chair whose ability it belongs to. */
+.comboChip {
+  background: var(--chair-c);
+  color: hsl(0 0% 100%);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.comboChip small {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+/* Toast naming the golden Arnór just claimed — with seven variants the player
+   needs to be told which one landed. */
+.toast {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  background: hsl(var(--sl-color-background));
+  border: 3px solid hsl(var(--ink));
+  border-radius: 999px;
+  padding: 6px 16px;
+  box-shadow: var(--hard-sm);
+  font-size: var(--sl-text-body-sm);
+  animation: toastin 0.25s ease-out;
+}
+.toast b {
+  font-weight: 800;
+}
+.toast span {
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+@keyframes toastin {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* mute button */
@@ -727,6 +787,32 @@
   color: hsl(var(--sl-color-text-secondary));
   font-variant-numeric: tabular-nums;
 }
+/* What an upgrade mechanically does, above its flavour line. */
+.weff {
+  font-size: var(--sl-text-body-sm);
+  font-weight: 800;
+  color: hsl(var(--sl-color-patrol-rekkar));
+  font-variant-numeric: tabular-nums;
+}
+.shopEmpty {
+  margin: 0;
+  padding: 18px 4px;
+  text-align: center;
+  font-size: var(--sl-text-body-sm);
+  font-weight: 700;
+  color: hsl(var(--sl-color-text-inverse));
+}
+.qcount {
+  font-weight: 800;
+  font-size: 22px;
+  color: hsl(var(--sl-color-text-inverse));
+  font-variant-numeric: tabular-nums;
+}
+.qcount small {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
 .own {
   flex: none;
   order: -1;
@@ -803,6 +889,120 @@
 .board .empty {
   color: hsl(var(--sl-color-text-tertiary));
   font-size: var(--sl-text-body-sm);
+}
+.boardNote {
+  margin: 0 0 10px;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── fundarstjórar (Þing tab) ── */
+.chairs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chairCard {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 3px solid hsl(var(--ink));
+  border-radius: 14px;
+  background: hsl(var(--sl-color-background-secondary));
+  box-shadow: var(--hard-sm);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease,
+    background 0.12s ease;
+}
+.chairCard:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--hard);
+}
+.chairCard:disabled {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+.chairOn {
+  background: var(--chair-c);
+  color: hsl(var(--sl-color-text-inverse));
+}
+.chairPic {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--chair-c);
+  border: 3px solid hsl(var(--ink));
+}
+/* Same height-matching as the pedestal, so the thumbnails line up too. */
+.chairPic img {
+  width: auto;
+  height: 38px;
+}
+.chairBody {
+  flex: 1;
+  min-width: 0;
+}
+.chairName {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-weight: 800;
+  font-size: var(--sl-text-body);
+}
+.chairName small {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+/* The in-character line leads; the mechanics sit under it, quieter. */
+.chairFlavour {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--sl-text-body-sm);
+  font-style: italic;
+  color: inherit;
+}
+.chairDesc {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--sl-text-body-sm);
+  color: inherit;
+  opacity: 0.72;
+}
+.chairState {
+  flex: none;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  max-width: 88px;
+  text-align: center;
+  padding: 5px 9px;
+  border: 2px solid hsl(var(--ink));
+  border-radius: 11px;
+  background: hsl(var(--sl-color-warning));
+  color: hsl(28 60% 16%);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  box-shadow: 2px 2px 0 hsl(var(--ink));
+}
+.chairOn .chairState {
+  background: hsl(var(--sl-color-background));
+  color: hsl(var(--sl-color-text-primary));
 }
 .board a {
   color: hsl(var(--sl-color-primary));
@@ -979,6 +1179,6 @@
     border-top: 3px solid hsl(var(--ink));
   }
   .arnor img {
-    width: 170px;
+    height: 215px;
   }
 }
