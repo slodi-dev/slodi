@@ -7,6 +7,7 @@ import HorpuhoppLeaderboard, {
   type ScoreEntry,
 } from "@/components/leikir/horpuhopp/HorpuhoppLeaderboard";
 import styles from "./horpuhopp.module.css";
+import { safeSessionStorage } from "@/lib/safe-storage";
 
 const GAME = "horpuhopp";
 const PENDING_KEY = `leikir_pending_score_${GAME}`;
@@ -32,7 +33,7 @@ export default function HorpuhoppPage() {
     if (!user || pendingSubmitted.current) return;
     let pending: string | null = null;
     try {
-      pending = sessionStorage.getItem(PENDING_KEY);
+      pending = safeSessionStorage.getItem(PENDING_KEY);
     } catch {
       /* no storage */
     }
@@ -41,7 +42,7 @@ export default function HorpuhoppPage() {
     const finalScore = parseInt(pending, 10);
     if (!finalScore || finalScore <= 0) {
       try {
-        sessionStorage.removeItem(PENDING_KEY);
+        safeSessionStorage.removeItem(PENDING_KEY);
       } catch {
         /* ignore */
       }
@@ -56,7 +57,7 @@ export default function HorpuhoppPage() {
     })
       .then((res) => {
         try {
-          sessionStorage.removeItem(PENDING_KEY);
+          safeSessionStorage.removeItem(PENDING_KEY);
         } catch {
           /* ignore */
         }
@@ -71,7 +72,7 @@ export default function HorpuhoppPage() {
       })
       .catch(() => {
         try {
-          sessionStorage.removeItem(PENDING_KEY);
+          safeSessionStorage.removeItem(PENDING_KEY);
         } catch {
           /* ignore */
         }
@@ -96,7 +97,7 @@ export default function HorpuhoppPage() {
       .then((res) => {
         if (res.status === 401) {
           try {
-            sessionStorage.setItem(PENDING_KEY, String(finalScore));
+            safeSessionStorage.setItem(PENDING_KEY, String(finalScore));
           } catch {
             /* no storage */
           }

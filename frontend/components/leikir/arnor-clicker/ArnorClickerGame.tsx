@@ -59,6 +59,7 @@ import {
   type Upgrade,
   type Vars,
 } from "./gameData";
+import { safeLocalStorage, safeSessionStorage } from "@/lib/safe-storage";
 import styles from "./arnorClicker.module.css";
 
 const GAME = "arnor-clicker";
@@ -219,7 +220,7 @@ export default function ArnorClickerGame() {
     let alive = true;
     let loaded: LoadedSave | null = null;
     try {
-      loaded = loadSave(localStorage.getItem(SAVE_KEY));
+      loaded = loadSave(safeLocalStorage.getItem(SAVE_KEY));
     } catch {
       /* storage unavailable — start fresh */
     }
@@ -318,7 +319,7 @@ export default function ArnorClickerGame() {
       .then((res) => {
         if (res.status === 401) {
           try {
-            sessionStorage.setItem(PENDING_KEY, String(value));
+            safeSessionStorage.setItem(PENDING_KEY, String(value));
           } catch {
             /* ignore */
           }
@@ -441,7 +442,7 @@ export default function ArnorClickerGame() {
       chair: chairKeyRef.current,
     };
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify({ ...data, sig: signSave(data) }));
+      safeLocalStorage.setItem(SAVE_KEY, JSON.stringify({ ...data, sig: signSave(data) }));
     } catch {
       /* storage full/unavailable */
     }
@@ -722,14 +723,14 @@ export default function ArnorClickerGame() {
     if (!user || pendingDone.current) return;
     let pending: string | null = null;
     try {
-      pending = sessionStorage.getItem(PENDING_KEY);
+      pending = safeSessionStorage.getItem(PENDING_KEY);
     } catch {
       /* ignore */
     }
     if (!pending) return;
     pendingDone.current = true;
     try {
-      sessionStorage.removeItem(PENDING_KEY);
+      safeSessionStorage.removeItem(PENDING_KEY);
     } catch {
       /* ignore */
     }

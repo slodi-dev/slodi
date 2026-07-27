@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { checkResponse } from "@/lib/api-utils";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 interface FavoritesContextValue {
   favorites: Set<string>;
@@ -29,7 +30,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       // setFavorites(new Set(data.programIds));
 
       // For now, load from localStorage as fallback
-      const stored = localStorage.getItem("favorite-programs");
+      const stored = safeLocalStorage.getItem("favorite-programs");
       if (stored) {
         const parsed = JSON.parse(stored);
         setFavorites(new Set(parsed));
@@ -69,7 +70,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     } else {
       updatedSet.add(programId);
     }
-    localStorage.setItem("favorite-programs", JSON.stringify(Array.from(updatedSet)));
+    safeLocalStorage.setItem("favorite-programs", JSON.stringify(Array.from(updatedSet)));
 
     try {
       // TODO: Replace with actual API call when backend is ready
@@ -106,7 +107,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       } else {
         favorites.delete(programId);
       }
-      localStorage.setItem("favorite-programs", JSON.stringify(Array.from(favorites)));
+      safeLocalStorage.setItem("favorite-programs", JSON.stringify(Array.from(favorites)));
 
       console.error("Failed to update favorite:", error);
       // You could show a toast notification here

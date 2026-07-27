@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { safeSessionStorage } from "@/lib/safe-storage";
 
 /**
  * Resolve the default (shared program bank) workspace ID.
@@ -15,7 +16,9 @@ export function useDefaultWorkspaceId(): string | null {
   useEffect(() => {
     // Check session cache first to avoid a fetch on every render.
     const cached =
-      typeof sessionStorage !== "undefined" ? sessionStorage.getItem("default_workspace_id") : null;
+      typeof sessionStorage !== "undefined"
+        ? safeSessionStorage.getItem("default_workspace_id")
+        : null;
 
     if (cached) {
       setWorkspaceId(cached);
@@ -31,7 +34,7 @@ export function useDefaultWorkspaceId(): string | null {
         const data = await res.json();
         const id: string | undefined = data?.default_workspace_id;
         if (id && !cancelled) {
-          sessionStorage.setItem("default_workspace_id", id);
+          safeSessionStorage.setItem("default_workspace_id", id);
           setWorkspaceId(id);
         }
       } catch {

@@ -4,6 +4,7 @@ import { Sun, Moon, Monitor } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useEffect, useState } from "react";
 import styles from "./settings.module.css";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -13,7 +14,7 @@ export default function ThemeToggle() {
 
   // Initialize from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem("slodi-theme-mode") as ThemeMode;
+    const stored = safeLocalStorage.getItem("slodi-theme-mode") as ThemeMode;
     if (stored) {
       setSelectedMode(stored);
     } else {
@@ -45,7 +46,7 @@ export default function ThemeToggle() {
 
   const handleThemeChange = (value: ThemeMode) => {
     setSelectedMode(value);
-    localStorage.setItem("slodi-theme-mode", value);
+    safeLocalStorage.setItem("slodi-theme-mode", value);
 
     if (value === "system") {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;

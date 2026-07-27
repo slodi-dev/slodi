@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 /**
- * useDraft — persists form draft state to localStorage.
+ * useDraft — persists form draft state to safeLocalStorage.
  *
  * Cookie-based persistence was considered, but the instructions field allows
  * up to 5 000 characters, which exceeds the 4 KB per-cookie browser limit.
@@ -30,7 +31,7 @@ export function useDraft<T extends object>(
   const [draft, setDraft] = useState<T>(() => {
     if (typeof window === "undefined") return initial;
     try {
-      const stored = localStorage.getItem(key);
+      const stored = safeLocalStorage.getItem(key);
       if (!stored) return initial;
       return { ...initial, ...(JSON.parse(stored) as Partial<T>) };
     } catch {
@@ -43,7 +44,7 @@ export function useDraft<T extends object>(
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const stored = localStorage.getItem(key);
+      const stored = safeLocalStorage.getItem(key);
       hasDraft.current = stored !== null;
     } catch {
       // ignore
@@ -59,7 +60,7 @@ export function useDraft<T extends object>(
     if (writeTimer.current) clearTimeout(writeTimer.current);
     writeTimer.current = setTimeout(() => {
       try {
-        localStorage.setItem(key, JSON.stringify(draft));
+        safeLocalStorage.setItem(key, JSON.stringify(draft));
       } catch {
         // Quota exceeded or private-browsing restriction — fail silently.
       }
@@ -77,7 +78,7 @@ export function useDraft<T extends object>(
     setDraft(initial);
     if (typeof window !== "undefined") {
       try {
-        localStorage.removeItem(key);
+        safeLocalStorage.removeItem(key);
       } catch {
         // ignore
       }

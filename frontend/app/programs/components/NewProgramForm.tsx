@@ -9,6 +9,7 @@ import { useTags } from "@/hooks/useTags";
 import { useDraft } from "@/hooks/useDraft";
 import { handleApiErrorIs } from "@/lib/api-utils";
 import { useAuth } from "@/hooks/useAuth";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const stored = localStorage.getItem(draftKey);
+      const stored = safeLocalStorage.getItem(draftKey);
       if (!stored) return;
       const parsed = JSON.parse(stored) as Partial<ProgramDraft>;
       const hasContent =
