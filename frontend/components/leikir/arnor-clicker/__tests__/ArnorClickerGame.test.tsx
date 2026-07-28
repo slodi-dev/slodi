@@ -15,7 +15,7 @@ vi.mock("next/image", () => ({
 }));
 
 import ArnorClickerGame from "../ArnorClickerGame";
-import { WORKERS, CHAIRS, COMBO_BASE, signSave } from "../gameData";
+import { WORKERS, CHAIRS, COMBO_BASE, signSave, prestigeBonusPct } from "../gameData";
 
 const SAVE_KEY = "arnor_clicker_save_v2";
 
@@ -100,9 +100,11 @@ describe("ArnorClickerGame", () => {
 
       expect(within(chairCard("Aron")).getByText("Virkur")).toBeInTheDocument();
       expect(within(chairCard("Arnór")).getByText("Velja")).toBeInTheDocument();
-      // 100 - 50, and the permanent boost falls with it: 50 × 0.5% = 25%.
+      // 100 - 50, and the permanent boost falls with it, along the √ curve.
       expect(stat("Óeydd Þingstig — á töflunni")).toBe("50");
-      expect(stat("Varanleg uppörvun")).toBe("+25%");
+      expect(stat("Varanleg uppörvun")).toBe(
+        `+${Math.round(prestigeBonusPct(50)).toLocaleString("is-IS")}%`
+      );
     });
 
     it("switching back to a chair you already own is free", () => {

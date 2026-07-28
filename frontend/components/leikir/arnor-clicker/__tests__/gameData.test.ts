@@ -16,6 +16,8 @@ import {
   clickShare,
   clickPower,
   prestigeMult,
+  prestigeBonusPct,
+  prestigeBonusGainPct,
   baseRateOf,
   upgradeUnlocked,
   upgradeEffect,
@@ -169,14 +171,56 @@ describe("clickMult / workMult", () => {
 });
 
 // ── prestigeMult ──────────────────────────────────────────────────────────────
+// The boost was linear (+0.5% a point) and fed back into itself: a bigger
+// multiplier produced more lifetime, lifetime became Þingstig, Þingstig bought a
+// bigger multiplier. A player reached 16,176,203 Þingstig and +8,088,102%. The
+// square root breaks that loop, and these pin the shape rather than the values,
+// so a future retune cannot quietly restore the runaway.
 describe("prestigeMult", () => {
   it("no Þingstig → ×1", () => {
     expect(prestigeMult(0)).toBe(1);
   });
 
-  it("each point adds 0.5%", () => {
-    expect(prestigeMult(100)).toBeCloseTo(1.5, 10);
-    expect(prestigeMult(200)).toBeCloseTo(2, 10);
+  it("a first prestige is still worth +5%, as it always was", () => {
+    // thingstigFor(PRESTIGE_UNLOCK) is 10 — the point the curve is anchored to.
+    expect(prestigeBonusPct(10)).toBeCloseTo(5, 10);
+  });
+
+  it("grows with the square root: doubling Þingstig gives ~1.41×, not 2×", () => {
+    const ratio = prestigeBonusPct(2000) / prestigeBonusPct(1000);
+    expect(ratio).toBeCloseTo(Math.SQRT2, 10);
+    // A hundredfold in Þingstig is only tenfold in boost.
+    expect(prestigeBonusPct(100_000) / prestigeBonusPct(1000)).toBeCloseTo(10, 10);
+  });
+
+  it("keeps the reported runaway balance to a sane multiplier", () => {
+    // The real figure from the leaderboard. Linear gave ×80,882.
+    expect(prestigeMult(16_176_203)).toBeLessThan(100);
+    expect(prestigeMult(16_176_203)).toBeGreaterThan(10);
+  });
+
+  it("is monotonic and never negative, even on a corrupt balance", () => {
+    expect(prestigeMult(-5)).toBe(1);
+    let prev = 0;
+    for (const t of [0, 10, 100, 1e4, 1e6, 1e9]) {
+      const m = prestigeMult(t);
+      expect(m).toBeGreaterThanOrEqual(prev);
+      prev = m;
+    }
+  });
+});
+
+describe("prestigeBonusGainPct", () => {
+  it("is the difference between two points on the curve, not a function of the gain", () => {
+    // On a square root the same gain is worth less the more you already hold —
+    // so the prestige button must show a delta.
+    const early = prestigeBonusGainPct(0, 100);
+    const late = prestigeBonusGainPct(1_000_000, 100);
+    expect(early).toBeGreaterThan(late);
+    expect(prestigeBonusGainPct(500, 250)).toBeCloseTo(
+      prestigeBonusPct(750) - prestigeBonusPct(500),
+      10
+    );
   });
 });
 
@@ -201,8 +245,9 @@ describe("baseRateOf", () => {
 
   it("applies work upgrades and prestige multiplier on top", () => {
     const counts = WORKERS.map((_, i) => (i === 0 ? 1 : 0));
-    // kaffi = ×1.5 work, tsCur 200 = ×2 prestige → 0.1 * 1.5 * 2 = 0.3
-    expect(baseRateOf(counts, new Set(["kaffi"]), 200)).toBeCloseTo(0.3, 10);
+    // kaffi = ×1.5 work, plus whatever the prestige curve gives at 200 Þingstig.
+    const expected = thingfulltrui.out * 1.5 * prestigeMult(200);
+    expect(baseRateOf(counts, new Set(["kaffi"]), 200)).toBeCloseTo(expected, 10);
   });
 
   it("applies a per-worker upgrade to that worker alone", () => {
@@ -251,8 +296,9 @@ describe("clickPower", () => {
   });
 
   it("multiplies click upgrades, prestige and the combo together", () => {
-    // ristabraud ×2, tsCur 200 → ×2 prestige, combo 10 at step 0.1 → ×2
-    expect(clickPower(new Set(["ristabraud"]), 200, 0, NO_BUFF, 10, 0.1)).toBeCloseTo(8, 10);
+    // ristabraud ×2, combo 10 at step 0.1 → ×2, times the prestige curve.
+    const expected = 2 * 2 * prestigeMult(200);
+    expect(clickPower(new Set(["ristabraud"]), 200, 0, NO_BUFF, 10, 0.1)).toBeCloseTo(expected, 10);
   });
 
   it("adds the share of the passive rate on top of the tap", () => {

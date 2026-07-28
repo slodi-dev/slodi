@@ -245,8 +245,9 @@ export function costOf(w: Worker, owned: number, qty: number): number {
 // ── Fundarstjórar ────────────────────────────────────────────────────────────
 // The player picks who chairs the þing. Each chair brings one ability, bought
 // once with Þingstig and kept forever (switching between owned chairs is free).
-// Paying in Þingstig is a real trade: every point spent is 0.5% permanent boost
-// given up. Chair-specific upgrades live in UPGRADES behind `req.chair`.
+// Paying in Þingstig is a real trade: spending them lowers the permanent boost
+// they buy, and the boost follows a square-root curve (see prestigeMult).
+// Chair-specific upgrades live in UPGRADES behind `req.chair`.
 
 export type ChairAbility = "golden" | "combo";
 
@@ -1003,8 +1004,30 @@ export function thingstigFor(lifetime: number): number {
   if (lifetime < PRESTIGE_UNLOCK) return 0;
   return Math.floor(K * Math.sqrt(lifetime / SCALE));
 }
-/** Each Þingstig gives +0.5% to everything (compounds across prestiges). */
-export const PRESTIGE_MULT_PER_POINT = 0.005;
+/**
+ * The permanent boost Þingstig buy, as a multiplier on everything.
+ *
+ * This grows with the *square root* of Þingstig held, and that shape is the
+ * whole point. It used to be linear — +0.5% a point — which fed back into
+ * itself: a bigger multiplier produced more lifetime fundarstig, `thingstigFor`
+ * turns lifetime into Þingstig, and those bought a bigger multiplier again. One
+ * player reached 16,176,203 Þingstig and a boost of +8,088,102%, at which point
+ * the numbers stop meaning anything and the leaderboard is decided by who
+ * started compounding first.
+ *
+ * Under a square root, doubling Þingstig multiplies the boost by ~1.41 rather
+ * than 2, so the loop converges instead of exploding. The curve is anchored so
+ * a first prestige is worth the same +5% it always was — the early game is
+ * untouched, and only the far tail is pulled in. That same player now sits at
+ * about ×65 rather than ×80,882.
+ *
+ * Þingstig balances are not rescaled: nobody loses points, the points simply
+ * buy a saner amount of power.
+ */
+/** Þingstig from a first prestige — the point the curve is anchored to. */
+const FIRST_PRESTIGE_THINGSTIG = 10;
+/** Boost at that first prestige. Growth beyond it follows √Þingstig. */
+export const PRESTIGE_BONUS_AT_FIRST = 0.05;
 
 /**
  * Highest Þingstig the leaderboard will store.
@@ -1204,8 +1227,19 @@ export const workerMult = (workerKey: string, ups: Set<string>) =>
 /** Fraction of the current rate each click also earns, from owned upgrades. */
 export const clickShare = (ups: Set<string>) =>
   UPGRADES.reduce((s, u) => (u.share && ups.has(u.key) ? s + u.share : s), 0);
-/** Permanent prestige multiplier from current Þingstig. */
-export const prestigeMult = (tsCur: number) => 1 + PRESTIGE_MULT_PER_POINT * tsCur;
+/** Permanent prestige multiplier from current Þingstig. See the constants above. */
+export const prestigeMult = (tsCur: number) =>
+  1 + PRESTIGE_BONUS_AT_FIRST * Math.sqrt(Math.max(tsCur, 0) / FIRST_PRESTIGE_THINGSTIG);
+/** The permanent boost as a percentage, for display: ×1.05 reads as 5. */
+export const prestigeBonusPct = (tsCur: number) => (prestigeMult(tsCur) - 1) * 100;
+
+/**
+ * Percentage points a prestige would *add*, which on a square-root curve is the
+ * difference between the two points — not a function of the gain on its own.
+ */
+export const prestigeBonusGainPct = (tsCur: number, gain: number) =>
+  prestigeBonusPct(tsCur + gain) - prestigeBonusPct(tsCur);
+
 /** Passive fundarstig/sec from owned workers, with upgrade + prestige multipliers. */
 export const baseRateOf = (counts: number[], ups: Set<string>, tsCur: number) =>
   WORKERS.reduce((s, w, i) => s + w.out * (counts[i] ?? 0) * workerMult(w.key, ups), 0) *

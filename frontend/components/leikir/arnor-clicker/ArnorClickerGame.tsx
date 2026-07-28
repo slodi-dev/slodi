@@ -50,7 +50,8 @@ import {
   GOLDEN_EVERY_MIN_S,
   GOLDEN_EVERY_MAX_S,
   GOLDEN_ON_SCREEN_MS,
-  PRESTIGE_MULT_PER_POINT,
+  prestigeBonusPct,
+  prestigeBonusGainPct,
   type Buff,
   type Chair,
   type GoldenVariant,
@@ -984,7 +985,7 @@ export default function ArnorClickerGame() {
                   </li>
                   <li>
                     <span>Varanleg uppörvun</span>
-                    <span>+{Math.round(PRESTIGE_MULT_PER_POINT * tsCur * 100)}%</span>
+                    <span>+{Math.round(prestigeBonusPct(tsCur)).toLocaleString("is-IS")}%</span>
                   </li>
                 </ol>
               </div>
@@ -1137,7 +1138,7 @@ export default function ArnorClickerGame() {
             </button>
             <div className={styles.sub}>
               {canPrestige
-                ? `Þú færð ${prestigeGain} Þingstig · +${Math.round(PRESTIGE_MULT_PER_POINT * prestigeGain * 100)}% varanlega`
+                ? `Þú færð ${prestigeGain} Þingstig · +${Math.round(prestigeBonusGainPct(tsCur, prestigeGain)).toLocaleString("is-IS")}% varanlega`
                 : "Safnaðu fleiri fundarstig til að fresta þinginu"}
             </div>
           </div>
