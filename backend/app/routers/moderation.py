@@ -4,14 +4,20 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.domain.enums import Permissions
-from app.schemas.moderation import HideDecision, ReviewDecision, ReviewQueueItem
+from app.domain.enums import ContentType, Permissions, ReviewState
+from app.schemas.moderation import (
+    HideDecision,
+    ReviewDecision,
+    ReviewDetail,
+    ReviewFilters,
+    ReviewQueueItem,
+)
 from app.schemas.user import UserOut
 from app.services.moderation import ModerationService
 
@@ -28,21 +34,54 @@ async def review_queue(
     request: Request,
     response: Response,
     current_user: UserOut = ModeratorDep,
+    review_state: ReviewState | None = Query(
+        ReviewState.unreviewed,
+        description="Omit or pass an empty value for every state — the audit view.",
+    ),
+    hidden: bool | None = Query(None),
+    content_type: ContentType | None = Query(None),
+    reported: bool | None = Query(None, description="Only things somebody objected to."),
+    search: str | None = Query(None, max_length=200),
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[ReviewQueueItem]:
-    """Óyfirfarið — everything the team has not looked at, oldest first.
+    """The board's list.
 
-    Oldest first because this is a backlog, not a feed: newest-first would let
-    old submissions sink forever under a trickle of new ones.
+    Defaults to **Óyfirfarið**, which is the working view. The other states are
+    the record of what was done: filter to `approved` to answer "who approved
+    this, and when?" without reaching for the database.
+
+    The unreviewed queue runs oldest-first because it is a backlog; every other
+    view runs most-recently-decided first, which is how "what happened lately?"
+    is asked.
     """
+    filters = ReviewFilters(
+        review_state=review_state,
+        hidden=hidden,
+        content_type=content_type,
+        reported=reported,
+        search=search,
+    )
     svc = ModerationService(session)
-    total = await svc.count_unreviewed()
-    items = await svc.queue(limit=limit, offset=offset)
+    total = await svc.count(filters)
+    items = await svc.queue(filters, limit=limit, offset=offset)
     add_pagination_headers(
         response=response, request=request, total=total, limit=limit, offset=offset
     )
+    # The sidebar badge counts what is waiting, not what this view happens to show.
+    response.headers["X-Unreviewed-Total"] = str(await svc.count_unreviewed())
     return items
+
+
+@router.get("/content/{content_id}", response_model=ReviewDetail)
+async def review_detail(
+    session: SessionDep,
+    content_id: UUID,
+    current_user: UserOut = ModeratorDep,
+) -> ReviewDetail:
+    """One item in full, for the reading pane — including the objections
+    against it, so a flagged item can be judged from one screen."""
+    return await ModerationService(session).detail(content_id)
 
 
 @router.get("/authors/{author_id}/strikes")

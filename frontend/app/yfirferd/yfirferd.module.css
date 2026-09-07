@@ -132,46 +132,182 @@
   cursor: pointer;
 }
 
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.toolbar {
   display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-sm);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-md);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  margin-bottom: var(--sl-spacing-sm);
 }
 
-.row {
+.filters {
   display: flex;
-  gap: var(--sl-spacing-md);
-  padding: var(--sl-spacing-md);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  padding-bottom: var(--sl-spacing-sm);
+}
+
+.segmented {
+  display: inline-flex;
   border: 1px solid hsl(var(--sl-color-border));
-  border-left: 4px solid transparent;
+  border-radius: var(--sl-radius-button);
+  overflow: hidden;
+}
+
+.segment {
+  min-height: 40px;
+  padding: 0 var(--sl-spacing-sm);
+  border: none;
+  border-right: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-secondary));
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.segment:last-child {
+  border-right: none;
+}
+
+.segmentActive {
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  font-weight: 600;
+}
+
+.search {
+  min-height: 40px;
+  min-width: 12rem;
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-background));
+  color: hsl(var(--sl-color-text-primary));
+  /* 16px or iOS Safari zooms the page on focus. */
+  font: inherit;
+  font-size: 16px;
+}
+
+.checkLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: 40px;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* The Outlook shape: a rail you scan, a pane you read. The rail is fixed so the
+   reading pane never reflows as titles change length. */
+.split {
+  display: grid;
+  grid-template-columns: 22rem 1fr;
+  gap: var(--sl-spacing-md);
+  align-items: start;
+}
+
+.listPane {
+  max-height: calc(100vh - 16rem);
+  overflow-y: auto;
+  border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-card);
   background: hsl(var(--sl-color-surface));
 }
 
-/* The cursor. A sweep of fifty needs the current row obvious at a glance, so
-   this is a border and a background rather than a focus ring alone. */
-.rowFocused {
-  border-color: hsl(var(--sl-color-primary));
-  border-left-color: hsl(var(--sl-color-primary));
-  background: hsl(var(--sl-color-primary-subtle));
+.detailPane {
+  min-height: 24rem;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface));
+  padding: var(--sl-spacing-lg);
 }
 
-.row:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-focus-ring));
-  outline-offset: 2px;
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: block;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+/* The cursor. A sweep of fifty needs the current row obvious at a glance, so
+   this is a fill and a bar rather than a focus ring alone. */
+.rowFocused {
+  background: hsl(var(--sl-color-primary-subtle));
+  border-left-color: hsl(var(--sl-color-primary));
 }
 
 .rowUrgent {
   border-left-color: hsl(var(--sl-color-error));
 }
 
-.rowMain {
-  flex: 1;
-  min-width: 0;
+.row:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: -2px;
 }
+
+.rowTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sl-spacing-xs);
+}
+
+.rowTitle {
+  font-weight: 600;
+  color: hsl(var(--sl-color-text-primary));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowStamp {
+  flex: none;
+  font-size: 0.8rem;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.rowLine {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: hsl(var(--sl-color-text-secondary));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowFlags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0;
+}
+
+.rowFlag {
+  padding: 0.05em 0.45em;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* ── Shared chips and buttons ─────────────────────────────────────────────── */
 
 .meta {
   display: flex;
@@ -183,7 +319,8 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.type {
+.type,
+.reason {
   padding: 0.1em 0.55em;
   border-radius: var(--sl-radius-chip);
   background: hsl(var(--sl-color-surface-sunken));
@@ -200,80 +337,15 @@
   font-weight: 600;
 }
 
-.reason {
-  padding: 0.1em 0.55em;
-  border-radius: var(--sl-radius-chip);
-  background: hsl(var(--sl-color-surface-sunken));
-  color: hsl(var(--sl-color-text-secondary));
-  font-weight: 600;
-}
-
-.fieldLabel {
-  display: inline-block;
-  margin-right: var(--sl-spacing-xs);
-  padding: 0.05em 0.4em;
-  border-radius: var(--sl-radius-xs);
-  background: hsl(var(--sl-color-surface-sunken));
-  color: hsl(var(--sl-color-text-tertiary));
-  font-size: 0.75em;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
 /* An author's history. Warning-coloured rather than error: it is context for a
-   judgement, not a verdict — anyone can be reported, and being reported before
-   is not the same as being wrong now. */
+   judgement, not a verdict — anyone can be reported, and having been reported
+   before is not the same as being wrong now. */
 .strikes {
   padding: 0.1em 0.55em;
   border-radius: var(--sl-radius-chip);
   background: hsl(var(--sl-color-warning-subtle));
   color: hsl(var(--sl-color-warning-text));
   font-weight: 600;
-}
-
-.name {
-  margin: 0 0 var(--sl-spacing-xs);
-  font-size: 1.1rem;
-}
-
-.nameLink {
-  color: hsl(var(--sl-color-text-primary));
-  text-decoration: none;
-}
-
-.nameLink:hover {
-  text-decoration: underline;
-}
-
-.byline {
-  margin: 0 0 var(--sl-spacing-xs);
-  font-size: 0.85rem;
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.body,
-.instructions,
-.bodyMuted {
-  margin: 0 0 var(--sl-spacing-xs);
-  color: hsl(var(--sl-color-text-secondary));
-  /* Enough to judge from, not so much that fifty rows become a scroll. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.instructions,
-.bodyMuted {
-  color: hsl(var(--sl-color-text-tertiary));
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-xs);
-  flex: none;
 }
 
 .approve,
@@ -325,27 +397,159 @@
 .approve:focus-visible,
 .reject:focus-visible,
 .hide:focus-visible,
-.tab:focus-visible,
-.linkBtn:focus-visible {
+.segment:focus-visible,
+.search:focus-visible {
   outline: 2px solid hsl(var(--sl-color-focus-ring));
   outline-offset: 2px;
 }
 
-@media (max-width: 720px) {
-  .row {
-    flex-direction: column;
+/* ── The reading pane ─────────────────────────────────────────────────────── */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-md);
+}
+
+.detailHead {
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  padding-bottom: var(--sl-spacing-sm);
+}
+
+.detailTitle {
+  margin: 0;
+  font-size: 1.4rem;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* The answer to "who approved this, and when?". */
+.decided {
+  margin: var(--sl-spacing-xs) 0 0;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: 0.9rem;
+}
+
+.reviewNote {
+  margin: var(--sl-spacing-xs) 0 0;
+  color: hsl(var(--sl-color-text-secondary));
+  font-style: italic;
+}
+
+.sectionTitle {
+  margin: 0 0 var(--sl-spacing-xs);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.detailBody {
+  margin: 0;
+  color: hsl(var(--sl-color-text-primary));
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.reportsBox {
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-left: 3px solid hsl(var(--sl-color-error));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-error-subtle));
+}
+
+.reportsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--sl-spacing-sm);
+  margin: 0;
+  padding: var(--sl-spacing-sm) 0;
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.fact {
+  margin: 0;
+}
+
+.factLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.factValue {
+  margin: 0.1rem 0 0;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.actionsLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--sl-color-text-tertiary));
+  min-width: 6rem;
+}
+
+.detailActions,
+.reportActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  padding-top: var(--sl-spacing-sm);
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.reportActions {
+  margin-top: var(--sl-spacing-md);
+}
+
+.openLink {
+  margin-left: auto;
+  color: hsl(var(--sl-color-text-link));
+}
+
+@media (max-width: 900px) {
+  /* One column: the rail on top, the pane under it. A 22rem rail beside a pane
+     on a phone leaves neither readable. */
+  .split {
+    grid-template-columns: 1fr;
   }
 
-  .actions {
-    flex-direction: row;
+  .listPane {
+    max-height: 18rem;
+  }
+
+  .detailActions,
+  .reportActions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .approve,
   .reject,
   .hide {
-    flex: 1;
+    width: 100%;
   }
 
+  .openLink {
+    margin-left: 0;
+  }
+
+  /* No keyboard to shortcut with. */
   .shortcuts {
     display: none;
   }

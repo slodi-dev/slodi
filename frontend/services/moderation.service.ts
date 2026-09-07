@@ -31,6 +31,45 @@ export type ReviewQueueItem = {
   open_report_reasons: ReportReason[];
   /** How much of this author's work has already been acted against. */
   author_strikes: number;
+  /** Who decided, and when. Absent while it is still unreviewed. */
+  reviewed_by_name: string | null;
+  reviewed_at: string | null;
+};
+
+/** The whole item, for the reading pane. Fetched per selection — instructions
+ * run to thousands of characters and a hundred of them would make the list slow
+ * to load in order to fill a pane showing one. */
+export type ReviewDetail = ReviewQueueItem & {
+  equipment: string[] | null;
+  duration_min: number | null;
+  duration_max: number | null;
+  prep_time_min: number | null;
+  prep_time_max: number | null;
+  count_min: number | null;
+  count_max: number | null;
+  price: number | null;
+  location: string | null;
+  age: string[] | null;
+  image: string | null;
+  tags: string[];
+  workspace_id: string;
+  reports: { id: string; reason: ReportReason; note: string | null; created_at: string }[];
+};
+
+/** What the board is looking at. Default is the unreviewed queue — the working
+ * view. The others are the record of what was done. */
+export type ReviewFilters = {
+  review_state?: ReviewState | "";
+  hidden?: boolean;
+  content_type?: ContentType;
+  reported?: boolean;
+  search?: string;
+};
+
+export const REVIEW_STATE_LABEL: Record<ReviewState, string> = {
+  unreviewed: "Óyfirfarið",
+  approved: "Samþykkt",
+  rejected: "Hafnað",
 };
 
 export const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
@@ -41,8 +80,26 @@ export const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
 
 type GetToken = () => Promise<string | null>;
 
-export async function fetchReviewQueue(getToken: GetToken): Promise<ReviewQueueItem[]> {
-  return fetchWithAuth<ReviewQueueItem[]>(buildApiUrl("/moderation/queue?limit=100"), {}, getToken);
+export async function fetchReviewQueue(
+  filters: ReviewFilters,
+  getToken: GetToken
+): Promise<ReviewQueueItem[]> {
+  const params = new URLSearchParams({ limit: "100" });
+  // An empty review_state means "every state" — the audit view. It has to be
+  // sent explicitly: omitting it gets the unreviewed default instead.
+  params.set("review_state", filters.review_state ?? "unreviewed");
+  if (filters.hidden !== undefined) params.set("hidden", String(filters.hidden));
+  if (filters.content_type) params.set("content_type", filters.content_type);
+  if (filters.reported) params.set("reported", "true");
+  if (filters.search?.trim()) params.set("search", filters.search.trim());
+  return fetchWithAuth<ReviewQueueItem[]>(buildApiUrl(`/moderation/queue?${params}`), {}, getToken);
+}
+
+export async function fetchReviewDetail(
+  contentId: string,
+  getToken: GetToken
+): Promise<ReviewDetail> {
+  return fetchWithAuth<ReviewDetail>(buildApiUrl(`/moderation/content/${contentId}`), {}, getToken);
 }
 
 /**

@@ -72,6 +72,67 @@ class ReviewQueueItem(BaseModel):
     """How much of this author's work a moderator has already acted against.
     Lets a reviewer tell a first-time contributor from a repeat one in place."""
 
+    reviewed_by_name: str | None = None
+    reviewed_at: dt.datetime | None = None
+    """Who decided, and when. The queue is also the record of what was done —
+    without a name a decision has no author, and "who approved this?" becomes a
+    question only the database can answer."""
+
+
+class ReviewFilters(BaseModel):
+    """What the board is currently looking at.
+
+    The default is the unreviewed queue, because that is the working view. The
+    others exist so the team can answer "who approved this, and when?" without
+    reaching for the database.
+    """
+
+    model_config = ConfigDict(use_enum_values=True)
+
+    review_state: ReviewState | None = None
+    hidden: bool | None = None
+    content_type: ContentType | None = None
+    reported: bool | None = None
+    """Only things somebody has objected to."""
+    search: str | None = None
+
+
+class ReportSummary(BaseModel):
+    """One objection, as the detail pane shows it."""
+
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    id: UUID
+    reason: ReportReason
+    note: str | None = None
+    created_at: dt.datetime
+
+
+class ReviewDetail(ReviewQueueItem):
+    """The whole item, for the reading pane.
+
+    Fetched per selection rather than carried on every row: instructions run to
+    thousands of characters, and a hundred of them would make the list slow to
+    load in order to fill a pane showing one.
+    """
+
+    equipment: list[str] | None = None
+    duration_min: int | None = None
+    duration_max: int | None = None
+    prep_time_min: int | None = None
+    prep_time_max: int | None = None
+    count_min: int | None = None
+    count_max: int | None = None
+    price: int | None = None
+    location: str | None = None
+    age: list[str] | None = None
+    image: str | None = None
+    tags: list[str] = []
+    workspace_id: UUID
+    reports: list[ReportSummary] = []
+    """The objections themselves, so judging a flagged item does not mean
+    holding two screens open at once."""
+
 
 class ReportQueueItem(ContentReportOut):
     """A report as the board shows it.

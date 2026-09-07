@@ -20,10 +20,12 @@ from app.core.auth import _PERMISSION_RANK, get_current_user
 from app.core.db import get_session
 from app.domain.enums import Permissions, ReportStatus, ReviewState
 from app.main import create_app
-from app.schemas.moderation import HideDecision, ReviewDecision
+from app.schemas.moderation import HideDecision, ReviewDecision, ReviewFilters
 from app.schemas.user import UserOut
 from app.services.moderation import ModerationService
 from app.utils import get_current_datetime
+
+UNREVIEWED = ReviewFilters(review_state=ReviewState.unreviewed)
 
 
 def _user(permissions):
@@ -76,11 +78,13 @@ def test_who_can_open_the_board(mock_db_session, permissions, expected):
     client = _client(mock_db_session, _user(permissions))
     with (
         patch("app.services.moderation.ModerationService.queue", new_callable=AsyncMock) as q,
+        patch("app.services.moderation.ModerationService.count", new_callable=AsyncMock) as n,
         patch(
             "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
         ) as c,
     ):
         q.return_value = []
+        n.return_value = 0
         c.return_value = 0
         assert client.get("/moderation/queue").status_code == expected
 
@@ -198,7 +202,7 @@ async def test_the_queue_is_oldest_first(db):
     db.add(older)
     await db.flush()
 
-    queue = await ModerationService(db).queue(limit=10, offset=0)
+    queue = await ModerationService(db).queue(UNREVIEWED, limit=10, offset=0)
     names = [i.name for i in queue]
     assert names.index("Eldra") < names.index("Kveikjuleikur")
 
@@ -222,7 +226,7 @@ async def test_the_queue_shows_how_many_people_flagged_an_item(db):
         )
     await db.flush()
 
-    item = next(i for i in await ModerationService(db).queue(10, 0) if i.id == task.id)
+    item = next(i for i in await ModerationService(db).queue(UNREVIEWED, 10, 0) if i.id == task.id)
     assert item.open_report_count == 2
 
 
@@ -281,7 +285,7 @@ async def test_the_queue_says_why_something_was_flagged(db):
     )
     await db.flush()
 
-    item = next(i for i in await ModerationService(db).queue(10, 0) if i.id == task.id)
+    item = next(i for i in await ModerationService(db).queue(UNREVIEWED, 10, 0) if i.id == task.id)
     assert set(item.open_report_reasons) == {ReportReason.unsafe, ReportReason.spam}
 
 
@@ -300,5 +304,124 @@ async def test_the_queue_shows_an_authors_history_in_place(db):
     db.add(already_hidden)
     await db.flush()
 
-    item = next(i for i in await ModerationService(db).queue(10, 0) if i.id == task.id)
+    item = next(i for i in await ModerationService(db).queue(UNREVIEWED, 10, 0) if i.id == task.id)
     assert item.author_strikes == 1
+
+
+# ── Filtering and the record of what was done ────────────────────────────────
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_the_board_records_who_decided_and_when(db):
+    """Without a name a decision has no author, and "who approved this?" is a
+    question only the database can answer."""
+    _, _, task = await _bank(db)
+    reviewer = m.User(name="Signý", auth0_id="auth0|sig", email="sig@t.is")
+    db.add(reviewer)
+    await db.flush()
+    svc = ModerationService(db)
+
+    await svc.review(task.id, reviewer.id, ReviewDecision(review_state=ReviewState.approved))
+
+    approved = await svc.queue(ReviewFilters(review_state=ReviewState.approved), limit=10, offset=0)
+    row = next(i for i in approved if i.id == task.id)
+    assert row.reviewed_by_name == "Signý"
+    assert row.reviewed_at is not None
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_filtering_by_state_separates_the_queue_from_the_record(db):
+    author, ws, unreviewed = await _bank(db)
+    reviewer = m.User(name="Yfirferð", auth0_id="auth0|f", email="f@t.is")
+    approved_item = m.Task(
+        name="Samþykkt",
+        created_at=get_current_datetime(),
+        author_id=author.id,
+        workspace_id=ws.id,
+    )
+    db.add_all([reviewer, approved_item])
+    await db.flush()
+    svc = ModerationService(db)
+    await svc.review(
+        approved_item.id, reviewer.id, ReviewDecision(review_state=ReviewState.approved)
+    )
+
+    queue = await svc.queue(UNREVIEWED, 10, 0)
+    record = await svc.queue(ReviewFilters(review_state=ReviewState.approved), 10, 0)
+
+    assert unreviewed.id in [i.id for i in queue]
+    assert approved_item.id not in [i.id for i in queue]
+    assert approved_item.id in [i.id for i in record]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_searching_by_name(db):
+    author, ws, _ = await _bank(db)
+    db.add(
+        m.Task(
+            name="Ratleikur",
+            created_at=get_current_datetime(),
+            author_id=author.id,
+            workspace_id=ws.id,
+        )
+    )
+    await db.flush()
+
+    found = await ModerationService(db).queue(
+        ReviewFilters(review_state=ReviewState.unreviewed, search="ratl"), 10, 0
+    )
+    assert [i.name for i in found] == ["Ratleikur"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_filtering_to_only_what_someone_objected_to(db):
+    author, ws, flagged = await _bank(db)
+    quiet = m.Task(
+        name="Enginn kvartaði",
+        created_at=get_current_datetime(),
+        author_id=author.id,
+        workspace_id=ws.id,
+    )
+    db.add(quiet)
+    await db.flush()
+    db.add(
+        m.ContentReport(
+            content_id=flagged.id,
+            reporter_id=author.id,
+            reason=m.ContentReport.__table__.c.reason.type.enum_class.spam,
+            status=ReportStatus.open,
+            created_at=get_current_datetime(),
+        )
+    )
+    await db.flush()
+
+    only_reported = await ModerationService(db).queue(
+        ReviewFilters(review_state=ReviewState.unreviewed, reported=True), 10, 0
+    )
+    assert [i.id for i in only_reported] == [flagged.id]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_the_detail_pane_carries_the_objections_themselves(db):
+    """Otherwise judging a flagged item means holding two screens open at once."""
+    author, _, task = await _bank(db)
+    db.add(
+        m.ContentReport(
+            content_id=task.id,
+            reporter_id=author.id,
+            reason=m.ContentReport.__table__.c.reason.type.enum_class.unsafe,
+            note="Of hættulegt fyrir dreka",
+            status=ReportStatus.open,
+            created_at=get_current_datetime(),
+        )
+    )
+    await db.flush()
+
+    detail = await ModerationService(db).detail(task.id)
+    assert [r.note for r in detail.reports] == ["Of hættulegt fyrir dreka"]
+    assert detail.open_report_count == 1
