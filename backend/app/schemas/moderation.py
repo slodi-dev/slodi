@@ -95,6 +95,17 @@ class ReviewFilters(BaseModel):
     reported: bool | None = None
     """Only things somebody has objected to."""
     search: str | None = None
+    author: str | None = None
+    """Substring of the author's name."""
+    date_from: dt.date | None = None
+    date_to: dt.date | None = None
+    """A range over **the date the current view is ordered by** — when it was
+    submitted in the unreviewed queue, when it was decided everywhere else.
+
+    The column a view sorts by is the column its date filter means. Filtering
+    the record of decisions by submission date would answer a question nobody
+    asked: "what was decided in June?" is about June's decisions, not June's
+    submissions."""
 
 
 class ReportSummary(BaseModel):

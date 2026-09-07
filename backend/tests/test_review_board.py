@@ -425,3 +425,65 @@ async def test_the_detail_pane_carries_the_objections_themselves(db):
     detail = await ModerationService(db).detail(task.id)
     assert [r.note for r in detail.reports] == ["Of hættulegt fyrir dreka"]
     assert detail.open_report_count == 1
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("unreviewed", status.HTTP_200_OK),
+        ("approved", status.HTTP_200_OK),
+        ("all", status.HTTP_200_OK),
+        ("", status.HTTP_422_UNPROCESSABLE_CONTENT),
+        ("banana", status.HTTP_422_UNPROCESSABLE_CONTENT),
+    ],
+)
+def test_the_audit_view_is_asked_for_by_name(mock_db_session, value, expected):
+    """`review_state=all`, not an empty value.
+
+    An empty `review_state=` in a URL is ambiguous between "every state" and
+    "the caller forgot", and FastAPI cannot coerce it into the enum anyway — it
+    answered 422, which is how the Allt filter shipped broken.
+    """
+    client = _client(mock_db_session, _user(Permissions.moderator))
+    with (
+        patch("app.services.moderation.ModerationService.queue", new_callable=AsyncMock) as q,
+        patch("app.services.moderation.ModerationService.count", new_callable=AsyncMock) as n,
+        patch(
+            "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
+        ) as c,
+    ):
+        q.return_value = []
+        n.return_value = 0
+        c.return_value = 0
+        response = client.get(f"/moderation/queue?review_state={value}")
+
+    assert response.status_code == expected
+
+
+def test_all_means_no_state_filter_at_all(mock_db_session):
+    client = _client(mock_db_session, _user(Permissions.moderator))
+    with (
+        patch("app.services.moderation.ModerationService.queue", new_callable=AsyncMock) as q,
+        patch("app.services.moderation.ModerationService.count", new_callable=AsyncMock) as n,
+        patch(
+            "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
+        ) as c,
+    ):
+        q.return_value = []
+        n.return_value = 0
+        c.return_value = 0
+        client.get("/moderation/queue?review_state=all")
+
+    assert q.await_args.args[0].review_state is None
+
+
+def test_pagination_headers_are_readable_by_a_browser(mock_db_session):
+    """They are not on the CORS safelist, so a cross-origin caller cannot read
+    them unless they are named in `expose_headers`. The board's "load more"
+    depends on the total, and without this it silently sees nothing."""
+    from app.main import create_app as _create
+
+    app = _create()
+    cors = next(m for m in app.user_middleware if "CORS" in str(m))
+    exposed = cors.kwargs.get("expose_headers", [])
+    assert "X-Total-Count" in exposed

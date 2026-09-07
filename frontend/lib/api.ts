@@ -127,3 +127,49 @@ export async function fetchWithAuth<T>(
   // Return undefined for non-JSON responses
   return undefined as T;
 }
+
+/**
+ * A page of results, with the total the backend reports.
+ *
+ * `fetchWithAuth` returns only the body, so a caller cannot tell a full page
+ * from the last one and has no way to offer "load more" honestly. The count
+ * comes from `X-Total-Count`, which the API must name in its CORS
+ * `expose_headers` — otherwise the browser receives it and refuses to let
+ * JavaScript read it.
+ */
+export type Page<T> = {
+  items: T[];
+  /** Null when the header is missing — "unknown", not "none". */
+  total: number | null;
+};
+
+export async function fetchPageWithAuth<T>(
+  url: string,
+  options: AuthFetchOptions = {},
+  getToken: () => Promise<string | null>
+): Promise<Page<T>> {
+  const token = await getToken();
+  if (!token) throw new Error("No authentication token available");
+
+  const response = await fetch(url, {
+    ...options,
+    headers: { ...options.headers, Authorization: `Bearer ${token}` },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/auth/login?returnTo=${returnTo}`;
+      throw new Error("Authentication required");
+    }
+    throw new Error(`API error: ${response.statusText}`);
+  }
+
+  const header = response.headers.get("X-Total-Count");
+  const total = header === null ? null : Number(header);
+  return {
+    items: (await response.json()) as T[],
+    total: Number.isFinite(total) ? total : null,
+  };
+}

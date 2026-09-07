@@ -1,5 +1,5 @@
 import { buildApiUrl } from "@/lib/api-utils";
-import { fetchWithAuth } from "@/lib/api";
+import { type Page, fetchPageWithAuth, fetchWithAuth } from "@/lib/api";
 import type { ContentReport, ReportReason } from "@/services/reports.service";
 
 /**
@@ -58,12 +58,19 @@ export type ReviewDetail = ReviewQueueItem & {
 
 /** What the board is looking at. Default is the unreviewed queue — the working
  * view. The others are the record of what was done. */
+export const ALL_STATES = "all";
+
 export type ReviewFilters = {
-  review_state?: ReviewState | "";
+  review_state?: ReviewState | typeof ALL_STATES;
   hidden?: boolean;
   content_type?: ContentType;
   reported?: boolean;
   search?: string;
+  author?: string;
+  /** ISO dates. A range over whichever date the current view is ordered by —
+   * submitted in the unreviewed queue, decided everywhere else. */
+  date_from?: string;
+  date_to?: string;
 };
 
 export const REVIEW_STATE_LABEL: Record<ReviewState, string> = {
@@ -80,19 +87,36 @@ export const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
 
 type GetToken = () => Promise<string | null>;
 
+/** A page at a time. At ten thousand items the board must not try to hold them
+ * all: the request is slow, the DOM is slower, and nobody reads past the top. */
+export const PAGE_SIZE = 50;
+
 export async function fetchReviewQueue(
   filters: ReviewFilters,
-  getToken: GetToken
-): Promise<ReviewQueueItem[]> {
-  const params = new URLSearchParams({ limit: "100" });
-  // An empty review_state means "every state" — the audit view. It has to be
-  // sent explicitly: omitting it gets the unreviewed default instead.
+  getToken: GetToken,
+  offset = 0
+): Promise<Page<ReviewQueueItem>> {
+  const params = new URLSearchParams({
+    limit: String(PAGE_SIZE),
+    offset: String(offset),
+  });
+  // `all` for every state, spelled out. An empty `review_state=` is ambiguous
+  // between "every state" and "the caller forgot", and the API answers 422 to
+  // it. Omitting it entirely gets the unreviewed default, which is not the
+  // same thing either.
   params.set("review_state", filters.review_state ?? "unreviewed");
   if (filters.hidden !== undefined) params.set("hidden", String(filters.hidden));
   if (filters.content_type) params.set("content_type", filters.content_type);
   if (filters.reported) params.set("reported", "true");
   if (filters.search?.trim()) params.set("search", filters.search.trim());
-  return fetchWithAuth<ReviewQueueItem[]>(buildApiUrl(`/moderation/queue?${params}`), {}, getToken);
+  if (filters.author?.trim()) params.set("author", filters.author.trim());
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  return fetchPageWithAuth<ReviewQueueItem>(
+    buildApiUrl(`/moderation/queue?${params}`),
+    {},
+    getToken
+  );
 }
 
 export async function fetchReviewDetail(
@@ -111,9 +135,12 @@ export type ReportQueueItem = ContentReport & {
   content_author_name: string;
 };
 
-export async function fetchOpenReports(getToken: GetToken): Promise<ReportQueueItem[]> {
-  return fetchWithAuth<ReportQueueItem[]>(
-    buildApiUrl("/moderation/reports?limit=100"),
+export async function fetchOpenReports(
+  getToken: GetToken,
+  offset = 0
+): Promise<Page<ReportQueueItem>> {
+  return fetchPageWithAuth<ReportQueueItem>(
+    buildApiUrl(`/moderation/reports?limit=${PAGE_SIZE}&offset=${offset}`),
     {},
     getToken
   );

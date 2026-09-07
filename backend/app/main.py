@@ -43,6 +43,10 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        # Without this the browser receives the pagination headers and refuses
+        # to let JavaScript read them — they are not on the CORS safelist. Every
+        # paginated endpoint sends them; nothing could see them until now.
+        expose_headers=["X-Total-Count", "X-Limit", "X-Offset", "Link"],
     )
 
     # Starlette's CORSMiddleware does not reliably add CORS headers when an

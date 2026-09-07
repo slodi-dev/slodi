@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 from typing import Any
 from uuid import UUID
 
@@ -76,15 +77,72 @@ class ModerationRepository(Repository):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 
+    def _apply_filters(self, stmt: Select, filters: ReviewFilters) -> Select:
+        """Every WHERE the board can ask for.
+
+        Shared by the list and the count so the two can never disagree about
+        what is being looked at.
+        """
+        stmt = stmt.where(Content.deleted_at.is_(None))
+
+        if filters.review_state is not None:
+            stmt = stmt.where(Content.review_state == filters.review_state)
+        if filters.hidden is not None:
+            stmt = stmt.where(
+                Content.hidden_at.is_not(None) if filters.hidden else Content.hidden_at.is_(None)
+            )
+        if filters.content_type is not None:
+            stmt = stmt.where(Content.content_type == filters.content_type)
+        if filters.reported:
+            # EXISTS rather than counting: it stops at the first match, and the
+            # count is not needed to answer "is there one?".
+            stmt = stmt.where(
+                select(ContentReport.id)
+                .where(
+                    ContentReport.content_id == Content.id,
+                    ContentReport.status == ReportStatus.open,
+                )
+                .exists()
+            )
+        if filters.author:
+            stmt = stmt.where(
+                Content.author_id.in_(
+                    select(User.id).where(User.name.ilike(f"%{filters.author.strip()}%"))
+                )
+            )
+        if filters.search:
+            stmt = stmt.where(Content.name.ilike(f"%{filters.search.strip()}%"))
+
+        # The column a view sorts by is the column its date filter means.
+        # Filtering the record of decisions by submission date would answer a
+        # question nobody asked: "what was decided in June?" is about June's
+        # decisions, not June's submissions.
+        date_col = (
+            Content.created_at
+            if filters.review_state == ReviewState.unreviewed
+            else Content.reviewed_at
+        )
+        if filters.date_from:
+            stmt = stmt.where(date_col >= filters.date_from)
+        if filters.date_to:
+            # Inclusive: a leader picking 30 June means the whole of that day,
+            # not the instant it began.
+            stmt = stmt.where(date_col < filters.date_to + dt.timedelta(days=1))
+
+        return stmt
+
     def _queue_stmt(self, filters: ReviewFilters) -> Select:
-        """The board's list, filtered.
+        """The board's page.
 
         **Ordering follows what the list is for.** The unreviewed queue is a
         backlog, so it runs oldest-first: the thing that has waited longest is
         the most overdue, and newest-first would let old submissions sink under
         a trickle of new ones. Every other view is a record of what was done, so
-        it runs most-recently-decided first — that is the order "what happened
-        lately?" is asked in.
+        it runs most-recently-decided first.
+
+        The three per-row subqueries are correlated, so they cost one lookup per
+        row **returned** — a page, not the table. That is why the count below
+        does not reuse this statement.
         """
         reviewer = aliased(User)
         stmt = (
@@ -97,28 +155,14 @@ class ModerationRepository(Repository):
             )
             .options(selectinload(Content.author))
             .join(reviewer, reviewer.id == Content.reviewed_by_id, isouter=True)
-            .where(Content.deleted_at.is_(None))
         )
-
-        if filters.review_state is not None:
-            stmt = stmt.where(Content.review_state == filters.review_state)
-        if filters.hidden is not None:
-            stmt = stmt.where(
-                Content.hidden_at.is_not(None) if filters.hidden else Content.hidden_at.is_(None)
-            )
-        if filters.content_type is not None:
-            stmt = stmt.where(Content.content_type == filters.content_type)
-        if filters.reported:
-            stmt = stmt.where(open_report_count_subq() > 0)
-        if filters.search:
-            # Case-insensitive contains. The bank is small enough that a real
-            # index would be premature; revisit if the board ever pages past a
-            # few hundred.
-            stmt = stmt.where(Content.name.ilike(f"%{filters.search.strip()}%"))
+        stmt = self._apply_filters(stmt, filters)
 
         if filters.review_state == ReviewState.unreviewed:
-            return stmt.order_by(Content.created_at)
-        return stmt.order_by(Content.reviewed_at.desc().nullslast(), Content.created_at.desc())
+            return stmt.order_by(Content.created_at, Content.id)
+        return stmt.order_by(
+            Content.reviewed_at.desc().nullslast(), Content.created_at.desc(), Content.id
+        )
 
     async def list_queue(
         self, filters: ReviewFilters, limit: int, offset: int
@@ -130,8 +174,15 @@ class ModerationRepository(Repository):
         ]
 
     async def count_queue(self, filters: ReviewFilters) -> int:
-        inner = self._queue_stmt(filters).order_by(None).subquery()
-        return (await self.session.scalar(select(func.count()).select_from(inner))) or 0
+        """How many match, without building a row for each.
+
+        Deliberately does **not** reuse `_queue_stmt`: that carries three
+        correlated subqueries and a join whose only purpose is filling a row.
+        Counting through them would run all three per matching row — fine for a
+        page of fifty, wasteful across ten thousand.
+        """
+        stmt = self._apply_filters(select(func.count()).select_from(Content), filters)
+        return (await self.session.scalar(stmt)) or 0
 
     async def count_unreviewed(self) -> int:
         """The sidebar badge — how much is waiting, whatever the current view."""

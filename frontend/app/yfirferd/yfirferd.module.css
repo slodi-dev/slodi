@@ -192,6 +192,42 @@
   font-size: 16px;
 }
 
+.dateLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: 0.875rem;
+}
+
+.date {
+  min-height: 40px;
+  padding: 0 var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-background));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.loadMore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-top: 1px solid hsl(var(--sl-color-border));
+}
+
+/* "50 af 5.002" — the count is the point. Without it a reviewer cannot tell a
+   short queue from the top of a long one. */
+.loadMoreCount {
+  margin: 0;
+  font-size: 0.8rem;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
 .checkLabel {
   display: inline-flex;
   align-items: center;

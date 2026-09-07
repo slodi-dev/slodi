@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/services/users.service";
 import {
+  ALL_STATES,
   CONTENT_TYPE_LABEL,
   REVIEW_STATE_LABEL,
   type ReportQueueItem,
@@ -34,11 +35,11 @@ type Action = "approve" | "reject" | "hide" | "unhide";
 type UndoableAction = { item: ReviewQueueItem; hadBeenHidden: boolean };
 
 /** The views, in the order the segmented control offers them. */
-const VIEWS: { id: ReviewState | ""; label: string }[] = [
+const VIEWS: { id: ReviewState | typeof ALL_STATES; label: string }[] = [
   { id: "unreviewed", label: REVIEW_STATE_LABEL.unreviewed },
   { id: "approved", label: REVIEW_STATE_LABEL.approved },
   { id: "rejected", label: REVIEW_STATE_LABEL.rejected },
-  { id: "", label: "Allt" },
+  { id: ALL_STATES, label: "Allt" },
 ];
 
 export default function YfirferdPage() {
@@ -48,9 +49,15 @@ export default function YfirferdPage() {
   const [tab, setTab] = useState<Tab>("content");
   const [filters, setFilters] = useState<ReviewFilters>({ review_state: "unreviewed" });
   const [search, setSearch] = useState("");
+  const [author, setAuthor] = useState("");
 
   const [queue, setQueue] = useState<ReviewQueueItem[]>([]);
   const [reports, setReports] = useState<ReportQueueItem[]>([]);
+  // Totals come from X-Total-Count, so "load more" can say what is left rather
+  // than guessing from whether the last page was full.
+  const [queueTotal, setQueueTotal] = useState<number | null>(null);
+  const [reportsTotal, setReportsTotal] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [detail, setDetail] = useState<ReviewDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -72,8 +79,10 @@ export default function YfirferdPage() {
         fetchReviewQueue(filters, getToken),
         fetchOpenReports(getToken),
       ]);
-      setQueue(q);
-      setReports(r);
+      setQueue(q.items);
+      setQueueTotal(q.total);
+      setReports(r.items);
+      setReportsTotal(r.total);
     } catch {
       setError("Ekki tókst að sækja yfirferðina. Reyndu aftur.");
     } finally {
@@ -92,11 +101,16 @@ export default function YfirferdPage() {
   // Debounced, so typing does not fire a request per keystroke.
   useEffect(() => {
     const id = window.setTimeout(
-      () => setFilters((f) => ({ ...f, search: search || undefined })),
+      () =>
+        setFilters((f) => ({
+          ...f,
+          search: search || undefined,
+          author: author || undefined,
+        })),
       300
     );
     return () => window.clearTimeout(id);
-  }, [search]);
+  }, [search, author]);
 
   const rows: (ReviewQueueItem | ReportQueueItem)[] = tab === "content" ? queue : reports;
   // Clamped rather than reset: acting on the last row should leave the cursor
@@ -200,6 +214,25 @@ export default function YfirferdPage() {
     }
   }, [undoable, getToken, filters.review_state, load]);
 
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      if (tab === "content") {
+        const next = await fetchReviewQueue(filters, getToken, queue.length);
+        setQueue((q) => [...q, ...next.items]);
+        setQueueTotal(next.total);
+      } else {
+        const next = await fetchOpenReports(getToken, reports.length);
+        setReports((rs) => [...rs, ...next.items]);
+        setReportsTotal(next.total);
+      }
+    } catch {
+      setAnnouncement("Ekki tókst að sækja fleiri.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [tab, filters, getToken, queue.length, reports.length]);
+
   const closeReport = useCallback(
     async (report: ReportQueueItem, status: "resolved" | "dismissed") => {
       setBusyId(report.id);
@@ -273,7 +306,7 @@ export default function YfirferdPage() {
               setCursor(0);
             }}
           >
-            Efni <span className={styles.count}>{queue.length}</span>
+            Efni <span className={styles.count}>{queueTotal ?? queue.length}</span>
           </button>
           <button
             role="tab"
@@ -292,7 +325,7 @@ export default function YfirferdPage() {
                   : styles.count
               }
             >
-              {reports.length}
+              {reportsTotal ?? reports.length}
             </span>
           </button>
         </div>
@@ -326,6 +359,42 @@ export default function YfirferdPage() {
                 placeholder="Leita eftir heiti…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            <label className={styles.searchLabel}>
+              <span className="sl-sr-only">Leita eftir höfundi</span>
+              <input
+                className={styles.search}
+                type="search"
+                placeholder="Höfundur…"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+              />
+            </label>
+            {/* The range applies to whichever date the current view is ordered
+                by, so the label says which — otherwise "frá" is a guess. */}
+            <label className={styles.dateLabel}>
+              {filters.review_state === "unreviewed" ? "Sent inn" : "Afgreitt"} frá
+              <input
+                className={styles.date}
+                type="date"
+                value={filters.date_from ?? ""}
+                onChange={(e) => {
+                  setFilters((f) => ({ ...f, date_from: e.target.value || undefined }));
+                  setCursor(0);
+                }}
+              />
+            </label>
+            <label className={styles.dateLabel}>
+              til
+              <input
+                className={styles.date}
+                type="date"
+                value={filters.date_to ?? ""}
+                onChange={(e) => {
+                  setFilters((f) => ({ ...f, date_to: e.target.value || undefined }));
+                  setCursor(0);
+                }}
               />
             </label>
             <label className={styles.checkLabel}>
@@ -423,6 +492,26 @@ export default function YfirferdPage() {
                   />
                 ))}
           </ul>
+
+          {(() => {
+            const total = tab === "content" ? queueTotal : reportsTotal;
+            const shown = rows.length;
+            if (total === null || shown >= total || shown === 0) return null;
+            return (
+              <div className={styles.loadMore}>
+                <p className={styles.loadMoreCount}>
+                  {shown} af {total}
+                </p>
+                <button
+                  className={styles.linkBtn}
+                  disabled={loadingMore}
+                  onClick={() => void loadMore()}
+                >
+                  {loadingMore ? "Sæki…" : "Sýna fleiri"}
+                </button>
+              </div>
+            );
+          })()}
         </div>
 
         <div className={styles.detailPane}>

@@ -77,9 +77,9 @@ const pane = () => within(screen.getByRole("article"));
 beforeEach(() => {
   permissions = "moderator";
   vi.clearAllMocks();
-  fetchReviewQueue.mockResolvedValue([item()]);
+  fetchReviewQueue.mockResolvedValue({ items: [item()], total: 1 });
   fetchReviewDetail.mockResolvedValue(detail());
-  fetchOpenReports.mockResolvedValue([]);
+  fetchOpenReports.mockResolvedValue({ items: [], total: 0 });
   reviewContent.mockResolvedValue(item({ review_state: "approved" }));
   setContentHidden.mockResolvedValue(item({ hidden_at: "2026-09-02T10:00:00Z" }));
 });
@@ -97,9 +97,10 @@ describe("who can open the board", () => {
 describe("the rail and the pane", () => {
   it("flags in the rail how many objected, and says why in the pane", async () => {
     // The rail is for choosing what to read; the pane is for judging it.
-    fetchReviewQueue.mockResolvedValue([
-      item({ open_report_count: 2, open_report_reasons: ["unsafe", "spam"] }),
-    ]);
+    fetchReviewQueue.mockResolvedValue({
+      items: [item({ open_report_count: 2, open_report_reasons: ["unsafe", "spam"] })],
+      total: 1,
+    });
     fetchReviewDetail.mockResolvedValue(
       detail({
         open_report_count: 2,
@@ -195,15 +196,87 @@ describe("sweeping the queue", () => {
   });
 
   it("says the queue is clear rather than showing nothing at all", async () => {
-    fetchReviewQueue.mockResolvedValue([]);
+    fetchReviewQueue.mockResolvedValue({ items: [], total: 0 });
     render(<YfirferdPage />);
     expect(await screen.findByText(/Ekkert bíður yfirferðar/)).toBeInTheDocument();
   });
 
   it("says a filter matched nothing, which is not the same as being done", async () => {
-    fetchReviewQueue.mockResolvedValue([]);
+    fetchReviewQueue.mockResolvedValue({ items: [], total: 0 });
     render(<YfirferdPage />);
     await userEvent.click(await screen.findByRole("button", { name: "Hafnað" }));
     expect(await screen.findByText(/Ekkert efni passar við þessa síu/)).toBeInTheDocument();
+  });
+});
+
+describe("the audit view", () => {
+  it("asks for every state by name, not with an empty value", async () => {
+    // `review_state=` is ambiguous between "every state" and "the caller
+    // forgot", and the API answers 422 to it — which is how Allt shipped broken.
+    render(<YfirferdPage />);
+    await screen.findByRole("button", { name: "Allt" });
+
+    await userEvent.click(screen.getByRole("button", { name: "Allt" }));
+
+    await waitFor(() =>
+      expect(fetchReviewQueue).toHaveBeenLastCalledWith(
+        expect.objectContaining({ review_state: "all" }),
+        expect.anything()
+      )
+    );
+  });
+});
+
+describe("ten thousand items", () => {
+  it("shows how many of the total are loaded, and offers the rest", async () => {
+    // Without the count a reviewer cannot tell a short queue from the top of a
+    // long one, and "Sýna fleiri" is a leap of faith.
+    fetchReviewQueue.mockResolvedValue({ items: [item()], total: 5002 });
+    render(<YfirferdPage />);
+
+    expect(await screen.findByText("1 af 5002")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sýna fleiri" })).toBeInTheDocument();
+  });
+
+  it("asks for the next page from where the list ends", async () => {
+    fetchReviewQueue.mockResolvedValue({ items: [item()], total: 5002 });
+    render(<YfirferdPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Sýna fleiri" }));
+
+    // Not "last": the debounced filter effect can fire a two-argument reload
+    // afterwards. What matters is that the next page was asked for at all.
+    await waitFor(() =>
+      expect(fetchReviewQueue).toHaveBeenCalledWith(expect.anything(), expect.anything(), 1)
+    );
+  });
+
+  it("offers nothing more once everything is loaded", async () => {
+    fetchReviewQueue.mockResolvedValue({ items: [item()], total: 1 });
+    render(<YfirferdPage />);
+    await screen.findByText("Hlaupaleikur");
+    expect(screen.queryByRole("button", { name: "Sýna fleiri" })).not.toBeInTheDocument();
+  });
+});
+
+describe("finding things", () => {
+  it("searches by author, debounced so typing is not one request per key", async () => {
+    render(<YfirferdPage />);
+    await userEvent.type(await screen.findByPlaceholderText("Höfundur…"), "Signý");
+
+    await waitFor(() =>
+      expect(fetchReviewQueue).toHaveBeenLastCalledWith(
+        expect.objectContaining({ author: "Signý" }),
+        expect.anything()
+      )
+    );
+  });
+
+  it("labels the date range by the date the view is actually ordered by", async () => {
+    // "frá" alone is a guess: submitted, or decided?
+    render(<YfirferdPage />);
+    expect(await screen.findByText(/Sent inn frá/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Samþykkt" }));
+    expect(await screen.findByText(/Afgreitt frá/)).toBeInTheDocument();
   });
 });

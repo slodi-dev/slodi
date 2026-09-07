@@ -1,10 +1,11 @@
 # ruff: noqa: B008
 from __future__ import annotations
 
+import datetime as dt
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_permission
@@ -22,6 +23,9 @@ from app.schemas.user import UserOut
 from app.services.moderation import ModerationService
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
+
+ALL_STATES = "all"
+"""The audit view — every state at once."""
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 # Dagskrárstjórnarteymið. Admins outrank moderators, so they pass this for free.
@@ -34,14 +38,17 @@ async def review_queue(
     request: Request,
     response: Response,
     current_user: UserOut = ModeratorDep,
-    review_state: ReviewState | None = Query(
-        ReviewState.unreviewed,
-        description="Omit or pass an empty value for every state — the audit view.",
+    review_state: str = Query(
+        ReviewState.unreviewed.value,
+        description="A ReviewState, or 'all' for every state — the audit view.",
     ),
     hidden: bool | None = Query(None),
     content_type: ContentType | None = Query(None),
     reported: bool | None = Query(None, description="Only things somebody objected to."),
-    search: str | None = Query(None, max_length=200),
+    search: str | None = Query(None, max_length=200, description="Substring of the name."),
+    author: str | None = Query(None, max_length=200, description="Substring of the author's name."),
+    date_from: dt.date | None = Query(None),
+    date_to: dt.date | None = Query(None),
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[ReviewQueueItem]:
@@ -55,12 +62,32 @@ async def review_queue(
     view runs most-recently-decided first, which is how "what happened lately?"
     is asked.
     """
+    # "all" rather than an empty value: `review_state=` in a URL is ambiguous
+    # between "every state" and "the caller forgot", and FastAPI cannot coerce
+    # an empty string into the enum anyway — it answered 422.
+    if review_state == ALL_STATES:
+        state = None
+    else:
+        try:
+            state = ReviewState(review_state)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"Unknown review_state '{review_state}'. Use one of "
+                    f"{', '.join(s.value for s in ReviewState)} or '{ALL_STATES}'."
+                ),
+            ) from exc
+
     filters = ReviewFilters(
-        review_state=review_state,
+        review_state=state,
         hidden=hidden,
         content_type=content_type,
         reported=reported,
         search=search,
+        author=author,
+        date_from=date_from,
+        date_to=date_to,
     )
     svc = ModerationService(session)
     total = await svc.count(filters)
