@@ -82,6 +82,12 @@ class ModerationService:
             }
         )
 
+    async def reports_against_author(self, author_id: UUID) -> int:
+        """Reports filed against anything this person wrote, dismissed ones
+        included. **Context, not evidence** — anyone can report anyone, so this
+        must never read as guilt on its own."""
+        return await self.repo.count_reports_against_author(author_id)
+
     async def strikes_for_author(self, author_id: UUID) -> int:
         return await self.repo.count_strikes(author_id)
 

@@ -4,12 +4,27 @@ from datetime import datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
+import pytest
 from fastapi import HTTPException, status
 
 from app.schemas.comment import CommentOut
 from app.schemas.like import LikeOut
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _content_is_reachable():
+    """Likes and comments address content by id and never name a workspace, so
+    every one of these routes now resolves the workspace first (sc-428). These
+    tests are about likes and comments, not about that check — give them a
+    workspace and let the real check run against it.
+    """
+    with patch(
+        "app.services.content.ContentService.get_workspace_id", new_callable=AsyncMock
+    ) as ws:
+        ws.return_value = uuid4()
+        yield
 
 
 def _make_like(content_id=None, user_id=None):

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, Suspense } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
 import Modal from "@/components/Modal/Modal";
 import NewProgramForm from "@/app/programs/components/NewProgramForm";
 import ProgramGrid from "./components/ProgramGrid";
@@ -18,6 +18,7 @@ import { useProgramFilters } from "@/hooks/useProgramFilters";
 import type { FilterState } from "@/hooks/useProgramFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchMySuspension } from "@/services/suspensions.service";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
@@ -54,6 +55,9 @@ const LEGACY_TO_SORT: Record<SortOption, FilterState["sortBy"]> = {
  */
 function ProgramsPageInner() {
   const [showNewProgram, setShowNewProgram] = useState(false);
+  // Read on arrival: a leader should learn they cannot submit before writing
+  // something, not after the API refuses it.
+  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const filterToggleRef = useRef<HTMLButtonElement>(null);
 
@@ -73,6 +77,14 @@ function ProgramsPageInner() {
 
   // ── Auth & workspace role ──────────────────────────────────────────────
   const { user, getToken } = useAuth();
+
+  useEffect(() => {
+    // Best effort: if this fails the button stays enabled and the API refuses
+    // the write instead. A banner is a courtesy, not the enforcement.
+    fetchMySuspension(getToken)
+      .then((active) => setSuspendedUntil(active ? active.expires_at.slice(0, 10) : null))
+      .catch(() => setSuspendedUntil(null));
+  }, [getToken]);
   const { role } = useWorkspaceRole(defaultWorkspaceId);
 
   // ── Edit / delete modal state ──────────────────────────────────────────
@@ -173,7 +185,16 @@ function ProgramsPageInner() {
   return (
     <div className={styles.page}>
       {/* Header with FAB button */}
-      <ProgramsHeader onNewProgram={() => setShowNewProgram(true)} />
+      {suspendedUntil && (
+        <p className={styles.suspendedBanner} role="status">
+          Þú getur ekki sent inn efni í bankann fram til {suspendedUntil}. Þú getur áfram lesið
+          bankann og notað dagskrár.
+        </p>
+      )}
+      <ProgramsHeader
+        onNewProgram={() => setShowNewProgram(true)}
+        suspendedUntil={suspendedUntil}
+      />
 
       {/* New Program Modal */}
       <Modal

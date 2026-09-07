@@ -13,7 +13,9 @@ from app.core.cache import user_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.domain.enums import Permissions
+from app.schemas.posting_suspension import SuspensionOut
 from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
+from app.services.posting_suspensions import PostingSuspensionService
 from app.services.users import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -21,6 +23,23 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 CurrentUser = Annotated[UserOut, Depends(get_current_user)]
 
 DEFAULT_Q = Query(None, min_length=2, description="Case-insensitive search in name/email/auth0_id")
+
+
+@router.get("/me/suspension", response_model=SuspensionOut | None)
+async def my_suspension(
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> SuspensionOut | None:
+    """Am I in skammarkrókur, and until when?
+
+    Your own status, so the bank can say so on arrival rather than letting you
+    write something and refusing it afterwards. Returns null when there is
+    nothing to say.
+
+    Deliberately only your own: the moderator view lives behind
+    `/moderation/authors/{id}/standing`.
+    """
+    return await PostingSuspensionService(session).active(current_user.id)
 
 
 @router.get("", response_model=list[UserOutLimited])

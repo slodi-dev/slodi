@@ -12,6 +12,7 @@ from app.core.auth import (
     check_content_edit_access,
     check_workspace_access,
     get_current_user,
+    require_not_suspended,
 )
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
@@ -150,6 +151,7 @@ async def create_program_under_workspace(
     body: ProgramCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
     await check_content_create_access(workspace_id, current_user, session)
@@ -174,6 +176,7 @@ async def copy_program_to_workspace(
     program_id: UUID,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
     await check_content_create_access(workspace_id, current_user, session)
@@ -245,6 +248,7 @@ async def update_program(
     program_id: UUID,
     body: ProgramUpdate,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
 ) -> ProgramOut:
     svc = ProgramService(session)
     program = await svc.get(program_id)

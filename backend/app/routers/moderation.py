@@ -30,8 +30,15 @@ from app.schemas.moderation import (
     ReviewFilters,
     ReviewQueueItem,
 )
+from app.schemas.posting_suspension import (
+    AuthorStanding,
+    SuspensionCreate,
+    SuspensionLift,
+    SuspensionOut,
+)
 from app.schemas.user import UserOut
 from app.services.moderation import ModerationService
+from app.services.posting_suspensions import PostingSuspensionService
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
 
@@ -157,6 +164,68 @@ async def add_review_comment(
     return await ModerationService(session).add_comment(
         content_id, current_user.id, body, background_tasks
     )
+
+
+@router.get("/authors/{author_id}/standing", response_model=AuthorStanding)
+async def author_standing(
+    session: SessionDep,
+    author_id: UUID,
+    current_user: UserOut = ModeratorDep,
+) -> AuthorStanding:
+    """What a reviewer needs to know about a person before deciding.
+
+    Three separate numbers on purpose. Reports received is context — anyone can
+    be reported, and a raw count is gameable. Strikes are decisions a moderator
+    actually made. Suspensions are what was done about them. One combined "trust
+    score" would hide the difference between being complained about and being
+    wrong.
+    """
+    mod = ModerationService(session)
+    suspensions = PostingSuspensionService(session)
+    return AuthorStanding(
+        author_id=author_id,
+        reports_received=await mod.reports_against_author(author_id),
+        strikes=await mod.strikes_for_author(author_id),
+        suspensions=await suspensions.history(author_id),
+        active_suspension=await suspensions.active(author_id),
+    )
+
+
+@router.post(
+    "/authors/{author_id}/suspensions",
+    response_model=SuspensionOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def suspend_author(
+    session: SessionDep,
+    author_id: UUID,
+    body: SuspensionCreate,
+    background_tasks: BackgroundTasks,
+    current_user: UserOut = ModeratorDep,
+) -> SuspensionOut:
+    """Put someone in skammarkrókur — a timed pause on submitting.
+
+    They keep reading, filtering, favourites, likes, and **reporting**: taking
+    away someone's ability to flag genuinely unsafe content because they are
+    themselves under review helps nobody.
+
+    A moderator may suspend for up to 90 days; longer is an admin's call.
+    """
+    return await PostingSuspensionService(session).suspend(
+        author_id, current_user, body, background_tasks
+    )
+
+
+@router.patch("/suspensions/{suspension_id}/lift", response_model=SuspensionOut)
+async def lift_suspension(
+    session: SessionDep,
+    suspension_id: UUID,
+    body: SuspensionLift,
+    current_user: UserOut = ModeratorDep,
+) -> SuspensionOut:
+    """End one early. The record keeps both facts — a suspension that was
+    reconsidered is not the same as one that ran its course."""
+    return await PostingSuspensionService(session).lift(suspension_id, current_user, body)
 
 
 @router.patch("/content/{content_id}/review", response_model=ReviewQueueItem)

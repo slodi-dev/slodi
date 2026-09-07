@@ -23,8 +23,16 @@ from app.schemas.workspace import WorkspaceOut
 
 @pytest.fixture
 def mock_db_session():
-    """Create a mock database session."""
+    """A mock database session that finds nothing unless a test says otherwise.
+
+    `scalar` defaults to None rather than to a Mock. An AsyncMock's children are
+    themselves AsyncMocks, so an unstubbed lookup returns something truthy whose
+    attributes are coroutines — which reads to the code under test as "yes, a
+    row exists" and fails somewhere far from the cause. "Found nothing" is both
+    the safer default and what almost every test means.
+    """
     session = AsyncMock()
+    session.scalar.return_value = None
     return session
 
 

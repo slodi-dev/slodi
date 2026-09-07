@@ -236,6 +236,16 @@ class ModerationRepository(Repository):
             .where(Content.id == content_id, Content.deleted_at.is_(None))
         )
 
+    async def count_reports_against_author(self, author_id: UUID) -> int:
+        return (
+            await self.session.scalar(
+                select(func.count())
+                .select_from(ContentReport)
+                .join(Content, Content.id == ContentReport.content_id)
+                .where(Content.author_id == author_id, Content.deleted_at.is_(None))
+            )
+        ) or 0
+
     async def count_strikes(self, author_id: UUID) -> int:
         """Content of this author's that a moderator acted against.
 

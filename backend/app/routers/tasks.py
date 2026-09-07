@@ -12,6 +12,7 @@ from app.core.auth import (
     check_content_edit_access,
     check_workspace_access,
     get_current_user,
+    require_not_suspended,
 )
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
@@ -71,6 +72,7 @@ async def create_workspace_task(
     body: TaskCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
     svc = TaskService(session)
@@ -132,6 +134,7 @@ async def create_event_task(
     body: TaskCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
     svc = TaskService(session)
@@ -178,6 +181,7 @@ async def update_task(
     task_id: UUID,
     body: TaskUpdate,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
 ) -> TaskOut:
     svc = TaskService(session)
     task = await svc.get(task_id, current_user.id)

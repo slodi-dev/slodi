@@ -27,12 +27,14 @@ from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
+from app.repositories.posting_suspensions import PostingSuspensionRepository
 from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
 from app.services.content import ContentService
 from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
 from app.settings import settings
+from app.utils import get_current_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -491,6 +493,37 @@ async def check_workspace_access(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Requires {minimum_role.value} role or higher",
         )
+
+
+async def require_not_suspended(
+    current_user: UserOut = Depends(get_current_user),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
+) -> UserOut:
+    """Refuse a write from someone currently in skammarkrókur.
+
+    **Not cached.** Writes are rare and this is one indexed lookup, whereas a
+    cached suspension either expires late or lifts late — and someone told they
+    can post again, who then cannot, will report it as broken. Correctness here
+    is worth more than the round trip.
+
+    Reading, filtering, favourites, likes and **reporting** are all untouched.
+    Taking away someone's ability to flag genuinely unsafe content because they
+    are themselves under review helps nobody.
+    """
+    suspension = await PostingSuspensionRepository(session).active_for(
+        current_user.id, get_current_datetime()
+    )
+    if suspension is None:
+        return current_user
+
+    until = suspension.expires_at.date().isoformat()
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        # The date is the point: "you cannot post" without an end reads as
+        # permanent, which is not what this is.
+        detail=f"Þú getur ekki sent inn efni í bankann fram til {until}.",
+        headers={"X-Suspended-Until": until},
+    )
 
 
 async def check_content_create_access(

@@ -562,6 +562,71 @@
   font-size: 0.8rem;
 }
 
+.standing {
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+  padding-top: var(--sl-spacing-sm);
+}
+
+/* Behind a disclosure on purpose: most decisions are about the item in front of
+   you, and somebody's past mistakes sitting open beside it invites judging the
+   person instead of the thing. */
+.standingToggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+}
+
+.standingToggle:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
+}
+
+.standingBody {
+  margin-top: var(--sl-spacing-sm);
+}
+
+.activeSuspension {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm);
+  border-left: 4px solid hsl(var(--sl-color-warning));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.activeSuspension p {
+  margin: 0;
+}
+
+.suspendRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+}
+
+.suspensionList {
+  list-style: none;
+  margin: var(--sl-spacing-sm) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
 .notes {
   padding-top: var(--sl-spacing-sm);
   border-top: 1px solid hsl(var(--sl-color-border-subtle));

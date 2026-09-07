@@ -167,3 +167,14 @@
     border-width: 2px;
   }
 }
+
+/* Told, not just blocked. Someone who finds the button disabled and no reason
+   given concludes the site is broken. */
+.suspendedBanner {
+  margin: 0 0 var(--sl-spacing-md);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-left: 4px solid hsl(var(--sl-color-warning));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-text-primary));
+}

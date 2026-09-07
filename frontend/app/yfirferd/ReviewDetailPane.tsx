@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Modal from "@/components/Modal/Modal";
+import AuthorStandingPanel from "./AuthorStandingPanel";
 import {
   CONTENT_TYPE_LABEL,
   REVIEW_STATE_LABEL,
@@ -191,6 +192,8 @@ export default function ReviewDetailPane({
         />
         <Fact label="Merkimiðar" value={detail.tags.length ? detail.tags.join(", ") : null} />
       </dl>
+
+      <AuthorStandingPanel authorId={detail.author_id} authorName={detail.author_name} />
 
       <section className={styles.notes}>
         <h3 className={styles.sectionTitle}>Athugasemdir yfirferðar</h3>

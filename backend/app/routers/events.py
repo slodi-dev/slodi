@@ -13,6 +13,7 @@ from app.core.auth import (
     check_content_edit_access,
     check_workspace_access,
     get_current_user,
+    require_not_suspended,
 )
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
@@ -120,6 +121,7 @@ async def create_workspace_event(
     workspace_id: UUID,
     body: EventCreate,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> EventOut:
     await check_content_create_access(workspace_id, current_user, session)
@@ -144,6 +146,7 @@ async def create_program_event(
     program_id: UUID,
     body: EventCreate,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> EventOut:
     from app.services.programs import ProgramService  # Avoid circular import
@@ -192,6 +195,7 @@ async def update_event(
     event_id: UUID,
     body: EventUpdate,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
 ) -> EventOut:
     svc = EventService(session)
     event = await svc.get(event_id, current_user.id)
