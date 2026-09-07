@@ -20,9 +20,11 @@ import { formatIcelandicDate } from "@/utils/date";
 
 interface ProgramQuickInfoProps {
   program: Program;
+  /** Opens the report modal. Omitted for a signed-out reader, who cannot report. */
+  onReport?: () => void;
 }
 
-export default function ProgramQuickInfo({ program }: ProgramQuickInfoProps) {
+export default function ProgramQuickInfo({ program, onReport }: ProgramQuickInfoProps) {
   return (
     <div className={styles.container}>
       {/* Quick Stats */}
@@ -189,9 +191,11 @@ export default function ProgramQuickInfo({ program }: ProgramQuickInfoProps) {
           <button className={styles.actionButton}>
             <Download size={16} /> Sækja PDF
           </button>
-          <button className={styles.actionButton}>
-            <Flag size={16} /> Tilkynna
-          </button>
+          {onReport && (
+            <button className={styles.actionButton} onClick={onReport}>
+              <Flag size={16} /> Tilkynna
+            </button>
+          )}
         </div>
       </section>
     </div>

@@ -1,7 +1,11 @@
+/* Colour tokens hold bare HSL components — every consumer wraps them in hsl().
+   `var(--sl-color-primary)` on its own is an invalid value, which renders as
+   transparent rather than failing loudly. See DESIGN-TOKEN-STANDARDS.md. */
+
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-4);
+  gap: var(--sl-spacing-md);
 }
 
 .fieldset {
@@ -10,52 +14,53 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-2);
+  gap: var(--sl-spacing-xs);
 }
 
 .legend {
   padding: 0;
-  margin-bottom: var(--sl-spacing-2);
+  margin-bottom: var(--sl-spacing-sm);
   font-weight: 600;
-  color: var(--sl-color-text-primary);
+  color: hsl(var(--sl-color-text-primary));
 }
 
 .option {
   display: flex;
   align-items: center;
-  gap: var(--sl-spacing-3);
+  gap: var(--sl-spacing-sm);
   /* 48px targets: this is reached on a phone, one-handed, in a hall. */
   min-height: 48px;
-  padding: 0 var(--sl-spacing-2);
+  padding: 0 var(--sl-spacing-sm);
   border-radius: var(--sl-radius-input);
   cursor: pointer;
-  color: var(--sl-color-text-primary);
+  color: hsl(var(--sl-color-text-primary));
 }
 
 .option:hover {
-  background: var(--sl-color-surface-hover, var(--sl-color-surface));
+  background: hsl(var(--sl-color-surface-hover));
 }
 
 .option input {
   width: 20px;
   height: 20px;
-  accent-color: var(--sl-color-primary);
+  flex: none;
+  accent-color: hsl(var(--sl-color-primary));
 }
 
 .noteLabel {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-2);
-  color: var(--sl-color-text-secondary);
+  gap: var(--sl-spacing-xs);
+  color: hsl(var(--sl-color-text-secondary));
 }
 
 .note {
   width: 100%;
-  padding: var(--sl-spacing-3);
-  border: 1px solid var(--sl-color-border);
+  padding: var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-input);
-  background: var(--sl-color-background);
-  color: var(--sl-color-text-primary);
+  background: hsl(var(--sl-color-background));
+  color: hsl(var(--sl-color-text-primary));
   /* 16px or iOS Safari zooms the whole page on focus. */
   font: inherit;
   font-size: 16px;
@@ -64,36 +69,40 @@
 
 .note:focus-visible,
 .option input:focus-visible {
-  outline: 2px solid var(--sl-color-primary);
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
   outline-offset: 2px;
 }
 
 .status {
   margin: 0;
   min-height: 1.25rem;
-  color: var(--sl-color-text-secondary);
+  color: hsl(var(--sl-color-text-secondary));
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--sl-spacing-3);
+  gap: var(--sl-spacing-sm);
 }
 
 .primary,
 .secondary {
   min-height: 48px;
-  padding: 0 var(--sl-spacing-5);
-  border-radius: var(--sl-radius-input);
+  padding: 0 var(--sl-spacing-lg);
+  border-radius: var(--sl-radius-button);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 
 .primary {
-  background: var(--sl-color-primary);
-  color: var(--sl-color-on-primary, #fff);
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
   border: none;
+}
+
+.primary:hover:not(:disabled) {
+  background: hsl(var(--sl-color-primary-hover));
 }
 
 .primary:disabled {
@@ -103,6 +112,16 @@
 
 .secondary {
   background: transparent;
-  color: var(--sl-color-text-primary);
-  border: 1px solid var(--sl-color-border);
+  color: hsl(var(--sl-color-text-primary));
+  border: 1px solid hsl(var(--sl-color-border));
+}
+
+.secondary:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
 }

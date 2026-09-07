@@ -16,6 +16,7 @@ import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSk
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
+import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { updateProgram, deleteProgram, type ProgramUpdateInput } from "@/services/programs.service";
 import ProgramDetailEdit from "./components/ProgramDetailEdit";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
@@ -48,6 +49,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   );
   const { handleShare, handleAddToWorkspace, handleBack } = useProgramActions(program);
   const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
+  const [showReport, setShowReport] = useState(false);
 
   // All hooks are called first, then we do conditional rendering
   if (error) return <ProgramDetailError error={error} />;
@@ -129,7 +131,12 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           )}
         </div>
         <aside className={styles.sidebar}>
-          <ProgramQuickInfo program={program} />
+          {/* The sidebar already had a Tilkynna affordance; it just had no
+              handler. Wiring it beats adding a second one somewhere else. */}
+          <ProgramQuickInfo
+            program={program}
+            onReport={isAuthenticated ? () => setShowReport(true) : undefined}
+          />
         </aside>
       </div>
 
@@ -138,6 +145,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           ← Til baka í dagskrárlista
         </button>
       </div>
+
+      <ReportContentModal
+        open={showReport}
+        onClose={() => setShowReport(false)}
+        contentId={program.id}
+        contentName={program.name}
+      />
 
       {/* Delete confirmation modal */}
       <DeleteConfirmModal
