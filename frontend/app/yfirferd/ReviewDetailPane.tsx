@@ -13,6 +13,7 @@ import {
 } from "@/services/moderation.service";
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import styles from "./yfirferd.module.css";
+import { formatIcelandicDate } from "@/lib/format";
 
 /** A range like "15–25 mín", or a single value, or nothing at all. */
 function range(min: number | null, max: number | null, unit: string): string | null {
@@ -90,9 +91,9 @@ export default function ReviewDetailPane({
   const reports = detail.reports ?? [];
 
   const decided = detail.reviewed_at
-    ? `${REVIEW_STATE_LABEL[detail.review_state]} af ${detail.reviewed_by_name ?? "óþekktum"} · ${new Date(
+    ? `${REVIEW_STATE_LABEL[detail.review_state]} af ${detail.reviewed_by_name ?? "óþekktum"} · ${formatIcelandicDate(
         detail.reviewed_at
-      ).toLocaleDateString("is-IS", { dateStyle: "medium" })}`
+      )}`
     : null;
 
   return (
@@ -101,9 +102,7 @@ export default function ReviewDetailPane({
         <p className={styles.meta}>
           <span className={styles.type}>{CONTENT_TYPE_LABEL[detail.content_type]}</span>
           <span>eftir {detail.author_name}</span>
-          <span>
-            {new Date(detail.created_at).toLocaleDateString("is-IS", { dateStyle: "medium" })}
-          </span>
+          <span>{formatIcelandicDate(detail.created_at)}</span>
           {detail.hidden_at && <span className={styles.reportFlag}>Falið</span>}
           {detail.author_strikes > 0 && (
             <span className={styles.strikes}>
@@ -193,7 +192,16 @@ export default function ReviewDetailPane({
         <Fact label="Merkimiðar" value={detail.tags.length ? detail.tags.join(", ") : null} />
       </dl>
 
-      <AuthorStandingPanel authorId={detail.author_id} authorName={detail.author_name} />
+      <AuthorStandingPanel
+        authorId={detail.author_id}
+        authorName={detail.author_name}
+        summary={{
+          reports: detail.author_reports_received ?? 0,
+          strikes: detail.author_strikes ?? 0,
+          spells: detail.author_suspension_count ?? 0,
+          suspendedUntil: detail.author_suspended_until ?? null,
+        }}
+      />
 
       <section className={styles.notes}>
         <h3 className={styles.sectionTitle}>Athugasemdir yfirferðar</h3>
@@ -219,9 +227,7 @@ export default function ReviewDetailPane({
                     {VISIBILITY_LABEL[c.visibility]}
                   </span>
                   <span>{c.author_name ?? "óþekktur"}</span>
-                  <span>
-                    {new Date(c.created_at).toLocaleDateString("is-IS", { dateStyle: "medium" })}
-                  </span>
+                  <span>{formatIcelandicDate(c.created_at)}</span>
                 </p>
                 <p className={styles.detailBody}>{c.body}</p>
               </li>

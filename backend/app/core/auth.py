@@ -27,6 +27,7 @@ from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
+from app.domain.icelandic_dates import format_date
 from app.repositories.posting_suspensions import PostingSuspensionRepository
 from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
 from app.services.content import ContentService
@@ -516,14 +517,20 @@ async def require_not_suspended(
     if suspension is None:
         return current_user
 
-    until = suspension.expires_at.date().isoformat()
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        # The date is the point: "you cannot post" without an end reads as
-        # permanent, which is not what this is.
-        detail=f"Þú getur ekki sent inn efni í bankann fram til {until}.",
-        headers={"X-Suspended-Until": until},
-    )
+    # An open-ended suspension has no date to name, and inventing one would be
+    # a lie. Saying so plainly is better than a vague refusal.
+    if suspension.expires_at is None:
+        detail = "Þú getur ekki sent inn efni í bankann. Hafðu samband við Dagskrárstjórnarteymið."
+        headers = {"X-Suspended-Until": "open-ended"}
+    else:
+        detail = (
+            f"Þú getur ekki sent inn efni í bankann fram til {format_date(suspension.expires_at)}."
+        )
+        # ISO in the header, Icelandic in the message: one is for a machine and
+        # one is for a person, and neither should have to parse the other's.
+        headers = {"X-Suspended-Until": suspension.expires_at.date().isoformat()}
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail, headers=headers)
 
 
 async def check_content_create_access(

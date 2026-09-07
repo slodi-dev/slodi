@@ -186,6 +186,15 @@ class ReviewDetail(ReviewQueueItem):
     """Files attached to the item. Read out of `Content.media` under a
     `documents` key; see `Attachment`."""
 
+    author_reports_received: int = 0
+    author_suspension_count: int = 0
+    author_suspended_until: dt.datetime | None = None
+    """Enough of the author's standing to summarise without a second request.
+
+    The board fetches one detail per selection; a sweep of fifty should not turn
+    that into a hundred. The full history is only fetched when a reviewer opens
+    the panel, which is rare."""
+
 
 class Attachment(BaseModel):
     """A file hanging off a piece of content.

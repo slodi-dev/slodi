@@ -11,7 +11,17 @@ describe("what a suspended leader sees", () => {
 
     const fab = screen.getByRole("button");
     expect(fab).toBeDisabled();
-    expect(fab).toHaveAccessibleName(/fram til 2026-10-01/);
+    expect(fab).toHaveAccessibleName(/fram til 1\. október 2026/);
+  });
+
+  it("names no date for an open-ended suspension", () => {
+    // Inventing one would be a lie, and "fram til" with nothing after it is
+    // worse than saying plainly that there is no end yet.
+    render(<ProgramsHeader onNewProgram={vi.fn()} suspendedUntil="open-ended" />);
+
+    const fab = screen.getByRole("button");
+    expect(fab).toBeDisabled();
+    expect(fab).toHaveAccessibleName("Þú getur ekki sent inn efni");
   });
 
   it("says nothing at all when there is nothing to say", () => {

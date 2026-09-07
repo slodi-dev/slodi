@@ -79,6 +79,11 @@ class ModerationService:
                     1 for r in content.reports if r.status == ReportStatus.open
                 ),
                 "author_strikes": await self.strikes_for_author(content.author_id),
+                "author_reports_received": await self.reports_against_author(content.author_id),
+                "author_suspension_count": await self.repo.count_suspensions(content.author_id),
+                "author_suspended_until": await self.repo.active_suspension_end(
+                    content.author_id, get_current_datetime()
+                ),
             }
         )
 

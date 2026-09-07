@@ -19,6 +19,7 @@ import type { FilterState } from "@/hooks/useProgramFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchMySuspension } from "@/services/suspensions.service";
+import { formatIcelandicDate } from "@/lib/format";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
@@ -82,7 +83,10 @@ function ProgramsPageInner() {
     // Best effort: if this fails the button stays enabled and the API refuses
     // the write instead. A banner is a courtesy, not the enforcement.
     fetchMySuspension(getToken)
-      .then((active) => setSuspendedUntil(active ? active.expires_at.slice(0, 10) : null))
+      .then((active) =>
+        // Open-ended has no date to show; the banner says so in words instead.
+        setSuspendedUntil(active ? (active.expires_at?.slice(0, 10) ?? "open-ended") : null)
+      )
       .catch(() => setSuspendedUntil(null));
   }, [getToken]);
   const { role } = useWorkspaceRole(defaultWorkspaceId);
@@ -187,8 +191,10 @@ function ProgramsPageInner() {
       {/* Header with FAB button */}
       {suspendedUntil && (
         <p className={styles.suspendedBanner} role="status">
-          Þú getur ekki sent inn efni í bankann fram til {suspendedUntil}. Þú getur áfram lesið
-          bankann og notað dagskrár.
+          {suspendedUntil === "open-ended"
+            ? "Þú getur ekki sent inn efni í bankann. Hafðu samband við Dagskrárstjórnarteymið."
+            : `Þú getur ekki sent inn efni í bankann fram til ${formatIcelandicDate(suspendedUntil)}.`}{" "}
+          Þú getur áfram lesið bankann og notað dagskrár.
         </p>
       )}
       <ProgramsHeader

@@ -4,13 +4,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   type AuthorStanding,
-  MODERATOR_MAX_DAYS,
+  MAX_DAYS,
   SUSPENSION_PRESETS,
   fetchAuthorStanding,
   liftSuspension,
   suspendAuthor,
 } from "@/services/suspensions.service";
 import styles from "./yfirferd.module.css";
+import { formatIcelandicDate } from "@/lib/format";
 
 /**
  * Who a reviewer is dealing with, and the one action that is about the person
@@ -23,12 +24,21 @@ import styles from "./yfirferd.module.css";
 export default function AuthorStandingPanel({
   authorId,
   authorName,
+  summary,
 }: {
   authorId: string;
   authorName: string;
+  /** Carried on the item's detail, so a fifty-item sweep does not fetch this
+   *  separately for every row. The full history is fetched only on opening. */
+  summary: { reports: number; strikes: number; spells: number; suspendedUntil: string | null };
 }) {
   const { getToken } = useAuth();
-  const [open, setOpen] = useState(false);
+  const hasHistory =
+    summary.strikes > 0 || summary.spells > 0 || summary.suspendedUntil !== undefined;
+  // Open itself when there is something to see. A first-time contributor stays
+  // quiet; a repeat one should be impossible to miss.
+  const [open, setOpen] = useState(summary.strikes > 0 || summary.spells > 0);
+  const [customDays, setCustomDays] = useState("");
   const [standing, setStanding] = useState<AuthorStanding | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -45,22 +55,38 @@ export default function AuthorStandingPanel({
     if (open) void load();
   }, [open, load]);
 
-  // A new item means a new person; collapse rather than show the last one's.
+  // A new item means a new person: reset, and open again only if this one has
+  // a history of their own.
   useEffect(() => {
-    setOpen(false);
+    setOpen(summary.strikes > 0 || summary.spells > 0);
     setStanding(null);
     setMessage("");
-  }, [authorId]);
+    setCustomDays("");
+  }, [authorId, summary.strikes, summary.spells]);
 
-  async function suspend(days: number) {
+  async function suspend(days: number | null) {
+    if (days === null) {
+      // Open-ended has no end to announce, so it is confirmed separately. It is
+      // still reversible — that is worth saying, or it reads as a ban.
+      const sure = window.confirm(
+        `Setja ${authorName} ótímabundið í skammarkrók?\n\n` +
+          `Það gildir þar til einhver afléttir því. Hægt er að aflétta hvenær sem er.`
+      );
+      if (!sure) return;
+    }
+    const span = days === null ? "ótímabundið" : `í ${days} daga`;
     const reason = window.prompt(
-      `Af hverju fer ${authorName} í skammarkrók í ${days} daga? ${authorName} sér þessa ástæðu.`
+      `Af hverju fer ${authorName} ${span} í skammarkrók? ${authorName} sér þessa ástæðu.`
     );
     if (!reason?.trim()) return;
     setBusy(true);
     try {
       await suspendAuthor(authorId, days, reason, getToken);
-      setMessage(`${authorName} getur ekki sent inn efni næstu ${days} daga.`);
+      setMessage(
+        days === null
+          ? `${authorName} getur ekki sent inn efni fyrr en því er aflétt.`
+          : `${authorName} getur ekki sent inn efni næstu ${days} daga.`
+      );
       await load();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Ekki tókst að vista.");
@@ -120,12 +146,8 @@ export default function AuthorStandingPanel({
                 <div className={styles.activeSuspension}>
                   <p>
                     Í skammarkrók til{" "}
-                    <strong>
-                      {new Date(standing.active_suspension.expires_at).toLocaleDateString("is-IS", {
-                        dateStyle: "medium",
-                      })}
-                    </strong>{" "}
-                    — „{standing.active_suspension.reason}“
+                    <strong>{formatIcelandicDate(standing.active_suspension.expires_at)}</strong> —
+                    „{standing.active_suspension.reason}“
                   </p>
                   <button
                     className={styles.reject}
@@ -148,9 +170,34 @@ export default function AuthorStandingPanel({
                       {days} dagar
                     </button>
                   ))}
-                  <span className={styles.bodyMuted}>
-                    Lengur en {MODERATOR_MAX_DAYS} daga þarf stjórnanda.
-                  </span>
+                  <label className={styles.customDays}>
+                    <span className="sl-sr-only">Annar fjöldi daga</span>
+                    <input
+                      className={styles.date}
+                      type="number"
+                      min={1}
+                      max={MAX_DAYS}
+                      placeholder="Dagar"
+                      value={customDays}
+                      onChange={(e) => setCustomDays(e.target.value)}
+                    />
+                    <button
+                      className={styles.hide}
+                      disabled={busy || !customDays || Number(customDays) < 1}
+                      onClick={() => void suspend(Number(customDays))}
+                    >
+                      Setja
+                    </button>
+                  </label>
+                  {/* Last, and worded rather than numbered: it is a different
+                      kind of decision, not a longer one. */}
+                  <button
+                    className={styles.permanentBtn}
+                    disabled={busy}
+                    onClick={() => void suspend(null)}
+                  >
+                    Ótímabundið
+                  </button>
                 </div>
               )}
 
@@ -158,9 +205,8 @@ export default function AuthorStandingPanel({
                 <ul className={styles.suspensionList}>
                   {standing.suspensions.map((s) => (
                     <li key={s.id}>
-                      {new Date(s.starts_at).toLocaleDateString("is-IS")} –{" "}
-                      {new Date(s.expires_at).toLocaleDateString("is-IS")} · „{s.reason}“
-                      {s.lifted_at && <em> — aflétt: „{s.lift_reason}“</em>}
+                      {formatIcelandicDate(s.starts_at)} – {formatIcelandicDate(s.expires_at)} · „
+                      {s.reason}“{s.lifted_at && <em> — aflétt: „{s.lift_reason}“</em>}
                     </li>
                   ))}
                 </ul>

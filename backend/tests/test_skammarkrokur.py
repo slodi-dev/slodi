@@ -18,7 +18,8 @@ from app import models as m
 from app.core.auth import get_current_user, require_not_suspended
 from app.core.db import get_session
 from app.domain.enums import Permissions
-from app.domain.posting_suspension_constraints import MODERATOR_MAX_DAYS
+from app.domain.icelandic_dates import format_date
+from app.domain.posting_suspension_constraints import MAX_DAYS
 from app.main import create_app
 from app.schemas.posting_suspension import SuspensionCreate, SuspensionLift
 from app.schemas.user import UserOut
@@ -53,19 +54,19 @@ def _client(mock_db_session, user):
 # ── Who may issue one ────────────────────────────────────────────────────────
 
 
-@pytest.mark.asyncio
-async def test_a_moderator_cannot_suspend_beyond_a_season():
-    """Past 90 days it is a judgement about somebody's place in the movement
-    rather than about one piece of content, and that belongs to an admin."""
-    svc = PostingSuspensionService(AsyncMock())
-    with pytest.raises(HTTPException) as exc:
-        await svc.suspend(
-            uuid4(),
-            _user(Permissions.moderator),
-            SuspensionCreate(days=MODERATOR_MAX_DAYS + 1, reason="Ítrekað"),
-            BackgroundTasks(),
-        )
-    assert exc.value.status_code == status.HTTP_403_FORBIDDEN
+def test_a_suspension_may_be_open_ended():
+    """Null days means it runs until somebody lifts it. Dagskrárstjórnarteymið
+    owns that decision — every one is recorded, attributed and reversible."""
+    assert SuspensionCreate(days=None, reason="Ítrekað").days is None
+
+
+def test_a_dated_suspension_still_has_sane_bounds():
+    """Zero days is not a decision, and past ten years "open-ended" is the
+    honest word — reached deliberately, not by typing a large number."""
+    with pytest.raises(ValueError):
+        SuspensionCreate(days=0, reason="Nei")
+    with pytest.raises(ValueError):
+        SuspensionCreate(days=MAX_DAYS + 1, reason="Of langt")
 
 
 @pytest.mark.asyncio
@@ -83,12 +84,6 @@ def test_a_suspension_must_carry_a_reason():
     """Someone told they cannot contribute deserves to know why."""
     with pytest.raises(ValueError):
         SuspensionCreate(days=7, reason="  ")
-
-
-def test_a_suspension_is_bounded_at_both_ends():
-    """Zero days is not a decision; unbounded is a ban by another name."""
-    with pytest.raises(ValueError):
-        SuspensionCreate(days=0, reason="Nei")
 
 
 # ── What it blocks, and what it must not ─────────────────────────────────────
@@ -130,7 +125,8 @@ async def test_the_refusal_says_when_it_ends():
             await require_not_suspended(_user(), AsyncMock())
 
     assert exc.value.status_code == status.HTTP_403_FORBIDDEN
-    assert until.date().isoformat() in exc.value.detail
+    # Icelandic in the message a person reads, ISO in the header a machine does.
+    assert format_date(until) in exc.value.detail
     assert exc.value.headers["X-Suspended-Until"] == until.date().isoformat()
 
 
@@ -263,3 +259,50 @@ async def test_lifting_early_is_recorded_as_its_own_act(db):
     assert not lifted.is_active
     # And the person can post again immediately — no cache to wait out.
     assert await svc.active(user.id) is None
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_an_open_ended_suspension_runs_until_lifted(db):
+    """It has no expiry to be past, so nothing but a person ends it."""
+    user = m.User(name="F", auth0_id=f"auth0|{uuid4()}", email=f"{uuid4()}@t.is")
+    db.add(user)
+    await db.flush()
+    now = get_current_datetime()
+    db.add(
+        m.PostingSuspension(
+            user_id=user.id,
+            starts_at=now,
+            expires_at=None,
+            reason="Ótímabundið",
+            created_at=now,
+        )
+    )
+    await db.flush()
+
+    svc = PostingSuspensionService(db)
+    active = await svc.active(user.id)
+    assert active is not None
+    assert active.expires_at is None
+    assert active.is_active
+
+
+@pytest.mark.asyncio
+async def test_an_open_ended_refusal_names_no_date():
+    """Inventing an end date would be a lie; saying so plainly is better than a
+    vague refusal."""
+    suspension = m.PostingSuspension(
+        user_id=uuid4(),
+        starts_at=get_current_datetime(),
+        expires_at=None,
+        reason="Ótímabundið",
+        created_at=get_current_datetime(),
+    )
+    with patch(ACTIVE_LOOKUP, new_callable=AsyncMock) as active:
+        active.return_value = suspension
+        with pytest.raises(HTTPException) as exc:
+            await require_not_suspended(_user(), AsyncMock())
+
+    assert "fram til" not in exc.value.detail
+    assert "Dagskrárstjórnarteymið" in exc.value.detail
+    assert exc.value.headers["X-Suspended-Until"] == "open-ended"

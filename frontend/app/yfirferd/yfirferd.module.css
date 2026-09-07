@@ -616,6 +616,46 @@
   gap: var(--sl-spacing-sm);
 }
 
+.customDays {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+}
+
+.customDays input {
+  width: 6rem;
+}
+
+/* Worded, not numbered, and set apart: open-ended is a different kind of
+   decision from a longer one, and should not sit in the row of durations as if
+   it were simply the biggest. */
+.permanentBtn {
+  min-height: 44px;
+  padding: 0 var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-color-error));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.permanentBtn:hover:not(:disabled) {
+  background: hsl(var(--sl-color-error-muted));
+}
+
+.permanentBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.permanentBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
+}
+
 .suspensionList {
   list-style: none;
   margin: var(--sl-spacing-sm) 0 0;

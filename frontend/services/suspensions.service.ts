@@ -13,7 +13,8 @@ export type Suspension = {
   id: string;
   user_id: string;
   starts_at: string;
-  expires_at: string;
+  /** Null means open-ended: it runs until somebody lifts it. */
+  expires_at: string | null;
   reason: string;
   lifted_at: string | null;
   lift_reason: string | null;
@@ -36,11 +37,11 @@ export type AuthorStanding = {
   active_suspension: Suspension | null;
 };
 
-/** A moderator may suspend for up to this long; beyond it is an admin's call. */
-export const MODERATOR_MAX_DAYS = 90;
-
-/** The lengths offered as one click each. */
+/** The lengths offered as one click each. Anything else is typed. */
 export const SUSPENSION_PRESETS = [7, 30, 90] as const;
+
+/** Past this, "ótímabundið" is the honest word — and a separate choice. */
+export const MAX_DAYS = 3650;
 
 type GetToken = () => Promise<string | null>;
 
@@ -57,7 +58,8 @@ export async function fetchAuthorStanding(
 
 export async function suspendAuthor(
   authorId: string,
-  days: number,
+  /** Null for open-ended. */
+  days: number | null,
   reason: string,
   getToken: GetToken
 ): Promise<Suspension> {

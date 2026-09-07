@@ -18,9 +18,13 @@ class SuspensionCreate(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    days: int = Field(..., ge=1, le=3650)
-    """How long. Bounded on both ends: a suspension of zero days is not a
-    decision, and an unbounded one is a ban by another name."""
+    days: int | None = Field(None, ge=1, le=3650)
+    """How long, or null for open-ended.
+
+    A zero-day suspension is not a decision, so the floor is one. The ceiling is
+    ten years — past that, "open-ended" is the honest word for what is meant,
+    and it is a separate choice a reviewer has to make deliberately rather than
+    reach by typing a large number."""
 
     reason: ReasonStr
     """Required. Someone told they cannot contribute deserves to know why, and a
@@ -39,7 +43,8 @@ class SuspensionOut(BaseModel):
     id: UUID
     user_id: UUID
     starts_at: dt.datetime
-    expires_at: dt.datetime
+    expires_at: dt.datetime | None = None
+    """Null means open-ended: it runs until somebody lifts it."""
     reason: str
     lifted_at: dt.datetime | None = None
     lift_reason: str | None = None

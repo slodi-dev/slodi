@@ -25,14 +25,18 @@ class PostingSuspension(Base):
     and a boolean or a single expiry date loses it the moment the second one
     starts.
 
-    Bounded: every suspension has an end. An indefinite one is a ban by another
-    name, and banning an adult volunteer from a movement is not a decision this
-    screen should be able to make quietly.
+    `expires_at` is nullable, and null means **open-ended** — it runs until
+    somebody lifts it. That is a heavy thing to do to an adult volunteer, so the
+    UI confirms it separately; but it is reversible and recorded like any other,
+    which is what makes it safe to offer at all.
     """
 
     __tablename__ = "posting_suspensions"
     __table_args__ = (
-        CheckConstraint("expires_at > starts_at", name="ck_posting_suspensions_ends_after_start"),
+        CheckConstraint(
+            "expires_at IS NULL OR expires_at > starts_at",
+            name="ck_posting_suspensions_ends_after_start",
+        ),
         # "Is this person suspended right now?" runs on every write they attempt.
         Index("ix_posting_suspensions_user_id_expires_at", "user_id", "expires_at"),
     )
@@ -45,7 +49,8 @@ class PostingSuspension(Base):
     )
 
     starts_at: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
-    expires_at: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
+    expires_at: Mapped[dt.datetime | None] = mapped_column(SADateTime(timezone=True), nullable=True)
+    """When it ends. **Null means open-ended** — it runs until lifted."""
 
     reason: Mapped[str] = mapped_column(String(REASON_MAX), nullable=False)
     """Required. Someone told they cannot contribute deserves to know why, and a
@@ -71,9 +76,14 @@ class PostingSuspension(Base):
     lifted_by: Mapped[User | None] = relationship(foreign_keys=[lifted_by_id])
 
     def active_at(self, now: dt.datetime) -> bool:
-        """Running at `now`: started, not expired, not lifted early.
+        """Running at `now`: started, not lifted, and not yet expired.
+
+        An open-ended suspension has no expiry to be past, so it is active until
+        somebody lifts it.
 
         Not named `is_active`: the output schema has a field by that name, and
         validating straight off the model read the bound method instead.
         """
-        return self.lifted_at is None and self.starts_at <= now < self.expires_at
+        if self.lifted_at is not None or self.starts_at > now:
+            return False
+        return self.expires_at is None or now < self.expires_at

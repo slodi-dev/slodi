@@ -25,6 +25,7 @@ import {
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import ReviewDetailPane from "./ReviewDetailPane";
 import styles from "./yfirferd.module.css";
+import { formatIcelandicDateShort } from "@/lib/format";
 
 type Tab = "content" | "reports";
 type Action = "approve" | "reject" | "hide" | "unhide";
@@ -509,10 +510,7 @@ export default function YfirferdPage() {
                     label={`${item.name}, eftir ${item.author_name}`}
                     title={item.name}
                     line={`${CONTENT_TYPE_LABEL[item.content_type]} · ${item.author_name}`}
-                    stamp={new Date(item.created_at).toLocaleDateString("is-IS", {
-                      day: "numeric",
-                      month: "short",
-                    })}
+                    stamp={formatIcelandicDateShort(item.created_at)}
                     flags={[
                       item.open_report_count > 0
                         ? `${item.open_report_count} tilkynning${item.open_report_count === 1 ? "" : "ar"}`
@@ -541,10 +539,7 @@ export default function YfirferdPage() {
                     label={`Tilkynning um ${report.content_name}`}
                     title={report.content_name}
                     line={REPORT_REASON_LABEL[report.reason]}
-                    stamp={new Date(report.created_at).toLocaleDateString("is-IS", {
-                      day: "numeric",
-                      month: "short",
-                    })}
+                    stamp={formatIcelandicDateShort(report.created_at)}
                     flags={[report.content_author_name]}
                   />
                 ))}

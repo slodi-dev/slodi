@@ -8,8 +8,7 @@ from fastapi import BackgroundTasks, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.email import send_email_background
-from app.domain.enums import Permissions
-from app.domain.posting_suspension_constraints import MODERATOR_MAX_DAYS
+from app.domain.icelandic_dates import format_date
 from app.models.posting_suspension import PostingSuspension
 from app.repositories.posting_suspensions import PostingSuspensionRepository
 from app.repositories.users import UserRepository
@@ -45,18 +44,10 @@ class PostingSuspensionService:
     ) -> SuspensionOut:
         """Put someone in skammarkrókur.
 
-        A `moderator` may do so for up to 90 days. Longer is an admin's call:
-        beyond a season it is a judgement about somebody's place in the movement
-        rather than about one piece of content.
+        Any length, including open-ended (`days=None`). Dagskrárstjórnarteymið
+        owns this decision: every one is recorded, attributed and reversible,
+        which is what makes it safe to leave with them rather than escalating.
         """
-        if data.days > MODERATOR_MAX_DAYS and issuer.permissions != Permissions.admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Umsjónarmaður getur sett í skammarkrók í mest "
-                    f"{MODERATOR_MAX_DAYS} daga. Lengra þarf stjórnanda."
-                ),
-            )
         if user_id == issuer.id:
             # Not a real risk, but the error is clearer than the confusion.
             raise HTTPException(
@@ -78,7 +69,7 @@ class PostingSuspensionService:
         suspension = PostingSuspension(
             user_id=user_id,
             starts_at=now,
-            expires_at=now + dt.timedelta(days=data.days),
+            expires_at=(now + dt.timedelta(days=data.days)) if data.days else None,
             reason=data.reason,
             issued_by_id=issuer.id,
             created_at=now,
@@ -115,14 +106,17 @@ class PostingSuspensionService:
         if not email:
             logger.error("Suspension %s could not be notified — no address", suspension.id)
             return
-        until = suspension.expires_at.date().isoformat()
+        when = (
+            f"fram til <strong>{format_date(suspension.expires_at)}</strong>"
+            if suspension.expires_at
+            else "að sinni"
+        )
         send_email_background(
             background_tasks,
             [email],
             "Slóði — þú getur ekki sent inn efni um sinn",
             (
-                f"<p>Þú getur ekki sent inn efni í dagskrárbankann fram til "
-                f"<strong>{until}</strong>.</p>"
+                f"<p>Þú getur ekki sent inn efni í dagskrárbankann {when}.</p>"
                 f"<p><strong>Ástæða:</strong> {suspension.reason}</p>"
                 f"<p>Þú getur áfram lesið bankann og notað dagskrár. "
                 f"Hafðu samband við Dagskrárstjórnarteymið ef þú vilt ræða þetta.</p>"

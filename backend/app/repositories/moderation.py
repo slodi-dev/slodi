@@ -11,6 +11,7 @@ from sqlalchemy.orm import aliased, selectinload
 from app.domain.enums import ReportStatus, ReviewState
 from app.models.content import Content
 from app.models.content_report import ContentReport
+from app.models.posting_suspension import PostingSuspension
 from app.models.review_comment import ReviewComment
 from app.models.tag import ContentTag
 from app.models.user import User
@@ -234,6 +235,25 @@ class ModerationRepository(Repository):
             select(Content)
             .options(selectinload(Content.author))
             .where(Content.id == content_id, Content.deleted_at.is_(None))
+        )
+
+    async def count_suspensions(self, author_id: UUID) -> int:
+        return (
+            await self.session.scalar(
+                select(func.count())
+                .select_from(PostingSuspension)
+                .where(PostingSuspension.user_id == author_id)
+            )
+        ) or 0
+
+    async def active_suspension_end(self, author_id: UUID, now: dt.datetime) -> dt.datetime | None:
+        return await self.session.scalar(
+            select(PostingSuspension.expires_at).where(
+                PostingSuspension.user_id == author_id,
+                PostingSuspension.lifted_at.is_(None),
+                PostingSuspension.starts_at <= now,
+                (PostingSuspension.expires_at.is_(None)) | (PostingSuspension.expires_at > now),
+            )
         )
 
     async def count_reports_against_author(self, author_id: UUID) -> int:

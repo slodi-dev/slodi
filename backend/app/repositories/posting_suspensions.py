@@ -28,9 +28,11 @@ class PostingSuspensionRepository(Repository):
                 PostingSuspension.user_id == user_id,
                 PostingSuspension.lifted_at.is_(None),
                 PostingSuspension.starts_at <= now,
-                PostingSuspension.expires_at > now,
+                # Null expiry is open-ended, not expired.
+                (PostingSuspension.expires_at.is_(None)) | (PostingSuspension.expires_at > now),
             )
-            .order_by(PostingSuspension.expires_at.desc())
+            # Nulls first: open-ended outlasts any dated one.
+            .order_by(PostingSuspension.expires_at.desc().nullsfirst())
             .limit(1)
         )
         return await self.session.scalar(stmt)

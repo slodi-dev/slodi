@@ -212,3 +212,68 @@ export function formatAgeGroups(ages: string[]): string {
   if (ages.length === 0) return "";
   return ages.map(formatAgeGroup).join(", ");
 }
+
+/**
+ * Icelandic month names, **lowercase**.
+ *
+ * Icelandic does not capitalise month names, and a date written "14. September
+ * 2026" reads as an English sentence in Icelandic clothes. Spelled out here
+ * rather than left to `Intl`: the casing is a rule about the language, not a
+ * formatting preference, and it should not change because a runtime shipped
+ * different CLDR data.
+ */
+const MONTHS_IS = [
+  "janúar",
+  "febrúar",
+  "mars",
+  "apríl",
+  "maí",
+  "júní",
+  "júlí",
+  "ágúst",
+  "september",
+  "október",
+  "nóvember",
+  "desember",
+];
+
+const MONTHS_IS_SHORT = [
+  "jan.",
+  "feb.",
+  "mars",
+  "apríl",
+  "maí",
+  "júní",
+  "júlí",
+  "ág.",
+  "sept.",
+  "okt.",
+  "nóv.",
+  "des.",
+];
+
+function toDate(value: string | Date): Date | null {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * A date as Icelandic writes it: `14. september 2026`.
+ *
+ * Returns an empty string for anything unparseable rather than "Invalid Date",
+ * which is not a thing to show a leader.
+ */
+export function formatIcelandicDate(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = toDate(value);
+  if (!date) return "";
+  return `${date.getDate()}. ${MONTHS_IS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** `14. sept.` — for a list rail, where the year is noise and width is scarce. */
+export function formatIcelandicDateShort(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = toDate(value);
+  if (!date) return "";
+  return `${date.getDate()}. ${MONTHS_IS_SHORT[date.getMonth()]}`;
+}

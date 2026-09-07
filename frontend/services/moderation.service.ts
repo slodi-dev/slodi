@@ -58,6 +58,11 @@ export type ReviewDetail = ReviewQueueItem & {
    * already has public comments between leaders, and these are not those. */
   review_comments: ReviewComment[];
   documents: Attachment[];
+  /** Enough of the author's standing to summarise without a second request. */
+  author_reports_received: number;
+  author_suspension_count: number;
+  /** ISO datetime, or null. Null with a live suspension means open-ended. */
+  author_suspended_until: string | null;
 };
 
 /** Who a reviewer's note is for. Never defaulted — see `addReviewComment`. */
