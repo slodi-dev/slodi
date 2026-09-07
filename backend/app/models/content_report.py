@@ -74,9 +74,7 @@ class ContentReport(Base):
     resolved_at: Mapped[dt.datetime | None] = mapped_column(
         SADateTime(timezone=True), nullable=True
     )
-    resolution_note: Mapped[str | None] = mapped_column(
-        String(RESOLUTION_NOTE_MAX), nullable=True
-    )
+    resolution_note: Mapped[str | None] = mapped_column(String(RESOLUTION_NOTE_MAX), nullable=True)
 
     # Relationships
     content: Mapped[Content] = relationship(back_populates="reports")

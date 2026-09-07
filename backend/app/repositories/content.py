@@ -68,3 +68,6 @@ class ContentRepository(Repository):
         return await self.session.scalar(
             select(Content.workspace_id).where(Content.id == content_id)
         )
+
+    async def get_name(self, content_id: UUID) -> str | None:
+        return await self.session.scalar(select(Content.name).where(Content.id == content_id))

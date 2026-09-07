@@ -184,9 +184,7 @@ def test_create_ignores_a_backdated_created_at(member_client, bank):
 
 
 def test_create_ignores_an_author_id_in_the_body(member_client, bank, viewer_user):
-    _, create = _post_task(
-        member_client, bank, WorkspaceRole.viewer, author_id=str(uuid4())
-    )
+    _, create = _post_task(member_client, bank, WorkspaceRole.viewer, author_id=str(uuid4()))
     assert create.await_args.args[1].author_id == viewer_user.id
 
 

@@ -24,3 +24,10 @@ class ContentService:
         if workspace_id is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
         return workspace_id
+
+    async def get_name(self, content_id: UUID) -> str:
+        """The item's name, for an escalation email that has to say what it is about."""
+        name = await self.repo.get_name(content_id)
+        if name is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
+        return name
