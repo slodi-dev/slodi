@@ -54,6 +54,33 @@ export type ReviewDetail = ReviewQueueItem & {
   tags: string[];
   workspace_id: string;
   reports: { id: string; reason: ReportReason; note: string | null; created_at: string }[];
+  /** The team's own notes. Named `review_comments`, not `comments`: content
+   * already has public comments between leaders, and these are not those. */
+  review_comments: ReviewComment[];
+  documents: Attachment[];
+};
+
+/** Who a reviewer's note is for. Never defaulted — see `addReviewComment`. */
+export type ReviewCommentVisibility = "internal" | "to_author";
+
+export type ReviewComment = {
+  id: string;
+  body: string;
+  visibility: ReviewCommentVisibility;
+  created_at: string;
+  /** Null once the reviewer is removed — the note survives them. */
+  author_name: string | null;
+};
+
+export type Attachment = {
+  name: string;
+  url: string;
+  content_type: string | null;
+};
+
+export const VISIBILITY_LABEL: Record<ReviewCommentVisibility, string> = {
+  internal: "Innanhúss",
+  to_author: "Senda höfundi",
 };
 
 /** What the board is looking at. Default is the unreviewed queue — the working
@@ -208,3 +235,27 @@ export async function resolveReport(
 }
 
 export type { ContentReport, ReportReason };
+
+/**
+ * Leave a note on an item.
+ *
+ * `visibility` is required with no default on purpose: whether a note reaches
+ * the author is the one thing a reviewer must decide every time. A default
+ * would eventually send an internal aside to the person it was about.
+ */
+export async function addReviewComment(
+  contentId: string,
+  body: string,
+  visibility: ReviewCommentVisibility,
+  getToken: GetToken
+): Promise<ReviewComment> {
+  return fetchWithAuth<ReviewComment>(
+    buildApiUrl(`/moderation/content/${contentId}/comments`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: body.trim(), visibility }),
+    },
+    getToken
+  );
+}

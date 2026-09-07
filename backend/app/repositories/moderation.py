@@ -11,6 +11,7 @@ from sqlalchemy.orm import aliased, selectinload
 from app.domain.enums import ReportStatus, ReviewState
 from app.models.content import Content
 from app.models.content_report import ContentReport
+from app.models.review_comment import ReviewComment
 from app.models.tag import ContentTag
 from app.models.user import User
 from app.schemas.moderation import ReviewFilters
@@ -197,6 +198,16 @@ class ModerationRepository(Repository):
             )
         ) or 0
 
+    async def list_comments(self, content_id: UUID) -> list[ReviewComment]:
+        """One item's reviewer notes, oldest first — a thread reads forwards."""
+        stmt = (
+            select(ReviewComment)
+            .options(selectinload(ReviewComment.author))
+            .where(ReviewComment.content_id == content_id)
+            .order_by(ReviewComment.created_at)
+        )
+        return list(await self.session.scalars(stmt))
+
     async def get_detail(self, content_id: UUID) -> tuple[Content, str | None] | None:
         """One item in full, with its reviewer's name. Reaches hidden content."""
         reviewer = aliased(User)
@@ -207,6 +218,9 @@ class ModerationRepository(Repository):
                     selectinload(Content.author),
                     selectinload(Content.content_tags).selectinload(ContentTag.tag),
                     selectinload(Content.reports),
+                    # Eager: ReviewDetail validates straight off the model, and a
+                    # lazy relationship raises MissingGreenlet under async.
+                    selectinload(Content.review_comments).selectinload(ReviewComment.author),
                 )
                 .join(reviewer, reviewer.id == Content.reviewed_by_id, isouter=True)
                 .where(Content.id == content_id, Content.deleted_at.is_(None))

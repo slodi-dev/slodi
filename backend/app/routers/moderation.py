@@ -5,7 +5,16 @@ import datetime as dt
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_permission
@@ -14,6 +23,8 @@ from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.domain.enums import ContentType, Permissions, ReviewState
 from app.schemas.moderation import (
     HideDecision,
+    ReviewCommentCreate,
+    ReviewCommentOut,
     ReviewDecision,
     ReviewDetail,
     ReviewFilters,
@@ -123,6 +134,29 @@ async def author_strikes(
     something takes its strike with it, which a counter would not do.
     """
     return {"strikes": await ModerationService(session).strikes_for_author(author_id)}
+
+
+@router.post(
+    "/content/{content_id}/comments",
+    response_model=ReviewCommentOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_review_comment(
+    session: SessionDep,
+    content_id: UUID,
+    body: ReviewCommentCreate,
+    background_tasks: BackgroundTasks,
+    current_user: UserOut = ModeratorDep,
+) -> ReviewCommentOut:
+    """Leave a note on an item.
+
+    `internal` stays between the team. `to_author` is emailed to whoever wrote
+    the thing, because a suggestion nobody is told about is not a suggestion.
+    There is no default: which of the two it is has to be chosen every time.
+    """
+    return await ModerationService(session).add_comment(
+        content_id, current_user.id, body, background_tasks
+    )
 
 
 @router.patch("/content/{content_id}/review", response_model=ReviewQueueItem)

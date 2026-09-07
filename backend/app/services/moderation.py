@@ -1,22 +1,32 @@
 from __future__ import annotations
 
+import logging
+from typing import Any
 from uuid import UUID
 
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.enums import ReportStatus, ReviewState
+from app.core.email import send_email_background
+from app.domain.enums import ReportStatus, ReviewCommentVisibility, ReviewState
 from app.models.content import Content
+from app.models.review_comment import ReviewComment
 from app.repositories.moderation import ModerationRepository
 from app.schemas.moderation import (
+    Attachment,
     HideDecision,
     ReportSummary,
+    ReviewCommentCreate,
+    ReviewCommentOut,
     ReviewDecision,
     ReviewDetail,
     ReviewFilters,
     ReviewQueueItem,
 )
 from app.utils import get_current_datetime
+
+logger = logging.getLogger(__name__)
 
 
 class ModerationService:
@@ -63,6 +73,8 @@ class ModerationService:
                     for r in content.reports
                     if r.status == ReportStatus.open
                 ],
+                "review_comments": await self.comments(content_id),
+                "documents": _documents_from(content.media),
                 "open_report_count": sum(
                     1 for r in content.reports if r.status == ReportStatus.open
                 ),
@@ -87,6 +99,66 @@ class ModerationService:
         lazy load then raises MissingGreenlet under async.
         """
         return ReviewQueueItem.model_validate(await self._require(content_id))
+
+    async def comments(self, content_id: UUID) -> list[ReviewCommentOut]:
+        return [
+            ReviewCommentOut.model_validate(c).model_copy(
+                update={"author_name": c.author.name if c.author else None}
+            )
+            for c in await self.repo.list_comments(content_id)
+        ]
+
+    async def add_comment(
+        self,
+        content_id: UUID,
+        reviewer_id: UUID,
+        data: ReviewCommentCreate,
+        background_tasks: BackgroundTasks,
+    ) -> ReviewCommentOut:
+        """Leave a note — kept between the team, or sent to the author.
+
+        A `to_author` note is emailed, because a suggestion nobody is told about
+        is not a suggestion. An `internal` one is not, and must never be: the
+        two are separate values precisely so this branch can be explicit rather
+        than a truthy check on some flag.
+        """
+        content = await self._require(content_id)
+        comment = ReviewComment(
+            content_id=content_id,
+            author_id=reviewer_id,
+            body=data.body,
+            visibility=data.visibility,
+            created_at=get_current_datetime(),
+        )
+        self.session.add(comment)
+        await self.session.commit()
+
+        if data.visibility == ReviewCommentVisibility.to_author:
+            self._send_to_author(background_tasks, content, data.body)
+
+        return (await self.comments(content_id))[-1]
+
+    def _send_to_author(
+        self, background_tasks: BackgroundTasks, content: Content, body: str
+    ) -> None:
+        recipient = content.author.email if content.author else None
+        if not recipient:
+            logger.error(
+                "Suggestion on content %s could not be sent — the author has no address",
+                content.id,
+            )
+            return
+        send_email_background(
+            background_tasks,
+            [recipient],
+            f"Slóði — ábending um „{content.name}“",
+            (
+                f"<p>Dagskrárstjórnarteymið skildi eftir ábendingu um efnið þitt "
+                f"<strong>{content.name}</strong>:</p>"
+                f"<blockquote>{body}</blockquote>"
+                f"<p>Þú getur lagað efnið í dagskrárbankanum þegar þér hentar.</p>"
+            ),
+        )
 
     async def review(
         self, content_id: UUID, reviewer_id: UUID, decision: ReviewDecision
@@ -129,3 +201,25 @@ class ModerationService:
             content.review_state = ReviewState.rejected
         await self.session.commit()
         return await self._reload(content_id)
+
+
+def _documents_from(media: dict[str, Any] | None) -> list[Attachment]:
+    """Attachments, read defensively out of free-form JSONB.
+
+    `Content.media` has no schema and nothing writes it yet — attachments are
+    sc-404. Anything under `documents` that does not match `Attachment` is
+    skipped rather than raising: a malformed entry should cost the pane one
+    file, not the whole item a reviewer is trying to judge.
+    """
+    if not isinstance(media, dict):
+        return []
+    entries = media.get("documents")
+    if not isinstance(entries, list):
+        return []
+    out: list[Attachment] = []
+    for entry in entries:
+        try:
+            out.append(Attachment.model_validate(entry))
+        except ValidationError:
+            logger.warning("Skipping unreadable attachment entry: %r", entry)
+    return out

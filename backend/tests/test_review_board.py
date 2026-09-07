@@ -487,3 +487,142 @@ def test_pagination_headers_are_readable_by_a_browser(mock_db_session):
     cors = next(m for m in app.user_middleware if "CORS" in str(m))
     exposed = cors.kwargs.get("expose_headers", [])
     assert "X-Total-Count" in exposed
+
+
+# ── Reviewer notes ───────────────────────────────────────────────────────────
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_an_internal_note_is_not_emailed_to_the_author(db):
+    """The whole point of the two kinds. An internal note reaching the author is
+    worse than no note at all."""
+    from fastapi import BackgroundTasks
+
+    from app.domain.enums import ReviewCommentVisibility
+    from app.schemas.moderation import ReviewCommentCreate
+
+    author, _, task = await _bank(db)
+    reviewer = m.User(name="Yfirferð", auth0_id="auth0|n1", email="n1@t.is")
+    db.add(reviewer)
+    await db.flush()
+
+    tasks = BackgroundTasks()
+    await ModerationService(db).add_comment(
+        task.id,
+        reviewer.id,
+        ReviewCommentCreate(
+            body="Sami höfundur og sá sem við földum í síðustu viku.",
+            visibility=ReviewCommentVisibility.internal,
+        ),
+        tasks,
+    )
+
+    assert tasks.tasks == [], "an internal note must not page the author"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_a_suggestion_is_sent_to_the_author(db):
+    """A suggestion nobody is told about is not a suggestion."""
+    from fastapi import BackgroundTasks
+
+    from app.domain.enums import ReviewCommentVisibility
+    from app.schemas.moderation import ReviewCommentCreate
+
+    author, _, task = await _bank(db)
+    reviewer = m.User(name="Yfirferð", auth0_id="auth0|n2", email="n2@t.is")
+    db.add(reviewer)
+    await db.flush()
+
+    tasks = BackgroundTasks()
+    comment = await ModerationService(db).add_comment(
+        task.id,
+        reviewer.id,
+        ReviewCommentCreate(
+            body="Bættu við hversu marga þarf.",
+            visibility=ReviewCommentVisibility.to_author,
+        ),
+        tasks,
+    )
+
+    assert len(tasks.tasks) == 1
+    assert comment.author_name == "Yfirferð"
+    assert comment.visibility == ReviewCommentVisibility.to_author
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_notes_come_back_with_the_item_in_order(db):
+    """A thread reads forwards."""
+    from fastapi import BackgroundTasks
+
+    from app.domain.enums import ReviewCommentVisibility
+    from app.schemas.moderation import ReviewCommentCreate
+
+    _, _, task = await _bank(db)
+    reviewer = m.User(name="Yfirferð", auth0_id="auth0|n3", email="n3@t.is")
+    db.add(reviewer)
+    await db.flush()
+    svc = ModerationService(db)
+
+    for body in ("Fyrsta", "Önnur"):
+        await svc.add_comment(
+            task.id,
+            reviewer.id,
+            ReviewCommentCreate(body=body, visibility=ReviewCommentVisibility.internal),
+            BackgroundTasks(),
+        )
+
+    detail = await svc.detail(task.id)
+    assert [c.body for c in detail.review_comments] == ["Fyrsta", "Önnur"]
+
+
+def test_a_note_must_say_which_audience_it_is_for():
+    """No default: whether a note reaches the author is the one thing a reviewer
+    has to decide deliberately every time."""
+    from app.schemas.moderation import ReviewCommentCreate
+
+    with pytest.raises(ValueError):
+        ReviewCommentCreate(body="Eitthvað")
+
+
+def test_an_empty_note_is_not_a_note():
+    from app.domain.enums import ReviewCommentVisibility
+    from app.schemas.moderation import ReviewCommentCreate
+
+    with pytest.raises(ValueError):
+        ReviewCommentCreate(body="   ", visibility=ReviewCommentVisibility.internal)
+
+
+# ── Pictures and documents ───────────────────────────────────────────────────
+
+
+def test_attachments_are_read_defensively_from_free_form_json():
+    """`media` has no schema and nothing writes it yet. A malformed entry should
+    cost the pane one file, not the whole item a reviewer is judging."""
+    from app.services.moderation import _documents_from
+
+    docs = _documents_from(
+        {
+            "documents": [
+                {
+                    "name": "Leiðbeiningar.pdf",
+                    "url": "https://x/1.pdf",
+                    "content_type": "application/pdf",
+                },
+                {"name": "Vantar slóð"},
+                "ekki hlutur",
+                {"name": "Kort.png", "url": "https://x/2.png"},
+            ]
+        }
+    )
+
+    assert [d.name for d in docs] == ["Leiðbeiningar.pdf", "Kort.png"]
+
+
+@pytest.mark.parametrize("media", [None, {}, {"documents": "nei"}, {"annad": [1]}])
+def test_no_attachments_is_not_an_error(media):
+    from app.services.moderation import _documents_from
+
+    assert _documents_from(media) == []

@@ -10,9 +10,11 @@ import {
   REVIEW_STATE_LABEL,
   type ReportQueueItem,
   type ReviewDetail,
+  type ReviewCommentVisibility,
   type ReviewFilters,
   type ReviewQueueItem,
   type ReviewState,
+  addReviewComment,
   fetchOpenReports,
   fetchReviewDetail,
   fetchReviewQueue,
@@ -66,6 +68,13 @@ export default function YfirferdPage() {
   const [cursor, setCursor] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  // The item named in the URL on arrival. Read once: after that the cursor
+  // owns the selection, and re-reading would fight it.
+  const [linkedId, setLinkedId] = useState<string | null>(() =>
+    // Straight off the URL rather than useSearchParams: this component is
+    // client-only, and the hook would force a Suspense boundary for nothing.
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("efni")
+  );
   const [undoable, setUndoable] = useState<UndoableAction | null>(null);
   const rowRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -117,14 +126,39 @@ export default function YfirferdPage() {
   // on the new last row, not jump to the top of a fifty-item sweep.
   const index = Math.min(cursor, Math.max(rows.length - 1, 0));
   const active = rows[index];
-  const activeContentId =
+  const cursorContentId =
     tab === "content"
       ? (active as ReviewQueueItem | undefined)?.id
       : (active as ReportQueueItem | undefined)?.content_id;
+  const activeContentId = linkedId ?? cursorContentId;
 
   useEffect(() => {
     if (active) rowRefs.current[active.id]?.focus();
   }, [active, tab]);
+
+  // A link points at an item, not at a position in a list. If it happens to be
+  // on the loaded page, move the cursor there too; if it is item 4,000 of
+  // 5,002, still show it. Only the reader moving on clears it — dropping it
+  // because the list did not contain it is how a shared link silently opens
+  // something else.
+  useEffect(() => {
+    if (!linkedId || queue.length === 0) return;
+    const i = queue.findIndex((x) => x.id === linkedId);
+    if (i >= 0) {
+      setCursor(i);
+      setLinkedId(null);
+    }
+  }, [linkedId, queue]);
+
+  // Keep the address bar on the current item, so copying it shares what is on
+  // screen. `replace`, not `push`: a fifty-item sweep should not bury the back
+  // button under fifty entries.
+  useEffect(() => {
+    if (!activeContentId) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("efni", activeContentId);
+    window.history.replaceState(null, "", `?${params}`);
+  }, [activeContentId]);
 
   // The reading pane follows the cursor.
   useEffect(() => {
@@ -233,6 +267,24 @@ export default function YfirferdPage() {
     }
   }, [tab, filters, getToken, queue.length, reports.length]);
 
+  const comment = useCallback(
+    async (body: string, visibility: ReviewCommentVisibility) => {
+      if (!detail) return;
+      try {
+        await addReviewComment(detail.id, body, visibility, getToken);
+        // Re-read rather than appending: the server decides the note's id and
+        // timestamp, and the pane should show what was actually stored.
+        setDetail(await fetchReviewDetail(detail.id, getToken));
+        setAnnouncement(
+          visibility === "to_author" ? "Ábending send höfundi." : "Athugasemd vistuð innanhúss."
+        );
+      } catch {
+        setAnnouncement("Ekki tókst að vista athugasemdina.");
+      }
+    },
+    [detail, getToken]
+  );
+
   const closeReport = useCallback(
     async (report: ReportQueueItem, status: "resolved" | "dismissed") => {
       setBusyId(report.id);
@@ -258,9 +310,11 @@ export default function YfirferdPage() {
       const key = event.key.toLowerCase();
       if (key === "j" || event.key === "ArrowDown") {
         event.preventDefault();
+        setLinkedId(null);
         setCursor((c) => Math.min(c + 1, rows.length - 1));
       } else if (key === "k" || event.key === "ArrowUp") {
         event.preventDefault();
+        setLinkedId(null);
         setCursor((c) => Math.max(c - 1, 0));
       } else if (key === "z" && undoable) {
         event.preventDefault();
@@ -283,12 +337,7 @@ export default function YfirferdPage() {
   return (
     <main className={styles.page} onKeyDown={onKeyDown}>
       <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Yfirferð</h1>
-          <p className={styles.subtitle}>
-            Efni sem enginn hefur enn litið á, og það sem hefur verið tilkynnt.
-          </p>
-        </div>
+        <h1 className={styles.title}>Yfirferð</h1>
         <p className={styles.shortcuts} aria-hidden="true">
           <kbd>j</kbd>/<kbd>k</kbd> hreyfa · <kbd>s</kbd> samþykkja · <kbd>h</kbd> hafna ·{" "}
           <kbd>f</kbd> fela · <kbd>z</kbd> afturkalla
@@ -453,6 +502,10 @@ export default function YfirferdPage() {
                     urgent={item.open_report_reasons.includes("unsafe")}
                     registerRef={(el) => (rowRefs.current[item.id] = el)}
                     onSelect={() => setCursor(i)}
+                    onPick={() => {
+                      setLinkedId(null);
+                      setCursor(i);
+                    }}
                     label={`${item.name}, eftir ${item.author_name}`}
                     title={item.name}
                     line={`${CONTENT_TYPE_LABEL[item.content_type]} · ${item.author_name}`}
@@ -481,6 +534,10 @@ export default function YfirferdPage() {
                     urgent={report.reason === "unsafe"}
                     registerRef={(el) => (rowRefs.current[report.id] = el)}
                     onSelect={() => setCursor(i)}
+                    onPick={() => {
+                      setLinkedId(null);
+                      setCursor(i);
+                    }}
                     label={`Tilkynning um ${report.content_name}`}
                     title={report.content_name}
                     line={REPORT_REASON_LABEL[report.reason]}
@@ -519,6 +576,12 @@ export default function YfirferdPage() {
             detail={detail}
             loading={detailLoading}
             busy={busyId !== null}
+            onComment={comment}
+            shareUrl={
+              activeContentId && typeof window !== "undefined"
+                ? `${window.location.origin}${window.location.pathname}?efni=${activeContentId}`
+                : null
+            }
             onAct={(action) => {
               if (!detail) return;
               void act(detail as ReviewQueueItem, action);
@@ -559,6 +622,7 @@ function ListRow({
   urgent,
   registerRef,
   onSelect,
+  onPick,
   label,
   title,
   line,
@@ -569,7 +633,10 @@ function ListRow({
   focused: boolean;
   urgent: boolean;
   registerRef: (el: HTMLElement | null) => void;
+  /** Focus moved here — track the cursor, nothing more. */
   onSelect: () => void;
+  /** A deliberate choice: a click. This is what drops a shared link. */
+  onPick: () => void;
   label: string;
   title: string;
   line: string;
@@ -584,7 +651,10 @@ function ListRow({
       tabIndex={focused ? 0 : -1}
       aria-current={focused}
       aria-label={label}
-      onClick={onSelect}
+      onClick={onPick}
+      // Focus only tracks the cursor. It must not count as choosing: the rail
+      // focuses the current row itself, which would clear a shared link before
+      // the reader had touched anything.
       onFocus={onSelect}
       className={[styles.row, focused && styles.rowFocused, urgent && styles.rowUrgent]
         .filter(Boolean)

@@ -6,24 +6,21 @@
   padding: var(--sl-spacing-lg) var(--sl-spacing-md) var(--sl-spacing-xl);
 }
 
+/* Title and shortcuts share a line: the page is a working surface, and a
+   subtitle explaining what a queue is earns none of the height it costs. */
 .header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--sl-spacing-md);
-  margin-bottom: var(--sl-spacing-lg);
+  margin-bottom: var(--sl-spacing-md);
 }
 
 .title {
   margin: 0;
   font-size: 1.9rem;
   color: hsl(var(--sl-color-text-primary));
-}
-
-.subtitle {
-  margin: var(--sl-spacing-xs) 0 0;
-  color: hsl(var(--sl-color-text-secondary));
 }
 
 .shortcuts {
@@ -537,6 +534,170 @@
   letter-spacing: 0.05em;
   color: hsl(var(--sl-color-text-tertiary));
   min-width: 6rem;
+}
+
+.image {
+  max-width: 100%;
+  max-height: 18rem;
+  border-radius: var(--sl-radius-card);
+  border: 1px solid hsl(var(--sl-color-border));
+}
+
+.documents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+}
+
+.documents a {
+  color: hsl(var(--sl-color-text-link));
+}
+
+.docType {
+  margin-left: var(--sl-spacing-xs);
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: 0.8rem;
+}
+
+.notes {
+  padding-top: var(--sl-spacing-sm);
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.noteList {
+  list-style: none;
+  margin: 0 0 var(--sl-spacing-sm);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-sm);
+}
+
+/* The two kinds of note read as two different things at a glance. An internal
+   note is quiet and grey; one that left the building is tinted and carries a
+   bar, because "did the author see this?" is the question a reviewer scanning a
+   thread is actually asking. */
+.note {
+  padding: var(--sl-spacing-sm);
+  border-left: 4px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-sunken));
+}
+
+.noteSent {
+  border-left-color: hsl(var(--sl-color-info));
+  background: hsl(var(--sl-color-info-subtle));
+}
+
+.noteMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* Whether the author was told is the thing to see at a glance, so the two read
+   differently rather than sharing a neutral chip. */
+.internalBadge {
+  padding: 0.05em 0.45em;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  color: hsl(var(--sl-color-text-secondary));
+  font-weight: 600;
+}
+
+.sentBadge {
+  padding: 0.05em 0.45em;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-info));
+  color: hsl(var(--sl-color-text-inverse));
+  font-weight: 600;
+}
+
+/* Distinct from Samþykkja: sending to an author is not an approval, and the two
+   should not be one green button next to another. */
+.sendBtn {
+  min-height: 44px;
+  padding: 0 var(--sl-spacing-md);
+  border: none;
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-info));
+  color: hsl(var(--sl-color-text-inverse));
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sendBtn:hover:not(:disabled) {
+  background: hsl(var(--sl-color-info-hover));
+}
+
+.sendBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.confirmBody {
+  margin: 0 0 var(--sl-spacing-sm);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.confirmQuote {
+  margin: 0 0 var(--sl-spacing-md);
+  padding: var(--sl-spacing-sm);
+  border-left: 4px solid hsl(var(--sl-color-info));
+  background: hsl(var(--sl-color-info-subtle));
+  border-radius: var(--sl-radius-sm);
+  color: hsl(var(--sl-color-text-primary));
+  white-space: pre-wrap;
+}
+
+.noteComposer {
+  display: block;
+  margin-bottom: var(--sl-spacing-xs);
+}
+
+.noteInput {
+  width: 100%;
+  padding: var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-background));
+  color: hsl(var(--sl-color-text-primary));
+  /* 16px or iOS Safari zooms the page on focus. */
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.noteActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-sm);
+}
+
+.shareBtn {
+  min-height: 44px;
+  padding: 0 var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shareBtn:hover:not(:disabled) {
+  background: hsl(var(--sl-color-surface-hover));
 }
 
 .detailActions,

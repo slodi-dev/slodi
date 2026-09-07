@@ -60,6 +60,23 @@ class ContentType(str, Enum):
     task = "task"
 
 
+class ReviewCommentVisibility(str, Enum):
+    """Who a reviewer's note is for.
+
+    Two audiences, and the distinction is the whole point. An `internal` note is
+    the team thinking out loud — "same author as the one we hid last week". A
+    `to_author` note is addressed to the person who wrote the thing, and is sent
+    to them.
+
+    They must never be confused. An internal note reaching an author is worse
+    than no note at all, so these are separate values rather than a flag with a
+    default, and every read path filters on it explicitly.
+    """
+
+    internal = "internal"
+    to_author = "to_author"
+
+
 class ReportReason(str, Enum):
     """Why someone flagged a piece of content.
 

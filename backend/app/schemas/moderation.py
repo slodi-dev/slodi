@@ -8,7 +8,13 @@ from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
 from typing_extensions import Self
 
 from app.domain.content_constraints import REVIEW_NOTE_MAX
-from app.domain.enums import ContentType, ReportReason, ReviewState
+from app.domain.enums import (
+    ContentType,
+    ReportReason,
+    ReviewCommentVisibility,
+    ReviewState,
+)
+from app.domain.review_comment_constraints import BODY_MAX as COMMENT_BODY_MAX
 from app.schemas.content_report import ContentReportOut
 
 ReviewNoteStr = Annotated[str, StringConstraints(max_length=REVIEW_NOTE_MAX, strip_whitespace=True)]
@@ -119,6 +125,30 @@ class ReportSummary(BaseModel):
     created_at: dt.datetime
 
 
+class ReviewCommentCreate(BaseModel):
+    """A reviewer writing a note."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
+
+    body: Annotated[str, StringConstraints(min_length=1, max_length=COMMENT_BODY_MAX)]
+    visibility: ReviewCommentVisibility
+    """No default. Whether a note reaches the author is the one thing a reviewer
+    must decide deliberately — a default would eventually send an internal
+    aside to someone it was about."""
+
+
+class ReviewCommentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    id: UUID
+    body: str
+    visibility: ReviewCommentVisibility
+    created_at: dt.datetime
+    author_name: str | None = None
+    """The reviewer who wrote it. Null once that person is removed — the note
+    survives them, credited to nobody."""
+
+
 class ReviewDetail(ReviewQueueItem):
     """The whole item, for the reading pane.
 
@@ -143,6 +173,35 @@ class ReviewDetail(ReviewQueueItem):
     reports: list[ReportSummary] = []
     """The objections themselves, so judging a flagged item does not mean
     holding two screens open at once."""
+
+    review_comments: list[ReviewCommentOut] = []
+    """The team's notes on this item, internal and sent alike. Only ever
+    populated for a moderator — this schema is not returned to anyone else.
+
+    Named `review_comments`, not `comments`: `Content.comments` already means
+    public discussion between leaders, and validating this schema straight off
+    the model picked that relationship up instead."""
+
+    documents: list[Attachment] = []
+    """Files attached to the item. Read out of `Content.media` under a
+    `documents` key; see `Attachment`."""
+
+
+class Attachment(BaseModel):
+    """A file hanging off a piece of content.
+
+    `Content.media` is free-form JSONB and nothing writes it yet — attachments
+    are sc-404. This is the shape the board reads, so that story has a contract
+    to write against rather than inventing one the pane cannot render. Anything
+    in `media["documents"]` that does not match is skipped rather than crashing
+    the pane.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    name: str
+    url: str
+    content_type: str | None = None
 
 
 class ReportQueueItem(ContentReportOut):

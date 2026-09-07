@@ -6,6 +6,7 @@ import YfirferdPage from "../page";
 const fetchReviewQueue = vi.fn();
 const fetchReviewDetail = vi.fn();
 const fetchOpenReports = vi.fn();
+const addReviewComment = vi.fn();
 const reviewContent = vi.fn();
 const setContentHidden = vi.fn();
 const replace = vi.fn();
@@ -17,6 +18,7 @@ vi.mock("@/services/moderation.service", async (importOriginal) => ({
   fetchReviewQueue: (...a: unknown[]) => fetchReviewQueue(...a),
   fetchReviewDetail: (...a: unknown[]) => fetchReviewDetail(...a),
   fetchOpenReports: (...a: unknown[]) => fetchOpenReports(...a),
+  addReviewComment: (...a: unknown[]) => addReviewComment(...a),
   reviewContent: (...a: unknown[]) => reviewContent(...a),
   setContentHidden: (...a: unknown[]) => setContentHidden(...a),
   resolveReport: vi.fn(),
@@ -68,6 +70,8 @@ const detail = (over = {}) => ({
   tags: [],
   workspace_id: "w1",
   reports: [] as unknown[],
+  review_comments: [] as unknown[],
+  documents: [] as unknown[],
   ...over,
 });
 
@@ -75,6 +79,9 @@ const detail = (over = {}) => ({
 const pane = () => within(screen.getByRole("article"));
 
 beforeEach(() => {
+  // The page writes the selected item into the address bar, and jsdom keeps it
+  // between tests — so without this each test inherits the last one's link.
+  window.history.replaceState(null, "", "/yfirferd");
   permissions = "moderator";
   vi.clearAllMocks();
   fetchReviewQueue.mockResolvedValue({ items: [item()], total: 1 });
@@ -82,6 +89,7 @@ beforeEach(() => {
   fetchOpenReports.mockResolvedValue({ items: [], total: 0 });
   reviewContent.mockResolvedValue(item({ review_state: "approved" }));
   setContentHidden.mockResolvedValue(item({ hidden_at: "2026-09-02T10:00:00Z" }));
+  addReviewComment.mockResolvedValue({ id: "n1" });
 });
 
 describe("who can open the board", () => {
@@ -278,5 +286,161 @@ describe("finding things", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Samþykkt" }));
     expect(await screen.findByText(/Afgreitt frá/)).toBeInTheDocument();
+  });
+});
+
+describe("reviewer notes", () => {
+  it("makes the choice of audience the thing you click", async () => {
+    // Not a dropdown plus one button: whether a note reaches the author is the
+    // decision, so it should be the action, not a setting on the action.
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+
+    expect(pane().getByRole("button", { name: "Vista innanhúss" })).toBeDisabled();
+    expect(pane().getByRole("button", { name: "Senda höfundi" })).toBeDisabled();
+
+    await userEvent.type(
+      pane().getByPlaceholderText("Athugasemd eða ábending…"),
+      "Bættu við aldri"
+    );
+    expect(pane().getByRole("button", { name: "Senda höfundi" })).toBeEnabled();
+  });
+
+  it("asks before anything leaves the building", async () => {
+    // Every other action here has an undo. This one is an email — it cannot be
+    // taken back, so it gets a question instead.
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+
+    await userEvent.type(
+      pane().getByPlaceholderText("Athugasemd eða ábending…"),
+      "Bættu við aldri"
+    );
+    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+
+    expect(await screen.findByText(/Ekki er hægt að afturkalla hana/)).toBeInTheDocument();
+    expect(addReviewComment).not.toHaveBeenCalled();
+  });
+
+  it("backing out of the confirmation sends nothing", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    await userEvent.type(
+      pane().getByPlaceholderText("Athugasemd eða ábending…"),
+      "Bættu við aldri"
+    );
+    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+
+    await userEvent.click(await screen.findByRole("button", { name: "Hætta við" }));
+
+    expect(addReviewComment).not.toHaveBeenCalled();
+  });
+
+  it("sends a suggestion once confirmed, and says so", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+
+    await userEvent.type(
+      pane().getByPlaceholderText("Athugasemd eða ábending…"),
+      "Bættu við aldri"
+    );
+    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Já, senda höfundi" }));
+
+    await waitFor(() =>
+      expect(addReviewComment).toHaveBeenCalledWith(
+        "c1",
+        "Bættu við aldri",
+        "to_author",
+        expect.anything()
+      )
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent("Ábending send höfundi");
+  });
+
+  it("saves an internal note with no ceremony, because it goes nowhere", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+
+    await userEvent.type(pane().getByPlaceholderText("Athugasemd eða ábending…"), "Muna að spyrja");
+    await userEvent.click(pane().getByRole("button", { name: "Vista innanhúss" }));
+
+    await waitFor(() =>
+      expect(addReviewComment).toHaveBeenCalledWith(
+        "c1",
+        "Muna að spyrja",
+        "internal",
+        expect.anything()
+      )
+    );
+  });
+
+  it("marks each note with whether the author was told", async () => {
+    fetchReviewDetail.mockResolvedValue(
+      detail({
+        review_comments: [
+          {
+            id: "n1",
+            body: "Innri minnispunktur",
+            visibility: "internal",
+            created_at: "2026-09-01",
+            author_name: "Signý",
+          },
+          {
+            id: "n2",
+            body: "Ábending",
+            visibility: "to_author",
+            created_at: "2026-09-02",
+            author_name: "Signý",
+          },
+        ],
+      })
+    );
+    render(<YfirferdPage />);
+
+    await waitFor(() => expect(pane().getByText("Innanhúss")).toBeInTheDocument());
+    expect(pane().getByText("Senda höfundi", { selector: "span" })).toBeInTheDocument();
+  });
+});
+
+describe("sharing what is on screen", () => {
+  it("keeps the selected item in the address bar so the URL can be sent", async () => {
+    render(<YfirferdPage />);
+    await screen.findByText("Hlaupaleikur");
+    await waitFor(() => expect(window.location.search).toContain("efni=c1"));
+  });
+
+  it("shows pictures and documents, which a rail cannot", async () => {
+    fetchReviewDetail.mockResolvedValue(
+      detail({
+        image: "https://blob/mynd.png",
+        documents: [{ name: "Leiðbeiningar.pdf", url: "https://blob/1.pdf", content_type: null }],
+      })
+    );
+    render(<YfirferdPage />);
+
+    await waitFor(() => expect(pane().getByText("Mynd")).toBeInTheDocument());
+    expect(pane().getByRole("link", { name: "Leiðbeiningar.pdf" })).toHaveAttribute(
+      "target",
+      "_blank"
+    );
+  });
+});
+
+describe("version skew", () => {
+  it("degrades rather than white-screening when the API predates the UI", async () => {
+    // A frontend can be deployed ahead of its backend. A field that has not
+    // shipped yet should cost this pane a section, not the whole screen —
+    // which is exactly what it did the first time it was run for real.
+    const older = detail();
+    delete (older as Record<string, unknown>).documents;
+    delete (older as Record<string, unknown>).review_comments;
+    delete (older as Record<string, unknown>).reports;
+    fetchReviewDetail.mockResolvedValue(older);
+
+    render(<YfirferdPage />);
+
+    await waitFor(() => expect(pane().getByText("Kveikjuleikur")).toBeInTheDocument());
+    expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument();
   });
 });

@@ -33,6 +33,7 @@ from .base import Base, SoftDeleteMixin
 if TYPE_CHECKING:
     from .comment import Comment
     from .content_report import ContentReport
+    from .review_comment import ReviewComment
     from .tag import ContentTag, Tag
     from .user import User
     from .workspace import Workspace
@@ -178,6 +179,9 @@ class Content(SoftDeleteMixin, Base):
         back_populates="content", cascade="all, delete-orphan"
     )
     reports: Mapped[list[ContentReport]] = relationship(
+        back_populates="content", cascade="all, delete-orphan"
+    )
+    review_comments: Mapped[list[ReviewComment]] = relationship(
         back_populates="content", cascade="all, delete-orphan"
     )
 
