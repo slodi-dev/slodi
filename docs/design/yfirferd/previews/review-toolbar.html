@@ -1,0 +1,152 @@
+<!-- @dsCard group="Yfirferð" -->
+<!doctype html>
+<html lang="is">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Toolbar and filters — Slóði</title>
+    <style>
+      :root {
+        /* Copied from frontend/app/slodi-tokens.css — HSL triplets, used as hsl(var(--…)). */
+        --sl-color-background: 150 20% 99%;
+        --sl-color-surface: 0 0% 100%;
+        --sl-color-surface-sunken: 150 16% 95%;
+        --sl-color-text-primary: 150 20% 12%;
+        --sl-color-text-secondary: 150 12% 31%;
+        --sl-color-text-tertiary: 150 12% 45%;
+        --sl-color-text-inverse: 0 0% 100%;
+        --sl-color-border: 150 12% 85%;
+        --sl-color-border-subtle: 150 14% 90%;
+        --sl-color-focus-ring: 142 50% 42%;
+        --sl-color-primary: 142 50% 42%;
+        --sl-color-primary-hover: 142 50% 35%;
+        --sl-color-primary-subtle: 142 50% 96%;
+        --sl-color-error: 4 72% 58%;
+        --sl-color-error-subtle: 6 78% 95%;
+        --sl-color-error-text: 4 70% 34%;
+        --sl-color-error-muted: 6 72% 90%;
+        --sl-color-warning: 36 85% 55%;
+        --sl-color-warning-subtle: 40 85% 94%;
+        --sl-color-warning-text: 32 90% 25%;
+        --sl-color-info: 190 72% 45%;
+        --sl-color-info-subtle: 188 55% 94%;
+        --sl-radius-card: 12px;
+        --sl-radius-button: 8px;
+        --sl-radius-chip: 999px;
+        --sl-radius-input: 8px;
+        --sl-radius-sm: 6px;
+        --sl-spacing-xs: 0.25rem;
+        --sl-spacing-sm: 0.5rem;
+        --sl-spacing-md: 1rem;
+        --sl-spacing-lg: 1.5rem;
+      }
+      @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { 
+        --sl-color-background: 150 12% 9%;
+        --sl-color-surface: 150 12% 11%;
+        --sl-color-surface-sunken: 150 10% 16%;
+        --sl-color-text-primary: 150 8% 95%;
+        --sl-color-text-secondary: 150 7% 78%;
+        --sl-color-text-tertiary: 150 6% 65%;
+        --sl-color-border: 150 8% 25%;
+        --sl-color-border-subtle: 150 8% 20%;
+        --sl-color-primary: 142 50% 55%;
+        --sl-color-primary-subtle: 142 40% 16%;
+        --sl-color-error-subtle: 6 50% 16%;
+        --sl-color-error-text: 6 85% 78%;
+        --sl-color-error-muted: 6 40% 24%;
+        --sl-color-warning-subtle: 36 55% 14%;
+        --sl-color-warning-text: 38 90% 70%;
+        --sl-color-info-subtle: 190 45% 15%;
+ } }
+      :root[data-theme="dark"] { 
+        --sl-color-background: 150 12% 9%;
+        --sl-color-surface: 150 12% 11%;
+        --sl-color-surface-sunken: 150 10% 16%;
+        --sl-color-text-primary: 150 8% 95%;
+        --sl-color-text-secondary: 150 7% 78%;
+        --sl-color-text-tertiary: 150 6% 65%;
+        --sl-color-border: 150 8% 25%;
+        --sl-color-border-subtle: 150 8% 20%;
+        --sl-color-primary: 142 50% 55%;
+        --sl-color-primary-subtle: 142 40% 16%;
+        --sl-color-error-subtle: 6 50% 16%;
+        --sl-color-error-text: 6 85% 78%;
+        --sl-color-error-muted: 6 40% 24%;
+        --sl-color-warning-subtle: 36 55% 14%;
+        --sl-color-warning-text: 38 90% 70%;
+        --sl-color-info-subtle: 190 45% 15%;
+ }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: var(--sl-spacing-lg);
+        background: hsl(var(--sl-color-background));
+        color: hsl(var(--sl-color-text-primary));
+        font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 { font-size: 1rem; margin: 0 0 var(--sl-spacing-lg); color: hsl(var(--sl-color-text-secondary)); font-weight: 600; }
+      .caseLabel {
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+        color: hsl(var(--sl-color-text-tertiary)); margin: var(--sl-spacing-lg) 0 var(--sl-spacing-sm);
+        font-weight: 700;
+      }
+      .note { font-size: 0.8rem; color: hsl(var(--sl-color-text-tertiary)); margin: var(--sl-spacing-xs) 0 0; }
+      .chip {
+        display: inline-block; padding: 0.1em 0.55em; border-radius: var(--sl-radius-chip);
+        font-size: 0.75rem; font-weight: 600;
+        background: hsl(var(--sl-color-surface-sunken)); color: hsl(var(--sl-color-text-secondary));
+      }
+      .chip--error { background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); }
+      .chip--warning { background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); }
+      .chip--info { background: hsl(var(--sl-color-info)); color: hsl(var(--sl-color-text-inverse)); }
+      .btn {
+        min-height: 44px; padding: 0 var(--sl-spacing-md); border-radius: var(--sl-radius-button);
+        font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
+        border: 1px solid hsl(var(--sl-color-border)); background: transparent;
+        color: hsl(var(--sl-color-text-primary));
+      }
+      .btn--primary { background: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); border-color: transparent; }
+      .btn--destructive { color: hsl(var(--sl-color-error-text)); border-color: hsl(var(--sl-color-error-muted)); }
+      .btn--send { background: hsl(var(--sl-color-info)); color: hsl(var(--sl-color-text-inverse)); border-color: transparent; }
+      .btn--danger { background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); border-color: hsl(var(--sl-color-error)); }
+      .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+      .btn:focus-visible { outline: 2px solid hsl(var(--sl-color-focus-ring)); outline-offset: 2px; }
+      .row { display: flex; flex-wrap: wrap; gap: var(--sl-spacing-sm); align-items: center; }
+      .toolbar { border-bottom: 1px solid hsl(var(--sl-color-border)); padding-bottom: var(--sl-spacing-sm); margin-bottom: var(--sl-spacing-md); }
+      .tabs { display: flex; gap: var(--sl-spacing-xs); margin-bottom: var(--sl-spacing-sm); }
+      .tab { display: flex; align-items: center; gap: var(--sl-spacing-xs); min-height: 48px; padding: 0 var(--sl-spacing-md); border: none; border-bottom: 3px solid transparent; background: none; font: inherit; font-weight: 600; color: hsl(var(--sl-color-text-secondary)); cursor: pointer; }
+      .tab--active { color: hsl(var(--sl-color-text-primary)); border-bottom-color: hsl(var(--sl-color-primary)); }
+      .seg { display: inline-flex; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-button); overflow: hidden; }
+      .seg button { min-height: 40px; padding: 0 var(--sl-spacing-sm); border: none; border-right: 1px solid hsl(var(--sl-color-border)); background: hsl(var(--sl-color-surface)); color: hsl(var(--sl-color-text-secondary)); font: inherit; font-size: 0.875rem; cursor: pointer; }
+      .seg button:last-child { border-right: none; }
+      .seg .on { background: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); font-weight: 600; }
+      .inp { min-height: 40px; padding: 0 var(--sl-spacing-sm); border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-color-background)); color: hsl(var(--sl-color-text-primary)); font: inherit; font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>Toolbar and filters</h1>
+    <p class="caseLabel">Desktop — one row, which it currently is not</p>
+    <div class="toolbar">
+      <div class="tabs">
+        <button class="tab tab--active">Efni <span class="chip">5002</span></button>
+        <button class="tab">Tilkynningar <span class="chip chip--error">783</span></button>
+      </div>
+      <div class="row">
+        <div class="seg">
+          <button class="on">Óyfirfarið</button><button>Samþykkt</button><button>Hafnað</button><button>Allt</button>
+        </div>
+        <input class="inp" style="min-width:11rem" placeholder="Leita eftir heiti…" />
+        <input class="inp" style="min-width:9rem" placeholder="Höfundur…" />
+        <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.875rem;color:hsl(var(--sl-color-text-secondary))">
+          Sent inn frá <input class="inp" type="date" />
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.875rem;color:hsl(var(--sl-color-text-secondary))">
+          <input type="checkbox" /> Aðeins tilkynnt
+        </label>
+      </div>
+    </div>
+    <p class="note">The date label changes with the view — <strong>Sent inn frá</strong> on Óyfirfarið, <strong>Afgreitt frá</strong> everywhere else — because the range filters whichever date the list is ordered by, and "frá" alone is a guess. Below 768px the whole filter row collapses into the existing <code>FilterDrawer</code>.</p>
+
+  </body>
+</html>
