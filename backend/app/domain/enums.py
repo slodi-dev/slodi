@@ -36,6 +36,29 @@ class ContentType(str, Enum):
     task = "task"
 
 
+class ReportReason(str, Enum):
+    """Why someone flagged a piece of content.
+
+    The reasons a reviewer can act on differently. `unsafe` is deliberately
+    separate from `inappropriate`: the first is a safeguarding matter that gets
+    escalated within the day, the second is a quality judgement that can wait
+    for the next sweep. Collapsing them would bury the one that cannot wait.
+    """
+
+    inappropriate = "inappropriate"
+    unsafe = "unsafe"
+    spam = "spam"
+    duplicate = "duplicate"
+    wrong_type = "wrong_type"
+    other = "other"
+
+
+class ReportStatus(str, Enum):
+    open = "open"
+    resolved = "resolved"
+    dismissed = "dismissed"
+
+
 class Weekday(str, Enum):
     monday = "monday"
     tuesday = "tuesday"
