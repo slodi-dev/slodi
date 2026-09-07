@@ -24,8 +24,9 @@ from app.domain.content_constraints import (
     LOCATION_MAX,
     NAME_MAX,
     NAME_MIN,
+    REVIEW_NOTE_MAX,
 )
-from app.domain.enums import AgeGroup, ContentType
+from app.domain.enums import AgeGroup, ContentType, ReviewState
 
 from .base import Base, SoftDeleteMixin
 
@@ -112,6 +113,37 @@ class Content(SoftDeleteMixin, Base):
         SADateTime(timezone=True),
         nullable=False,
     )
+
+    review_state: Mapped[ReviewState] = mapped_column(
+        SAEnum(
+            ReviewState,
+            name="review_state_enum",
+            values_callable=lambda obj: [e.value for e in obj],
+        ),
+        nullable=False,
+        default=ReviewState.unreviewed,
+    )
+    """Whether Dagskrárstjórnarteymið has looked at this. **Not a visibility
+    flag** — see `hidden_at`."""
+
+    reviewed_by_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    reviewed_at: Mapped[dt.datetime | None] = mapped_column(
+        SADateTime(timezone=True), nullable=True
+    )
+    review_note: Mapped[str | None] = mapped_column(String(REVIEW_NOTE_MAX), nullable=True)
+    """Why it was rejected, in words the author can act on."""
+
+    hidden_at: Mapped[dt.datetime | None] = mapped_column(SADateTime(timezone=True), nullable=True)
+    """Set when a moderator takes something out of the bank.
+
+    Deliberately the same shape as `deleted_at` on `SoftDeleteMixin`, because it
+    means the same thing: not listed, not gone. Kept **separate from
+    `review_state`** — the bank publishes on submit and reviews afterwards, so
+    an unreviewed item is live and a rejected one is not automatically hidden.
+    Fusing them would make approving the only way to make something visible,
+    which turns a 3-person queue into a bottleneck on every submission."""
     author_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("users.id"),
@@ -124,7 +156,15 @@ class Content(SoftDeleteMixin, Base):
     )
 
     # Relationships
-    author: Mapped[User] = relationship(back_populates="authored_content")
+    author: Mapped[User] = relationship(
+        back_populates="authored_content",
+        foreign_keys=[author_id],
+        primaryjoin="Content.author_id == User.id",
+    )
+    reviewed_by: Mapped[User | None] = relationship(
+        foreign_keys=[reviewed_by_id],
+        primaryjoin="Content.reviewed_by_id == User.id",
+    )
     workspace: Mapped[Workspace] = relationship(
         "Workspace",
         back_populates="content_items",

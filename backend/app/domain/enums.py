@@ -6,9 +6,33 @@ from enum import Enum
 
 
 class Permissions(str, Enum):
+    """Platform-wide permission, ranked viewer < member < moderator < admin.
+
+    `moderator` is Dagskrárstjórnarteymið: they sweep the Yfirferð board and can
+    hide or reject anything in the bank, but have none of an admin's reach over
+    users, workspaces or settings. The rank ordering means an admin passes every
+    moderator gate for free — see `_PERMISSION_RANK` in `app/core/auth.py`.
+    """
+
     admin = "admin"
+    moderator = "moderator"
     member = "member"
     viewer = "viewer"
+
+
+class ReviewState(str, Enum):
+    """Whether Dagskrárstjórnarteymið has looked at a piece of content.
+
+    **This does not gate visibility.** The bank publishes on submit and reviews
+    afterwards, so an `unreviewed` item is live. Hiding is a separate act with
+    its own column — conflating the two would mean the team could only make
+    something visible by approving it, which turns a 3-person queue into a
+    bottleneck on every single submission.
+    """
+
+    unreviewed = "unreviewed"
+    approved = "approved"
+    rejected = "rejected"
 
 
 class WorkspaceRole(str, Enum):

@@ -16,7 +16,7 @@ from app.core.auth import (
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
-from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
+from app.domain.enums import AgeGroup, ContentType, Permissions, ProgramSortBy
 from app.schemas.program import (
     ProgramCreate,
     ProgramFilters,
@@ -225,7 +225,9 @@ async def get_program(
     current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
     svc = ProgramService(session)
-    program = await svc.get(program_id, current_user.id)
+    # A hidden item stays reachable to the team that hid it, and to nobody else.
+    is_moderator = current_user.permissions in (Permissions.moderator, Permissions.admin)
+    program = await svc.get(program_id, current_user.id, include_hidden=is_moderator)
     await check_workspace_access(
         program.workspace_id,
         current_user,

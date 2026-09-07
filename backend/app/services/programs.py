@@ -94,8 +94,14 @@ class ProgramService:
                 detail="Failed to create program",
             ) from e
 
-    async def get(self, program_id: UUID, current_user_id: UUID | None = None) -> ProgramOut:
-        row = await self.repo.get(program_id, current_user_id)
+    async def get(
+        self,
+        program_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
+    ) -> ProgramOut:
+        row = await self.repo.get(program_id, current_user_id, include_hidden=include_hidden)
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
@@ -105,7 +111,7 @@ class ProgramService:
     async def update(
         self, program_id: UUID, data: ProgramUpdate, current_user_id: UUID | None = None
     ) -> ProgramOut:
-        row = await self.repo.get(program_id)
+        row = await self.repo.get(program_id, include_hidden=True)
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")

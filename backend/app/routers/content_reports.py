@@ -24,12 +24,8 @@ from app.services.content_reports import ContentReportService
 router = APIRouter(tags=["moderation"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
-# The review board is `moderator`+ work, but that permission does not exist yet —
-# it arrives with the Yfirferð board (sc-430), which adds it to the Permissions
-# enum between `member` and `admin`. Until then these are admin-only. Because
-# `require_permission` compares by rank, lowering them to `moderator` later is a
-# one-word change here and admins keep passing for free.
-ModeratorDep = Depends(require_permission(Permissions.admin))
+# Dagskrárstjórnarteymið. Admins outrank moderators, so they pass this for free.
+ModeratorDep = Depends(require_permission(Permissions.moderator))
 
 
 @router.post(

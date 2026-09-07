@@ -28,7 +28,11 @@ class ProgramRepository(Repository):
         super().__init__(session)
 
     async def get(
-        self, program_id: UUID, current_user_id: UUID | None = None
+        self,
+        program_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
     ) -> tuple[Program, ContentStats] | None:
         stmt = (
             select(
@@ -47,6 +51,10 @@ class ProgramRepository(Repository):
             )
             .where(Program.id == program_id, Program.deleted_at.is_(None))
         )
+        if not include_hidden:
+            # Otherwise hiding something only removes it from the list, and
+            # anyone holding the link still reads it.
+            stmt = stmt.where(Program.hidden_at.is_(None))
         row = (await self.session.execute(stmt)).first()
         if row is None:
             return None
@@ -151,7 +159,13 @@ class ProgramRepository(Repository):
         stmt = (
             select(func.count())
             .select_from(Program)
-            .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
+            .where(
+                Program.workspace_id == workspace_id,
+                Program.deleted_at.is_(None),
+                # Hidden means the same as deleted to a listing: not listed, not
+                # gone. A moderator reaches it through the Yfirferð board.
+                Program.hidden_at.is_(None),
+            )
         )
         stmt = self._apply_filters(stmt, filters or ProgramFilters())
         result = await self.session.scalar(stmt)
@@ -175,7 +189,13 @@ class ProgramRepository(Repository):
                 selectinload(Program.workspace),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
+            .where(
+                Program.workspace_id == workspace_id,
+                Program.deleted_at.is_(None),
+                # Hidden means the same as deleted to a listing: not listed, not
+                # gone. A moderator reaches it through the Yfirferð board.
+                Program.hidden_at.is_(None),
+            )
         )
         stmt = self._apply_filters(stmt, resolved_filters)
         stmt = self._apply_sort(stmt, resolved_filters, like_count_col=lc_subq)

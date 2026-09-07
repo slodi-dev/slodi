@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     # unset, because a safeguarding report with nowhere to go is the one failure
     # mode this must not have.
     moderation_emails: str = Field("", alias="MODERATION_EMAILS")
+    # Seed: emails promoted to `moderator` on `make seed` — Dagskrárstjórnarteymið.
+    moderator_emails: str = Field("", alias="MODERATOR_EMAILS")
 
     # HMAC key for signed game run tokens. REQUIRED outside development —
     # run_tokens._secret() raises when it is unset and ENV is not a dev value.
@@ -79,6 +81,10 @@ class Settings(BaseSettings):
     @property
     def admin_email_list(self) -> list[str]:
         return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
+
+    @property
+    def moderator_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.moderator_emails.split(",") if e.strip()]
 
     @property
     def moderation_email_list(self) -> list[str]:

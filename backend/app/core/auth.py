@@ -43,7 +43,8 @@ security = HTTPBearer()
 _PERMISSION_RANK: dict[Permissions, int] = {
     Permissions.viewer: 0,
     Permissions.member: 1,
-    Permissions.admin: 2,
+    Permissions.moderator: 2,
+    Permissions.admin: 3,
 }
 
 _WORKSPACE_ROLE_RANK: dict[WorkspaceRole, int] = {
@@ -548,16 +549,16 @@ async def check_content_edit_access(
     content. It used to be, which meant opening submissions would have let any
     member edit any item in the bank.
 
-    Note for the review board: a content moderator belongs in this rule, as a
-    fourth clause alongside the three above. There is no `moderator` permission
-    yet — it arrives with the Yfirferð board.
+    A content moderator is the fourth clause: Dagskrárstjórnarteymið can change
+    anything in the bank, which is what makes the Yfirferð board's hide and
+    reject actions work on other people's submissions.
 
     Args:
         hide_from_non_members: When True, raise 404 instead of 403 for users
             with no membership at all. Use on resource-level endpoints where
             returning 403 would reveal that the resource exists.
     """
-    if current_user.permissions == Permissions.admin:
+    if _PERMISSION_RANK[current_user.permissions] >= _PERMISSION_RANK[Permissions.moderator]:
         return
 
     role = await _get_workspace_role(workspace_id, current_user.id, session)

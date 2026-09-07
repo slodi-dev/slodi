@@ -7,6 +7,7 @@ from app.routers import game_scores as game_scores_router
 from app.routers import groups as groups_router
 from app.routers import heidursordla as heidursordla_router
 from app.routers import likes as likes_router
+from app.routers import moderation as moderation_router
 from app.routers import programs as programs_router
 from app.routers import tags as tags_router
 from app.routers import tasks as tasks_router

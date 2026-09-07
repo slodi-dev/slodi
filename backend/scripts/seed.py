@@ -145,6 +145,26 @@ async def promote_admin_emails(session: AsyncSession) -> None:
             log.info("User '%s' already admin", u.email)
 
 
+async def promote_moderator_emails(session: AsyncSession) -> None:
+    """Grant `moderator` to Dagskrárstjórnarteymið, from MODERATOR_EMAILS.
+
+    Never demotes: an admin listed here keeps admin, because moderator is the
+    lower rank and stepping someone down would be a surprise from a seed script.
+    """
+    emails = settings.moderator_email_list
+    if not emails:
+        return
+    result = await session.execute(select(User).where(User.email.in_(emails)))
+    for u in result.scalars().all():
+        if u.permissions == Permissions.admin:
+            log.info("User '%s' is admin, which already outranks moderator", u.email)
+        elif u.permissions != Permissions.moderator:
+            u.permissions = Permissions.moderator
+            log.info("Promoted '%s' to moderator", u.email)
+        else:
+            log.info("User '%s' already moderator", u.email)
+
+
 async def main() -> None:
     session_maker = get_session_maker()
 
@@ -153,6 +173,7 @@ async def main() -> None:
         ws = await get_or_create_workspace(session, user)
         tags = await get_or_create_tags(session)
         await promote_admin_emails(session)
+        await promote_moderator_emails(session)
         # transaction committed by context-manager exit
 
     output = {
