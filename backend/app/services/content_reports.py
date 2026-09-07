@@ -16,6 +16,7 @@ from app.schemas.content_report import (
     ContentReportOut,
     ContentReportResolve,
 )
+from app.schemas.moderation import ReportQueueItem
 from app.settings import settings
 from app.utils import get_current_datetime
 
@@ -96,9 +97,16 @@ class ContentReportService:
             ),
         )
 
-    async def list_open(self, limit: int, offset: int) -> list[ContentReportOut]:
-        rows = await self.repo.list_open(limit, offset)
-        return [ContentReportOut.model_validate(r) for r in rows]
+    async def list_open(self, limit: int, offset: int) -> list[ReportQueueItem]:
+        rows = await self.repo.list_open_with_content(limit, offset)
+        return [
+            ReportQueueItem(
+                **ContentReportOut.model_validate(r).model_dump(),
+                content_name=name,
+                content_author_name=author,
+            )
+            for r, name, author in rows
+        ]
 
     async def count_open(self) -> int:
         return await self.repo.count_open()

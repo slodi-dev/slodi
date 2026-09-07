@@ -20,8 +20,14 @@ class ModerationService:
     async def queue(self, limit: int, offset: int) -> list[ReviewQueueItem]:
         rows = await self.repo.list_unreviewed(limit, offset)
         return [
-            ReviewQueueItem.model_validate(c).model_copy(update={"open_report_count": n})
-            for c, n in rows
+            ReviewQueueItem.model_validate(c).model_copy(
+                update={
+                    "open_report_count": count,
+                    "open_report_reasons": reasons,
+                    "author_strikes": strikes,
+                }
+            )
+            for c, count, reasons, strikes in rows
         ]
 
     async def count_unreviewed(self) -> int:

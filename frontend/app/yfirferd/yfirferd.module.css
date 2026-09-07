@@ -1,0 +1,352 @@
+/* Colour tokens hold bare HSL components; every use wraps them in hsl(). */
+
+.page {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: var(--sl-spacing-lg) var(--sl-spacing-md) var(--sl-spacing-xl);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sl-spacing-md);
+  margin-bottom: var(--sl-spacing-lg);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.9rem;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.subtitle {
+  margin: var(--sl-spacing-xs) 0 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.shortcuts {
+  margin: 0;
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: 0.85rem;
+}
+
+.shortcuts kbd {
+  padding: 0.1em 0.4em;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-sunken));
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--sl-spacing-xs);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  margin-bottom: var(--sl-spacing-md);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: 48px;
+  padding: 0 var(--sl-spacing-md);
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.tabActive {
+  color: hsl(var(--sl-color-text-primary));
+  border-bottom-color: hsl(var(--sl-color-primary));
+}
+
+.count {
+  min-width: 1.6em;
+  padding: 0.1em 0.5em;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: 0.8rem;
+}
+
+/* Never colour alone — the tab already names what it is. */
+.countUrgent {
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+}
+
+.live {
+  margin: 0 0 var(--sl-spacing-sm);
+  min-height: 1.4rem;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.undoBtn {
+  margin-left: var(--sl-spacing-sm);
+  padding: 0.15em 0.6em;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.undoBtn:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.undoBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
+}
+
+.state,
+.empty,
+.error {
+  padding: var(--sl-spacing-lg) 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.error {
+  color: hsl(var(--sl-color-error-text));
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: hsl(var(--sl-color-text-link));
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-sm);
+}
+
+.row {
+  display: flex;
+  gap: var(--sl-spacing-md);
+  padding: var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-left: 4px solid transparent;
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface));
+}
+
+/* The cursor. A sweep of fifty needs the current row obvious at a glance, so
+   this is a border and a background rather than a focus ring alone. */
+.rowFocused {
+  border-color: hsl(var(--sl-color-primary));
+  border-left-color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+}
+
+.row:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
+}
+
+.rowUrgent {
+  border-left-color: hsl(var(--sl-color-error));
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  margin: 0 0 var(--sl-spacing-xs);
+  font-size: 0.85rem;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.type {
+  padding: 0.1em 0.55em;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-secondary));
+  font-weight: 600;
+}
+
+.reportFlag,
+.reasonUrgent {
+  padding: 0.1em 0.55em;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+  font-weight: 600;
+}
+
+.reason {
+  padding: 0.1em 0.55em;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-secondary));
+  font-weight: 600;
+}
+
+.fieldLabel {
+  display: inline-block;
+  margin-right: var(--sl-spacing-xs);
+  padding: 0.05em 0.4em;
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* An author's history. Warning-coloured rather than error: it is context for a
+   judgement, not a verdict — anyone can be reported, and being reported before
+   is not the same as being wrong now. */
+.strikes {
+  padding: 0.1em 0.55em;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+  font-weight: 600;
+}
+
+.name {
+  margin: 0 0 var(--sl-spacing-xs);
+  font-size: 1.1rem;
+}
+
+.nameLink {
+  color: hsl(var(--sl-color-text-primary));
+  text-decoration: none;
+}
+
+.nameLink:hover {
+  text-decoration: underline;
+}
+
+.byline {
+  margin: 0 0 var(--sl-spacing-xs);
+  font-size: 0.85rem;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.body,
+.instructions,
+.bodyMuted {
+  margin: 0 0 var(--sl-spacing-xs);
+  color: hsl(var(--sl-color-text-secondary));
+  /* Enough to judge from, not so much that fifty rows become a scroll. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.instructions,
+.bodyMuted {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  flex: none;
+}
+
+.approve,
+.reject,
+.hide {
+  min-height: 44px;
+  padding: 0 var(--sl-spacing-md);
+  border-radius: var(--sl-radius-button);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.approve {
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  border: none;
+}
+
+.approve:hover:not(:disabled) {
+  background: hsl(var(--sl-color-primary-hover));
+}
+
+.reject,
+.hide {
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  border: 1px solid hsl(var(--sl-color-border));
+}
+
+.hide {
+  color: hsl(var(--sl-color-error-text));
+  border-color: hsl(var(--sl-color-error-muted));
+}
+
+.reject:hover:not(:disabled),
+.hide:hover:not(:disabled) {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.approve:disabled,
+.reject:disabled,
+.hide:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.approve:focus-visible,
+.reject:focus-visible,
+.hide:focus-visible,
+.tab:focus-visible,
+.linkBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .row {
+    flex-direction: column;
+  }
+
+  .actions {
+    flex-direction: row;
+  }
+
+  .approve,
+  .reject,
+  .hide {
+    flex: 1;
+  }
+
+  .shortcuts {
+    display: none;
+  }
+}

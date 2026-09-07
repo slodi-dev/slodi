@@ -305,3 +305,27 @@ async def svc_report(db, task, user, reason, tasks):
     return await ContentReportService(db).report(
         task.id, user.id, ContentReportCreate(reason=reason), tasks, "Kveikjuleikur"
     )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_the_board_says_what_a_report_is_about(db):
+    """A complaint with no subject makes a reviewer open every single row to
+    find out what it refers to — the exact cost the board exists to remove."""
+    from app.services.content_reports import ContentReportService
+
+    user, task = await _content(db)
+    db.add(
+        m.ContentReport(
+            content_id=task.id,
+            reporter_id=user.id,
+            reason=ReportReason.unsafe,
+            status=ReportStatus.open,
+            created_at=get_current_datetime(),
+        )
+    )
+    await db.flush()
+
+    queue = await ContentReportService(db).list_open(limit=10, offset=0)
+    assert queue[0].content_name == "Kveikjuleikur"
+    assert queue[0].content_author_name == "Foringi"

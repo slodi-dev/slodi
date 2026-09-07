@@ -32,10 +32,15 @@ import {
   User, // Prófíll (Profile)
   Settings, // Stillingar (Settings)
   Award, // Merkin mín (Badges)
+  ShieldCheck, // Yfirferð (review board)
   PanelLeftClose, // Collapse sidebar icon
   PanelLeftOpen, // Expand sidebar icon
 } from "lucide-react";
 import Image from "next/image";
+import {
+  type UserPermissions,
+  hasPermission as hasPlatformPermission,
+} from "@/services/users.service";
 
 /**
  * Navigation item configuration
@@ -45,7 +50,13 @@ interface NavItem {
   path: string; // Route path
   icon: React.ComponentType<{ className?: string }>; // Lucide icon component
   badge?: number; // Optional notification count
-  roleRequired?: "admin" | "editor"; // Minimum role required (omit for all users)
+  roleRequired?: "admin" | "editor"; // Minimum workspace role (omit for all users)
+  /**
+   * Minimum *platform* permission. Distinct from roleRequired, which is a
+   * workspace role — Yfirferð is open to Dagskrárstjórnarteymið regardless of
+   * which workspaces they happen to belong to.
+   */
+  permissionRequired?: UserPermissions;
   group?: "home" | "dashboard" | "primary" | "secondary" | "personal"; // Navigation section
   disabled?: boolean; // Whether item is disabled (not yet implemented)
 }
@@ -58,6 +69,7 @@ interface DashboardSidebarProps {
   userName?: string; // Display name for user section
   userAvatar?: string; // Avatar URL for user section
   badgeCount?: number; // Unread badge count
+  userPermissions?: UserPermissions; // Platform permission, for moderator-only items
   collapsed?: boolean; // Initial collapsed state
   onCollapsedChange?: (collapsed: boolean) => void; // Callback for state changes
   showUserSection?: boolean; // Whether to display user avatar section
@@ -132,6 +144,13 @@ const NAV_ITEMS: NavItem[] = [
     roleRequired: "editor",
   },
   {
+    label: "Yfirferð",
+    path: "/yfirferd",
+    icon: ShieldCheck,
+    group: "secondary",
+    permissionRequired: "moderator",
+  },
+  {
     label: "Stjórnun",
     path: "/admin",
     icon: Shield,
@@ -164,6 +183,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function DashboardSidebar({
   userRole = "leader",
+  userPermissions,
   userName = "Notandi",
   userAvatar,
   badgeCount = 0,
@@ -180,6 +200,8 @@ export default function DashboardSidebar({
    * Implements hierarchical role system: admin > editor > leader
    */
   const hasPermission = (item: NavItem): boolean => {
+    if (item.permissionRequired && !hasPlatformPermission(userPermissions, item.permissionRequired))
+      return false;
     if (!item.roleRequired) return true;
     if (item.roleRequired === "admin") return userRole === "admin";
     if (item.roleRequired === "editor") return userRole === "editor" || userRole === "admin";

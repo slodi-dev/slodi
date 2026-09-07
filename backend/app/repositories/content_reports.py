@@ -6,7 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.enums import ReportReason, ReportStatus
+from app.models.content import Content
 from app.models.content_report import ContentReport
+from app.models.user import User
 
 from .base import Repository
 
@@ -25,6 +27,23 @@ class ContentReportRepository(Repository):
                 ContentReport.reporter_id == reporter_id,
             )
         )
+
+    async def list_open_with_content(
+        self, limit: int, offset: int
+    ) -> list[tuple[ContentReport, str, str]]:
+        """Open reports, each with the name and author of what it is about."""
+        unsafe_first = (ContentReport.reason == ReportReason.unsafe).desc()
+        stmt = (
+            select(ContentReport, Content.name, User.name)
+            .join(Content, Content.id == ContentReport.content_id)
+            .join(User, User.id == Content.author_id)
+            .where(ContentReport.status == ReportStatus.open)
+            .order_by(unsafe_first, ContentReport.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = await self.session.execute(stmt)
+        return [(r, name, author) for r, name, author in rows.all()]
 
     async def list_open(self, limit: int, offset: int) -> list[ContentReport]:
         """The review board's queue.

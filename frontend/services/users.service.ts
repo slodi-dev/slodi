@@ -1,6 +1,29 @@
 import { buildApiUrl } from "@/lib/api-utils";
 
-export type UserPermissions = "viewer" | "member" | "admin";
+/**
+ * Ranked viewer < member < moderator < admin.
+ *
+ * `moderator` is Dagskrárstjórnarteymið: they sweep the Yfirferð board and can
+ * hide or reject anything in the bank, with none of an admin's reach over users,
+ * workspaces or settings.
+ */
+export type UserPermissions = "viewer" | "member" | "moderator" | "admin";
+
+const PERMISSION_RANK: Record<UserPermissions, number> = {
+  viewer: 0,
+  member: 1,
+  moderator: 2,
+  admin: 3,
+};
+
+/** Mirrors `_PERMISSION_RANK` in `backend/app/core/auth.py`. */
+export function hasPermission(
+  permissions: UserPermissions | null | undefined,
+  minimum: UserPermissions
+): boolean {
+  if (!permissions) return false;
+  return PERMISSION_RANK[permissions] >= PERMISSION_RANK[minimum];
+}
 
 export type User = {
   id: string;

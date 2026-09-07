@@ -103,9 +103,13 @@ def test_approving_needs_no_note():
     assert ReviewDecision(review_state=ReviewState.approved).note is None
 
 
-def test_you_cannot_finish_a_review_by_leaving_it_unreviewed():
-    with pytest.raises(ValueError, match="ljúka yfirferð"):
-        ReviewDecision(review_state=ReviewState.unreviewed)
+def test_a_decision_can_be_put_back_to_unreviewed():
+    """That is how undo works. A keyboard sweep at one key per item will mis-key
+    sooner or later, and without a way back the only remedy is remembering what
+    the previous state was."""
+    assert ReviewDecision(review_state=ReviewState.unreviewed).review_state == (
+        ReviewState.unreviewed
+    )
 
 
 # ── The database behaviour ───────────────────────────────────────────────────
@@ -244,3 +248,57 @@ async def test_un_hiding_takes_the_strike_with_it(db):
     reloaded = await db.scalar(select(m.Content).where(m.Content.id == task.id))
     assert reloaded.hidden_at is None
     assert reloaded.review_state is ReviewState.rejected
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_the_queue_says_why_something_was_flagged(db):
+    """A count alone sends the reviewer to another tab for every flagged row,
+    which is where a fifty-item sweep loses its afternoon."""
+    from app.domain.enums import ReportReason
+
+    author, _, task = await _bank(db)
+    other = m.User(name="Annar", auth0_id="auth0|why", email="why@t.is")
+    db.add(other)
+    await db.flush()
+    db.add_all(
+        [
+            m.ContentReport(
+                content_id=task.id,
+                reporter_id=author.id,
+                reason=ReportReason.unsafe,
+                status=ReportStatus.open,
+                created_at=get_current_datetime(),
+            ),
+            m.ContentReport(
+                content_id=task.id,
+                reporter_id=other.id,
+                reason=ReportReason.spam,
+                status=ReportStatus.open,
+                created_at=get_current_datetime(),
+            ),
+        ]
+    )
+    await db.flush()
+
+    item = next(i for i in await ModerationService(db).queue(10, 0) if i.id == task.id)
+    assert set(item.open_report_reasons) == {ReportReason.unsafe, ReportReason.spam}
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_the_queue_shows_an_authors_history_in_place(db):
+    """A first-time contributor and a repeat one should not look identical."""
+    author, ws, task = await _bank(db)
+    already_hidden = m.Task(
+        name="Falið áður",
+        created_at=get_current_datetime(),
+        author_id=author.id,
+        workspace_id=ws.id,
+        hidden_at=get_current_datetime(),
+    )
+    db.add(already_hidden)
+    await db.flush()
+
+    item = next(i for i in await ModerationService(db).queue(10, 0) if i.id == task.id)
+    assert item.author_strikes == 1

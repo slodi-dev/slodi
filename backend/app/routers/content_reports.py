@@ -17,6 +17,7 @@ from app.schemas.content_report import (
     ContentReportOut,
     ContentReportResolve,
 )
+from app.schemas.moderation import ReportQueueItem
 from app.schemas.user import UserOut
 from app.services.content import ContentService
 from app.services.content_reports import ContentReportService
@@ -54,7 +55,7 @@ async def report_content(
     )
 
 
-@router.get("/moderation/reports", response_model=list[ContentReportOut])
+@router.get("/moderation/reports", response_model=list[ReportQueueItem])
 async def list_open_reports(
     session: SessionDep,
     request: Request,
@@ -62,7 +63,7 @@ async def list_open_reports(
     current_user: UserOut = ModeratorDep,
     limit: Limit = 50,
     offset: Offset = 0,
-) -> list[ContentReportOut]:
+) -> list[ReportQueueItem]:
     """The open queue — `unsafe` pinned first, then newest.
 
     Pinned in the query rather than in the board, so the ordering survives
