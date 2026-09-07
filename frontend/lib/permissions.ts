@@ -16,67 +16,90 @@ export function isOwner(user: User | null, program: Program): boolean {
 }
 
 /**
- * Check if the current user can edit (update) a program.
+ * Can the current user change this bank item — edit it or delete it?
  *
- * Backend requires workspace role >= "admin" for PATCH /programs/{id}.
- * Authors also retain the right to edit their own programs if they have at
- * least editor access (they created it, so they must have had editor+).
+ * Mirrors `check_content_edit_access` in `backend/app/core/auth.py`. Allowed when
+ * the user is a platform admin, a workspace admin (or above), or the item's own
+ * author at any workspace role.
  *
- * @param user          - current authenticated user
- * @param program       - program to check
- * @param workspaceRole - the user's role in the program's workspace (null = not a member)
+ * **The author clause deliberately does not require `editor`.** The bank takes
+ * submissions from anyone with an account, so its authors are plain viewers —
+ * requiring `editor` would let a leader file an idea and then be unable to fix a
+ * typo in it. Equally, `editor` alone is no longer enough to change *someone
+ * else's* item; it used to be, which would have meant any member could rewrite
+ * anything in an open bank.
+ *
+ * Editing and deleting are one rule because the backend makes them one rule. If
+ * they ever diverge, split this — do not let the two drift apart silently.
+ */
+function canChangeContent(
+  user: User | null,
+  content: Program,
+  workspaceRole: WorkspaceRole | null | undefined
+): boolean {
+  if (!user || !content) return false;
+  // Platform admins bypass workspace membership entirely
+  if (user.permissions === "admin") return true;
+  // Everyone else must at least be a member of the workspace
+  if (!hasWorkspaceRole(workspaceRole, "viewer")) return false;
+  return isOwner(user, content) || hasWorkspaceRole(workspaceRole, "admin");
+}
+
+/**
+ * Check if the current user can edit (update) a bank item.
+ *
+ * Backend: `PATCH /programs|events|tasks/{id}` → `check_content_edit_access`.
  */
 export function canEditProgram(
   user: User | null,
   program: Program,
   workspaceRole: WorkspaceRole | null | undefined = null
 ): boolean {
-  if (!user || !program) return false;
-  // Platform admins can always edit (they bypass workspace membership entirely)
-  if (user.permissions === "admin") return true;
-  // Workspace admins and owners can always edit
-  if (hasWorkspaceRole(workspaceRole, "admin")) return true;
-  // Authors can edit their own programs if they still have at least editor access
-  if (isOwner(user, program) && hasWorkspaceRole(workspaceRole, "editor")) return true;
-  return false;
+  return canChangeContent(user, program, workspaceRole);
 }
 
 /**
- * Check if the current user can delete a program.
+ * Check if the current user can delete a bank item.
  *
- * Backend requires workspace role >= "admin" for DELETE /programs/{id}.
+ * Backend: `DELETE /programs|events|tasks/{id}` → `check_content_edit_access`.
+ *
+ * This used to require workspace `admin`, which meant a leader could file an idea
+ * into the open bank and then have no way to take it back. An author can now
+ * withdraw their own submission.
  */
 export function canDeleteProgram(
   user: User | null,
   program: Program,
   workspaceRole: WorkspaceRole | null | undefined = null
 ): boolean {
-  if (!user || !program) return false;
-  // Platform admins can always delete
-  if (user.permissions === "admin") return true;
-  return hasWorkspaceRole(workspaceRole, "admin");
+  return canChangeContent(user, program, workspaceRole);
 }
 
 /**
- * Check if the current user can create a program in a workspace.
+ * Check if the current user can create content in a workspace.
  *
- * Backend requires workspace role >= "editor" for POST /workspaces/{id}/programs.
+ * Backend requires workspace role >= "viewer" for
+ * `POST /workspaces/{id}/{tasks|events|programs}` — that is, membership and
+ * nothing more. Every account is auto-joined to the bank workspace as a viewer
+ * on first login, so in practice this is "anyone with an account".
  */
 export function canCreateProgram(workspaceRole: WorkspaceRole | null | undefined): boolean {
-  return hasWorkspaceRole(workspaceRole, "editor");
+  return hasWorkspaceRole(workspaceRole, "viewer");
 }
 
 /**
- * Check if the current user can view a program.
- * Public programs can be viewed by anyone.
- * Private programs require workspace membership.
+ * Check if the current user can view a bank item.
+ *
+ * Reading the bank requires an account and workspace membership. There is no
+ * anonymous read path and no per-item public flag — opening the bank opened it to
+ * *submissions*, not to the open web.
  */
 export function canViewProgram(
   user: User | null,
   program: Program,
   workspaceRole: WorkspaceRole | null | undefined = null
 ): boolean {
-  if (program.public) return true;
-  if (!user) return false;
+  if (!user || !program) return false;
+  if (user.permissions === "admin") return true;
   return hasWorkspaceRole(workspaceRole, "viewer");
 }

@@ -68,7 +68,6 @@ class ContentBase(BaseModel):
     image: ImageStr | None = None
     media: dict[str, Any] | None = None
     tag_names: list[str] | None = None
-    author_id: UUID | None = None
 
     @field_validator(
         "count_min",
@@ -87,13 +86,36 @@ class ContentBase(BaseModel):
 
 
 class ContentCreate(ContentBase):
+    """Fields accepted when creating content.
+
+    `author_id` and `created_at` are **server-owned**: every create route
+    overwrites whatever the body carried. The default_factory below is for
+    internal callers (seeding, copies), not a promise that a client may set it.
+
+    `created_at` matters now that anyone with an account can submit to the bank.
+    The review queue is ordered oldest-first, so a backdated item would jump
+    ahead of everything a moderator has not yet looked at.
+    """
+
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr
+    author_id: UUID | None = None
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
 
 class ContentUpdate(ContentBase):
+    """Fields a PATCH may change.
+
+    Deliberately carries **no `author_id`**. `ContentUpdate` used to inherit it
+    from `ContentBase`, and the update services apply the patch with `setattr`
+    over `model_dump(exclude_unset=True)` — so a body could hand an item's
+    authorship to any other user. That was reachable only by an editor while the
+    bank was closed; now that anyone with an account can create and edit their
+    own submissions, it would let someone launder a submission, and its strikes,
+    onto another leader.
+    """
+
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr | None = None

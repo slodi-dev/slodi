@@ -7,9 +7,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import check_program_edit_access, check_workspace_access, get_current_user
+from app.core.auth import check_content_edit_access, check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
+from app.core.rate_limiter import user_rate_limit
 from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
 from app.schemas.program import (
     ProgramCreate,
@@ -21,6 +22,7 @@ from app.schemas.program import (
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
 from app.services.programs import ProgramService
+from app.utils import get_current_datetime
 
 router = APIRouter(tags=["programs"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -143,14 +145,14 @@ async def create_program_under_workspace(
     body: ProgramCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
     await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
+    # author_id and created_at are server-owned — see ContentCreate.
     program_data = body.model_copy(
-        update={
-            "author_id": current_user.id,
-        }
+        update={"author_id": current_user.id, "created_at": get_current_datetime()}
     )
     svc = ProgramService(session)
     program = await svc.create_under_workspace(workspace_id, program_data)
@@ -169,9 +171,10 @@ async def copy_program_to_workspace(
     program_id: UUID,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
     await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.editor
+        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
     )
     svc = ProgramService(session)
     original_program = await svc.get(program_id)
@@ -191,6 +194,7 @@ async def copy_program_to_workspace(
         prep_time_max=original_program.prep_time_max,
         media=original_program.media,
         author_id=current_user.id,
+        created_at=get_current_datetime(),
         content_type=ContentType.program,
         image=original_program.image,
         tag_names=[t.name for t in original_program.tags],
@@ -232,9 +236,9 @@ async def update_program(
 ) -> ProgramOut:
     svc = ProgramService(session)
     program = await svc.get(program_id)
-    await check_program_edit_access(
+    await check_content_edit_access(
         program.workspace_id,
-        program.author.id,
+        program.author_id,
         current_user,
         session,
         hide_from_non_members=True,
@@ -248,11 +252,11 @@ async def delete_program(
 ) -> None:
     svc = ProgramService(session)
     program = await svc.get(program_id)
-    await check_workspace_access(
+    await check_content_edit_access(
         program.workspace_id,
+        program.author_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.admin,
         hide_from_non_members=True,
     )
     await svc.delete(program_id)

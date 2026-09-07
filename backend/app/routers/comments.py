@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_permission
+from app.core.auth import check_content_workspace_access, get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.schemas.comment import CommentCreate, CommentOut, CommentUpdate
@@ -30,6 +30,7 @@ async def list_content_comments(
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[CommentOut]:
+    await check_content_workspace_access(content_id, current_user, session)
     svc = CommentService(session)
     total = await svc.count_content_comments(content_id)
     items = await svc.list_for_content(content_id, limit=limit, offset=offset)
@@ -56,6 +57,7 @@ async def create_comment_under_content(
     response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> CommentOut:
+    await check_content_workspace_access(content_id, current_user, session)
     svc = CommentService(session)
     comment_data = CommentCreate(body=body.body, user_id=current_user.id)
     comment = await svc.create_under_content(content_id, comment_data)

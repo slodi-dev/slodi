@@ -7,14 +7,16 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import check_workspace_access, get_current_user
+from app.core.auth import check_content_edit_access, check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
+from app.core.rate_limiter import user_rate_limit
 from app.schemas.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
 from app.services.events import EventService
 from app.services.tasks import TaskService
+from app.utils import get_current_datetime
 
 router = APIRouter(tags=["tasks"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -64,16 +66,20 @@ async def create_workspace_task(
     body: TaskCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
     svc = TaskService(session)
     await check_workspace_access(
         workspace_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.editor,
+        minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
-    task_data = body.model_copy(update={"author_id": current_user.id})
+    # author_id and created_at are server-owned — see ContentCreate.
+    task_data = body.model_copy(
+        update={"author_id": current_user.id, "created_at": get_current_datetime()}
+    )
     task = await svc.create_under_workspace(workspace_id, task_data)
     response.headers["Location"] = f"/tasks/{task.id}"
     return task
@@ -125,6 +131,7 @@ async def create_event_task(
     body: TaskCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
     svc = TaskService(session)
     event_svc = EventService(session)
@@ -133,10 +140,13 @@ async def create_event_task(
         event.workspace_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.editor,
+        minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
-    task_data = body.model_copy(update={"author_id": current_user.id})
+    # author_id and created_at are server-owned — see ContentCreate.
+    task_data = body.model_copy(
+        update={"author_id": current_user.id, "created_at": get_current_datetime()}
+    )
     task = await svc.create_under_event(event_id, task_data)
     response.headers["Location"] = f"/tasks/{task.id}"
     return task
@@ -170,11 +180,11 @@ async def update_task(
 ) -> TaskOut:
     svc = TaskService(session)
     task = await svc.get(task_id, current_user.id)
-    await check_workspace_access(
+    await check_content_edit_access(
         task.workspace_id,
+        task.author_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.editor,
         hide_from_non_members=True,
     )
     return await svc.update(task_id, body, current_user.id)
@@ -186,11 +196,11 @@ async def delete_task(
 ) -> None:
     svc = TaskService(session)
     task = await svc.get(task_id, current_user.id)
-    await check_workspace_access(
+    await check_content_edit_access(
         task.workspace_id,
+        task.author_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.admin,
         hide_from_non_members=True,
     )
     await svc.delete(task_id)

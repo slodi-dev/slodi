@@ -18,3 +18,9 @@ class ContentService:
         if author_id is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
         return author_id
+
+    async def get_workspace_id(self, content_id: UUID) -> UUID:
+        workspace_id = await self.repo.get_workspace_id(content_id)
+        if workspace_id is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
+        return workspace_id

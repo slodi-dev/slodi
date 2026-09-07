@@ -28,6 +28,7 @@ from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
 from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
+from app.services.content import ContentService
 from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
@@ -491,7 +492,7 @@ async def check_workspace_access(
         )
 
 
-async def check_program_edit_access(
+async def check_content_edit_access(
     workspace_id: UUID,
     author_id: UUID | None,
     current_user: UserOut,
@@ -499,12 +500,29 @@ async def check_program_edit_access(
     hide_from_non_members: bool = False,
 ) -> None:
     """
-    Raise 403 unless the user is permitted to edit the program.
+    Raise 403 unless the user is permitted to change this content.
 
     Allowed when the user is:
     - a platform admin, OR
     - a workspace admin (or above), OR
-    - the program's author with at least editor workspace role
+    - the content's own author, at any workspace role
+
+    Governs both editing and deleting, and applies to Programs, Events and Tasks
+    alike: authorship and workspace role are Content-level facts, identical for
+    all three.
+
+    **The author rule deliberately does not require `editor`.** The bank is open
+    to submissions from anyone with an account, so its authors are plain
+    `viewer`s — requiring `editor` would mean a leader could file an idea and
+    then be unable to fix a typo in it, or withdraw it.
+
+    Conversely, `editor` alone is no longer enough to change *someone else's*
+    content. It used to be, which meant opening submissions would have let any
+    member edit any item in the bank.
+
+    Note for the review board: a content moderator belongs in this rule, as a
+    fourth clause alongside the three above. There is no `moderator` permission
+    yet — it arrives with the Yfirferð board.
 
     Args:
         hide_from_non_members: When True, raise 404 instead of 403 for users
@@ -521,18 +539,41 @@ async def check_program_edit_access(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a workspace member")
 
-    role_rank = _WORKSPACE_ROLE_RANK[role]
     is_author = author_id is not None and current_user.id == author_id
-    has_admin = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
-    has_editor = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.editor]
+    is_workspace_admin = _WORKSPACE_ROLE_RANK[role] >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
 
-    if has_admin or (is_author and has_editor):
+    if is_author or is_workspace_admin:
         return
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Requires admin role, or editor role as the program's author",
+        detail="Only the author or a workspace admin can change this content",
     )
+
+
+async def check_content_workspace_access(
+    content_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    minimum_role: WorkspaceRole = WorkspaceRole.viewer,
+) -> UUID:
+    """
+    Raise 404 unless the user may reach the workspace this content lives in.
+
+    Comments and likes address content by id and never name a workspace, so
+    without this a member of one workspace can write to content in another that
+    they cannot even read. Returns the workspace id so the caller need not look
+    it up a second time.
+    """
+    workspace_id = await ContentService(session).get_workspace_id(content_id)
+    await check_workspace_access(
+        workspace_id,
+        current_user,
+        session,
+        minimum_role=minimum_role,
+        hide_from_non_members=True,
+    )
+    return workspace_id
 
 
 async def check_group_access(

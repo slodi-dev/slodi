@@ -63,3 +63,8 @@ class ContentRepository(Repository):
 
     async def get_author_id(self, content_id: UUID) -> UUID | None:
         return await self.session.scalar(select(Content.author_id).where(Content.id == content_id))
+
+    async def get_workspace_id(self, content_id: UUID) -> UUID | None:
+        return await self.session.scalar(
+            select(Content.workspace_id).where(Content.id == content_id)
+        )
