@@ -492,6 +492,34 @@ async def check_workspace_access(
         )
 
 
+async def check_content_create_access(
+    workspace_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    hide_from_non_members: bool = False,
+) -> None:
+    """
+    Raise 403 unless the user may add content to this workspace.
+
+    **The open bank is the exception, not the new rule.** It takes submissions
+    from anyone with an account, so membership alone is enough *there*. Anywhere
+    else `editor` still means what it always did and `viewer` still means
+    read-only: a sveit that adds a co-leader, a parent or an outside helper as a
+    viewer so they can read the plan has not agreed to let them write to it.
+
+    Lowering this globally would have deleted the read-only role from the
+    product — after it, `editor` would grant nothing that `viewer` did not.
+    """
+    open_to_any_member = _DEFAULT_WORKSPACE_ID is not None and workspace_id == _DEFAULT_WORKSPACE_ID
+    await check_workspace_access(
+        workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer if open_to_any_member else WorkspaceRole.editor,
+        hide_from_non_members=hide_from_non_members,
+    )
+
+
 async def check_content_edit_access(
     workspace_id: UUID,
     author_id: UUID | None,
@@ -565,7 +593,16 @@ async def check_content_workspace_access(
     they cannot even read. Returns the workspace id so the caller need not look
     it up a second time.
     """
-    workspace_id = await ContentService(session).get_workspace_id(content_id)
+    try:
+        workspace_id = await ContentService(session).get_workspace_id(content_id)
+    except HTTPException as exc:
+        if exc.status_code != status.HTTP_404_NOT_FOUND:
+            raise
+        # The service says "Content not found" and check_workspace_access says
+        # "Not found". Two different bodies behind the same status tell a caller
+        # whether an id they hold still exists in a workspace they were removed
+        # from — which is the one thing hide_from_non_members exists to withhold.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found") from exc
     await check_workspace_access(
         workspace_id,
         current_user,

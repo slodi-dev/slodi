@@ -124,55 +124,96 @@ async def test_non_member_is_hidden_rather_than_refused_when_asked():
 
 # ── Creating ─────────────────────────────────────────────────────────────────
 
+BANK_ID = uuid4()
 
-def test_viewer_can_create_a_task(member_client, viewer_user):
-    workspace_id = uuid4()
+
+@pytest.fixture
+def bank(monkeypatch):
+    """Make BANK_ID the default workspace — the one open to submissions."""
+    monkeypatch.setattr("app.core.auth._DEFAULT_WORKSPACE_ID", BANK_ID)
+    return BANK_ID
+
+
+def _post_task(client, workspace_id, role, **body):
     with (
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
         patch(
             "app.services.tasks.TaskService.create_under_workspace", new_callable=AsyncMock
         ) as create,
     ):
-        lookup.return_value = WorkspaceRole.viewer
-        create.return_value = _make_task(workspace_id, viewer_user.id)
-
-        response = member_client.post(
-            f"/workspaces/{workspace_id}/tasks", json={"name": "Kveikjuleikur"}
+        lookup.return_value = role
+        create.return_value = _make_task(workspace_id, uuid4())
+        response = client.post(
+            f"/workspaces/{workspace_id}/tasks", json={"name": "Kveikjuleikur", **body}
         )
+    return response, create
 
+
+def test_viewer_can_submit_to_the_bank(member_client, bank):
+    response, _ = _post_task(member_client, bank, WorkspaceRole.viewer)
     assert response.status_code == status.HTTP_201_CREATED
 
 
-def test_create_ignores_a_backdated_created_at(member_client, viewer_user):
+def test_viewer_cannot_create_in_an_ordinary_workspace(member_client, bank):
+    """Opening the bank must not delete the read-only role everywhere else.
+
+    A sveit that adds a co-leader, a parent or an outside helper as `viewer` so
+    they can read the plan has not agreed to let them write to it. If `viewer`
+    could create anywhere, `editor` would grant nothing that `viewer` did not.
+    """
+    response, _ = _post_task(member_client, uuid4(), WorkspaceRole.viewer)
+    # 403, not 404: they *are* a member, so there is nothing to hide from them.
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_editor_can_still_create_in_an_ordinary_workspace(member_client, bank):
+    response, _ = _post_task(member_client, uuid4(), WorkspaceRole.editor)
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_create_ignores_a_backdated_created_at(member_client, bank):
     """The review queue is ordered oldest-first, so a backdated item would jump it."""
-    workspace_id = uuid4()
     backdated = datetime(2020, 1, 1, tzinfo=timezone.utc)
-
-    with (
-        patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
-        patch(
-            "app.services.tasks.TaskService.create_under_workspace", new_callable=AsyncMock
-        ) as create,
-    ):
-        lookup.return_value = WorkspaceRole.viewer
-        create.return_value = _make_task(workspace_id, viewer_user.id)
-
-        member_client.post(
-            f"/workspaces/{workspace_id}/tasks",
-            json={"name": "Kveikjuleikur", "created_at": backdated.isoformat()},
-        )
+    _, create = _post_task(
+        member_client, bank, WorkspaceRole.viewer, created_at=backdated.isoformat()
+    )
 
     stored = create.await_args.args[1]
     assert stored.created_at != backdated
     assert datetime.now(timezone.utc) - stored.created_at < timedelta(minutes=1)
-    assert stored.author_id == viewer_user.id
 
 
-def test_non_member_cannot_create(member_client):
+def test_create_ignores_an_author_id_in_the_body(member_client, bank, viewer_user):
+    _, create = _post_task(
+        member_client, bank, WorkspaceRole.viewer, author_id=str(uuid4())
+    )
+    assert create.await_args.args[1].author_id == viewer_user.id
+
+
+def test_non_member_cannot_create(member_client, bank):
     with patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup:
         lookup.return_value = None
-        response = member_client.post(f"/workspaces/{uuid4()}/tasks", json={"name": "Nei"})
+        response = member_client.post(f"/workspaces/{bank}/tasks", json={"name": "Nei"})
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_attaching_a_task_to_someone_elses_event_still_needs_editor(member_client, bank):
+    """Submitting to the bank is not the same as editing another leader's plan.
+
+    Every account is a `viewer` in the bank, so if the parent-scoped create
+    routes were open at `viewer` too, anyone could graft liðir onto anyone
+    else's fundur — and `check_content_edit_access` would then let only the
+    child's own author remove them again.
+    """
+    event = _make_task(bank, author_id=uuid4())
+    with (
+        patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
+        patch("app.services.events.EventService.get", new_callable=AsyncMock) as get,
+    ):
+        lookup.return_value = WorkspaceRole.viewer
+        get.return_value = event
+        response = member_client.post(f"/events/{event.id}/tasks", json={"name": "Nei"})
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 # ── Editing and deleting through the router ──────────────────────────────────

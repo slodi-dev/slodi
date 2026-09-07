@@ -49,14 +49,24 @@ describe("who may change a bank item", () => {
 });
 
 describe("who may submit to the bank", () => {
-  it("accepts any member, which is every account", () => {
-    expect(canCreateProgram("viewer")).toBe(true);
-    expect(canCreateProgram("editor")).toBe(true);
-    expect(canCreateProgram("admin")).toBe(true);
+  it("accepts any member of the bank, which is every account", () => {
+    expect(canCreateProgram("viewer", true)).toBe(true);
+    expect(canCreateProgram("editor", true)).toBe(true);
+    expect(canCreateProgram("admin", true)).toBe(true);
+  });
+
+  it("still requires editor in an ordinary workspace", () => {
+    // Opening the bank must not delete the read-only role everywhere else.
+    expect(canCreateProgram("viewer", false)).toBe(false);
+    expect(canCreateProgram("editor", false)).toBe(true);
+  });
+
+  it("defaults to the stricter answer when the caller does not say", () => {
+    expect(canCreateProgram("viewer")).toBe(false);
   });
 
   it("refuses someone with no membership", () => {
-    expect(canCreateProgram(null)).toBe(false);
-    expect(canCreateProgram(undefined)).toBe(false);
+    expect(canCreateProgram(null, true)).toBe(false);
+    expect(canCreateProgram(undefined, true)).toBe(false);
   });
 });

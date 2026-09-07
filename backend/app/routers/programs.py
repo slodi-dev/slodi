@@ -7,7 +7,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import check_content_edit_access, check_workspace_access, get_current_user
+from app.core.auth import (
+    check_content_create_access,
+    check_content_edit_access,
+    check_workspace_access,
+    get_current_user,
+)
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
@@ -147,9 +152,7 @@ async def create_program_under_workspace(
     current_user: UserOut = Depends(get_current_user),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
-    await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
-    )
+    await check_content_create_access(workspace_id, current_user, session)
     # author_id and created_at are server-owned — see ContentCreate.
     program_data = body.model_copy(
         update={"author_id": current_user.id, "created_at": get_current_datetime()}
@@ -173,11 +176,18 @@ async def copy_program_to_workspace(
     current_user: UserOut = Depends(get_current_user),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
-    await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
-    )
+    await check_content_create_access(workspace_id, current_user, session)
     svc = ProgramService(session)
     original_program = await svc.get(program_id)
+    # Copying is a read of the source. Without this a caller could lift a
+    # programme out of a workspace they cannot open, into one they own.
+    await check_workspace_access(
+        original_program.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer,
+        hide_from_non_members=True,
+    )
     copied_program = ProgramCreate(
         name=original_program.name,
         description=original_program.description,

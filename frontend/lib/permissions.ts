@@ -76,15 +76,25 @@ export function canDeleteProgram(
 }
 
 /**
- * Check if the current user can create content in a workspace.
+ * Check if the current user can add content to a workspace.
  *
- * Backend requires workspace role >= "viewer" for
- * `POST /workspaces/{id}/{tasks|events|programs}` — that is, membership and
- * nothing more. Every account is auto-joined to the bank workspace as a viewer
- * on first login, so in practice this is "anyone with an account".
+ * Mirrors `check_content_create_access` in `backend/app/core/auth.py`.
+ *
+ * **The open bank is the exception, not the new rule.** It takes submissions
+ * from anyone with an account — and every account is auto-joined to it as a
+ * viewer on first login — so there, membership is enough. Anywhere else `editor`
+ * still means what it always did and `viewer` still means read-only: a sveit
+ * that adds a co-leader or a parent as a viewer so they can read the plan has
+ * not agreed to let them write to it.
+ *
+ * @param openSubmissions true when the workspace is the bank. Defaults to false,
+ *   so a caller that forgets it gets the stricter answer rather than the laxer one.
  */
-export function canCreateProgram(workspaceRole: WorkspaceRole | null | undefined): boolean {
-  return hasWorkspaceRole(workspaceRole, "viewer");
+export function canCreateProgram(
+  workspaceRole: WorkspaceRole | null | undefined,
+  openSubmissions: boolean = false
+): boolean {
+  return hasWorkspaceRole(workspaceRole, openSubmissions ? "viewer" : "editor");
 }
 
 /**
