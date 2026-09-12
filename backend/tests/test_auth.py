@@ -285,9 +285,7 @@ async def test_the_new_membership_replaces_the_cached_non_member_entry(
 
 
 @pytest.mark.asyncio
-async def test_a_failed_join_leaves_the_cache_alone(
-    existing_user, mock_credentials, mock_session
-):
+async def test_a_failed_join_leaves_the_cache_alone(existing_user, mock_credentials, mock_session):
     """Priming the cache after a failed insert would assert a membership that does not exist."""
     ws_id = uuid4()
     cache_set = AsyncMock()

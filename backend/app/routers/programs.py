@@ -18,6 +18,7 @@ from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
 from app.domain.enums import AgeGroup, ContentType, Permissions, ProgramSortBy
+from app.schemas.content import ContentListOut
 from app.schemas.program import (
     ProgramCreate,
     ProgramFilters,
@@ -34,6 +35,118 @@ router = APIRouter(tags=["programs"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 # ----- workspace-scoped collection endpoints -----
+
+
+@router.get("/workspaces/{workspace_id}/content", response_model=list[ContentListOut])
+async def list_workspace_content(
+    session: SessionDep,
+    request: Request,
+    response: Response,
+    workspace_id: UUID,
+    current_user: UserOut = Depends(get_current_user),
+    limit: Limit = 50,
+    offset: Offset = 0,
+    search: str | None = Query(
+        default=None,
+        description="Case-insensitive search on program name and description",
+    ),
+    age: list[AgeGroup] | None = Query(
+        default=None,
+        description="Filter by age groups (OR logic)",
+    ),
+    duration_min: int | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum duration in minutes (programs with duration_min >= this value)",
+    ),
+    duration_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum duration in minutes (programs with duration_max <= this value)",
+    ),
+    prep_time_min: int | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum prep time in minutes (programs with prep_time_min >= this value)",
+    ),
+    prep_time_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum prep time in minutes (programs with prep_time_max <= this value)",
+    ),
+    count_min: int | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum participant count (programs with count_min >= this value)",
+    ),
+    count_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum participant count (programs with count_max <= this value)",
+    ),
+    price_max: int | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum price in ISK (0 = free programs only)",
+    ),
+    location: str | None = Query(
+        default=None,
+        description="Case-insensitive partial match on program location",
+    ),
+    equipment: list[str] | None = Query(
+        default=None,
+        description="Filter by equipment items (OR logic — programs with any of these items)",
+    ),
+    author_id: UUID | None = Query(
+        default=None,
+        description="Filter by author ID (exact UUID match)",
+    ),
+    sort_by: ProgramSortBy | None = Query(
+        default=None,
+        description="Sort order",
+    ),
+) -> list[ContentListOut]:
+    """Everything in the bank, whatever kind it is.
+
+    `/programs` returns only rows whose `content_type` is `program`. That was
+    indistinguishable from "everything" while the create form filed every
+    submission as a program — and it stopped being so the moment the chooser
+    started filing a Verkefni as a task, at which point correctly-typed
+    submissions vanished from the bank they had just been added to.
+    """
+    svc = ProgramService(session)
+    await check_workspace_access(
+        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
+    )
+
+    filters = ProgramFilters(
+        search=search,
+        age=age,
+        duration_min=duration_min,
+        duration_max=duration_max,
+        prep_time_min=prep_time_min,
+        prep_time_max=prep_time_max,
+        count_min=count_min,
+        count_max=count_max,
+        price_max=price_max,
+        location=location,
+        equipment=equipment,
+        author_id=author_id,
+        sort_by=sort_by,
+    )
+
+    total = await svc.count_content_for_workspace(workspace_id, filters=filters)
+    items = await svc.list_content_for_workspace(
+        workspace_id, current_user.id, limit=limit, offset=offset, filters=filters
+    )
+    add_pagination_headers(
+        response=response,
+        request=request,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+    return items
 
 
 @router.get("/workspaces/{workspace_id}/programs", response_model=list[ProgramListOut])

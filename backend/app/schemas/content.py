@@ -22,7 +22,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.domain.enums import AgeGroup
+from app.domain.enums import AgeGroup, ContentType
 from app.repositories.content import ContentStats
 from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut
@@ -128,6 +128,9 @@ class ContentListOut(BaseModel):
 
     id: UUID
     name: NameStr
+    # Which kind it is. The bank lists all three now, so a card cannot tell a
+    # Verkefni from a Viðburður without being told.
+    content_type: ContentType
     author_id: UUID
     author_name: str
     created_at: dt.datetime

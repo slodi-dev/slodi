@@ -1,11 +1,12 @@
 import { buildApiUrl } from "@/lib/api-utils";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, fetchPageWithAuth } from "@/lib/api";
 import { User } from "@/services/users.service";
 
 export type Program = {
   id: string;
-  content_type: "program";
+  /** The bank lists all three kinds now, so this is no longer always "program". */
+  content_type: "program" | "event" | "task";
   name: string;
   description: string | null;
   public: boolean;
@@ -101,9 +102,14 @@ export function canEditProgram(user: User | null, program: Program): boolean {
 export async function fetchPrograms(
   workspaceId: string,
   getToken: () => Promise<string | null>
-): Promise<Program[]> {
-  const url = buildApiUrl(`/workspaces/${workspaceId}/programs?limit=200`);
-  const data = await fetchWithAuth<ProgramsResponse>(
+): Promise<{ items: Program[]; total: number | null }> {
+  // `/content`, not `/programs`: the latter returns only rows whose
+  // content_type is "program", which was indistinguishable from "everything"
+  // while the create form filed every submission as one. The moment the
+  // chooser started filing a Verkefni as a task, those vanished from the bank
+  // they had just been added to.
+  const url = buildApiUrl(`/workspaces/${workspaceId}/content?limit=200`);
+  const page = await fetchPageWithAuth<Program>(
     url,
     {
       method: "GET",
@@ -111,7 +117,7 @@ export async function fetchPrograms(
     getToken
   );
 
-  return Array.isArray(data) ? data : data.programs || [];
+  return page;
 }
 
 /**

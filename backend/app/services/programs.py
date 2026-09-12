@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.program import Program
 from app.repositories.programs import ProgramRepository
 from app.repositories.tags import TagRepository
+from app.schemas.content import ContentListOut
 from app.schemas.program import (
     ProgramCreate,
     ProgramFilters,
@@ -45,6 +46,26 @@ class ProgramService:
             workspace_id, current_user_id, limit=limit, offset=offset, filters=filters
         )
         return [ProgramListOut.from_row(prog, stats) for prog, stats in rows]
+
+    async def count_content_for_workspace(
+        self, workspace_id: UUID, filters: ProgramFilters | None = None
+    ) -> int:
+        return await self.repo.count_content_for_workspace(workspace_id, filters=filters)
+
+    async def list_content_for_workspace(
+        self,
+        workspace_id: UUID,
+        current_user_id: UUID,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        filters: ProgramFilters | None = None,
+    ) -> list[ContentListOut]:
+        """Everything in the bank, whatever kind it is — see the repository."""
+        rows = await self.repo.list_content_by_workspace(
+            workspace_id, current_user_id, limit=limit, offset=offset, filters=filters
+        )
+        return [ContentListOut.from_row(item, stats) for item, stats in rows]
 
     async def get_in_workspace(
         self, program_id: UUID, workspace_id: UUID, current_user_id: UUID | None = None

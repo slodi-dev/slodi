@@ -24,7 +24,7 @@ export default function FavoriteProgramsPage() {
     async function loadPrograms() {
       try {
         setIsLoadingPrograms(true);
-        const data = await fetchPrograms(defaultWorkspaceId!, getToken);
+        const data = (await fetchPrograms(defaultWorkspaceId!, getToken)).items;
         setPrograms(data);
       } catch (error) {
         console.error("Failed to fetch programs:", error);

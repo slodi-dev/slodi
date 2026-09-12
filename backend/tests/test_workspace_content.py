@@ -16,6 +16,7 @@ from app.schemas.workspace import WorkspaceNested
 
 def _make_program(workspace_id):
     return ProgramOut(
+        content_type="program",
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Program",

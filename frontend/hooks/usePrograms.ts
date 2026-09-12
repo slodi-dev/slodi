@@ -6,6 +6,8 @@ import { handleApiError } from "@/lib/api-utils";
 import { useAuth } from "@/hooks/useAuth";
 
 type UseProgramsResult = {
+  /** How many the bank holds, not how many were fetched. */
+  total: number | null;
   programs: Program[] | null;
   tags: string[] | null;
   loading: boolean;
@@ -16,6 +18,8 @@ type UseProgramsResult = {
 export default function usePrograms(workspaceId: string | null): UseProgramsResult {
   const { getToken } = useAuth();
   const [programs, setPrograms] = useState<Program[] | null>(null);
+  /** How many the bank holds, not how many were fetched. */
+  const [total, setTotal] = useState<number | null>(null);
   const [tags, setTags] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -28,7 +32,8 @@ export default function usePrograms(workspaceId: string | null): UseProgramsResu
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchPrograms(workspaceId, getToken);
+      const { items: data, total: count } = await fetchPrograms(workspaceId, getToken);
+      setTotal(count);
       setPrograms(data);
       setTags(extractTags(data));
     } catch (err) {
@@ -45,7 +50,7 @@ export default function usePrograms(workspaceId: string | null): UseProgramsResu
     loadPrograms();
   }, [loadPrograms]);
 
-  return { programs, tags, loading, error, refetch: loadPrograms };
+  return { programs, tags, total, loading, error, refetch: loadPrograms };
 }
 
 export type { Program };

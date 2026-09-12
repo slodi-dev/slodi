@@ -24,6 +24,7 @@ def _make_troop(workspace_id):
 def _make_event(workspace_id):
     author_id = uuid4()
     return EventOut(
+        content_type="event",
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Event",

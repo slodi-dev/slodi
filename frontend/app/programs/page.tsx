@@ -20,7 +20,7 @@ import type { FilterState } from "@/hooks/useProgramFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchMySuspension } from "@/services/suspensions.service";
-import { formatIcelandicDate } from "@/lib/format";
+import { formatIcelandicDate, formatIcelandicNumber } from "@/lib/format";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
@@ -70,6 +70,7 @@ function ProgramsPageInner() {
   // Fetch data
   const {
     programs,
+    total,
     loading: programsLoading,
     error: programsError,
     refetch,
@@ -188,6 +189,17 @@ function ProgramsPageInner() {
     uniqueLocations,
   };
 
+  const filtering = filtered.length !== (programs?.length ?? 0);
+  const countLabel = (() => {
+    const n = filtered.length;
+    if (n === 1) return "1 eining";
+    // While a filter is on, the honest number is what it matched. Otherwise it
+    // is what the bank holds — and if more is held than was fetched, say both
+    // rather than passing the page off as the whole.
+    if (filtering || total === null || total <= n) return `${formatIcelandicNumber(n)} einingar`;
+    return `${formatIcelandicNumber(n)} af ${formatIcelandicNumber(total)} einingum`;
+  })();
+
   return (
     <div className={styles.page}>
       {/* Header with FAB button */}
@@ -275,7 +287,12 @@ function ProgramsPageInner() {
 
           {/* Result count */}
           <p className={styles.resultCount} aria-live="polite">
-            {filtered.length === 1 ? "1 dagskrá" : `${filtered.length} dagskrár`}
+            {/* „einingar", not „dagskrár": the bank holds verkefni, viðburðir
+                and dagskrár, and naming it after one of the three was only
+                accurate while everything was filed as that one. And the count
+                has to be the bank's, not the page's — fetching 200 of 10.004
+                and calling it "200" is a plain untruth on the reader's screen. */}
+            {countLabel}
           </p>
 
           {/* Program Grid */}
