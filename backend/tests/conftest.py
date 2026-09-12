@@ -65,6 +65,27 @@ def viewer_user():
 
 
 @pytest.fixture
+def moderator_user():
+    """Dagskrárstjórnarteymið — the rank directly below admin.
+
+    The interesting one for privilege-escalation tests: a moderator can hide
+    content and suspend an author, so if the rank check on user updates were
+    ever loosened by one step, they could also deputise themselves more
+    moderators. Every test that asserts "only an admin" should use this rather
+    than a viewer, because a viewer failing proves almost nothing.
+    """
+    return UserOut(
+        id=uuid4(),
+        auth0_id="auth0|moderator_test",
+        email="moderator@test.com",
+        name="Moderator User",
+        pronouns=None,
+        permissions=Permissions.moderator,
+        preferences=None,
+    )
+
+
+@pytest.fixture
 def client(mock_db_session, admin_user):
     """Test client with mocked DB and an authenticated admin user."""
     app = create_app()
