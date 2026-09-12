@@ -22,6 +22,10 @@
   --db-fab-w: 268px; /* stretched width, set by the longest label */
 
   position: relative;
+  /* Above the scrim. Both live inside the page's fixed anchor, which has a
+     z-index of its own and therefore forms a stacking context — so these two
+     are ordered against each other here, not against the page. */
+  z-index: 1;
   width: var(--db-ball);
   display: flex;
   flex-direction: column;
@@ -207,10 +211,13 @@
   transition-duration: var(--db-dur-unroll), calc(var(--db-dur-unroll) * 0.3);
   transition-timing-function: var(--db-ease-glide), linear;
 }
-/* a hairline where sheet meets button, in the button's own colour */
+/* A hairline where the sheet meets the button. The design took it from the
+   button's own colour, but `--sl-color-primary-text` is *pale* green in dark
+   mode — so on a dark card it painted a near-white rule straight across the
+   component. The border token belongs to whichever theme is on. */
 .seam {
   height: 1px;
-  background: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-border));
 }
 .sheetTitle {
   margin: 0;
@@ -351,6 +358,11 @@
   --db-accent-bg: var(--sl-color-event-subtle);
   --db-accent-text: var(--sl-color-event-text);
 }
+.typeFundur {
+  --db-accent: var(--sl-color-secondary);
+  --db-accent-bg: var(--sl-color-background-tertiary);
+  --db-accent-text: var(--sl-color-text-secondary);
+}
 .typeProgram {
   --db-accent: var(--sl-color-primary);
   --db-accent-bg: var(--sl-color-primary-subtle);
@@ -363,7 +375,13 @@
   inset: 0;
   background: hsl(var(--sl-color-background-inverse) / 0.34);
   opacity: 1;
-  z-index: var(--sl-z-modal-backdrop);
+  /* 0, not `--sl-z-modal-backdrop`. The anchor around this component already
+     sits above the page at `--sl-z-fixed`, and a z-index inside a stacking
+     context is only compared with its siblings — so the modal-backdrop value
+     did not lift the scrim above the page, it lifted it above the menu it is
+     supposed to sit behind. The whole screen went grey and nothing was
+     clickable. */
+  z-index: 0;
   border: 0;
   padding: 0;
   cursor: default;
@@ -380,4 +398,46 @@
   to {
     opacity: 1;
   }
+}
+
+/* ══ Not yet available ════════════════════════════════════════════════════
+   Three of the four kinds cannot be created in the September release. Shown
+   and dimmed rather than hidden: a chooser with one option says the bank only
+   ever does one thing. */
+.optSoon {
+  cursor: not-allowed;
+}
+.optSoon .optName,
+.optSoon .optHint {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.optSoon .optIcon {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.optSoon:hover {
+  background: none;
+}
+/* the accent rail never wakes up for something you cannot choose */
+.optSoon::before,
+.optSoon:hover::before,
+.optSoon:focus-visible::before {
+  transform: scaleY(0);
+}
+.optSoon:hover .optIcon {
+  transform: none;
+}
+.soon {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  border: 1px solid hsl(var(--sl-color-border));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+  white-space: nowrap;
 }
