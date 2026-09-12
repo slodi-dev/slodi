@@ -31,8 +31,29 @@ const args = process.argv.slice(2);
 const strict = args.includes("--strict");
 const roots = args.filter((a) => !a.startsWith("--"));
 
-const tokensCss = readFileSync(TOKENS_FILE, "utf8");
-const DEFINED = new Set([...tokensCss.matchAll(/^\s*(--sl-[a-z0-9-]+)\s*:/gm)].map((m) => m[1]));
+const DEFINITION = /(--sl-[a-z0-9-]+)\s*:/g;
+
+/**
+ * The global vocabulary: the token file plus the two sheets that legitimately
+ * extend it. `globals.css` carries the legacy shadcn bridge and
+ * `slodi-utilities.css` the `sl-*` helpers.
+ */
+const GLOBAL_SHEETS = [
+  TOKENS_FILE,
+  join(ROOT, "app/globals.css"),
+  join(ROOT, "app/slodi-utilities.css"),
+];
+
+const DEFINED = new Set();
+for (const sheet of GLOBAL_SHEETS) {
+  let css;
+  try {
+    css = readFileSync(sheet, "utf8");
+  } catch {
+    continue;
+  }
+  for (const m of css.matchAll(DEFINITION)) DEFINED.add(m[1]);
+}
 /** Tokens whose value is a bare HSL triplet, so they must be wrapped. */
 const NEEDS_HSL = /^--sl-(color|input-(background|border|text|placeholder))/;
 
@@ -53,6 +74,19 @@ const files = (roots.length ? roots.map((r) => join(ROOT, r)) : [ROOT]).flatMap(
   statSync(p).isDirectory() ? walk(p) : [p]
 );
 
+/**
+ * Second pass of the vocabulary: properties declared by components.
+ *
+ * `--sl-medal-gold` is declared on the hub and consumed by the podium beneath
+ * it — a perfectly ordinary cascade, and file scope is too narrow to see it.
+ * A property declared anywhere in the app resolves at runtime, so the rule
+ * that matters is "declared nowhere", not "declared somewhere else".
+ */
+for (const file of files) {
+  const src = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const m of src.matchAll(DEFINITION)) DEFINED.add(m[1]);
+}
+
 const findings = [];
 const add = (file, line, level, rule, detail) =>
   findings.push({ file: relative(ROOT, file), line, level, rule, detail });
@@ -64,9 +98,28 @@ for (const file of files) {
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
     .replace(/(^|[^:])\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, " "));
 
+  /** Properties this file declares for itself. */
+  const localTokens = new Set([...clean.matchAll(DEFINITION)].map((m) => m[1]));
+
+  const srcLines = src.split("\n");
+
+  /* Whole-file opt-out, for files where no line could use a token — a canvas
+     2D context reads no CSS at all. */
+  if (src.includes("token-check-ignore-file")) continue;
+
   clean.split("\n").forEach((raw, i) => {
     const line = i + 1;
     if (!raw.trim()) return;
+
+    /*
+     * An opt-out, because a few places legitimately cannot use a token:
+     * canvas drawing reads no CSS, and a documentation page prints token
+     * names as prose. Silence has to be declared and justified in the source
+     * rather than assumed by the rule, so the marker carries a reason.
+     */
+    const own = srcLines[i] ?? "";
+    const prev = srcLines[i - 1] ?? "";
+    if (own.includes("token-check-ignore") || prev.includes("token-check-ignore")) return;
     const isDefinition = /^\s*--/.test(raw);
 
     for (const m of raw.matchAll(/var\((--sl-[a-z0-9-]+)/g)) {
@@ -75,10 +128,19 @@ for (const file of files) {
       // only ever a truncated prefix here. Checking it would report every
       // dynamic token as both missing and unwrapped.
       if (raw.slice(m.index + m[0].length).startsWith("${")) continue;
-      if (!DEFINED.has(token)) {
-        add(file, line, "error", "unknown-token", `${token} is not defined in slodi-tokens.css`);
+      // A component may define its own `--sl-*` property — `--sl-medal-gold`
+      // in LeikirHub, `--ef-accent` on the item page. Those are file-scoped,
+      // not missing, and reporting them taught the reader to ignore the rule.
+      if (!DEFINED.has(token) && !localTokens.has(token)) {
+        add(file, line, "error", "unknown-token", `${token} is not defined`);
       }
-      if (NEEDS_HSL.test(token) && !isDefinition) {
+      // Assigning a token to a custom property — in CSS or from JS — is an
+      // alias, and an alias must stay a bare triplet: the consumer wraps it,
+      // and `hsl(hsl(...))` is invalid. Covers `--x: var(--sl-color-y)`,
+      // `{"--x": \`var(--sl-color-y)\`}` and `setProperty("--x", ...)`.
+      const isAlias =
+        isDefinition || /(["']--[a-z0-9-]+["']\s*[:,]|setProperty\(\s*["']--)/.test(raw);
+      if (NEEDS_HSL.test(token) && !isAlias) {
         const before = raw.slice(0, m.index);
         const lastHsl = before.lastIndexOf("hsl");
         const wrapped = lastHsl !== -1 && !before.slice(lastHsl).includes(")");
@@ -122,8 +184,11 @@ for (const f of findings) (byRule[f.rule] ??= []).push(f);
 
 for (const [rule, list] of Object.entries(byRule).sort((a, b) => b[1].length - a[1].length)) {
   console.log(`\n${list[0].level.toUpperCase()}  ${rule}  (${list.length})`);
-  for (const f of list.slice(0, 20)) console.log(`  ${f.file}:${f.line}  ${f.detail}`);
-  if (list.length > 20) console.log(`  … and ${list.length - 20} more`);
+  // Twenty lines is enough to notice a problem and not enough to fix one, so
+  // `--all` prints the lot.
+  const limit = process.argv.includes("--all") ? list.length : 20;
+  for (const f of list.slice(0, limit)) console.log(`  ${f.file}:${f.line}  ${f.detail}`);
+  if (list.length > limit) console.log(`  … and ${list.length - limit} more (run with --all)`);
 }
 console.log(
   `\n${DEFINED.size} tokens defined · ${files.length} files scanned · ${errors.length} error(s), ${warns.length} warning(s)`

@@ -88,7 +88,7 @@
 }
 
 .benefitDescription {
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
   line-height: var(--sl-line-height-body);
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
@@ -114,7 +114,7 @@
   font-weight: var(--sl-font-weight-emphasis);
   color: hsl(var(--sl-color-primary));
   text-decoration: none;
-  transition: color 200ms var(--sl-primitive-animation-easing);
+  transition: color 200ms var(--sl-primitive-ease-in-out);
 }
 
 .link:hover {
@@ -125,7 +125,7 @@
 .link:focus-visible {
   outline: 2px solid hsl(var(--sl-color-primary));
   outline-offset: 4px;
-  border-radius: var(--sl-primitive-border-radius-1);
+  border-radius: var(--sl-radius-xs);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -146,7 +146,7 @@
   }
 
   .introduction {
-    font-size: var(--sl-text-body-md);
+    font-size: var(--sl-text-body);
     margin-bottom: var(--sl-spacing-container);
   }
 
@@ -174,7 +174,7 @@
   }
 
   .link {
-    font-size: var(--sl-text-body-md);
+    font-size: var(--sl-text-body);
   }
 }
 
@@ -189,7 +189,7 @@
   }
 
   .introduction {
-    font-size: var(--sl-text-body-md);
+    font-size: var(--sl-text-body);
   }
 
   .benefitItem {

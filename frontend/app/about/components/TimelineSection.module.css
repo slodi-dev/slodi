@@ -5,7 +5,7 @@
 
 .sectionTitle {
   font-size: var(--sl-text-heading-2);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin-bottom: var(--sl-spacing-component);
   color: hsl(var(--sl-color-text-primary));
@@ -81,7 +81,7 @@
 
 .timelineTitle {
   font-size: var(--sl-text-heading-4);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-gap-sm) 0;
   color: hsl(var(--sl-color-text-primary));

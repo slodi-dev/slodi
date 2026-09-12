@@ -42,10 +42,10 @@
 
 .titleMain {
   font-size: clamp(3rem, 8vw, 5rem);
-  font-weight: var(--sl-font-weight-black);
+  font-weight: var(--sl-primitive-font-weight-extrabold);
   line-height: var(--sl-line-height-tight);
   text-transform: uppercase;
-  letter-spacing: var(--sl-letter-spacing-heading);
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
 
   /* Gradient text */
   background: linear-gradient(
@@ -152,13 +152,13 @@
   background: hsl(var(--sl-button-background-primary));
   color: hsl(var(--sl-button-text-primary));
   border: 1px solid hsl(var(--sl-button-border-primary));
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
 }
 
 .ctaButtonPrimary:hover {
   background: hsl(var(--sl-button-background-primary-hover));
-  border-color: hsl(var(--sl-button-border-primary-hover));
-  box-shadow: var(--sl-shadow-button-hover);
+  border-color: hsl(var(--sl-button-border-primary));
+  box-shadow: var(--sl-shadow-card-hover);
   transform: translateY(-2px);
 }
 
@@ -170,7 +170,7 @@
 
 .ctaButtonSecondary:hover {
   background: hsl(var(--sl-button-background-secondary-hover));
-  border-color: hsl(var(--sl-button-border-secondary-hover));
+  border-color: hsl(var(--sl-button-border-secondary));
   transform: translateY(-2px);
 }
 
@@ -221,7 +221,7 @@
 
 .statNumber {
   font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: var(--sl-font-weight-black);
+  font-weight: var(--sl-primitive-font-weight-extrabold);
   line-height: 1;
   color: hsl(var(--sl-color-primary));
   margin-bottom: var(--sl-spacing-gap-sm);
@@ -253,7 +253,7 @@
 
 .signupTitle {
   font-size: var(--sl-text-heading-2);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-gap-md) 0;
   color: hsl(var(--sl-color-text-primary));
@@ -382,7 +382,7 @@
 
 .featuresTitle {
   font-size: var(--sl-text-heading-2);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   text-align: center;
   margin: 0 0 var(--sl-spacing-section) 0;
@@ -419,7 +419,7 @@
 
 .featureCardTitle {
   font-size: var(--sl-text-heading-4);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-gap-md) 0;
   color: hsl(var(--sl-color-text-primary));
@@ -446,7 +446,7 @@
 
 .finalCtaTitle {
   font-size: var(--sl-text-heading-2);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-element) 0;
   color: hsl(var(--sl-color-text-primary));

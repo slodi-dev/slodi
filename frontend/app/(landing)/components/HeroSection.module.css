@@ -105,18 +105,18 @@
 .primaryButton {
   background: hsl(var(--sl-color-primary));
   color: hsl(var(--sl-color-text-inverse));
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
 }
 
 .primaryButton:hover {
   background: hsl(var(--sl-color-primary-hover));
-  box-shadow: var(--sl-shadow-button-hover);
+  box-shadow: var(--sl-shadow-card-hover);
   transform: translateY(-1px);
 }
 
 .primaryButton:active {
   transform: translateY(0);
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
 }
 
 .primaryButton:focus-visible {

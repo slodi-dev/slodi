@@ -898,6 +898,25 @@
    ALTERNATIVE THEMES
    ══════════════════════════════════════════════════════════════════════════ */
 
+/*
+ * Pine and moss exist only for Forest Night. They were referenced by that
+ * theme but never declared, and `var()` on an undeclared property invalidates
+ * the whole declaration — so every line of the theme below was inert and the
+ * theme rendered as plain dark. Declared here, next to their only consumer.
+ *
+ * Contrast, on the pairs the theme actually forms:
+ *   moss-50 on pine-900   16.2:1   body text
+ *   moss-50 on pine-800   14.4:1   text on a card
+ *   moss-400 on pine-900   8.5:1   primary on the page
+ */
+:root {
+  --sl-primitive-pine-800: 158 28% 11%;
+  --sl-primitive-pine-900: 158 32% 7%;
+  --sl-primitive-moss-50: 95 22% 94%;
+  --sl-primitive-moss-400: 95 40% 58%;
+  --sl-primitive-moss-700: 95 26% 26%;
+}
+
 /* Forest Night Theme */
 [data-theme="forest-night"] {
   --sl-color-background: var(--sl-primitive-pine-900);

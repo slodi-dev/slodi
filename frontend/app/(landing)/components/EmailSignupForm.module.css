@@ -160,13 +160,13 @@
     background-color var(--sl-transition-fast),
     transform var(--sl-transition-fast),
     box-shadow var(--sl-transition-fast);
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
   white-space: nowrap;
 }
 
 .submitButton:hover:not(:disabled) {
   background: hsl(var(--sl-color-primary-hover));
-  box-shadow: var(--sl-shadow-button-hover);
+  box-shadow: var(--sl-shadow-card-hover);
   transform: translateY(-1px);
 }
 
@@ -214,7 +214,7 @@
   gap: var(--sl-spacing-gap-sm);
   padding: var(--sl-spacing-inset-md);
   font-size: var(--sl-text-body-sm);
-  border-radius: var(--sl-radius-base);
+  border-radius: var(--sl-radius-md);
   text-align: left;
 }
 
@@ -226,14 +226,14 @@
 
 .messageSuccess {
   color: hsl(var(--sl-color-success-text));
-  background: hsl(var(--sl-color-success-bg));
-  border: 1px solid hsl(var(--sl-color-success-border));
+  background: hsl(var(--sl-color-success-subtle));
+  border: 1px solid hsl(var(--sl-color-success));
 }
 
 .messageError {
   color: hsl(var(--sl-color-error-text));
-  background: hsl(var(--sl-color-error-bg));
-  border: 1px solid hsl(var(--sl-color-error-border));
+  background: hsl(var(--sl-color-error-subtle));
+  border: 1px solid hsl(var(--sl-color-error));
 }
 
 /* ═══════════════════════════════════════════════════════════

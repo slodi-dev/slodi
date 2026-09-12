@@ -196,7 +196,7 @@
 
 .templateName {
   display: inline-block;
-  font-family: var(--sl-font-family-mono, monospace);
+  font-family: var(--sl-primitive-font-family-mono, monospace);
   font-size: var(--sl-text-caption);
   background: hsl(var(--sl-color-background-secondary));
   padding: var(--sl-primitive-space-1) var(--sl-primitive-space-2);

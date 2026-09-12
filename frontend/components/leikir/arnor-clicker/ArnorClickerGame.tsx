@@ -77,9 +77,12 @@ const ARNOR = chairByKey(DEFAULT_CHAIR);
 
 const QTYS = [1, 5, 10, 25, 100];
 const TABS = [
-  { id: "fundarskop", label: "Fundarsköp", accent: "var(--sl-color-primary)" },
-  { id: "uppfaerslur", label: "Uppfærslur", accent: "var(--sl-color-patrol-rekkar)" },
-  { id: "thing", label: "Þing", accent: "var(--sl-color-patrol-drekar)" },
+  /* Each accent is an alias, not a colour: it is assigned to `--panel-accent`
+     and consumed as `hsl(var(--panel-accent))`, so it has to stay a bare
+     triplet — wrapping it here would yield `hsl(hsl(...))`. */
+  { id: "fundarskop", label: "Fundarsköp", accent: "var(--sl-color-primary)" }, // token-check-ignore: alias
+  { id: "uppfaerslur", label: "Uppfærslur", accent: "var(--sl-color-patrol-rekkar)" }, // token-check-ignore: alias
+  { id: "thing", label: "Þing", accent: "var(--sl-color-patrol-drekar)" }, // token-check-ignore: alias
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 

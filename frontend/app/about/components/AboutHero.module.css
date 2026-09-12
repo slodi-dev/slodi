@@ -7,7 +7,7 @@
 .hero {
   position: relative;
   padding: var(--sl-spacing-section) var(--sl-spacing-component);
-  background: var(--sl-color-background);
+  background: hsl(var(--sl-color-background));
   border-bottom: 1px solid hsl(var(--sl-color-border));
 }
 

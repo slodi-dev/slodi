@@ -34,9 +34,9 @@
 .filterToggle {
   display: none;
   align-items: center;
-  gap: var(--sl-spacing-inline-xs, 4px);
+  gap: var(--sl-spacing-gap-xs, 4px);
   padding: 10px var(--sl-spacing-inset-md, 12px);
-  font-size: var(--sl-font-size-sm, 0.875rem);
+  font-size: var(--sl-primitive-font-size-sm, 0.875rem);
   font-family: inherit;
   font-weight: var(--sl-font-weight-medium, 500);
   color: hsl(var(--sl-color-text-primary, 0 0% 10%));
@@ -74,13 +74,13 @@
   min-width: 1.25rem;
   height: 1.25rem;
   padding: 0 0.25rem;
-  font-size: var(--sl-font-size-xs, 0.75rem);
+  font-size: var(--sl-primitive-font-size-xs, 0.75rem);
   font-weight: var(--sl-font-weight-semibold, 600);
   line-height: 1;
-  color: hsl(var(--sl-color-on-primary, 0 0% 100%));
+  color: hsl(var(--sl-color-text-inverse, 0 0% 100%));
   background: hsl(var(--sl-color-primary, 142 50% 42%));
   border-radius: var(--sl-radius-pill, 9999px);
-  margin-left: var(--sl-spacing-inline-xs, 4px);
+  margin-left: var(--sl-spacing-gap-xs, 4px);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -106,7 +106,7 @@
 }
 
 .resultCount {
-  font-size: var(--sl-font-size-sm, 0.875rem);
+  font-size: var(--sl-primitive-font-size-sm, 0.875rem);
   font-weight: var(--sl-font-weight-medium, 500);
   color: hsl(var(--sl-color-text-secondary, 0 0% 30%));
   margin: 0;
