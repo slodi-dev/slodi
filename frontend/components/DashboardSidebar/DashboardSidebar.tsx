@@ -136,11 +136,17 @@ const NAV_ITEMS: NavItem[] = [
     disabled: true, // Not yet implemented
   },
   {
-    label: "Flokkar",
+    // Merkimiðar, not "Flokkar" — the page manages tags, and "flokkar" is
+    // already the word for the patrol filter in the bank sidebar.
+    label: "Merkimiðar",
     path: "/tags",
     icon: Tags,
     group: "secondary",
-    roleRequired: "editor",
+    // Platform permission, not workspace role: the tag vocabulary is shared by
+    // the whole bank, so it belongs to Dagskrárstjórnarteymið rather than to
+    // whoever happens to be an editor of one workspace. Must stay in step with
+    // the guard inside TagManagement.
+    permissionRequired: "moderator",
   },
   {
     label: "Yfirferð",

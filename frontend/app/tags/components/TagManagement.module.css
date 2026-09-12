@@ -22,7 +22,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 .heading {
-  font-size: var(--sl-text-heading-h2);
+  font-size: var(--sl-text-heading-2);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
 }

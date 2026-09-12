@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canCreateProgram, canDeleteProgram, canEditProgram } from "@/lib/permissions";
-import type { User } from "@/services/users.service";
+import { hasPermission, type User } from "@/services/users.service";
 import type { Program } from "@/services/programs.service";
 import type { WorkspaceRole } from "@/services/workspaces.service";
 
@@ -68,5 +68,20 @@ describe("who may submit to the bank", () => {
   it("refuses someone with no membership", () => {
     expect(canCreateProgram(null, true)).toBe(false);
     expect(canCreateProgram(undefined, true)).toBe(false);
+  });
+});
+
+// ── Who manages the shared tag vocabulary ────────────────────────────────────
+
+describe("Merkimiðar", () => {
+  it("is for Dagskrárstjórnarteymið, not for whoever edits one workspace", () => {
+    // A tag rename reaches every entry in the bank, so it is a platform
+    // permission rather than a workspace role. The sidebar entry and the guard
+    // inside TagManagement both use this, and must not drift apart.
+    expect(hasPermission("moderator", "moderator")).toBe(true);
+    expect(hasPermission("admin", "moderator")).toBe(true);
+    expect(hasPermission("member", "moderator")).toBe(false);
+    expect(hasPermission("viewer", "moderator")).toBe(false);
+    expect(hasPermission(null, "moderator")).toBe(false);
   });
 });
