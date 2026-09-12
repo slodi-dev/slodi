@@ -208,8 +208,163 @@ describe("no dates", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
 
-    expect(screen.getByLabelText(/Lengd \(mínútur\)/)).toBeInTheDocument();
+    // One label, two boxes and a dash: a range rather than a box that cannot
+    // say whether it means the minimum or the whole span.
+    expect(screen.getByLabelText("Tímalengd, frá")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tímalengd, til")).toBeInTheDocument();
     expect(document.querySelectorAll('input[type="date"]')).toHaveLength(0);
     expect(screen.queryByLabelText(/dagsetning/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("lists, not sentences", () => {
+  it("makes each piece of equipment its own item", async () => {
+    // "Kaðall, karabínur, hjálmar" in one text box is three things stored as
+    // one string: unsearchable, unfilterable, uncorrectable one item at a time.
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const input = screen.getByLabelText("Búnaður");
+    await userEvent.type(input, "Kaðall");
+    await userEvent.click(screen.getByRole("button", { name: "Bæta búnaði á lista" }));
+    await userEvent.type(input, "Karabínur{Enter}");
+
+    const list = screen.getByRole("list", { name: "Búnaður" });
+    expect(list.querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByText("Kaðall")).toBeInTheDocument();
+    expect(screen.getByText("Karabínur")).toBeInTheDocument();
+  });
+
+  it("refuses the same item twice, whatever the casing", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const input = screen.getByLabelText("Búnaður");
+    await userEvent.type(input, "Kaðall{Enter}");
+    await userEvent.type(input, "kaðall{Enter}");
+
+    expect(screen.getByRole("list", { name: "Búnaður" }).querySelectorAll("li")).toHaveLength(1);
+  });
+
+  it("editing an item takes it out of the list and back into the box", async () => {
+    // Which is what editing a one-word item is. An inline field would need its
+    // own save and cancel for no gain.
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const input = screen.getByLabelText("Búnaður");
+    await userEvent.type(input, "Hjálmar{Enter}");
+    await userEvent.click(screen.getByRole("button", { name: "Breyta Hjálmar" }));
+
+    expect(screen.queryByRole("list", { name: "Búnaður" })).not.toBeInTheDocument();
+    expect(input).toHaveValue("Hjálmar");
+    expect(input).toHaveFocus();
+  });
+
+  it("removes an item on the ×", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const input = screen.getByLabelText("Búnaður");
+    await userEvent.type(input, "Reipi{Enter}");
+    await userEvent.click(screen.getByRole("button", { name: "Fjarlægja Reipi" }));
+
+    expect(screen.queryByText("Reipi")).not.toBeInTheDocument();
+  });
+
+  it("does not submit the form when Enter adds an item", async () => {
+    // Enter inside the chip input must not reach the dialog, or a half-typed
+    // piece of equipment would submit everything.
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    await userEvent.type(screen.getByLabelText("Búnaður"), "Kaðall{Enter}");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(created).not.toHaveBeenCalled();
+  });
+});
+
+describe("age bands", () => {
+  it("offers all seven, not the five that fitted in the old form", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    for (const band of [
+      "Hrefnuskátar",
+      "Drekaskátar",
+      "Fálkaskátar",
+      "Dróttskátar",
+      "Rekkaskátar",
+      "Róverskátar",
+      "Vættaskátar",
+    ]) {
+      expect(screen.getByRole("checkbox", { name: band })).toBeInTheDocument();
+    }
+  });
+
+  it("ticks each band in its own patrol colour", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const drekar = screen.getByRole("checkbox", { name: "Drekaskátar" }).closest("label");
+    const drott = screen.getByRole("checkbox", { name: "Dróttskátar" }).closest("label");
+    expect(drekar?.getAttribute("style")).toContain("--sl-color-patrol-drekar");
+    expect(drott?.getAttribute("style")).toContain("--sl-color-patrol-drott");
+  });
+});
+
+describe("one drop zone, sorted by type", () => {
+  it("is operable without dragging, because a drop zone is not keyboard-reachable", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    // The picker is the primary control, not a fallback.
+    expect(screen.getByRole("button", { name: /Velja skrár/ })).toBeInTheDocument();
+  });
+
+  it("accepts both pictures and documents from the same control", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const accept = document.querySelector<HTMLInputElement>("#drop-input")?.accept ?? "";
+    for (const type of [
+      "image/jpeg",
+      "image/png",
+      "application/pdf",
+      "text/plain",
+      "text/markdown",
+      "application/msword",
+    ]) {
+      expect(accept).toContain(type);
+    }
+  });
+
+  it("offers nothing the upload endpoint would refuse", async () => {
+    // The allowlist here has to match app/domain/upload_constraints.py; a
+    // format offered and then rejected is worse than one never offered.
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const accept = document.querySelector<HTMLInputElement>("#drop-input")?.accept ?? "";
+    expect(accept).not.toContain("text/html");
+    expect(accept).not.toContain("svg");
+  });
+
+  it("still takes a URL, for a picture that is already hosted", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+    expect(screen.getByLabelText(/Eða vefslóð myndar/)).toBeInTheDocument();
   });
 });

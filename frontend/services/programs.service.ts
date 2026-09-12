@@ -57,6 +57,8 @@ export type ProgramCreateInput = {
   count_max?: number;
   price?: number;
   tagNames?: string[];
+  /** Free-form JSONB. `documents` is the shape Yfirferð reads attachments from. */
+  media?: Record<string, unknown>;
   workspaceId: string; // Required - workspace to create program in
 };
 
@@ -76,7 +78,9 @@ export type ProgramUpdateInput = {
   count_min?: number | null;
   count_max?: number | null;
   price?: number | null;
-  tagNames?: string[]; // omit to leave tags unchanged; pass [] to clear all tags
+  tagNames?: string[];
+  /** Free-form JSONB. `documents` is the shape Yfirferð reads attachments from. */
+  media?: Record<string, unknown>; // omit to leave tags unchanged; pass [] to clear all tags
 };
 
 export type ProgramsResponse = Program[] | { programs: Program[] };
@@ -178,6 +182,7 @@ export async function createBankContent(
     count_max: input.count_max ?? null,
     price: input.price ?? null,
     tag_names: input.tagNames && input.tagNames.length > 0 ? input.tagNames : null,
+    media: input.media ?? null,
     content_type: type,
   };
 

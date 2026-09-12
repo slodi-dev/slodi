@@ -44,11 +44,11 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 460px;
+  max-width: 560px;
   /* dvh: the browser chrome on a phone makes vh taller than the viewport,
      which would push the pinned footer off screen — the one thing this
      layout exists to prevent. */
-  max-height: min(560px, calc(100dvh - 80px));
+  max-height: min(680px, calc(100dvh - 64px));
   background: hsl(var(--sl-color-surface));
   border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-modal);
@@ -546,8 +546,8 @@ textarea.input {
 
 /* ── Wide: ≥1080px — index rail + one continuous flow ───────────────────── */
 .wide {
-  max-width: 940px;
-  max-height: min(620px, calc(100dvh - 80px));
+  max-width: 1120px;
+  max-height: min(800px, calc(100dvh - 64px));
 }
 .wide .body {
   display: grid;
@@ -617,8 +617,8 @@ textarea.input {
 
 /* ── Half: 620–1079px — same flow, index becomes a sticky chip row ──────── */
 .half {
-  max-width: 560px;
-  max-height: min(620px, calc(100dvh - 80px));
+  max-width: 680px;
+  max-height: min(760px, calc(100dvh - 64px));
 }
 .half .body {
   padding: 0;
@@ -731,4 +731,223 @@ textarea.input {
 .countOver {
   color: hsl(var(--sl-color-error-text));
   font-weight: var(--sl-primitive-font-weight-bold);
+}
+
+/* ══ Ranges — two numbers that are one value ═══════════════════════════════
+   „Lengd" with a single box cannot say whether it means the minimum or the
+   whole span, and two separately-labelled boxes make the reader assemble the
+   range themselves. One label, two inputs and a dash reads as one value. */
+.range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.range .input {
+  flex: 1;
+  min-width: 0;
+  max-width: 120px;
+}
+.rangeSep {
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: var(--sl-text-body);
+}
+.rangeUnit {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: nowrap;
+}
+
+/* Two ranges side by side where there is room. A column of short number pairs
+   wastes the width the wide layout exists to use, and reads as more work than
+   it is. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: var(--sl-spacing-gap-md);
+  align-items: start;
+}
+
+/* A fieldset carries a browser default border that no token asked for — the
+   stray line around Aldurshópur. */
+.group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.groupLegend {
+  padding: 0;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+}
+/* Age groups read as a grid of choices, not a stacked list of sentences. */
+.checkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+  gap: 2px;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  min-height: var(--db-touch);
+  padding: 0 10px;
+  border-radius: var(--sl-radius-input);
+  cursor: pointer;
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-primary));
+  transition: background-color var(--db-dur-hover) var(--db-ease-glide);
+}
+.check:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.check input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  /* The band's own colour, set per label. Falls back to primary so a band with
+     no patrol mapping still ticks visibly rather than not at all. */
+  accent-color: hsl(var(--patrol, var(--sl-color-primary-text)));
+}
+
+/* ══ Chip list — one item per thing, not one string ════════════════════════
+   „Reipi, blindföt, kubbar" in a single box is three pieces of equipment the
+   database stores as one sentence: unsearchable, unfilterable, and impossible
+   to correct one item at a time. */
+.chipRow {
+  display: flex;
+  gap: var(--sl-spacing-gap-sm);
+  align-items: flex-start;
+}
+.chipRow .input {
+  flex: 1;
+  min-width: 0;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 36px;
+  padding: 0 4px 0 12px;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-background-tertiary));
+  border: 1px solid hsl(var(--sl-color-border));
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-primary));
+}
+.chipText {
+  padding-right: 2px;
+}
+/* The two actions appear on hover or focus, and are always in the DOM — a
+   keyboard user never gets a control that only exists under a pointer. */
+.chipBtn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity var(--db-dur-hover) var(--db-ease-glide);
+}
+.chip:hover .chipBtn,
+.chip:focus-within .chipBtn {
+  opacity: 1;
+}
+.chipBtn:focus-visible {
+  opacity: 1;
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+.chipBtn:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+.chipBtn svg {
+  width: 13px;
+  height: 13px;
+}
+/* A coarse pointer has no hover, so the actions stay put. */
+@media (pointer: coarse) {
+  .chipBtn {
+    opacity: 1;
+  }
+}
+
+/* ══ Drop zone — one target, sorted by type ════════════════════════════════
+   A leader has a picture and a leiðbeining in the same folder. Two separate
+   uploaders make them think about which control takes which file; one zone
+   that sorts by type does not. */
+.drop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-md);
+  padding: var(--sl-spacing-inset-md);
+  border: 1px dashed hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-background-secondary));
+  transition:
+    border-color var(--db-dur-hover) var(--db-ease-glide),
+    background-color var(--db-dur-hover) var(--db-ease-glide);
+}
+/* Solid and tinted while a file is over it: dashed-to-solid is the clearest
+   "you can let go now" a border can give. */
+.dropOver {
+  border-style: solid;
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-subtle));
+}
+.dropHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+}
+.dropText {
+  flex: 1;
+  min-width: 18ch;
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.dropText strong {
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+/* The picture, once there is one. */
+.preview {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-md);
+}
+.previewImg {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--sl-radius-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-background-tertiary));
+}
+.previewName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  overflow-wrap: anywhere;
 }

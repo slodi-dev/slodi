@@ -7,6 +7,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDraft } from "@/hooks/useDraft";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
 import { useTags } from "@/hooks/useTags";
+import ChipList from "./ChipList";
+import FileDropZone, { type Attachment } from "./FileDropZone";
+import { AGE_GROUPS, getAgeGroupPatrol } from "@/lib/format";
 import { createBankContent, type Program } from "@/services/programs.service";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 
@@ -21,14 +24,6 @@ const TYPE_ACCENT: Record<BankContentType, string> = {
   event: styles.typeEvent,
   program: styles.typeHringur,
 };
-
-const AGE_GROUPS = [
-  "Drekaskátar",
-  "Fálkaskátar",
-  "Dróttskátar",
-  "Rekkaskátar",
-  "Róverskátar",
-] as const;
 
 type SectionId = "basic" | "info" | "equipment" | "instructions" | "extras";
 
@@ -52,10 +47,11 @@ type Draft = {
   price: string;
   location: string;
   ages: string[];
-  equipment: string;
+  equipment: string[];
   instructions: string;
-  tags: string;
+  tagList: string[];
   image: string;
+  documents: Attachment[];
 };
 
 const EMPTY: Draft = {
@@ -70,10 +66,11 @@ const EMPTY: Draft = {
   price: "",
   location: "",
   ages: [],
-  equipment: "",
+  equipment: [],
   instructions: "",
-  tags: "",
+  tagList: [],
   image: "",
+  documents: [],
 };
 
 /** Which section each field lives in, so a failed submit can open the right one. */
@@ -240,9 +237,9 @@ export default function ContentCreateModal({
         draft.location.trim() ||
         draft.ages.length
       ),
-      equipment: Boolean(draft.equipment.trim()),
+      equipment: draft.equipment.length > 0,
       instructions: Boolean(draft.instructions.trim()),
-      extras: Boolean(draft.tags.trim() || draft.image.trim()),
+      extras: Boolean(draft.tagList.length || draft.image.trim() || draft.documents.length),
     }),
     [draft]
   );
@@ -310,10 +307,7 @@ export default function ContentCreateModal({
           description: draft.description.trim() || undefined,
           instructions: draft.instructions.trim() || undefined,
           image: draft.image.trim() || undefined,
-          equipment: draft.equipment
-            .split(",")
-            .map((e) => e.trim())
-            .filter(Boolean),
+          equipment: draft.equipment,
           duration_min: num(draft.durationMin),
           duration_max: num(draft.durationMax),
           prep_time_min: num(draft.prepMin),
@@ -323,10 +317,8 @@ export default function ContentCreateModal({
           price: num(draft.price),
           location: draft.location.trim() || undefined,
           age: draft.ages.length ? draft.ages : undefined,
-          tagNames: draft.tags
-            .split(/[,#]/)
-            .map((t) => t.trim())
-            .filter(Boolean),
+          tagNames: draft.tagList,
+          media: draft.documents.length ? { documents: draft.documents } : undefined,
           workspaceId,
         },
         getToken
@@ -445,6 +437,72 @@ export default function ContentCreateModal({
     return "— ekkert útfyllt";
   };
 
+  /** Two numbers that are one value. A single „Lengd" box cannot say whether
+   *  it means the minimum or the whole span, and two separately-labelled boxes
+   *  make the reader assemble the range themselves. */
+  const range = (
+    label: string,
+    from: keyof Draft,
+    to: keyof Draft,
+    unit: string,
+    help?: string
+  ) => {
+    const bad = errors[from] ?? errors[to];
+    const id = `f-${from}`;
+    return (
+      <div className={cn(styles.fld, bad && styles.fldError)} key={from}>
+        <label className={styles.lab} htmlFor={id}>
+          {label}
+        </label>
+        <div className={styles.range}>
+          <input
+            id={id}
+            data-field={from}
+            className={cn(styles.input, styles.inputNum)}
+            inputMode="numeric"
+            placeholder="frá"
+            aria-label={`${label}, frá`}
+            aria-invalid={errors[from] ? true : undefined}
+            value={String(draft[from] ?? "")}
+            onChange={(e) => updateDraft({ [from]: e.target.value } as Partial<Draft>)}
+          />
+          <span className={styles.rangeSep} aria-hidden="true">
+            –
+          </span>
+          <input
+            data-field={to}
+            className={cn(styles.input, styles.inputNum)}
+            inputMode="numeric"
+            placeholder="til"
+            aria-label={`${label}, til`}
+            aria-invalid={errors[to] ? true : undefined}
+            value={String(draft[to] ?? "")}
+            onChange={(e) => updateDraft({ [to]: e.target.value } as Partial<Draft>)}
+          />
+          <span className={styles.rangeUnit}>{unit}</span>
+        </div>
+        {help && !bad && <p className={styles.help}>{help}</p>}
+        {bad && (
+          <p className={styles.err}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="8" x2="12" y2="13" />
+              <line x1="12" y1="16" x2="12" y2="16" />
+            </svg>
+            {bad}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   const panels: Record<SectionId, React.ReactNode> = {
     basic: (
       <>
@@ -457,50 +515,90 @@ export default function ContentCreateModal({
     ),
     info: (
       <>
-        {field("durationMin", "Lengd (mínútur)", {
-          num: true,
-          placeholder: "t.d. 15",
-          help: "Hvað eining tekur. Dagsetningin verður til þegar þú setur hana í dagskrá.",
-        })}
-        {field("durationMax", "Lengd, að hámarki (mínútur)", { num: true, placeholder: "t.d. 25" })}
-        <fieldset className={styles.fld}>
-          <legend className={styles.lab}>Aldurshópur</legend>
-          {AGE_GROUPS.map((group) => (
-            <label key={group} className={styles.help} style={{ display: "flex", gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={draft.ages.includes(group)}
-                onChange={(e) =>
-                  updateDraft({
-                    ages: e.target.checked
-                      ? [...draft.ages, group]
-                      : draft.ages.filter((a) => a !== group),
-                  })
+        {/* Side by side where there is room: a column of short number pairs
+            wastes the width the wide layout exists to use. */}
+        <div className={styles.pair}>
+          {range(
+            "Tímalengd",
+            "durationMin",
+            "durationMax",
+            "mínútur",
+            "Hvað einingin tekur. Dagsetningin verður til þegar þú setur hana í dagskrá — ekki hér."
+          )}
+          {range("Fjöldi þátttakenda", "countMin", "countMax", "þátttakendur")}
+        </div>
+        <div className={styles.pair}>
+          {range("Undirbúningstími", "prepMin", "prepMax", "mínútur")}
+          {field("price", "Kostnaður (kr.)", { num: true, placeholder: "0" })}
+        </div>
+        <fieldset className={styles.group}>
+          <legend className={styles.groupLegend}>Aldurshópur</legend>
+          <div className={styles.checkGrid}>
+            {AGE_GROUPS.map((group) => (
+              <label
+                key={group}
+                className={styles.check}
+                // Each band ticks in its own colour, so the list reads as the
+                // bands a leader already knows rather than seven grey boxes.
+                style={
+                  {
+                    "--patrol": `var(--sl-color-patrol-${getAgeGroupPatrol(group) ?? "adrir"})`,
+                  } as React.CSSProperties
                 }
-              />
-              {group}
-            </label>
-          ))}
+              >
+                <input
+                  type="checkbox"
+                  checked={draft.ages.includes(group)}
+                  onChange={(e) =>
+                    updateDraft({
+                      ages: e.target.checked
+                        ? [...draft.ages, group]
+                        : draft.ages.filter((a) => a !== group),
+                    })
+                  }
+                />
+                {group}
+              </label>
+            ))}
+          </div>
         </fieldset>
-        {field("countMin", "Fjöldi þátttakenda, minnst", { num: true, placeholder: "t.d. 12" })}
-        {field("countMax", "Fjöldi þátttakenda, mest", { num: true, placeholder: "t.d. 30" })}
-        {field("prepMin", "Undirbúningur (mínútur)", { num: true, placeholder: "t.d. 10" })}
-        {field("price", "Kostnaður (kr.)", { num: true, placeholder: "0" })}
         {field("location", "Staðsetning", { placeholder: "Inni, úti, í skála…" })}
       </>
     ),
-    equipment: field("equipment", "Búnaður", { placeholder: "Reipi, blindföt, kubbar" }),
+    equipment: (
+      <>
+        <ChipList
+          label="Búnaður"
+          addLabel="Bæta búnaði á lista"
+          placeholder="Kaðall, karabínur, hjálmar"
+          items={draft.equipment}
+          onChange={(equipment) => updateDraft({ equipment })}
+        />
+      </>
+    ),
     instructions: field("instructions", "Hvernig gengur þetta fyrir sig?", {
       area: true,
       placeholder: "Skref fyrir skref",
     }),
     extras: (
       <>
-        {field("tags", "Merkimiðar", {
-          placeholder: "#leikur #inni",
-          help: tagNames?.length ? `Til eru t.d. ${tagNames.slice(0, 4).join(", ")}.` : undefined,
-        })}
-        {field("image", "Mynd (vefslóð)", { placeholder: "https://…" })}
+        <ChipList
+          label="Merkimiðar"
+          addLabel="Bæta merkimiða á lista"
+          placeholder="leikur"
+          items={draft.tagList}
+          onChange={(tagList) => updateDraft({ tagList })}
+          known={tagNames ?? []}
+        />
+        <FileDropZone
+          image={draft.image}
+          documents={draft.documents}
+          onImage={(url) => updateDraft({ image: url })}
+          onDocuments={(documents) => updateDraft({ documents })}
+        />
+        {/* …or a link. A leader who already has the picture hosted should not
+            have to download it in order to re-upload it. */}
+        {field("image", "Eða vefslóð myndar", { placeholder: "https://…" })}
       </>
     ),
   };
