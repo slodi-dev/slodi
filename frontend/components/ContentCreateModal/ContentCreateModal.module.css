@@ -529,3 +529,206 @@ textarea.input {
 .typeEvent {
   --db-accent-text: var(--sl-color-event-text);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THREE LAYOUTS, ONE FORM
+   The accordion above is the PHONE layout. Collapsing exists because 360×640
+   holds one section and nothing else — on a 1440px screen it hides four
+   sections behind clicks while two thirds of the window sits empty, and it
+   manufactures the very failure the auto-expand logic exists to survive: an
+   error inside a collapsed section. Widen the window and that cannot happen,
+   because nothing is collapsed.
+
+   The section list, the labels, the single required section, the pinned error
+   region and the failed-submit contract are identical at every width. Only the
+   navigation model changes.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Wide: ≥1080px — index rail + one continuous flow ───────────────────── */
+.wide {
+  max-width: 940px;
+  max-height: min(620px, calc(100dvh - 80px));
+}
+.wide .body {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  overflow: hidden;
+  padding: 0;
+}
+
+/* The rail is a map, not a gate: everything it points at is already on screen.
+   It reports position and state; it never hides anything. */
+.nav {
+  border-right: 1px solid hsl(var(--sl-color-border-subtle));
+  background: hsl(var(--sl-color-background-secondary));
+  padding: var(--sl-spacing-gap-md) var(--sl-spacing-gap-sm);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.navTitle {
+  margin: 0;
+  padding: 0 10px 8px;
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--db-touch);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--sl-radius-input);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  text-align: left;
+  color: hsl(var(--sl-color-text-secondary));
+  transition:
+    background-color var(--db-dur-hover) var(--db-ease-glide),
+    color var(--db-dur-hover) var(--db-ease-glide);
+}
+.navItem:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+.navItem:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+/* Position is marked with an inset bar as well as a tint — colour alone would
+   not survive a greyscale print or a low-contrast display. */
+.navHere {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary-text));
+}
+.navLabel {
+  flex: 1;
+}
+
+/* ── Half: 620–1079px — same flow, index becomes a sticky chip row ──────── */
+.half {
+  max-width: 560px;
+  max-height: min(620px, calc(100dvh - 80px));
+}
+.half .body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.rail {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px var(--sl-spacing-inset-md);
+  background: hsl(var(--sl-color-surface));
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  scrollbar-width: none;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+.railChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-surface));
+  font-family: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--db-dur-hover) var(--db-ease-glide),
+    border-color var(--db-dur-hover) var(--db-ease-glide),
+    color var(--db-dur-hover) var(--db-ease-glide);
+}
+.railChip:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.railChip:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+.railHere {
+  border-color: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+}
+
+/* ── The flow itself, shared by both wide layouts ───────────────────────── */
+.flow {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow {
+    scroll-behavior: auto;
+  }
+}
+.block {
+  padding: var(--sl-spacing-inset-md);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-md);
+  /* so a heading scrolled to is not flush against the rail above it */
+  scroll-margin-top: 8px;
+}
+.block:last-child {
+  border-bottom: 0;
+}
+.blockHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.blockLabel {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+}
+.blockReq {
+  color: hsl(var(--sl-color-error-text));
+}
+
+/* A character count belongs beside its label, not under the field, so it is
+   read before the box rather than discovered after overflowing it. */
+.labRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.labRow .lab {
+  flex: 1;
+}
+.count {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+.countOver {
+  color: hsl(var(--sl-color-error-text));
+  font-weight: var(--sl-primitive-font-weight-bold);
+}

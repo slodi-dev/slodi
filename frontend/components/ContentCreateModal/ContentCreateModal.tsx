@@ -5,6 +5,7 @@ import styles from "./ContentCreateModal.module.css";
 import { cn } from "@/lib/util";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDraft } from "@/hooks/useDraft";
+import { useLayoutMode } from "@/hooks/useLayoutMode";
 import { useTags } from "@/hooks/useTags";
 import { createBankContent, type Program } from "@/services/programs.service";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
@@ -121,6 +122,10 @@ export default function ContentCreateModal({
 }) {
   const { getToken } = useAuth();
   const { tagNames } = useTags();
+  // Three layouts, one form. Above 620px nothing collapses, so "an error
+  // inside a collapsed section" cannot occur at those widths at all.
+  const mode = useLayoutMode();
+  const flowing = mode !== "phone";
 
   // Keyed by workspace *and* type: with four kinds, a half-written viðburður
   // reappearing inside a new verkefni reads as the form being haunted.
@@ -135,7 +140,47 @@ export default function ContentCreateModal({
   const [draftOffer, setDraftOffer] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement>(null);
+  const flowRef = useRef<HTMLDivElement>(null);
+  const [here, setHere] = useState<SectionId>("basic");
   const titleId = `create-${contentType}`;
+
+  // Which block the reader is looking at, so the index can say so. Observed
+  // rather than computed from scrollTop: the blocks are different heights and
+  // the last one is usually shorter than the viewport, which a proportional
+  // calculation gets wrong at exactly the moment it matters.
+  useEffect(() => {
+    if (!flowing) return;
+    const root = flowRef.current;
+    if (!root) return;
+    // Capability check, not a polyfill: without it the index simply stops
+    // reporting position. Everything it points at is on screen anyway, so
+    // losing the highlight costs nothing — crashing the form would cost
+    // everything.
+    if (typeof IntersectionObserver === "undefined") return;
+    const blocks = [...root.querySelectorAll<HTMLElement>("[data-block]")];
+    if (blocks.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const top = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top) setHere(top.target.getAttribute("data-block") as SectionId);
+      },
+      { root, rootMargin: "-8px 0px -60% 0px", threshold: 0 }
+    );
+    blocks.forEach((b) => observer.observe(b));
+    return () => observer.disconnect();
+  }, [flowing]);
+
+  /** The index is a map, not a gate: it scrolls, then hands over the caret. */
+  const goTo = useCallback((id: SectionId) => {
+    const block = flowRef.current?.querySelector<HTMLElement>(`[data-block="${id}"]`);
+    if (!block) return;
+    block.scrollIntoView({ block: "start", behavior: "smooth" });
+    // Focus the first control rather than the heading: the reader asked to go
+    // somewhere in order to type there.
+    block.querySelector<HTMLElement>("input, textarea, button")?.focus({ preventScroll: true });
+  }, []);
 
   // An unsent draft is offered, never silently restored: reopening the form and
   // finding someone else's half-finished text already in it is worse than
@@ -228,10 +273,12 @@ export default function ContentCreateModal({
     const count = Object.keys(found).length;
 
     if (count > 0) {
-      // Open every section that holds an error — a closed one would hide the
-      // reason the submit failed — then say so and move focus to the first.
+      // On a phone, open every section that holds an error — a closed one
+      // would hide the reason the submit failed. At wider widths nothing is
+      // collapsed, so there is nothing to open and the block is scrolled to
+      // instead.
       const sections = new Set(Object.keys(found).map((f) => FIELD_SECTION[f]));
-      setOpen((prev) => [...new Set([...prev, ...sections])]);
+      if (!flowing) setOpen((prev) => [...new Set([...prev, ...sections])]);
       setSummary(
         count === 1
           ? "Einn reitur vantar eða er ekki réttur. Hann er merktur hér fyrir ofan."
@@ -240,9 +287,14 @@ export default function ContentCreateModal({
       setDone(null);
       // after the section has unrolled, or focus lands on a clipped field
       window.setTimeout(() => {
-        dialogRef.current
-          ?.querySelector<HTMLElement>(`[data-field="${Object.keys(found)[0]}"]`)
-          ?.focus();
+        const first = dialogRef.current?.querySelector<HTMLElement>(
+          `[data-field="${Object.keys(found)[0]}"]`
+        );
+        // scrollIntoView first: in the flow layouts the field may be far down,
+        // and focus alone would jump the container without the reader seeing
+        // what moved.
+        if (flowing) first?.scrollIntoView({ block: "center", behavior: "smooth" });
+        first?.focus({ preventScroll: flowing });
       }, 60);
       return;
     }
@@ -349,6 +401,50 @@ export default function ContentCreateModal({
     );
   };
 
+  /** The state dot. Shape as well as colour — an empty ring, a tick, or an
+   *  exclamation — because colour alone would not survive greyscale. */
+  const marker = (id: SectionId) => {
+    const bad = errorsIn(id) > 0;
+    return (
+      <span
+        className={cn(styles.dot, bad ? styles.secError : filled[id] && styles.secComplete)}
+        aria-hidden="true"
+      >
+        {bad ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+          >
+            <line x1="12" y1="7" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12" y2="17" />
+          </svg>
+        ) : filled[id] ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : null}
+      </span>
+    );
+  };
+
+  /** The same state in words, for anyone who cannot see the dot. */
+  const stateWord = (id: SectionId) => {
+    const bad = errorsIn(id);
+    if (bad > 0) return bad === 1 ? "— 1 villa" : `— ${bad} villur`;
+    if (filled[id]) return "— útfyllt";
+    return "— ekkert útfyllt";
+  };
+
   const panels: Record<SectionId, React.ReactNode> = {
     basic: (
       <>
@@ -420,7 +516,12 @@ export default function ContentCreateModal({
     >
       <div
         ref={dialogRef}
-        className={cn(styles.dialog, TYPE_ACCENT[contentType])}
+        className={cn(
+          styles.dialog,
+          mode === "wide" && styles.wide,
+          mode === "half" && styles.half,
+          TYPE_ACCENT[contentType]
+        )}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -482,85 +583,148 @@ export default function ContentCreateModal({
           )}
         </div>
 
-        <div className={styles.body}>
-          {SECTIONS.map(({ id, label, required }) => {
-            const isOpen = open.includes(id);
-            const bad = errorsIn(id);
-            const panelId = `panel-${id}`;
-            return (
-              <div
-                key={id}
-                className={cn(
-                  styles.sec,
-                  isOpen && styles.secOpen,
-                  bad > 0 ? styles.secError : filled[id] && styles.secComplete
-                )}
-              >
-                <button
-                  type="button"
-                  className={styles.secBtn}
-                  aria-expanded={isOpen}
-                  aria-controls={panelId}
-                  onClick={() => toggle(id)}
+        {flowing ? (
+          <div className={cn(styles.body)}>
+            {/* Wide gets a rail beside the flow; half gets the same flow with the
+              index as a chip row. Both are `nav` landmarks with the same label,
+              so the shape changes and the meaning does not. */}
+            {mode === "wide" ? (
+              <nav className={styles.nav} aria-label="Hlutar eyðublaðsins">
+                <p className={styles.navTitle}>Á eyðublaðinu</p>
+                {SECTIONS.map(({ id, label, required }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={cn(styles.navItem, here === id && styles.navHere)}
+                    aria-current={here === id ? "true" : undefined}
+                    onClick={() => goTo(id)}
+                  >
+                    {marker(id)}
+                    <span className={styles.navLabel}>
+                      {label}{" "}
+                      {required && (
+                        <span className={styles.blockReq} aria-hidden="true">
+                          *
+                        </span>
+                      )}
+                    </span>
+                    {/* The dot is decorative; this is the same state in words. */}
+                    <span className="sl-sr-only">{stateWord(id)}</span>
+                  </button>
+                ))}
+              </nav>
+            ) : null}
+
+            <div className={styles.flow} ref={flowRef}>
+              {mode === "half" && (
+                <nav className={styles.rail} aria-label="Hlutar eyðublaðsins">
+                  {SECTIONS.map(({ id, label, required }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={cn(styles.railChip, here === id && styles.railHere)}
+                      aria-current={here === id ? "true" : undefined}
+                      onClick={() => goTo(id)}
+                    >
+                      {marker(id)}
+                      {label}
+                      {required && (
+                        <span className={styles.blockReq} aria-hidden="true">
+                          *
+                        </span>
+                      )}
+                      <span className="sl-sr-only">{stateWord(id)}</span>
+                    </button>
+                  ))}
+                </nav>
+              )}
+
+              {SECTIONS.map(({ id, label, required }) => (
+                <section
+                  key={id}
+                  className={styles.block}
+                  data-block={id}
+                  aria-labelledby={`h-${id}`}
                 >
-                  <span className={styles.dot} aria-hidden="true">
-                    {bad > 0 ? (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      >
-                        <line x1="12" y1="7" x2="12" y2="13" />
-                        <line x1="12" y1="17" x2="12" y2="17" />
-                      </svg>
-                    ) : filled[id] ? (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : null}
-                  </span>
-                  <span className={styles.secLabel}>
-                    {label}{" "}
-                    {required && (
-                      <span className={styles.req} aria-hidden="true">
-                        *
+                  <div className={styles.blockHead}>
+                    {marker(id)}
+                    <h3 className={styles.blockLabel} id={`h-${id}`}>
+                      {label}{" "}
+                      {required && (
+                        <span className={styles.blockReq} aria-hidden="true">
+                          *
+                        </span>
+                      )}
+                    </h3>
+                    {errorsIn(id) > 0 && (
+                      <span className={styles.flag}>
+                        {errorsIn(id) === 1 ? "1 villa" : `${errorsIn(id)} villur`}
                       </span>
                     )}
-                  </span>
-                  {/* A closed section still says it holds an error. */}
-                  {bad > 0 && (
-                    <span className={styles.flag}>{bad === 1 ? "1 villa" : `${bad} villur`}</span>
+                  </div>
+                  {panels[id]}
+                </section>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.body}>
+            {SECTIONS.map(({ id, label, required }) => {
+              const isOpen = open.includes(id);
+              const bad = errorsIn(id);
+              const panelId = `panel-${id}`;
+              return (
+                <div
+                  key={id}
+                  className={cn(
+                    styles.sec,
+                    isOpen && styles.secOpen,
+                    bad > 0 ? styles.secError : filled[id] && styles.secComplete
                   )}
-                  <svg
-                    className={styles.chev}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    aria-hidden="true"
+                >
+                  <button
+                    type="button"
+                    className={styles.secBtn}
+                    aria-expanded={isOpen}
+                    aria-controls={panelId}
+                    onClick={() => toggle(id)}
                   >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-                <div className={styles.panelWrap}>
-                  <div className={styles.panel} id={panelId}>
-                    {panels[id]}
+                    {marker(id)}
+                    <span className={styles.secLabel}>
+                      {label}{" "}
+                      {required && (
+                        <span className={styles.req} aria-hidden="true">
+                          *
+                        </span>
+                      )}
+                    </span>
+                    <span className="sl-sr-only">{stateWord(id)}</span>
+                    {/* A closed section still says it holds an error. */}
+                    {bad > 0 && (
+                      <span className={styles.flag}>{bad === 1 ? "1 villa" : `${bad} villur`}</span>
+                    )}
+                    <svg
+                      className={styles.chev}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  <div className={styles.panelWrap}>
+                    <div className={styles.panel} id={panelId}>
+                      {panels[id]}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className={styles.foot}>
           {summary && (
