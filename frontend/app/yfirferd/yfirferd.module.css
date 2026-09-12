@@ -38,27 +38,18 @@
   --yf-accent-text: var(--sl-color-text-secondary);
 }
 .typeEvent {
-  --yf-accent: var(--sl-primitive-adrir-600);
-  --yf-accent-bg: var(--sl-primitive-adrir-50);
-  --yf-accent-text: var(--sl-primitive-adrir-800);
+  --yf-accent: var(--sl-color-event);
+  --yf-accent-bg: var(--sl-color-event-subtle);
+  --yf-accent-text: var(--sl-color-event-text);
 }
 .typeProgram {
   --yf-accent: var(--sl-color-primary);
   --yf-accent-bg: var(--sl-color-primary-subtle);
   --yf-accent-text: var(--sl-color-primary-text);
 }
-[data-theme="dark"] .typeEvent {
-  --yf-accent: var(--sl-primitive-adrir-400);
-  --yf-accent-bg: 270 38% 19%;
-  --yf-accent-text: var(--sl-primitive-adrir-200);
-}
-@media (prefers-color-scheme: dark) {
-  .typeEvent {
-    --yf-accent: var(--sl-primitive-adrir-400);
-    --yf-accent-bg: 270 38% 19%;
-    --yf-accent-text: var(--sl-primitive-adrir-200);
-  }
-}
+/* No local dark override: `--sl-color-event` carries its own theming in
+   slodi-tokens.css now. The override this replaces matched `[data-theme="dark"]`
+   only, which never fires for the ordinary dark toggle — that uses a class. */
 
 /* ══ Page shell ═══════════════════════════════════════════════════════════ */
 .header {

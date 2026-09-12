@@ -22,11 +22,13 @@ describe("choosing what to make", () => {
     await userEvent.click(screen.getByRole("button", { name: "Bæta við í bankann" }));
 
     expect(
-      screen.getByRole("menuitem", { name: /Einn dagskrárliður — leikur, setning/ })
+      screen.getByRole("menuitem", { name: /Einn dagskrárliður\. Leikur, setning/ })
     ).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /einn skátafundur/ })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /Röð af fundum/ })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /yfir nokkra daga/ })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /fyrir einn skátafund/ })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /spanna einn dagskrárhring/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: /útilegur, dagsferðir og önnur ævintýri/ })
+    ).toBeInTheDocument();
   });
 
   it("reports the type it was told, not a default", async () => {

@@ -1047,6 +1047,15 @@
   --sl-color-event: var(--sl-primitive-adrir-600);
   --sl-color-event-subtle: var(--sl-primitive-adrir-50);
   --sl-color-event-text: var(--sl-primitive-adrir-800);
+
+  /* Dagskrárhringur — rekkar 177°. Four content kinds need four hues far
+     enough apart to tell at a glance: Verkefni neutral, Fundur green 142°,
+     Dagskrárhringur 177°, Viðburður violet 270°. None of them is a caution
+     hue. 177° sits 13° from info 190°, which is tolerable only because info
+     is a status badge and never occupies a type slot. */
+  --sl-color-cycle: var(--sl-primitive-rekkar-700);
+  --sl-color-cycle-subtle: var(--sl-primitive-rekkar-50);
+  --sl-color-cycle-text: var(--sl-primitive-rekkar-900);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1063,6 +1072,9 @@
     --sl-color-event: var(--sl-primitive-adrir-400);
     --sl-color-event-subtle: 270 38% 19%;
     --sl-color-event-text: var(--sl-primitive-adrir-200);
+    --sl-color-cycle: var(--sl-primitive-rekkar-400);
+    --sl-color-cycle-subtle: 177 40% 16%;
+    --sl-color-cycle-text: var(--sl-primitive-rekkar-200);
   }
 }
 
@@ -1090,6 +1102,9 @@
   --sl-color-event: var(--sl-primitive-adrir-400);
   --sl-color-event-subtle: 270 38% 19%;
   --sl-color-event-text: var(--sl-primitive-adrir-200);
+  --sl-color-cycle: var(--sl-primitive-rekkar-400);
+  --sl-color-cycle-subtle: 177 40% 16%;
+  --sl-color-cycle-text: var(--sl-primitive-rekkar-200);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

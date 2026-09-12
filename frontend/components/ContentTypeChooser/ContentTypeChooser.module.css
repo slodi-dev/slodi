@@ -19,7 +19,7 @@
   --db-dur-hover: 180ms;
   --db-dur-press: 90ms;
   --db-ball: 56px; /* resting diameter — above the 48px touch floor */
-  --db-fab-w: 268px; /* stretched width, set by the longest label */
+  --db-fab-w: 290px; /* stretched width, set by the longest label */
 
   position: relative;
   /* Above the scrim. Both live inside the page's fixed anchor, which has a
@@ -265,20 +265,28 @@
     transform calc(var(--db-dur-unroll) * 0.8) var(--db-ease-glide),
     opacity calc(var(--db-dur-unroll) * 0.5) linear;
 }
+/* Bottom-up: the sheet is coming out of the button underneath, so the nearest
+   option arrives first. Four steps — the original kit stopped at three. */
 .launcher.open .sheet .opt:nth-of-type(1) {
-  transition-delay: calc(var(--db-dur-unroll) * 0.26);
+  transition-delay: calc(var(--db-dur-unroll) * 0.39);
 }
 .launcher.open .sheet .opt:nth-of-type(2) {
-  transition-delay: calc(var(--db-dur-unroll) * 0.13);
+  transition-delay: calc(var(--db-dur-unroll) * 0.26);
 }
 .launcher.open .sheet .opt:nth-of-type(3) {
+  transition-delay: calc(var(--db-dur-unroll) * 0.13);
+}
+.launcher.open .sheet .opt:nth-of-type(4) {
   transition-delay: 0ms;
 }
-.opt:hover {
-  background: hsl(var(--sl-color-surface-hover));
+/* The hover tint carries the type colour at the lowest visible level — the
+   row's own accent at 40%. The name and the hint stay in text ink in every
+   row: the colour identifies the kind, it never carries the reading. */
+.opt:not([aria-disabled="true"]):hover {
+  background: hsl(var(--db-accent-bg) / 0.4);
 }
-.opt:active {
-  background: hsl(var(--sl-color-surface-active));
+.opt:not([aria-disabled="true"]):active {
+  background: hsl(var(--db-accent-bg) / 0.7);
   transform: scale(0.995);
 }
 .opt:focus-visible {
@@ -346,27 +354,31 @@
   text-wrap: pretty;
 }
 
-/* ══ Type accents ═════════════════════════════════════════════════════════
-   Verkefni is neutral on purpose — it is the default and the most common. */
+/* ══ Type accents ═══════════════════════════════════════════════════════════
+   Four kinds need four hues far enough apart to tell at a glance. Verkefni
+   stays neutral on purpose — it is the default and the most common. The rest
+   go green 142°, rekkar 177°, violet 270°, none of them a caution hue. All
+   three carry their own dark values inside the token system, so there is no
+   theme selector in here. */
 .typeTask {
   --db-accent: var(--sl-color-border-strong);
   --db-accent-bg: var(--sl-color-background-tertiary);
   --db-accent-text: var(--sl-color-text-secondary);
 }
+.typeFundur {
+  --db-accent: var(--sl-color-primary);
+  --db-accent-bg: var(--sl-color-primary-subtle);
+  --db-accent-text: var(--sl-color-primary-text);
+}
+.typeHringur {
+  --db-accent: var(--sl-color-cycle);
+  --db-accent-bg: var(--sl-color-cycle-subtle);
+  --db-accent-text: var(--sl-color-cycle-text);
+}
 .typeEvent {
   --db-accent: var(--sl-color-event);
   --db-accent-bg: var(--sl-color-event-subtle);
   --db-accent-text: var(--sl-color-event-text);
-}
-.typeFundur {
-  --db-accent: var(--sl-color-secondary);
-  --db-accent-bg: var(--sl-color-background-tertiary);
-  --db-accent-text: var(--sl-color-text-secondary);
-}
-.typeProgram {
-  --db-accent: var(--sl-color-primary);
-  --db-accent-bg: var(--sl-color-primary-subtle);
-  --db-accent-text: var(--sl-color-primary-text);
 }
 
 /* ══ Scrim ════════════════════════════════════════════════════════════════ */
@@ -402,30 +414,41 @@
 
 /* ══ Not yet available ════════════════════════════════════════════════════
    Three of the four kinds cannot be created in the September release. Shown
-   and dimmed rather than hidden: a chooser with one option says the bank only
-   ever does one thing. */
+   and visibly off rather than hidden: a chooser with one option says the bank
+   only ever does one thing.
+
+   A grey well instead of the live surface, and the accent stripped by
+   desaturation rather than by a second set of grey tokens. The name stays at
+   text-secondary — the row is still readable, not decorative — and it keeps
+   its focus ring and its place in the tab order. It teaches; it just cannot
+   run. */
 .optSoon {
   cursor: not-allowed;
+  background: hsl(var(--sl-color-background-secondary));
+  filter: saturate(0);
 }
-.optSoon .optName,
+.optSoon .optName {
+  color: hsl(var(--sl-color-text-secondary));
+}
 .optSoon .optHint {
   color: hsl(var(--sl-color-text-tertiary));
 }
 .optSoon .optIcon {
   background: hsl(var(--sl-color-background-tertiary));
   color: hsl(var(--sl-color-text-tertiary));
+  opacity: 0.75;
 }
 .optSoon:hover {
-  background: none;
+  background: hsl(var(--sl-color-background-secondary));
+}
+.optSoon:hover .optIcon {
+  transform: none;
 }
 /* the accent rail never wakes up for something you cannot choose */
 .optSoon::before,
 .optSoon:hover::before,
 .optSoon:focus-visible::before {
   transform: scaleY(0);
-}
-.optSoon:hover .optIcon {
-  transform: none;
 }
 .soon {
   flex-shrink: 0;

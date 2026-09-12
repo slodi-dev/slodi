@@ -39,7 +39,7 @@ const OPTIONS: Option[] = [
     key: "task",
     creates: "task",
     name: "Verkefni",
-    hint: "Einn dagskrárliður — leikur, setning, eitt verkefni",
+    hint: "Einn dagskrárliður. Leikur, setning, slit, eða aðrir stakir liðir.",
     accent: styles.typeTask,
     icon: (
       <svg
@@ -57,7 +57,7 @@ const OPTIONS: Option[] = [
     key: "fundur",
     creates: null,
     name: "Fundur",
-    hint: "Safn af verkefnum — einn skátafundur",
+    hint: "Samansafn af verkefnum fyrir einn skátafund.",
     accent: styles.typeFundur,
     icon: (
       <svg
@@ -77,8 +77,8 @@ const OPTIONS: Option[] = [
     key: "hringur",
     creates: null,
     name: "Dagskrárhringur",
-    hint: "Röð af fundum — dagskrá yfir heilt tímabil",
-    accent: styles.typeProgram,
+    hint: "Safn af fundum og verkefnum sem spanna einn dagskrárhring.",
+    accent: styles.typeHringur,
     icon: (
       <svg
         viewBox="0 0 24 24"
@@ -98,7 +98,7 @@ const OPTIONS: Option[] = [
     key: "event",
     creates: null,
     name: "Viðburður",
-    hint: "Safn af verkefnum yfir nokkra daga — útilega, mót, dagsferð",
+    hint: "Safn af verkefnum fyrir útilegur, dagsferðir og önnur ævintýri.",
     accent: styles.typeEvent,
     icon: (
       <svg
