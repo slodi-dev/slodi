@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,7 +8,9 @@ import ContentCreateModal from "../ContentCreateModal";
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ getToken: async () => "t" }),
 }));
-vi.mock("@/hooks/useTags", () => ({ useTags: () => ({ tagNames: [] }) }));
+vi.mock("@/hooks/useTags", () => ({
+  useTags: () => ({ tagNames: ["Leikir", "Útivist", "Samfélagsverkefni"] }),
+}));
 const created = vi.fn();
 vi.mock("@/services/programs.service", () => ({
   createBankContent: (...a: unknown[]) => created(...a),
@@ -58,6 +62,12 @@ class FakeObserver {
   thresholds = [];
 }
 
+/** The five collapsible form sections — the only things that control a panel. */
+const sectionBars = () =>
+  [...document.querySelectorAll<HTMLElement>("[aria-expanded]")].filter((b) =>
+    b.getAttribute("aria-controls")?.startsWith("panel-")
+  );
+
 const props = {
   contentType: "task" as const,
   workspaceId: "ws-1",
@@ -80,7 +90,7 @@ describe("one form, three navigation models", () => {
       expect(screen.getAllByRole("button", { expanded: false }).length).toBeGreaterThan(0)
     );
     // five section bars, one of them open
-    const bars = screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-expanded"));
+    const bars = sectionBars();
     expect(bars).toHaveLength(5);
     expect(bars.filter((b) => b.getAttribute("aria-expanded") === "true")).toHaveLength(1);
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
@@ -94,9 +104,9 @@ describe("one form, three navigation models", () => {
     expect(screen.getByRole("navigation", { name: "Hlutar eyðublaðsins" })).toBeInTheDocument();
     // Nothing is collapsed, so an error inside a collapsed section — the bug
     // the auto-expand logic exists to survive — cannot occur at this width.
-    expect(
-      screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-expanded"))
-    ).toHaveLength(0);
+    // No *form section* is collapsed at this width. The tag picker collapses
+    // too, but it is a control inside a section, not a section.
+    expect(sectionBars()).toHaveLength(0);
   });
 
   it("puts an index rail beside the flow on a full window", async () => {
@@ -107,9 +117,9 @@ describe("one form, three navigation models", () => {
     const nav = screen.getByRole("navigation", { name: "Hlutar eyðublaðsins" });
     // The rail is a map, not a gate: one entry per section, all five present.
     expect(nav.querySelectorAll("button")).toHaveLength(5);
-    expect(
-      screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-expanded"))
-    ).toHaveLength(0);
+    // No *form section* is collapsed at this width. The tag picker collapses
+    // too, but it is a control inside a section, not a section.
+    expect(sectionBars()).toHaveLength(0);
   });
 });
 
@@ -189,7 +199,7 @@ describe("a failed submit", () => {
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
 
     // collapse the one open section, then submit
-    const bars = screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-expanded"));
+    const bars = sectionBars();
     await userEvent.click(bars[0]);
     expect(bars[0]).toHaveAttribute("aria-expanded", "false");
 
@@ -366,5 +376,145 @@ describe("one drop zone, sorted by type", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
     expect(screen.getByLabelText(/Eða vefslóð myndar/)).toBeInTheDocument();
+  });
+});
+
+describe("merkimiðar are picked, not invented", () => {
+  it("offers the vocabulary as a searchable list, not a text box", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    expect(screen.getByRole("combobox", { name: /Merkimiðar/ })).toBeInTheDocument();
+    const list = screen.getByRole("listbox", { name: "Merkimiðar" });
+    expect(list.querySelectorAll('[role="option"]')).toHaveLength(3);
+  });
+
+  it("filters as you type", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    await userEvent.type(screen.getByRole("combobox", { name: /Merkimiðar/ }), "úti");
+
+    const list = screen.getByRole("listbox", { name: "Merkimiðar" });
+    expect(list.querySelectorAll('[role="option"]')).toHaveLength(1);
+    expect(screen.getByRole("option", { name: /Útivist/ })).toBeInTheDocument();
+  });
+
+  it("says so when nothing matches, rather than showing an empty box", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    await userEvent.type(screen.getByRole("combobox", { name: /Merkimiðar/ }), "klifur");
+    expect(screen.getByText(/Enginn merkimiði passar/)).toBeInTheDocument();
+  });
+
+  it("selects with the keyboard and shows a chip", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const search = screen.getByRole("combobox", { name: /Merkimiðar/ });
+    search.focus();
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+
+    const chips = screen.getByRole("list", { name: "Valdir merkimiðar" });
+    expect(chips.querySelectorAll("li")).toHaveLength(1);
+  });
+
+  it("does not submit the form when Enter picks a tag", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    const search = screen.getByRole("combobox", { name: /Merkimiðar/ });
+    search.focus();
+    await userEvent.keyboard("{Enter}");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(created).not.toHaveBeenCalled();
+  });
+
+  it("does not restrict equipment, which is not a shared vocabulary", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    await userEvent.type(screen.getByLabelText("Búnaður"), "Snjóþrúgur{Enter}");
+    expect(screen.getByText("Snjóþrúgur")).toBeInTheDocument();
+  });
+});
+
+describe("two choices in quick succession", () => {
+  // Every one of these used to compute `[...current, next]` from an array
+  // captured at render, so the first of two rapid picks was silently lost.
+  it("keeps both tags", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    screen.getByRole("option", { name: /Útivist/ }).click();
+    screen.getByRole("option", { name: /Leikir/ }).click();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("list", { name: "Valdir merkimiðar" }).querySelectorAll("li")
+      ).toHaveLength(2)
+    );
+  });
+
+  it("keeps both age bands", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    screen.getByRole("checkbox", { name: "Fálkaskátar" }).click();
+    screen.getByRole("checkbox", { name: "Dróttskátar" }).click();
+
+    await waitFor(() =>
+      expect(document.querySelectorAll("input[type=checkbox]:checked")).toHaveLength(2)
+    );
+  });
+});
+
+describe("a long vocabulary", () => {
+  it("caps the list and scrolls it, instead of growing the modal", async () => {
+    // 150 merkimiðar must leave the list exactly as tall as three do.
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    expect(screen.getByRole("listbox", { name: "Merkimiðar" })).toBeInTheDocument();
+    // jsdom applies no stylesheet, so the cap is pinned against the source.
+    // It is a CSS-only guarantee and this is the only place it can be caught.
+    const css = readFileSync(
+      join(process.cwd(), "components/ContentCreateModal/ContentCreateModal.module.css"),
+      "utf8"
+    );
+    // 5.5 rows: the half-row at the fold is what says "there is more".
+    expect(css).toMatch(/max-height:\s*calc\(var\(--pick-row\) \* 5\.5/);
+    expect(css).toMatch(/\.pickerList\b[\s\S]*?overflow-y:\s*auto/);
+  });
+
+  it("collapses, and keeps the chosen chips visible when collapsed", async () => {
+    // Hiding what you picked along with the list you picked it from would be
+    // the wrong half.
+    atWidth(1400);
+    render(<ContentCreateModal {...props} />);
+    await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
+
+    screen.getByRole("option", { name: /Útivist/ }).click();
+    await waitFor(() =>
+      expect(screen.getByRole("list", { name: "Valdir merkimiðar" })).toBeInTheDocument()
+    );
+
+    const toggle = document.querySelector<HTMLElement>('[aria-controls="tag-picker"]')!;
+    await userEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("listbox", { name: "Merkimiðar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Valdir merkimiðar" })).toBeInTheDocument();
   });
 });

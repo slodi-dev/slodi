@@ -92,12 +92,15 @@ export default function FileDropZone({
   image,
   documents,
   onImage,
-  onDocuments,
+  onAddDocuments,
+  onRemoveDocument,
 }: {
   image: string;
   documents: Attachment[];
   onImage: (url: string) => void;
-  onDocuments: (next: Attachment[]) => void;
+  /** Emit what arrived, not the whole list — see the note in TagPicker. */
+  onAddDocuments: (added: Attachment[]) => void;
+  onRemoveDocument: (url: string) => void;
 }) {
   const { getToken } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -105,18 +108,38 @@ export default function FileDropZone({
   const [busy, setBusy] = useState(false);
   const [said, setSaid] = useState("");
   const [failed, setFailed] = useState<string | null>(null);
+  const [skipped, setSkipped] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
 
   async function take(files: FileList | null) {
     if (!files?.length) return;
     setBusy(true);
     setFailed(null);
+    setSkipped(null);
     const added: Attachment[] = [];
     let picture: { url: string; name: string } | null = null;
 
-    for (const file of Array.from(files)) {
+    // A bank entry has one picture, so only the first image is uploaded. The
+    // rest are named and left alone rather than uploaded and then discarded —
+    // silently spending somebody's bandwidth on bytes we throw away is worse
+    // than telling them we only keep one.
+    const chosen = Array.from(files);
+    const images = chosen.filter((f) => IMAGE_TYPES.includes(typeFor(f)));
+    const extraImages = image ? images : images.slice(1);
+    if (extraImages.length) {
+      setSkipped(
+        `Aðeins ein mynd fylgir hverri einingu. ${
+          image ? "Myndin sem þegar er valin heldur sér" : `„${images[0].name}“ var valin`
+        } — ${extraImages.map((f) => `„${f.name}“`).join(", ")} ${
+          extraImages.length === 1 ? "var" : "voru"
+        } sleppt.`
+      );
+    }
+
+    for (const file of chosen) {
       const contentType = typeFor(file);
       const isImage = IMAGE_TYPES.includes(contentType);
+      if (isImage && extraImages.includes(file)) continue;
       if (!isImage && !DOC_TYPES.includes(contentType)) {
         // Name the file and the reason. "Unsupported file" after dropping five
         // of them tells the reader nothing about which one to convert.
@@ -147,7 +170,7 @@ export default function FileDropZone({
       onImage(picture.url);
       setImageName(picture.name);
     }
-    if (added.length) onDocuments([...documents, ...added]);
+    if (added.length) onAddDocuments(added);
 
     const parts = [
       picture ? "mynd" : null,
@@ -237,7 +260,7 @@ export default function FileDropZone({
                   type="button"
                   className={styles.chipBtn}
                   aria-label={`Fjarlægja ${doc.name}`}
-                  onClick={() => onDocuments(documents.filter((d) => d.url !== doc.url))}
+                  onClick={() => onRemoveDocument(doc.url)}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -259,6 +282,11 @@ export default function FileDropZone({
       {failed && (
         <p className={styles.err} role="alert">
           {failed}
+        </p>
+      )}
+      {skipped && (
+        <p className={styles.help} role="status">
+          {skipped}
         </p>
       )}
       {/* What arrived, for anyone who cannot see it appear. */}

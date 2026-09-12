@@ -10,7 +10,10 @@
   place-items: center;
   padding: 16px;
   background: hsl(var(--sl-color-background-inverse) / 0.34);
-  overflow-y: auto;
+  /* No scrolling here. The dialog is capped to the viewport and its own body
+     scrolls, so letting the backdrop scroll too would drift the whole modal
+     off centre while the reader was only trying to reach a field. */
+  overflow: hidden;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -838,9 +841,12 @@ textarea.input {
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  /* No gap: the two action buttons sit against each other, and the text
+     carries its own right padding. A gap here would reappear as a seam
+     between the pencil and the ×. */
+  gap: 0;
   min-height: 36px;
-  padding: 0 4px 0 12px;
+  padding: 0 6px 0 12px;
   border-radius: var(--sl-radius-chip);
   background: hsl(var(--sl-color-background-tertiary));
   border: 1px solid hsl(var(--sl-color-border));
@@ -848,14 +854,18 @@ textarea.input {
   color: hsl(var(--sl-color-text-primary));
 }
 .chipText {
-  padding-right: 2px;
+  padding-right: 8px;
 }
 /* The two actions appear on hover or focus, and are always in the DOM — a
    keyboard user never gets a control that only exists under a pointer. */
+/* Collapsed to nothing rather than merely transparent. `opacity: 0` still
+   occupies its 28px, which left a chip with a slab of dead space on the right
+   at rest. The chip is now only as wide as its word until you reach for it. */
 .chipBtn {
-  width: 28px;
-  height: 28px;
+  width: 0;
+  height: 26px;
   flex-shrink: 0;
+  padding: 0;
   border: 0;
   border-radius: 50%;
   background: none;
@@ -863,14 +873,21 @@ textarea.input {
   cursor: pointer;
   display: grid;
   place-items: center;
+  overflow: hidden;
   opacity: 0;
-  transition: opacity var(--db-dur-hover) var(--db-ease-glide);
+  transition:
+    width var(--db-dur-hover) var(--db-ease-glide),
+    opacity calc(var(--db-dur-hover) * 0.7) linear;
 }
 .chip:hover .chipBtn,
 .chip:focus-within .chipBtn {
+  width: 26px;
   opacity: 1;
 }
+/* A tabbed-to button must be a real target even before the chip knows it is
+   hovered — a 0px focus ring is not reachable or visible. */
 .chipBtn:focus-visible {
+  width: 26px;
   opacity: 1;
   outline: 2px solid hsl(var(--sl-color-border-focus));
   outline-offset: -2px;
@@ -884,8 +901,10 @@ textarea.input {
   height: 13px;
 }
 /* A coarse pointer has no hover, so the actions stay put. */
+/* A coarse pointer has no hover, so the actions stay put. */
 @media (pointer: coarse) {
   .chipBtn {
+    width: 26px;
     opacity: 1;
   }
 }
@@ -950,4 +969,143 @@ textarea.input {
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-secondary));
   overflow-wrap: anywhere;
+}
+
+/* ══ Tag picker — pick from the vocabulary, never add to it ════════════════
+   Search at the top, a scrollable list under it, chips for what is chosen. */
+.picker {
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  overflow: hidden;
+}
+.picker:focus-within {
+  border-color: hsl(var(--sl-input-border-focus));
+  box-shadow: var(--sl-shadow-focus);
+}
+.pickerSearch {
+  width: 100%;
+  min-height: var(--db-touch);
+  padding: 0 var(--sl-spacing-gap-md);
+  border: 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  background: none;
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+.pickerSearch:focus-visible {
+  outline: 0;
+}
+.pickerSearch::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.picker {
+  /* One row height, so the cap below is derived rather than guessed. */
+  --pick-row: 40px;
+}
+.pickerList {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  /* Five and a half rows. The half is the point: a row cut off at the fold is
+     the only thing that reliably says "there is more" without a scrollbar the
+     platform may have hidden. With 150 merkimiðar this stays exactly as tall
+     as with three — the list scrolls, the modal does not grow. */
+  max-height: calc(var(--pick-row) * 5.5 + 8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.pickerOption {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  width: 100%;
+  min-height: var(--pick-row);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--sl-radius-input);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  text-align: left;
+  color: hsl(var(--sl-color-text-primary));
+}
+.pickerOption:hover,
+.pickerHere {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.pickerOption[aria-selected="true"] {
+  color: hsl(var(--sl-color-primary-text));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+.pickerTick {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: var(--sl-radius-xs);
+  border: 2px solid hsl(var(--sl-color-border-strong));
+  display: grid;
+  place-items: center;
+  color: transparent;
+}
+.pickerOption[aria-selected="true"] .pickerTick {
+  background: hsl(var(--sl-color-primary-text));
+  border-color: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+.pickerTick svg {
+  width: 12px;
+  height: 12px;
+}
+.pickerEmpty {
+  padding: 12px 10px;
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* The picker collapses. With a long vocabulary an always-open list is most of
+   the section, and someone who has already chosen their merkimiðar wants the
+   chips, not the catalogue. Collapsed still shows the chips — hiding what you
+   picked along with the list you picked it from would be the wrong half. */
+.pickerToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  width: 100%;
+  min-height: var(--db-touch);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  text-align: left;
+}
+.pickerToggle:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+.pickerToggle:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+  border-radius: var(--sl-radius-xs);
+}
+.pickerCount {
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.pickerChev {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: hsl(var(--sl-color-text-tertiary));
+  transition: transform calc(var(--db-dur-hover) * 1.2) var(--db-ease-glide);
+}
+.pickerOpen .pickerChev {
+  transform: rotate(180deg);
 }

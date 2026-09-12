@@ -24,36 +24,65 @@ export default function ChipList({
   addLabel,
   placeholder,
   items,
-  onChange,
+  onAdd,
+  onRemove,
   known,
+  onlyKnown,
 }: {
   label: string;
   /** The accessible name of the add button — "Bæta búnaði á lista". */
   addLabel: string;
   placeholder: string;
   items: string[];
-  onChange: (next: string[]) => void;
+  /** Emit the value, not a new array — see the note in TagPicker. Two quick
+   *  adds computing `[...items, v]` from the same render both start from the
+   *  same array and one is lost. */
+  onAdd: (value: string) => void;
+  onRemove: (value: string) => void;
   /** Existing values worth suggesting, e.g. tags others have already used. */
   known?: string[];
+  /** When true, only a value in `known` may be added.
+   *
+   *  The tag vocabulary is shared by the whole bank and managed by
+   *  Dagskrárstjórnarteymið, so a submitter picks from it rather than adding to
+   *  it. Enforced *here* rather than left to the API: the create endpoint
+   *  refuses the whole submission over one unknown tag, and discovering that
+   *  after filling in the entire form is the worst possible moment. */
+  onlyKnown?: boolean;
 }) {
   const [text, setText] = useState("");
+  const [refused, setRefused] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const id = `chips-${label}`;
   const listId = known?.length ? `${id}-known` : undefined;
 
   function add() {
-    const value = text.trim();
-    if (!value) return;
-    // Case-insensitive: "Kaðall" and "kaðall" are one piece of equipment.
+    const typed = text.trim();
+    if (!typed) return;
+    setRefused(null);
+
+    // Match the known vocabulary case-insensitively and store *its* casing.
+    // "útivist" and "Útivist" are one tag, and the canonical spelling is the
+    // one already in the database.
+    const canonical = known?.find((k) => k.toLowerCase() === typed.toLowerCase());
+    if (onlyKnown && !canonical) {
+      setRefused(
+        `„${typed}“ er ekki til. Veldu úr listanum — Dagskrárstjórnarteymið býr til nýja merkimiða.`
+      );
+      return;
+    }
+    const value = canonical ?? typed;
+
+    // Case-insensitive here too: "Kaðall" and "kaðall" are one piece of kit.
     if (!items.some((i) => i.toLowerCase() === value.toLowerCase())) {
-      onChange([...items, value]);
+      onAdd(value);
     }
     setText("");
     inputRef.current?.focus();
   }
 
   function edit(item: string) {
-    onChange(items.filter((i) => i !== item));
+    onRemove(item);
     setText(item);
     inputRef.current?.focus();
   }
@@ -98,6 +127,11 @@ export default function ChipList({
           Bæta við
         </button>
       </div>
+      {refused && (
+        <p className={styles.err} role="alert">
+          {refused}
+        </p>
+      )}
       {items.length > 0 && (
         <ul className={styles.chips} aria-label={label}>
           {items.map((item) => (
@@ -126,7 +160,7 @@ export default function ChipList({
                 type="button"
                 className={styles.chipBtn}
                 aria-label={`Fjarlægja ${item}`}
-                onClick={() => onChange(items.filter((i) => i !== item))}
+                onClick={() => onRemove(item)}
               >
                 <svg
                   viewBox="0 0 24 24"

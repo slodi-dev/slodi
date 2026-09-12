@@ -8,6 +8,7 @@ import { useDraft } from "@/hooks/useDraft";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
 import { useTags } from "@/hooks/useTags";
 import ChipList from "./ChipList";
+import TagPicker from "./TagPicker";
 import FileDropZone, { type Attachment } from "./FileDropZone";
 import { AGE_GROUPS, getAgeGroupPatrol } from "@/lib/format";
 import { createBankContent, type Program } from "@/services/programs.service";
@@ -549,13 +550,16 @@ export default function ContentCreateModal({
                 <input
                   type="checkbox"
                   checked={draft.ages.includes(group)}
-                  onChange={(e) =>
-                    updateDraft({
-                      ages: e.target.checked
-                        ? [...draft.ages, group]
-                        : draft.ages.filter((a) => a !== group),
-                    })
-                  }
+                  onChange={(e) => {
+                    // Functional update: `[...draft.ages, group]` read the
+                    // array captured at render, so ticking two bands in quick
+                    // succession lost the first.
+                    const on = e.target.checked;
+                    updateDraft((prev) => ({
+                      ...prev,
+                      ages: on ? [...prev.ages, group] : prev.ages.filter((a) => a !== group),
+                    }));
+                  }}
                 />
                 {group}
               </label>
@@ -572,7 +576,15 @@ export default function ContentCreateModal({
           addLabel="Bæta búnaði á lista"
           placeholder="Kaðall, karabínur, hjálmar"
           items={draft.equipment}
-          onChange={(equipment) => updateDraft({ equipment })}
+          onAdd={(value) =>
+            updateDraft((prev) => ({ ...prev, equipment: [...prev.equipment, value] }))
+          }
+          onRemove={(value) =>
+            updateDraft((prev) => ({
+              ...prev,
+              equipment: prev.equipment.filter((e) => e !== value),
+            }))
+          }
         />
       </>
     ),
@@ -582,19 +594,31 @@ export default function ContentCreateModal({
     }),
     extras: (
       <>
-        <ChipList
-          label="Merkimiðar"
-          addLabel="Bæta merkimiða á lista"
-          placeholder="leikur"
-          items={draft.tagList}
-          onChange={(tagList) => updateDraft({ tagList })}
-          known={tagNames ?? []}
+        <TagPicker
+          available={tagNames ?? []}
+          selected={draft.tagList}
+          onToggle={(tag) =>
+            updateDraft((prev) => ({
+              ...prev,
+              tagList: prev.tagList.includes(tag)
+                ? prev.tagList.filter((t) => t !== tag)
+                : [...prev.tagList, tag],
+            }))
+          }
         />
         <FileDropZone
           image={draft.image}
           documents={draft.documents}
           onImage={(url) => updateDraft({ image: url })}
-          onDocuments={(documents) => updateDraft({ documents })}
+          onAddDocuments={(added) =>
+            updateDraft((prev) => ({ ...prev, documents: [...prev.documents, ...added] }))
+          }
+          onRemoveDocument={(url) =>
+            updateDraft((prev) => ({
+              ...prev,
+              documents: prev.documents.filter((d) => d.url !== url),
+            }))
+          }
         />
         {/* …or a link. A leader who already has the picture hosted should not
             have to download it in order to re-upload it. */}
