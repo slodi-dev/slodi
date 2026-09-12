@@ -1066,13 +1066,22 @@
   }
 }
 
-/* The same four, for the in-app theme toggle.
-   The `[data-theme="dark"]` block far above cannot carry them: a later `:root`
-   redeclares all four, and `:root` and `[data-theme="dark"]` have identical
-   specificity, so source order decides and the light values win. Repeating
-   them here — after that `:root` — is what makes the toggle work for someone
-   whose OS is set to light. Without it `--sl-color-primary-text` stays
-   green-800 on a dark surface, which is unreadable. */
+/* The same tokens, for the in-app theme toggle.
+   Two things make this block necessary rather than redundant.
+
+   The dark block far above cannot carry them: a later `:root` redeclares them,
+   and `:root` and the dark selector have identical specificity, so source
+   order decides and the light values win. Hence repeating them *after* that
+   `:root`.
+
+   And the selector has to be the same pair the rest of the file uses.
+   `ThemeProvider` adds `class="dark"` for plain dark mode and only sets
+   `data-theme` for the *named* themes (forest-night, campfire,
+   northern-lights) — so a block matching `[data-theme="dark"]` alone never
+   fires for the ordinary toggle. That left `--sl-color-primary-text` at
+   green-800 in dark mode, which is what painted a dark-green ring on a dark
+   surface in the create chooser. */
+:root.dark,
 [data-theme="dark"] {
   --sl-color-primary-border: var(--sl-primitive-green-600);
   --sl-color-primary-text: var(--sl-primitive-green-200);
