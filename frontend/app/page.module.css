@@ -7,7 +7,7 @@
 
 /* ===== PAGE SHELL ===== */
 .page {
-  font-family: var(--font-roboto-condensed), var(--font-geist-sans), sans-serif;
+  font-family: var(--sl-font-family-body);
   position: relative;
   min-height: 100vh;
   background: hsl(var(--sl-color-background));
@@ -281,7 +281,7 @@
   height: var(--sl-input-height);
   padding: var(--sl-input-padding-y) var(--sl-input-padding-x);
   padding-right: 7.5rem; /* Space for button */
-  font-family: var(--font-roboto-condensed), var(--font-geist-sans), sans-serif;
+  font-family: var(--sl-font-family-body);
   font-size: var(--sl-input-font-size);
   line-height: 1;
   background: hsl(var(--sl-input-background));
@@ -312,7 +312,7 @@
   right: 0;
   height: 100%;
   padding: 0 var(--sl-button-padding-x-md);
-  font-family: var(--font-roboto-condensed), var(--font-geist-sans), sans-serif;
+  font-family: var(--sl-font-family-body);
   font-size: var(--sl-button-font-size-md);
   font-weight: var(--sl-button-font-weight);
   line-height: 1;

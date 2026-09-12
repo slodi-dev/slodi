@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Roboto_Condensed } from "next/font/google";
 import "@/app/globals.css";
 import "@/app/slodi-tokens.css";
 import "@/app/slodi-utilities.css";
@@ -11,27 +10,6 @@ import { LikesProvider } from "@/contexts/LikesContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Analytics } from "@vercel/analytics/next";
-
-// Geist fonts for code/UI elements
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-// Roboto Condensed for Slóði body text (matches design system)
-const robotoCondensed = Roboto_Condensed({
-  variable: "--font-roboto-condensed",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -105,10 +83,6 @@ export default function RootLayout({
     <html lang="is" suppressHydrationWarning>
       <body
         className={cn(
-          // Font variables
-          geistSans.variable,
-          geistMono.variable,
-          robotoCondensed.variable,
           // Slóði utility classes
           "antialiased",
           "sl-bg-background",

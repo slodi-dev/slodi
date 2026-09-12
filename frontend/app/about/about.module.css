@@ -7,7 +7,7 @@
 
 /* ===== PAGE CONTAINER ===== */
 .page {
-  font-family: var(--font-roboto-condensed), var(--font-geist-sans), sans-serif;
+  font-family: var(--sl-font-family-body);
   padding: var(--sl-spacing-section) var(--sl-spacing-component);
   max-width: var(--sl-primitive-width-5xl); /* ~1024px for better readability */
   margin: 0 auto;
