@@ -59,8 +59,8 @@
 }
 
 .errorIcon {
-  width: var(--sl-icon-xl, 4rem);
-  height: var(--sl-icon-xl, 4rem);
+  width: var(--sl-size-icon-lg, 4rem);
+  height: var(--sl-size-icon-lg, 4rem);
   color: hsl(var(--sl-color-error, 0 65% 50%));
   opacity: 0.7;
 }
@@ -71,14 +71,14 @@
 }
 
 .errorHeading {
-  font-size: var(--sl-font-size-2xl, 1.5rem);
+  font-size: var(--sl-primitive-font-size-2xl, 1.5rem);
   font-weight: var(--sl-font-weight-semibold, 600);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
 }
 
 .errorMessage {
-  font-size: var(--sl-font-size-base, 1rem);
+  font-size: var(--sl-primitive-font-size-base, 1rem);
   color: hsl(var(--sl-color-text-secondary));
   max-width: 400px;
   margin: 0;
@@ -89,8 +89,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sl-spacing-inline-sm, 0.5rem) var(--sl-spacing-inline-lg, 1.25rem);
-  font-size: var(--sl-font-size-base, 1rem);
+  padding: var(--sl-spacing-gap-sm, 0.5rem) var(--sl-spacing-gap-lg, 1.25rem);
+  font-size: var(--sl-primitive-font-size-base, 1rem);
   font-weight: var(--sl-font-weight-medium, 500);
   color: hsl(var(--sl-color-surface, 0 0% 100%));
   background: hsl(var(--sl-color-primary, 142 50% 42%));
@@ -126,8 +126,8 @@
 }
 
 .emptyIcon {
-  width: var(--sl-icon-xl, 4rem);
-  height: var(--sl-icon-xl, 4rem);
+  width: var(--sl-size-icon-lg, 4rem);
+  height: var(--sl-size-icon-lg, 4rem);
   color: hsl(var(--sl-color-text-tertiary));
   opacity: var(--sl-primitive-opacity-40, 0.4);
 }
@@ -138,14 +138,14 @@
 }
 
 .emptyHeading {
-  font-size: var(--sl-font-size-2xl, 1.5rem);
+  font-size: var(--sl-primitive-font-size-2xl, 1.5rem);
   font-weight: var(--sl-font-weight-semibold, 600);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
 }
 
 .emptyBody {
-  font-size: var(--sl-font-size-base, 1rem);
+  font-size: var(--sl-primitive-font-size-base, 1rem);
   color: hsl(var(--sl-color-text-secondary));
   max-width: 400px;
   margin: 0;
@@ -171,11 +171,11 @@
 
   .emptyHeading,
   .errorHeading {
-    font-size: var(--sl-font-size-xl, 1.25rem);
+    font-size: var(--sl-primitive-font-size-xl, 1.25rem);
   }
 
   .emptyBody,
   .errorMessage {
-    font-size: var(--sl-font-size-sm, 0.875rem);
+    font-size: var(--sl-primitive-font-size-sm, 0.875rem);
   }
 }
