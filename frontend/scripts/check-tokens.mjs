@@ -71,6 +71,10 @@ for (const file of files) {
 
     for (const m of raw.matchAll(/var\((--sl-[a-z0-9-]+)/g)) {
       const token = m[1];
+      // A token built by interpolation — `var(--sl-color-patrol-${key})` — is
+      // only ever a truncated prefix here. Checking it would report every
+      // dynamic token as both missing and unwrapped.
+      if (raw.slice(m.index + m[0].length).startsWith("${")) continue;
       if (!DEFINED.has(token)) {
         add(file, line, "error", "unknown-token", `${token} is not defined in slodi-tokens.css`);
       }

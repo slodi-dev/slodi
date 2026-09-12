@@ -31,6 +31,15 @@ const AGE_GROUP_PATROL: Record<string, string> = {
   Vættaskátar: "adrir",
 };
 
+/**
+ * The age bands, youngest first — the order BÍS lists them in.
+ *
+ * Exported so that a form, a filter and a card cannot disagree about how many
+ * there are. They already had: the create form was offering five of the seven,
+ * quietly making Hrefnuskátar and Vættaskátar unselectable for submitters.
+ */
+export const AGE_GROUPS = Object.keys(AGE_GROUP_DISPLAY);
+
 export function getAgeGroupPatrol(age: string): string | undefined {
   return AGE_GROUP_PATROL[age];
 }
