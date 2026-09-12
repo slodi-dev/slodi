@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import ContentTypeChooser, { OFFER_PROGRAM } from "../ContentTypeChooser";
+import ContentTypeChooser from "../ContentTypeChooser";
 
 describe("choosing what to make", () => {
   it("asks what you are making before it asks anything else", async () => {
@@ -24,9 +24,9 @@ describe("choosing what to make", () => {
     expect(
       screen.getByRole("menuitem", { name: /Einn dagskrárliður — leikur, setning/ })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("menuitem", { name: /gerist á tilteknum tíma/ })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /einn skátafundur/ })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /Röð af fundum/ })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /yfir nokkra daga/ })).toBeInTheDocument();
   });
 
   it("reports the type it was told, not a default", async () => {
@@ -36,20 +36,43 @@ describe("choosing what to make", () => {
     render(<ContentTypeChooser onChoose={onChoose} />);
 
     await userEvent.click(screen.getByRole("button", { name: "Bæta við í bankann" }));
-    await userEvent.click(screen.getByRole("menuitem", { name: /Viðburður/ }));
+    await userEvent.click(screen.getByRole("menuitem", { name: /Verkefni/ }));
 
-    expect(onChoose).toHaveBeenCalledWith("event");
+    expect(onChoose).toHaveBeenCalledWith("task");
   });
 
-  it("does not offer a Dagskrá while one cannot be filled", async () => {
-    // A Dagskrá is a collection and no screen adds a child to one, so choosing
-    // it would produce an empty collection its author cannot fill. When the
-    // child picker lands, OFFER_PROGRAM flips and this expectation inverts.
-    render(<ContentTypeChooser onChoose={vi.fn()} />);
+  it("shows all four kinds but only lets you create a Verkefni", async () => {
+    // A chooser with one option says the bank only ever does one thing. The
+    // other three are collections and nothing can be put into a collection
+    // yet, so they are visible, dimmed, and inert.
+    const onChoose = vi.fn();
+    render(<ContentTypeChooser onChoose={onChoose} />);
     await userEvent.click(screen.getByRole("button", { name: "Bæta við í bankann" }));
 
-    const dagskra = screen.queryByRole("menuitem", { name: /Dagskrá/ });
-    expect(OFFER_PROGRAM ? dagskra : dagskra === null).toBeTruthy();
+    expect(screen.getAllByRole("menuitem")).toHaveLength(4);
+    for (const name of [/Fundur/, /Dagskrárhringur/, /Viðburður/]) {
+      expect(screen.getByRole("menuitem", { name })).toHaveAttribute("aria-disabled", "true");
+    }
+    expect(screen.getByRole("menuitem", { name: /Verkefni/ })).not.toHaveAttribute(
+      "aria-disabled",
+      "true"
+    );
+  });
+
+  it("does nothing when an unavailable kind is clicked", async () => {
+    const onChoose = vi.fn();
+    render(<ContentTypeChooser onChoose={onChoose} />);
+    await userEvent.click(screen.getByRole("button", { name: "Bæta við í bankann" }));
+
+    await userEvent.click(screen.getByRole("menuitem", { name: /Fundur/ }));
+
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it("says why the other three are not available", async () => {
+    render(<ContentTypeChooser onChoose={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Bæta við í bankann" }));
+    expect(screen.getAllByText("Kemur síðar")).toHaveLength(3);
   });
 });
 

@@ -7,21 +7,25 @@ import { cn } from "@/lib/util";
 export type BankContentType = "task" | "event" | "program";
 
 /**
- * Whether the bank offers "Dagskrá" as something you can create.
+ * The four kinds of thing the bank holds — see `docs/content-model.md`.
  *
- * **Off, deliberately.** A Dagskrá is a *collection* of liðir and viðburðir, and
- * there is no UI anywhere that adds a child to one — no screen calls
- * `POST /programs/{id}/events`. So choosing it produces an empty collection its
- * author cannot fill and a reviewer cannot judge.
+ * The difference between them is what they *contain*: a Verkefni is one
+ * dagskrárliður and contains nothing; a Fundur is a collection of verkefni; a
+ * Dagskrárhringur is a selection of fundir; a Viðburður is also a collection of
+ * verkefni, but spread across several days rather than one evening.
  *
- * The option is written and styled below rather than deleted: when the child
- * picker lands, this flips to `true` and the menu is the three-option one the
- * design specifies. Until then, offering it would be offering a dead end.
+ * **Only Verkefni can be created in the September release.** The other three
+ * are shown and disabled rather than hidden: a chooser with one option says the
+ * bank only ever does one thing, and a leader needs to see that it will hold
+ * their fundur eventually. They are off for one shared reason — they are
+ * collections, and nothing can be put into a collection yet, so creating one
+ * makes an empty container its author cannot fill and a reviewer cannot judge.
  */
-export const OFFER_PROGRAM = false;
-
 type Option = {
-  type: BankContentType;
+  /** Stable key. Not all four map to a `content_type` yet. */
+  key: string;
+  /** What this files as on the wire, or null while it cannot be created. */
+  creates: BankContentType | null;
   name: string;
   /** The name alone does not say what it means — a leikur is a Verkefni, not a
    *  Dagskrá — so the hint line is the design, not decoration. */
@@ -30,9 +34,10 @@ type Option = {
   icon: React.ReactNode;
 };
 
-const ALL_OPTIONS: Option[] = [
+const OPTIONS: Option[] = [
   {
-    type: "task",
+    key: "task",
+    creates: "task",
     name: "Verkefni",
     hint: "Einn dagskrárliður — leikur, setning, eitt verkefni",
     accent: styles.typeTask,
@@ -49,9 +54,51 @@ const ALL_OPTIONS: Option[] = [
     ),
   },
   {
-    type: "event",
+    key: "fundur",
+    creates: null,
+    name: "Fundur",
+    hint: "Safn af verkefnum — einn skátafundur",
+    accent: styles.typeFundur,
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
+        <rect x="3" y="5" width="18" height="4" rx="1" />
+        <rect x="3" y="11" width="18" height="4" rx="1" />
+        <rect x="3" y="17" width="18" height="3" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    key: "hringur",
+    creates: null,
+    name: "Dagskrárhringur",
+    hint: "Röð af fundum — dagskrá yfir heilt tímabil",
+    accent: styles.typeProgram,
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 5h7v6H4z" />
+        <path d="M13 13h7v6h-7z" />
+        <path d="M11 8h4a2 2 0 0 1 2 2v3" />
+      </svg>
+    ),
+  },
+  {
+    key: "event",
+    creates: null,
     name: "Viðburður",
-    hint: "Eitthvað sem gerist á tilteknum tíma — útilega, mót, dagsferð",
+    hint: "Safn af verkefnum yfir nokkra daga — útilega, mót, dagsferð",
     accent: styles.typeEvent,
     icon: (
       <svg
@@ -67,30 +114,7 @@ const ALL_OPTIONS: Option[] = [
       </svg>
     ),
   },
-  {
-    type: "program",
-    name: "Dagskrá",
-    hint: "Safn af liðum og viðburðum — dagskrárhringur",
-    accent: styles.typeProgram,
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      >
-        <line x1="4" y1="6" x2="20" y2="6" />
-        <line x1="4" y1="12" x2="20" y2="12" />
-        <line x1="4" y1="18" x2="20" y2="18" />
-      </svg>
-    ),
-  },
 ];
-
-/** Fixed order — Verkefni · Viðburður · Dagskrá. There is no slot context in the
- *  bank to reorder them by, and a menu that reorders itself cannot be learned. */
-const OPTIONS = ALL_OPTIONS.filter((o) => o.type !== "program" || OFFER_PROGRAM);
 
 /**
  * The bank's create launcher.
@@ -188,30 +212,40 @@ export default function ContentTypeChooser({
             <p className={styles.sheetTitle} aria-hidden="true">
               Hvað viltu búa til?
             </p>
-            {OPTIONS.map((option, i) => (
-              <button
-                key={option.type}
-                ref={(el) => {
-                  optionRefs.current[i] = el;
-                }}
-                type="button"
-                role="menuitem"
-                tabIndex={open ? 0 : -1}
-                className={cn(styles.opt, option.accent)}
-                onClick={() => {
-                  close(false);
-                  onChoose(option.type);
-                }}
-              >
-                <span className={styles.optIcon} aria-hidden="true">
-                  {option.icon}
-                </span>
-                <span className={styles.optBody}>
-                  <span className={styles.optName}>{option.name}</span>
-                  <span className={styles.optHint}>{option.hint}</span>
-                </span>
-              </button>
-            ))}
+            {OPTIONS.map((option, i) => {
+              const unavailable = option.creates === null;
+              return (
+                <button
+                  key={option.key}
+                  ref={(el) => {
+                    optionRefs.current[i] = el;
+                  }}
+                  type="button"
+                  role="menuitem"
+                  tabIndex={open ? 0 : -1}
+                  // aria-disabled, not `disabled`: a screen-reader user should
+                  // still meet all four and learn the bank will hold them. A
+                  // removed option teaches nothing, and a skipped one teaches
+                  // nothing either.
+                  aria-disabled={unavailable}
+                  className={cn(styles.opt, option.accent, unavailable && styles.optSoon)}
+                  onClick={() => {
+                    if (unavailable || option.creates === null) return;
+                    close(false);
+                    onChoose(option.creates);
+                  }}
+                >
+                  <span className={styles.optIcon} aria-hidden="true">
+                    {option.icon}
+                  </span>
+                  <span className={styles.optBody}>
+                    <span className={styles.optName}>{option.name}</span>
+                    <span className={styles.optHint}>{option.hint}</span>
+                  </span>
+                  {unavailable && <span className={styles.soon}>Kemur síðar</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className={styles.seam} aria-hidden="true" />
