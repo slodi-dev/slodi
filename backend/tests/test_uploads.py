@@ -265,6 +265,15 @@ def test_upload_endpoints_require_auth(mock_db_session):
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "text/plain",
         "text/markdown",
+        # OpenDocument — the open standard LibreOffice writes
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.oasis.opendocument.presentation",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        # the old binary formats, which is what an older file actually is
+        "application/vnd.ms-excel",
+        "application/vnd.ms-powerpoint",
     ],
 )
 def test_document_uploads_accept_the_formats_leaders_have(client, mime):
@@ -282,3 +291,18 @@ def test_document_uploads_refuse_anything_that_can_carry_script(client, mime):
     """
     response = client.post("/uploads/sas", json={"purpose": "document", "content_type": mime})
     assert response.status_code != status.HTTP_200_OK
+
+
+def test_every_purpose_has_a_size_ceiling():
+    """A purpose with an allowlist but no ceiling accepts a 2 GB file.
+
+    The SAS cannot enforce it — see the note in `upload_constraints` — but the
+    number has to exist somewhere for the frontend to refuse against, and this
+    keeps a new purpose from being added without one.
+    """
+    from app.domain.upload_constraints import ALLOWED_MIME_TYPES, MAX_UPLOAD_BYTES
+
+    assert set(MAX_UPLOAD_BYTES) == set(ALLOWED_MIME_TYPES)
+    assert all(limit > 0 for limit in MAX_UPLOAD_BYTES.values())
+    # Documents are the bulky ones; an image ceiling above them would be odd.
+    assert MAX_UPLOAD_BYTES["document"] >= MAX_UPLOAD_BYTES["image"]

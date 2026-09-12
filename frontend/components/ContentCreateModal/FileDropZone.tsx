@@ -14,12 +14,47 @@ export type Attachment = { name: string; url: string; content_type?: string };
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DOC_TYPES = [
   "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "text/plain",
   "text/markdown",
+  // Word, Excel, PowerPoint — current and legacy
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  // OpenDocument — the ISO open standard LibreOffice writes
+  "application/vnd.oasis.opendocument.text",
+  "application/vnd.oasis.opendocument.spreadsheet",
+  "application/vnd.oasis.opendocument.presentation",
 ];
-const ACCEPT = [...IMAGE_TYPES, ...DOC_TYPES, ".pdf", ".doc", ".docx", ".txt", ".md"].join(",");
+
+/** Must match `MAX_UPLOAD_BYTES` in `app/domain/upload_constraints.py`.
+ *  A guard, not a control: the SAS lets the client PUT any size straight to
+ *  Azure, so this saves a doomed upload rather than preventing an oversized
+ *  one. Real enforcement has to happen when the record is saved. */
+const MAX_BYTES: Record<"image" | "document", number> = {
+  image: 10 * 1024 * 1024,
+  document: 25 * 1024 * 1024,
+};
+
+const mb = (n: number) => `${Math.round(n / (1024 * 1024))} MB`;
+const ACCEPT = [
+  ...IMAGE_TYPES,
+  ...DOC_TYPES,
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".txt",
+  ".md",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+  ".odt",
+  ".ods",
+  ".odp",
+].join(",");
 
 /** Browsers frequently send an empty or wrong type for .md and .txt. */
 function typeFor(file: File): string {
@@ -29,6 +64,15 @@ function typeFor(file: File): string {
   if (/\.docx$/i.test(file.name)) return DOC_TYPES[2];
   if (/\.doc$/i.test(file.name)) return "application/msword";
   if (/\.pdf$/i.test(file.name)) return "application/pdf";
+  if (/\.xlsx$/i.test(file.name))
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  if (/\.xls$/i.test(file.name)) return "application/vnd.ms-excel";
+  if (/\.pptx$/i.test(file.name))
+    return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  if (/\.ppt$/i.test(file.name)) return "application/vnd.ms-powerpoint";
+  if (/\.odt$/i.test(file.name)) return "application/vnd.oasis.opendocument.text";
+  if (/\.ods$/i.test(file.name)) return "application/vnd.oasis.opendocument.spreadsheet";
+  if (/\.odp$/i.test(file.name)) return "application/vnd.oasis.opendocument.presentation";
   return file.type || "application/octet-stream";
 }
 
@@ -79,10 +123,17 @@ export default function FileDropZone({
         setFailed(`„${file.name}“ er ekki á sniði sem bankinn tekur við.`);
         continue;
       }
+      const purpose = isImage ? "image" : "document";
+      if (file.size > MAX_BYTES[purpose]) {
+        // Name the file and the ceiling. "File too large" leaves the reader
+        // guessing at both which one and by how much.
+        setFailed(`„${file.name}“ er ${mb(file.size)} — hámarkið er ${mb(MAX_BYTES[purpose])}.`);
+        continue;
+      }
       try {
         const payload =
           contentType === file.type ? file : new File([file], file.name, { type: contentType });
-        const url = await uploadFile(payload, isImage ? "image" : "document", getToken);
+        const url = await uploadFile(payload, purpose, getToken);
         if (isImage) picture = { url, name: file.name };
         else added.push({ name: file.name, url, content_type: contentType });
       } catch (e) {
@@ -135,7 +186,8 @@ export default function FileDropZone({
         <div className={styles.dropHead}>
           <p className={styles.dropText}>
             <strong>Dragðu skrár hingað</strong> — myndir verða forsíðumynd, annað fer í
-            gagnalistann. PDF, Word, texti og Markdown.
+            gagnalistann. PDF, Word, Excel, PowerPoint, OpenDocument, texti og Markdown — mest 25 MB
+            hvert.
           </p>
           <input
             ref={inputRef}
