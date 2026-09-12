@@ -114,8 +114,14 @@ class TaskService:
         t, stats = fetched
         return TaskOut.from_row(t, stats)
 
-    async def get(self, task_id: UUID, current_user_id: UUID | None = None) -> TaskOut:
-        row = await self.repo.get(task_id, current_user_id)
+    async def get(
+        self,
+        task_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
+    ) -> TaskOut:
+        row = await self.repo.get(task_id, current_user_id, include_hidden=include_hidden)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
         task, stats = row

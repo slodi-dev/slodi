@@ -41,6 +41,7 @@ def _make_comment(content_id=None, user_id=None):
         user_id=user_id or uuid4(),
         content_id=content_id or uuid4(),
         created_at=datetime.now(),
+        author_name="Test User",
     )
 
 

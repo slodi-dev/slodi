@@ -156,8 +156,14 @@ class EventService:
 
     # ----- item operations -----
 
-    async def get(self, event_id: UUID, current_user_id: UUID | None = None) -> EventOut:
-        row = await self.repo.get(event_id, current_user_id)
+    async def get(
+        self,
+        event_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
+    ) -> EventOut:
+        row = await self.repo.get(event_id, current_user_id, include_hidden=include_hidden)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         ev, stats = row

@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 
 from app.schemas.group import GroupOut
 from app.schemas.program import ProgramOut
+from app.schemas.task import TaskOut
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceNested
 
@@ -223,3 +224,82 @@ def test_list_workspace_programs_empty(client, sample_workspace):
         response = client.get(f"/workspaces/{sample_workspace.id}/programs")
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
+
+
+# ── GET /content/{id} — read one item of any kind ─────────────────────────────
+
+
+def _make_task(workspace_id):
+    return TaskOut(
+        content_type="task",
+        id=uuid4(),
+        workspace_id=workspace_id,
+        name="Kaðlabrautin",
+        author_id=uuid4(),
+        author_name="Test User",
+        created_at=datetime.now(),
+        author=UserOut(
+            id=uuid4(), name="Test User", email="test_email@gmail.com", auth0_id="auth0|123"
+        ),
+        workspace=WorkspaceNested(id=workspace_id, name="Test Workspace"),
+    )
+
+
+def test_get_content_reads_a_task(client, sample_workspace):
+    """The regression this endpoint exists for.
+
+    `GET /programs/{id}` selects `Program`, which under joined-table
+    inheritance never matches a row whose discriminator is "task". Once the
+    chooser started filing a Verkefni as a task, every item a leader submitted
+    404'd on the detail page the bank had just linked them to.
+    """
+    sample_task = _make_task(sample_workspace.id)
+
+    with (
+        patch(
+            "app.repositories.programs.ProgramRepository.get_content_type",
+            new_callable=AsyncMock,
+        ) as mock_type,
+        patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as mock_get,
+    ):
+        mock_type.return_value = "task"
+        mock_get.return_value = sample_task
+
+        response = client.get(f"/content/{sample_task.id}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["name"] == "Kaðlabrautin"
+        assert response.json()["content_type"] == "task"
+        # The task loader was used, not the program one.
+        mock_get.assert_awaited_once()
+
+
+def test_get_content_reads_a_program(client, sample_workspace):
+    sample_program = _make_program(sample_workspace.id)
+
+    with (
+        patch(
+            "app.repositories.programs.ProgramRepository.get_content_type",
+            new_callable=AsyncMock,
+        ) as mock_type,
+        patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get,
+    ):
+        mock_type.return_value = "program"
+        mock_get.return_value = sample_program
+
+        response = client.get(f"/content/{sample_program.id}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["content_type"] == "program"
+
+
+def test_get_content_unknown_id_is_404(client):
+    with patch(
+        "app.repositories.programs.ProgramRepository.get_content_type",
+        new_callable=AsyncMock,
+    ) as mock_type:
+        mock_type.return_value = None
+
+        response = client.get(f"/content/{uuid4()}")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND

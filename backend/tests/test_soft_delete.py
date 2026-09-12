@@ -175,6 +175,7 @@ def test_delete_comment_returns_204(client, admin_user):
         user_id=admin_user.id,
         content_id=uuid4(),
         created_at=dt.datetime.now(dt.timezone.utc),
+        author_name="Test User",
     )
 
     with (

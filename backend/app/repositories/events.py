@@ -8,6 +8,7 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.comment import Comment
 from app.models.content import Content
 from app.models.event import Event
 from app.models.tag import ContentTag
@@ -26,7 +27,11 @@ class EventRepository(Repository):
         super().__init__(session)
 
     async def get(
-        self, event_id: UUID, current_user_id: UUID | None = None
+        self,
+        event_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
     ) -> tuple[Event, ContentStats] | None:
         stmt = (
             select(
@@ -40,11 +45,15 @@ class EventRepository(Repository):
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments),
+                selectinload(Event.comments).selectinload(Comment.user),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(Event.id == event_id, Event.deleted_at.is_(None))
         )
+        if not include_hidden:
+            # See TaskRepository.get — a hidden item must disappear from the
+            # link as well as from the listing.
+            stmt = stmt.where(Event.hidden_at.is_(None))
         row = (await self.session.execute(stmt)).first()
         if row is None:
             return None
@@ -70,7 +79,7 @@ class EventRepository(Repository):
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments),
+                selectinload(Event.comments).selectinload(Comment.user),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(

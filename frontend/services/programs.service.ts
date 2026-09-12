@@ -40,6 +40,19 @@ export type Program = {
   count_min?: number | null;
   count_max?: number | null;
   price?: number | null;
+  /** Documents uploaded alongside the item; images go to `image`. */
+  media?: { documents?: Array<{ name: string; url: string; content_type?: string | null }> } | null;
+  comments?: ContentComment[];
+};
+
+/** A leader's public comment on a bank item — not a reviewer's note. */
+export type ContentComment = {
+  id: string;
+  body: string;
+  created_at: string;
+  user_id: string;
+  content_id: string;
+  author_name: string;
 };
 
 export type ProgramCreateInput = {
@@ -128,7 +141,11 @@ export async function fetchProgramById(
   id: string,
   getToken: () => Promise<string | null>
 ): Promise<Program> {
-  const url = buildApiUrl(`/programs/${id}`);
+  // `/content/{id}`, not `/programs/{id}`, for the same reason the listing
+  // moved: the latter selects `Program`, which under joined-table inheritance
+  // matches only rows whose content_type is "program". Every Verkefni a leader
+  // submitted 404'd on the page the bank had just linked them to.
+  const url = buildApiUrl(`/content/${id}`);
   return fetchWithAuth<Program>(
     url,
     {

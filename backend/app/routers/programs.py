@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
@@ -18,7 +18,7 @@ from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
 from app.domain.enums import AgeGroup, ContentType, Permissions, ProgramSortBy
-from app.schemas.content import ContentListOut
+from app.schemas.content import ContentListOut, ContentOut
 from app.schemas.program import (
     ProgramCreate,
     ProgramFilters,
@@ -28,7 +28,9 @@ from app.schemas.program import (
 )
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
+from app.services.events import EventService
 from app.services.programs import ProgramService
+from app.services.tasks import TaskService
 from app.utils import get_current_datetime
 
 router = APIRouter(tags=["programs"])
@@ -331,6 +333,57 @@ async def copy_program_to_workspace(
 
 
 # ----- item endpoints -----
+
+
+@router.get("/content/{content_id}", response_model=ContentOut)
+async def get_content(
+    session: SessionDep,
+    content_id: UUID,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
+) -> ContentOut:
+    """Read one bank item, whatever kind it is.
+
+    `GET /programs/{id}` selects `Program`, and under joined-table inheritance
+    that matches only rows whose discriminator is "program". Once the chooser
+    started filing a Verkefni as a `task`, every item a leader submitted
+    returned 404 from the detail page it was linked to — the listing had
+    already moved to `/content` for exactly this reason, and the read-one path
+    had not followed.
+
+    Each subtype keeps its own loader because each eager-loads relationships
+    the others do not have (`Program.events`, `Event.tasks`), so this resolves
+    the discriminator first and then delegates.
+    """
+    svc = ProgramService(session)
+    content_type = await svc.repo.get_content_type(content_id)
+    if content_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
+
+    # A hidden item stays reachable to the team that hid it, and to nobody else.
+    is_moderator = current_user.permissions in (Permissions.moderator, Permissions.admin)
+
+    item: ContentOut
+    if content_type == ContentType.program:
+        item = await svc.get(content_id, current_user.id, include_hidden=is_moderator)
+    elif content_type == ContentType.event:
+        item = await EventService(session).get(
+            content_id, current_user.id, include_hidden=is_moderator
+        )
+    else:
+        item = await TaskService(session).get(
+            content_id, current_user.id, include_hidden=is_moderator
+        )
+
+    await check_workspace_access(
+        item.workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer,
+        hide_from_non_members=True,
+    )
+    response.headers["Cache-Control"] = "private, max-age=60"
+    return item
 
 
 @router.get("/programs/{program_id}", response_model=ProgramOut)

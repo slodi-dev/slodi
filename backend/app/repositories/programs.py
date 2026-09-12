@@ -9,6 +9,7 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.comment import Comment
 from app.models.content import Content
 from app.models.event import Event
 from app.models.program import Program
@@ -46,7 +47,7 @@ class ProgramRepository(Repository):
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Program.comments),
+                selectinload(Program.comments).selectinload(Comment.user),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(Program.id == program_id, Program.deleted_at.is_(None))
@@ -76,7 +77,7 @@ class ProgramRepository(Repository):
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Program.comments),
+                selectinload(Program.comments).selectinload(Comment.user),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(
@@ -170,6 +171,19 @@ class ProgramRepository(Repository):
         stmt = self._apply_filters(stmt, filters or ProgramFilters())
         result = await self.session.scalar(stmt)
         return result or 0
+
+    async def get_content_type(self, content_id: UUID) -> str | None:
+        """The discriminator for one row, without loading the row itself.
+
+        `GET /content/{id}` has to know which subtype it is holding before it
+        can pick a loader, and every subtype loader eager-loads relationships
+        that only exist on that subtype. Selecting the discriminator alone
+        keeps that decision to a single cheap scalar.
+        """
+        stmt = select(Content.content_type).where(
+            Content.id == content_id, Content.deleted_at.is_(None)
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
 
     async def count_content_for_workspace(
         self, workspace_id: UUID, filters: ProgramFilters | None = None

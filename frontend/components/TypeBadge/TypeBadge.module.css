@@ -1,0 +1,61 @@
+/*
+ * Kind accent. Settled by the TypeBadge card in the design system, not
+ * re-derived here:
+ *
+ *  - Verkefni is deliberately NEUTRAL. It is the default and by far the most
+ *    common kind, so it must not shout.
+ *  - Viðburður takes aðrir violet, *not* the falkar rose: beside a red-toned
+ *    glyph a rose badge reads as "careful" about something that is simply an
+ *    occasion.
+ *  - Dagskrá takes the primary.
+ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid hsl(var(--tb-accent) / 0.45);
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--tb-accent-bg));
+  color: hsl(var(--tb-accent-text));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: 1.4;
+  white-space: nowrap;
+  /* A fact about the item, not a state of it: no hover, no pointer. */
+  user-select: none;
+}
+
+.md {
+  padding: 5px 13px;
+  font-size: var(--sl-text-body-sm);
+}
+
+.glyph {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.md .glyph {
+  width: 16px;
+  height: 16px;
+}
+
+.task {
+  --tb-accent: var(--sl-color-border-strong);
+  --tb-accent-bg: var(--sl-color-background-tertiary);
+  --tb-accent-text: var(--sl-color-text-secondary);
+}
+
+.event {
+  --tb-accent: var(--sl-color-event);
+  --tb-accent-bg: var(--sl-color-event-subtle);
+  --tb-accent-text: var(--sl-color-event-text);
+}
+
+.program {
+  --tb-accent: var(--sl-color-primary);
+  --tb-accent-bg: var(--sl-color-primary-subtle);
+  --tb-accent-text: var(--sl-color-primary-text);
+}

@@ -155,6 +155,7 @@ def test_update_comment_admin(client):
         user_id=uuid4(),
         content_id=uuid4(),
         created_at=_NOW,
+        author_name="Test User",
     )
     updated = comment.model_copy(update={"body": "Updated body"})
 

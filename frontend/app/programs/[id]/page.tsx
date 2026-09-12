@@ -1,45 +1,66 @@
 "use client";
 
-import React, { useState } from "react";
+import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
-import ProgramDetailHero from "../components/ProgramDetailHero";
-import ProgramDetailTabs from "../components/ProgramDetailTabs";
-import ProgramQuickInfo from "../components/ProgramQuickInfo";
-import styles from "./program-detail.module.css";
-import { useProgram } from "@/hooks/useProgram";
-import { useLikes } from "@/contexts/LikesContext";
-import { Breadcrumb } from "@/app/programs/components/Breadcrumb";
-import { ROUTES } from "@/constants/routes";
-import { useProgramActions } from "@/hooks/useProgramActions";
+import React, { useCallback, useMemo, useState } from "react";
+
+import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
+import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
 import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
+import { ROUTES } from "@/constants/routes";
+import { useLikes } from "@/contexts/LikesContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useProgram } from "@/hooks/useProgram";
+import { useProgramActions } from "@/hooks/useProgramActions";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
-import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import ReportContentModal from "@/components/ReportContent/ReportContentModal";
-import { updateProgram, deleteProgram, type ProgramUpdateInput } from "@/services/programs.service";
+import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
+import { cn } from "@/lib/util";
+import { createComment } from "@/services/comments.service";
+import {
+  deleteProgram,
+  updateProgram,
+  type ContentComment,
+  type Program,
+  type ProgramUpdateInput,
+} from "@/services/programs.service";
+
 import ProgramDetailEdit from "./components/ProgramDetailEdit";
-import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
+import ItemFacts from "./components/ItemFacts";
+import ItemHero, { type HeroImage } from "./components/ItemHero";
+import ItemSections from "./components/ItemSections";
+import styles from "./efnissida.module.css";
+import { kindCopy } from "./kind";
 
 interface ProgramDetailPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
+const ACCENT: Record<BadgeContentType, string> = {
+  task: styles.task,
+  event: styles.event,
+  program: styles.program,
+};
+
 /**
- * Program detail page component that displays comprehensive information about a single program.
+ * One bank item — Verkefni, Viðburður or Dagskrá.
  *
- * @param params - URL parameters containing the program ID
- * @returns Program detail view with hero section, tabs, and sidebar information
+ * The page answers „what is this, and can I run it?" above the fold, on a
+ * phone, without opening anything. That is why there are no tabs and no hero
+ * band above the title: both used to stand between a leader and the answer.
  */
 export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const router = useRouter();
   const { id } = React.use(params);
   const { user, isAuthenticated, getToken } = useAuth();
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [extraComments, setExtraComments] = useState<ContentComment[]>([]);
 
   const { program, isLoading, error, setProgram } = useProgram(id);
   const { likeCount, isLiked, toggleLike } = useLikes(
@@ -47,103 +68,141 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     program?.like_count || 0,
     program?.liked_by_me ?? false
   );
-  const { handleShare, handleAddToWorkspace, handleBack } = useProgramActions(program);
+  const { handleShare, handleAddToWorkspace } = useProgramActions(program);
   const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
-  const [showReport, setShowReport] = useState(false);
 
-  // All hooks are called first, then we do conditional rendering
+  const handleSubmitComment = useCallback(
+    async (body: string) => {
+      const created = await createComment(id, body, getToken);
+      // Functional update: two quick sends must not lose the first.
+      setExtraComments((prev) => [...prev, created]);
+    },
+    [id, getToken]
+  );
+
+  const images: HeroImage[] = useMemo(() => {
+    if (!program?.image) return [];
+    /* One image is all the model stores today — the create modal keeps the
+       first and discards the rest. `ItemHero` handles N so the carousel is
+       ready when that changes; with one it renders no arrows and no counter. */
+    return [{ url: program.image, alt: "" }];
+  }, [program?.image]);
+
   if (error) return <ProgramDetailError error={error} />;
   if (isLoading) return <ProgramDetailSkeleton />;
   if (!program) notFound();
 
-  // Role-aware permission checks — uses workspace membership fetched above
   const canEdit = canEditProgram(user, program, workspaceRole);
   const canDelete = canDeleteProgram(user, program, workspaceRole);
-
-  const breadcrumbItems = [
-    { label: "Heim", href: ROUTES.HOME },
-    { label: "Dagskrárbanki", href: ROUTES.PROGRAMS },
-    { label: program.name },
-  ];
-
-  const handleEdit = () => {
-    setIsEditMode(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-  };
+  const type = (program.content_type ?? "task") as BadgeContentType;
+  const copy = kindCopy(type);
+  const comments = [...(program.comments ?? []), ...extraComments];
 
   const handleSaveEdit = async (data: ProgramUpdateInput) => {
-    if (!program) return;
-    const updatedProgram = await updateProgram(program.id, data, getToken);
-    setProgram(updatedProgram);
+    const updated: Program = await updateProgram(program.id, data, getToken);
+    setProgram(updated);
     setIsEditMode(false);
-  };
-
-  const handleDeleteRequest = () => {
-    if (!canDelete) return;
-    setShowDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!program || !canDelete) return;
+    if (!canDelete) return;
     try {
       setIsDeleting(true);
       await deleteProgram(program.id, getToken);
       router.push(ROUTES.PROGRAMS);
-    } catch (error) {
-      console.error("Failed to delete program:", error);
+    } catch (err) {
+      console.error("Failed to delete program:", err);
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <Breadcrumb items={breadcrumbItems} />
+    <div className={cn(styles.page, ACCENT[type])}>
+      <nav className={styles.crumbs} aria-label="Brauðmolar">
+        <Link href={ROUTES.HOME}>Heim</Link>
+        <span className={styles.crumbSep} aria-hidden="true">
+          /
+        </span>
+        <Link href={ROUTES.PROGRAMS}>Dagskrárbankinn</Link>
+        <span className={styles.crumbSep} aria-hidden="true">
+          /
+        </span>
+        <span className={styles.crumbHere} aria-current="page">
+          {program.name}
+        </span>
+      </nav>
 
-      <ProgramDetailHero
-        program={program}
-        likeCount={likeCount}
-        isLiked={isLiked}
-        onLike={toggleLike}
-        onShare={handleShare}
-        onAddToWorkspace={handleAddToWorkspace}
-        isAuthenticated={isAuthenticated}
-        canEdit={canEdit}
-        isEditMode={isEditMode}
-        onEdit={handleEdit}
-      />
+      <div className={styles.titleblock}>
+        <TypeBadge type={type} size="md" />
+        <h1 className={styles.title}>{program.name}</h1>
+      </div>
 
-      <div className={styles.contentGrid}>
-        <div className={styles.mainContent}>
-          {isEditMode ? (
-            <ProgramDetailEdit
-              program={program}
-              onSave={handleSaveEdit}
-              onCancel={handleCancelEdit}
-              onDeleteRequest={handleDeleteRequest}
-              isDeleting={isDeleting}
-            />
-          ) : (
-            <ProgramDetailTabs program={program} />
-          )}
-        </div>
-        <aside className={styles.sidebar}>
-          {/* The sidebar already had a Tilkynna affordance; it just had no
-              handler. Wiring it beats adding a second one somewhere else. */}
-          <ProgramQuickInfo
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={cn(styles.btn, isLiked && styles.liked)}
+          onClick={toggleLike}
+          disabled={!isAuthenticated}
+          title={isAuthenticated ? undefined : "Skráðu þig inn til að líka við"}
+          aria-label={isLiked ? "Fjarlægja líkar" : "Líkar við"}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 21.2 3.9 13a5.4 5.4 0 0 1 0-7.7 5.4 5.4 0 0 1 7.7 0l.4.4.4-.4a5.4 5.4 0 0 1 7.7 0 5.4 5.4 0 0 1 0 7.7z" />
+          </svg>
+          {likeCount}
+        </button>
+
+        <button type="button" className={styles.btn} onClick={handleShare}>
+          Deila {copy.dative}
+        </button>
+
+        <button type="button" className={styles.btn} onClick={handleAddToWorkspace}>
+          Bæta við vinnusvæði
+        </button>
+
+        {canEdit && !isEditMode && (
+          <button
+            type="button"
+            className={cn(styles.btn, styles.btnFilled)}
+            onClick={() => setIsEditMode(true)}
+          >
+            Breyta {copy.dative}
+          </button>
+        )}
+      </div>
+
+      <div className={styles.grid}>
+        {isEditMode ? (
+          <ProgramDetailEdit
             program={program}
+            onSave={handleSaveEdit}
+            onCancel={() => setIsEditMode(false)}
+            onDeleteRequest={() => canDelete && setShowDeleteConfirm(true)}
+            isDeleting={isDeleting}
+          />
+        ) : (
+          <ItemSections
+            program={program}
+            images={images}
+            heroIndex={heroIndex}
+            onHeroIndexChange={setHeroIndex}
+            comments={comments}
+            canComment={isAuthenticated}
+            onSubmitComment={handleSubmitComment}
+            currentUserName={user?.name ?? null}
+            heroSlot={<ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />}
+          />
+        )}
+
+        <aside className={styles.aside}>
+          <ItemFacts
+            program={program}
+            typeLabel={copy.definite}
+            onPrint={() => window.print()}
             onReport={isAuthenticated ? () => setShowReport(true) : undefined}
           />
         </aside>
-      </div>
-
-      <div className={styles.backButton}>
-        <button onClick={handleBack} className={styles.backBtn}>
-          ← Til baka í dagskrárlista
-        </button>
       </div>
 
       <ReportContentModal
@@ -153,7 +212,6 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         contentName={program.name}
       />
 
-      {/* Delete confirmation modal */}
       <DeleteConfirmModal
         open={showDeleteConfirm}
         programName={program.name}

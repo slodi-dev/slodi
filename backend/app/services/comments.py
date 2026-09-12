@@ -33,8 +33,17 @@ class CommentService:
         )
         await self.repo.create(comment)
         await self.session.commit()
-        await self.session.refresh(comment)
-        return CommentOut.model_validate(comment)
+        # Re-read through the repository rather than `refresh`: `CommentOut`
+        # carries `author_name`, which reads `comment.user.name`, and a plain
+        # refresh does not populate relationships — serialising the bare object
+        # would lazy-load under async and raise MissingGreenlet.
+        row = await self.repo.get(comment.id)
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Comment vanished after commit",
+            )
+        return CommentOut.model_validate(row)
 
     async def get(self, comment_id: UUID) -> CommentOut:
         row = await self.repo.get(comment_id)
