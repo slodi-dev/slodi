@@ -11,6 +11,7 @@ from app.repositories.events import EventRepository
 from app.repositories.programs import ProgramRepository
 from app.repositories.tags import TagRepository
 from app.schemas.event import EventCreate, EventListOut, EventOut, EventUpdate
+from app.services.uploads import AttachmentVerifier
 
 
 class EventService:
@@ -88,6 +89,11 @@ class EventService:
     # ----- creation under workspace/program -----
 
     async def create_under_workspace(self, workspace_id: UUID, data: EventCreate) -> EventOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         tag_names = data.tag_names or []
         event = Event(
             workspace_id=workspace_id, program_id=None, **data.model_dump(exclude={"tag_names"})
@@ -113,6 +119,11 @@ class EventService:
         return EventOut.from_row(ev, stats)
 
     async def create_under_program(self, program_id: UUID, data: EventCreate) -> EventOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         prog_row = await self.program_repo.get(program_id)
         if not prog_row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
@@ -168,6 +179,11 @@ class EventService:
     async def update(
         self, event_id: UUID, data: EventUpdate, current_user_id: UUID | None = None
     ) -> EventOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         row = await self.repo.get(event_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")

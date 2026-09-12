@@ -17,6 +17,7 @@ from app.schemas.program import (
     ProgramOut,
     ProgramUpdate,
 )
+from app.services.uploads import AttachmentVerifier
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,11 @@ class ProgramService:
         return ProgramOut.from_row(prog, stats)
 
     async def create_under_workspace(self, workspace_id: UUID, data: ProgramCreate) -> ProgramOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         try:
             tag_names = data.tag_names or []
             program = Program(workspace_id=workspace_id, **data.model_dump(exclude={"tag_names"}))
@@ -111,6 +117,11 @@ class ProgramService:
     async def update(
         self, program_id: UUID, data: ProgramUpdate, current_user_id: UUID | None = None
     ) -> ProgramOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         row = await self.repo.get(program_id, include_hidden=True)
         if not row:
             logger.error(f"Program {program_id} not found")

@@ -11,6 +11,7 @@ from app.models.task import Task
 from app.repositories.tags import TagRepository
 from app.repositories.tasks import TaskRepository
 from app.schemas.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
+from app.services.uploads import AttachmentVerifier
 
 
 class TaskService:
@@ -49,6 +50,11 @@ class TaskService:
         return [TaskListOut.from_row(task, stats) for task, stats in rows]
 
     async def create_under_event(self, event_id: UUID, data: TaskCreate) -> TaskOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         workspace_id = await self.session.scalar(
             select(Content.workspace_id).where(Content.id == event_id, Content.deleted_at.is_(None))
         )
@@ -79,6 +85,11 @@ class TaskService:
         return TaskOut.from_row(t, stats)
 
     async def create_under_workspace(self, workspace_id: UUID, data: TaskCreate) -> TaskOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         tag_names = data.tag_names or []
         task = Task(
             workspace_id=workspace_id, event_id=None, **data.model_dump(exclude={"tag_names"})
@@ -122,6 +133,11 @@ class TaskService:
     async def update(
         self, task_id: UUID, data: TaskUpdate, current_user_id: UUID | None = None
     ) -> TaskOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         row = await self.repo.get(task_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
