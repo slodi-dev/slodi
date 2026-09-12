@@ -185,7 +185,7 @@ export function formatParticipantsLabel(min: number | undefined, max: number | u
  */
 export function formatPrice(price: number): string {
   if (price === 0) return "Kostnaðarlaust";
-  return `${price.toLocaleString("is-IS")} kr.`;
+  return `${formatIcelandicNumber(price)} kr.`;
 }
 
 /**
@@ -276,4 +276,20 @@ export function formatIcelandicDateShort(value: string | Date | null | undefined
   const date = toDate(value);
   if (!date) return "";
   return `${date.getDate()}. ${MONTHS_IS_SHORT[date.getMonth()]}`;
+}
+
+/**
+ * A number as Icelandic writes it: `5.003`, grouped with full stops.
+ *
+ * Spelled out rather than left to `toLocaleString("is-IS")` for the same
+ * reason the month names are: the runtime cannot be relied on to have the
+ * locale data. Chrome in this project resolves `is-IS` to nothing
+ * (`Intl.NumberFormat.supportedLocalesOf(["is-IS"])` is empty) and silently
+ * falls back to the English `5,003` — a separator that means a decimal point
+ * in Icelandic, on a screen whose whole job is counting.
+ */
+export function formatIcelandicNumber(value: number): string {
+  const sign = value < 0 ? "-" : "";
+  const digits = Math.abs(Math.trunc(value)).toString();
+  return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }

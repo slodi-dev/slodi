@@ -191,7 +191,7 @@ describe("sweeping the queue", () => {
     await screen.findByText("Hlaupaleikur");
     await userEvent.keyboard("s");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Afturkalla" }));
+    await userEvent.click(await screen.findByRole("button", { name: /Taka aftur/ }));
 
     await waitFor(() =>
       expect(reviewContent).toHaveBeenLastCalledWith(
@@ -206,14 +206,24 @@ describe("sweeping the queue", () => {
   it("says the queue is clear rather than showing nothing at all", async () => {
     fetchReviewQueue.mockResolvedValue({ items: [], total: 0 });
     render(<YfirferdPage />);
-    expect(await screen.findByText(/Ekkert bíður yfirferðar/)).toBeInTheDocument();
+    expect(await screen.findByText("Röðin er tóm.")).toBeInTheDocument();
   });
 
   it("says a filter matched nothing, which is not the same as being done", async () => {
     fetchReviewQueue.mockResolvedValue({ items: [], total: 0 });
     render(<YfirferdPage />);
     await userEvent.click(await screen.findByRole("button", { name: "Hafnað" }));
-    expect(await screen.findByText(/Ekkert efni passar við þessa síu/)).toBeInTheDocument();
+    // Two different findings, two different sentences: one says look somewhere
+    // else, the other says you are done.
+    expect(await screen.findByText("Ekkert bíður í þessari síu.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hreinsa síuna" })).toBeInTheDocument();
+  });
+
+  it("does not congratulate a reviewer for reaching the end of a filter", async () => {
+    fetchReviewQueue.mockResolvedValue({ items: [], total: 0 });
+    render(<YfirferdPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Hafnað" }));
+    expect(screen.queryByText(/vel gert/i)).not.toBeInTheDocument();
   });
 });
 

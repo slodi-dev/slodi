@@ -13,7 +13,31 @@ import {
 } from "@/services/moderation.service";
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import styles from "./yfirferd.module.css";
+import { cn } from "@/lib/util";
 import { formatIcelandicDate } from "@/lib/format";
+
+/** The type accent, so a Verkefni looks the same wherever a leader meets it. */
+const TYPE_CLASS: Record<string, string> = {
+  task: styles.typeTask,
+  event: styles.typeEvent,
+  program: styles.typeProgram,
+};
+
+/**
+ * Openers, not templates.
+ *
+ * Most notes to an author start with one of a handful of sentences, and typing
+ * them out forty times a shift is the biggest single time sink in the job.
+ * They append rather than replace, so the reviewer still writes the part that
+ * is about *this* item — a note that is only a canned sentence helps nobody.
+ */
+const CANNED = [
+  "Takk fyrir innsendinguna. ",
+  "Gætirðu bætt við leiðbeiningum um framkvæmdina? ",
+  "Það vantar upplýsingar um búnað. ",
+  "Gætirðu sett inn aldursbil? ",
+  "Þetta á betur heima undir öðru efnisformi. ",
+];
 
 /** A range like "15–25 mín", or a single value, or nothing at all. */
 function range(min: number | null, max: number | null, unit: string): string | null {
@@ -100,12 +124,14 @@ export default function ReviewDetailPane({
     <article className={styles.detail} aria-live="polite">
       <header className={styles.detailHead}>
         <p className={styles.meta}>
-          <span className={styles.type}>{CONTENT_TYPE_LABEL[detail.content_type]}</span>
+          <span className={cn(styles.chip, styles.chipType, TYPE_CLASS[detail.content_type])}>
+            {CONTENT_TYPE_LABEL[detail.content_type]}
+          </span>
           <span>eftir {detail.author_name}</span>
           <span>{formatIcelandicDate(detail.created_at)}</span>
-          {detail.hidden_at && <span className={styles.reportFlag}>Falið</span>}
+          {detail.hidden_at && <span className={cn(styles.chip, styles.chipWarning)}>Falið</span>}
           {detail.author_strikes > 0 && (
-            <span className={styles.strikes}>
+            <span className={cn(styles.chip, styles.chipWarning)}>
               {detail.author_strikes} áminning{detail.author_strikes === 1 ? "" : "ar"} áður
             </span>
           )}
@@ -113,7 +139,7 @@ export default function ReviewDetailPane({
         <h2 className={styles.detailTitle}>{detail.name}</h2>
         {/* The record of what was done, stated plainly — this is the answer to
             "who approved this, and when?". */}
-        {decided && <p className={styles.decided}>{decided}</p>}
+        {decided && <p className={styles.bodyMuted}>{decided}</p>}
         {detail.review_note && <p className={styles.reviewNote}>„{detail.review_note}“</p>}
       </header>
 
@@ -235,6 +261,19 @@ export default function ReviewDetailPane({
           </ul>
         )}
 
+        <div className={styles.canned}>
+          {CANNED.map((opener) => (
+            <button
+              key={opener}
+              type="button"
+              className={styles.cannedBtn}
+              onClick={() => setNote((n) => (n ? `${n.trimEnd()} ${opener}` : opener))}
+            >
+              {opener.trim()}
+            </button>
+          ))}
+        </div>
+
         <label className={styles.noteComposer}>
           <span className="sl-sr-only">Skrifa athugasemd</span>
           <textarea
@@ -250,14 +289,14 @@ export default function ReviewDetailPane({
           {/* Two buttons rather than a dropdown and one: the choice of audience
               is the decision, so it is the thing being clicked. */}
           <button
-            className={styles.reject}
+            className={cn(styles.btn, styles.btnSecondary)}
             disabled={!note.trim() || sending}
             onClick={() => void submit("internal")}
           >
             Vista innanhúss
           </button>
           <button
-            className={styles.sendBtn}
+            className={cn(styles.btn, styles.btnSend)}
             disabled={!note.trim() || sending}
             onClick={() => setConfirming(true)}
           >
@@ -279,11 +318,14 @@ export default function ReviewDetailPane({
           </p>
           <blockquote className={styles.confirmQuote}>{note}</blockquote>
           <div className={styles.noteActions}>
-            <button className={styles.reject} onClick={() => setConfirming(false)}>
+            <button
+              className={cn(styles.btn, styles.btnSecondary)}
+              onClick={() => setConfirming(false)}
+            >
               Hætta við
             </button>
             <button
-              className={styles.sendBtn}
+              className={cn(styles.btn, styles.btnSend)}
               disabled={sending}
               onClick={() => void submit("to_author")}
             >
@@ -295,19 +337,38 @@ export default function ReviewDetailPane({
 
       <footer className={styles.detailActions}>
         <span className={styles.actionsLabel}>Efnið</span>
-        <button className={styles.approve} disabled={busy} onClick={() => onAct("approve")}>
-          Samþykkja
+        {/* The shortcut is printed on the control rather than hidden in a help
+            modal, so a reviewer who never reads help still learns the keyboard
+            by using the mouse. */}
+        <button
+          className={cn(styles.btn, styles.btnPrimary)}
+          disabled={busy}
+          onClick={() => onAct("approve")}
+        >
+          Samþykkja <kbd className={styles.key}>s</kbd>
         </button>
-        <button className={styles.reject} disabled={busy} onClick={() => onAct("reject")}>
-          Hafna
+        <button
+          className={cn(styles.btn, styles.btnQuietDanger)}
+          disabled={busy}
+          onClick={() => onAct("reject")}
+        >
+          Hafna <kbd className={styles.key}>h</kbd>
         </button>
         {detail.hidden_at ? (
-          <button className={styles.reject} disabled={busy} onClick={() => onAct("unhide")}>
-            Sýna aftur
+          <button
+            className={cn(styles.btn, styles.btnSecondary)}
+            disabled={busy}
+            onClick={() => onAct("unhide")}
+          >
+            Sýna aftur <kbd className={styles.key}>f</kbd>
           </button>
         ) : (
-          <button className={styles.hide} disabled={busy} onClick={() => onAct("hide")}>
-            Fela
+          <button
+            className={cn(styles.btn, styles.btnSecondary)}
+            disabled={busy}
+            onClick={() => onAct("hide")}
+          >
+            Fela <kbd className={styles.key}>f</kbd>
           </button>
         )}
         <button className={styles.shareBtn} onClick={() => void copyLink()} disabled={!shareUrl}>

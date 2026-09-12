@@ -24,7 +24,10 @@ import {
 } from "@/services/moderation.service";
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import ReviewDetailPane from "./ReviewDetailPane";
+import QueueProgress from "./QueueProgress";
+import QueueEmpty from "./QueueEmpty";
 import styles from "./yfirferd.module.css";
+import { cn } from "@/lib/util";
 import { formatIcelandicDateShort } from "@/lib/format";
 
 type Tab = "content" | "reports";
@@ -46,7 +49,7 @@ const VIEWS: { id: ReviewState | typeof ALL_STATES; label: string }[] = [
 ];
 
 export default function YfirferdPage() {
-  const { user, getToken, isLoading } = useAuth();
+  const { user, getToken, isLoading, error: authError, refetch } = useAuth();
   const router = useRouter();
 
   const [tab, setTab] = useState<Tab>("content");
@@ -77,6 +80,10 @@ export default function YfirferdPage() {
     typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("efni")
   );
   const [undoable, setUndoable] = useState<UndoableAction | null>(null);
+  // Decided in this sitting. Deliberately not persisted and deliberately reset
+  // by a filter change: a new filter is a new sitting, and a counter that
+  // survives one measures nothing a reviewer can act on.
+  const [doneThisSession, setDoneThisSession] = useState(0);
   const rowRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const isModerator = hasPermission(user?.permissions, "moderator");
@@ -100,13 +107,25 @@ export default function YfirferdPage() {
     }
   }, [filters, getToken]);
 
+  // Only send someone away once we know who they are. `isLoading` alone is
+  // not enough: the auth context reports "done, nobody here" for a tick before
+  // the backend user arrives, and treating that tick as "not a moderator"
+  // bounced every cold load of this page to the landing page — including every
+  // shared ?efni= link, which is the whole point of sharing one.
   useEffect(() => {
-    if (!isLoading && !isModerator) {
+    if (!isLoading && user && !isModerator) {
       router.replace("/");
       return;
     }
     if (isModerator) void load();
-  }, [isLoading, isModerator, load, router]);
+  }, [isLoading, user, isModerator, load, router]);
+
+  // A new filter or a new tab is a new sitting, so the bar starts again. A
+  // counter that survived a filter change would be measuring two different
+  // piles at once.
+  useEffect(() => {
+    setDoneThisSession(0);
+  }, [filters, tab]);
 
   // Debounced, so typing does not fire a request per keystroke.
   useEffect(() => {
@@ -204,14 +223,20 @@ export default function YfirferdPage() {
             getToken
           );
 
+        // The count goes in the announcement, because the pile going down is
+        // the one thing a reviewer cannot see when their eyes are on the pane.
+        const left = filters.review_state === "unreviewed" ? queue.length - 1 : queue.length;
         setAnnouncement(
-          {
-            approve: `„${item.name}“ samþykkt.`,
-            reject: `„${item.name}“ hafnað.`,
-            hide: `„${item.name}“ falið.`,
-            unhide: `„${item.name}“ birt aftur.`,
-          }[action]
+          `${
+            {
+              approve: `„${item.name}“ samþykkt.`,
+              reject: `„${item.name}“ hafnað.`,
+              hide: `„${item.name}“ falið.`,
+              unhide: `„${item.name}“ birt aftur.`,
+            }[action]
+          } ${left} bíða.`
         );
+        setDoneThisSession((n) => n + 1);
         setUndoable({ item, hadBeenHidden: item.hidden_at !== null });
         // The row leaves the list only when it no longer matches the view —
         // in the audit views it stays, with its new state.
@@ -226,7 +251,7 @@ export default function YfirferdPage() {
         setBusyId(null);
       }
     },
-    [getToken, filters.review_state, load]
+    [getToken, filters.review_state, load, queue.length]
   );
 
   const undo = useCallback(async () => {
@@ -239,6 +264,7 @@ export default function YfirferdPage() {
       if (!hadBeenHidden) await setContentHidden(item.id, false, undefined, getToken);
       await reviewContent(item.id, "unreviewed", undefined, getToken);
       setAnnouncement(`Afturkallað: „${item.name}“ er aftur í yfirferð.`);
+      setDoneThisSession((n) => Math.max(0, n - 1));
       setUndoable(null);
       if (filters.review_state === "unreviewed") setQueue((q) => [item, ...q]);
       else void load();
@@ -330,7 +356,21 @@ export default function YfirferdPage() {
     [rows.length, active, tab, act, undo, undoable]
   );
 
-  if (isLoading || (!isModerator && !user)) return <p className={styles.state}>Hleð…</p>;
+  if (isLoading) return <p className={styles.state}>Hleð…</p>;
+  // Three different reasons for an empty `user`, and they need three different
+  // sentences. Telling someone to sign in when they already are — because the
+  // API is down — sends them round a login loop that cannot fix anything.
+  if (authError) {
+    return (
+      <p className={styles.error} role="alert">
+        Náði ekki sambandi við Slóða.{" "}
+        <button className={styles.linkBtn} onClick={() => void refetch()}>
+          Reyna aftur
+        </button>
+      </p>
+    );
+  }
+  if (!user) return <p className={styles.state}>Þú þarft að vera skráð/ur inn.</p>;
   if (!isModerator) {
     return <p className={styles.state}>Þessi síða er fyrir Dagskrárstjórnarteymið.</p>;
   }
@@ -339,9 +379,23 @@ export default function YfirferdPage() {
     <main className={styles.page} onKeyDown={onKeyDown}>
       <header className={styles.header}>
         <h1 className={styles.title}>Yfirferð</h1>
-        <p className={styles.shortcuts} aria-hidden="true">
-          <kbd>j</kbd>/<kbd>k</kbd> hreyfa · <kbd>s</kbd> samþykkja · <kbd>h</kbd> hafna ·{" "}
-          <kbd>f</kbd> fela · <kbd>z</kbd> afturkalla
+        <p className={styles.shortcuts}>
+          {[
+            { keys: ["j", "k"], label: "hreyfa" },
+            { keys: ["s"], label: "samþykkja" },
+            { keys: ["h"], label: "hafna" },
+            { keys: ["f"], label: "fela" },
+            { keys: ["z"], label: "afturkalla" },
+          ].map(({ keys, label }) => (
+            <span key={label} className={styles.shortcutsItem}>
+              {keys.map((k) => (
+                <kbd key={k} className={styles.key}>
+                  {k}
+                </kbd>
+              ))}
+              {label}
+            </span>
+          ))}
         </p>
       </header>
 
@@ -350,7 +404,7 @@ export default function YfirferdPage() {
           <button
             role="tab"
             aria-selected={tab === "content"}
-            className={tab === "content" ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+            className={styles.tab}
             onClick={() => {
               setTab("content");
               setCursor(0);
@@ -361,7 +415,7 @@ export default function YfirferdPage() {
           <button
             role="tab"
             aria-selected={tab === "reports"}
-            className={tab === "reports" ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+            className={styles.tab}
             onClick={() => {
               setTab("reports");
               setCursor(0);
@@ -369,11 +423,10 @@ export default function YfirferdPage() {
           >
             Tilkynningar{" "}
             <span
-              className={
-                reports.some((r) => r.reason === "unsafe")
-                  ? `${styles.count} ${styles.countUrgent}`
-                  : styles.count
-              }
+              className={cn(
+                styles.count,
+                reports.some((r) => r.reason === "unsafe") && styles.countUrgent
+              )}
             >
               {reportsTotal ?? reports.length}
             </span>
@@ -387,11 +440,7 @@ export default function YfirferdPage() {
                 <button
                   key={v.id || "all"}
                   aria-pressed={(filters.review_state ?? "unreviewed") === v.id}
-                  className={
-                    (filters.review_state ?? "unreviewed") === v.id
-                      ? `${styles.segment} ${styles.segmentActive}`
-                      : styles.segment
-                  }
+                  className={styles.segment}
                   onClick={() => {
                     setFilters((f) => ({ ...f, review_state: v.id }));
                     setCursor(0);
@@ -464,12 +513,28 @@ export default function YfirferdPage() {
 
       <p className={styles.live} role="status" aria-live="polite">
         {announcement}
-        {undoable && (
-          <button className={styles.undoBtn} onClick={() => void undo()}>
-            Afturkalla
-          </button>
-        )}
       </p>
+
+      {/* Undo is what replaces most confirm dialogs here: every decision on
+          this screen is reversible, so it happens and offers a way back rather
+          than asking first. It sits outside the live region — a button inside
+          one is re-announced on every unrelated update. */}
+      {undoable && (
+        <div className={styles.undo}>
+          <p className={styles.undoText}>
+            <strong>„{undoable.item.name}“</strong> afgreitt.
+          </p>
+          <button className={styles.undoBtn} onClick={() => void undo()}>
+            Taka aftur <kbd className={styles.key}>z</kbd>
+          </button>
+        </div>
+      )}
+
+      <QueueProgress
+        done={doneThisSession}
+        waiting={queueTotal ?? queue.length}
+        loaded={queue.length}
+      />
 
       {error && (
         <p className={styles.error} role="alert">
@@ -484,13 +549,31 @@ export default function YfirferdPage() {
         <div className={styles.listPane}>
           {loading && <p className={styles.state}>Hleð…</p>}
           {!loading && !error && rows.length === 0 && (
-            <p className={styles.empty}>
-              {tab === "reports"
-                ? "Engar opnar tilkynningar."
-                : filters.review_state === "unreviewed"
-                  ? "Ekkert bíður yfirferðar. Vel gert."
-                  : "Ekkert efni passar við þessa síu."}
-            </p>
+            <QueueEmpty
+              filtered={
+                tab === "content" &&
+                Boolean(
+                  filters.search ||
+                  filters.author ||
+                  filters.date_from ||
+                  filters.date_to ||
+                  filters.reported ||
+                  (filters.review_state ?? "unreviewed") !== "unreviewed"
+                )
+              }
+              done={doneThisSession}
+              openReports={tab === "content" ? (reportsTotal ?? reports.length) : 0}
+              onShowReports={() => {
+                setTab("reports");
+                setCursor(0);
+              }}
+              onClearFilter={() => {
+                setSearch("");
+                setAuthor("");
+                setFilters({ review_state: "unreviewed" });
+                setCursor(0);
+              }}
+            />
           )}
 
           <ul className={styles.list}>
@@ -589,14 +672,14 @@ export default function YfirferdPage() {
                   content. They are different decisions. */}
               <span className={styles.actionsLabel}>Tilkynningin</span>
               <button
-                className={styles.approve}
+                className={cn(styles.btn, styles.btnPrimary)}
                 disabled={busyId !== null}
                 onClick={() => void closeReport(active as ReportQueueItem, "resolved")}
               >
                 Afgreitt
               </button>
               <button
-                className={styles.reject}
+                className={cn(styles.btn, styles.btnSecondary)}
                 disabled={busyId !== null}
                 onClick={() => void closeReport(active as ReportQueueItem, "dismissed")}
               >
@@ -651,9 +734,7 @@ function ListRow({
       // focuses the current row itself, which would clear a shared link before
       // the reader had touched anything.
       onFocus={onSelect}
-      className={[styles.row, focused && styles.rowFocused, urgent && styles.rowUrgent]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(styles.row, focused && styles.rowFocused, urgent && styles.rowUrgent)}
     >
       <div className={styles.rowTop}>
         <span className={styles.rowTitle}>{title}</span>
@@ -663,7 +744,7 @@ function ListRow({
       {shown.length > 0 && (
         <p className={styles.rowFlags}>
           {shown.map((f) => (
-            <span key={f} className={styles.rowFlag}>
+            <span key={f} className={styles.chip}>
               {f}
             </span>
           ))}

@@ -8,6 +8,7 @@ import {
   formatPrepTimeLabel,
   formatParticipants,
   formatParticipantsLabel,
+  formatIcelandicNumber,
   formatPrice,
   formatPriceLabel,
   formatAgeGroup,
@@ -319,5 +320,38 @@ describe("formatIcelandicDate", () => {
     expect(formatIcelandicDate(null)).toBe("");
     expect(formatIcelandicDate("ekki dagsetning")).toBe("");
     expect(formatIcelandicDateShort(undefined)).toBe("");
+  });
+});
+
+// ── formatIcelandicNumber ───────────────────────────────────────────────────────
+
+describe("formatIcelandicNumber", () => {
+  it("groups thousands with a full stop, the way Icelandic writes them", () => {
+    expect(formatIcelandicNumber(5003)).toBe("5.003");
+    expect(formatIcelandicNumber(1000000)).toBe("1.000.000");
+  });
+
+  it("leaves anything under a thousand alone", () => {
+    expect(formatIcelandicNumber(0)).toBe("0");
+    expect(formatIcelandicNumber(999)).toBe("999");
+  });
+
+  it("does not depend on the runtime having Icelandic locale data", () => {
+    // Chrome in this project resolves `is-IS` to nothing and falls back to the
+    // English "5,003" — a comma, which reads as a decimal point in Icelandic.
+    // This is the whole reason the function exists, so assert the difference.
+    expect(formatIcelandicNumber(5003)).not.toBe((5003).toLocaleString("en-US"));
+  });
+
+  it("keeps the sign on a negative", () => {
+    expect(formatIcelandicNumber(-12345)).toBe("-12.345");
+  });
+});
+
+// ── formatPrice, on the same grouping ───────────────────────────────────────────
+
+describe("formatPrice grouping", () => {
+  it("writes a four-figure price the Icelandic way", () => {
+    expect(formatPrice(1500)).toBe("1.500 kr.");
   });
 });

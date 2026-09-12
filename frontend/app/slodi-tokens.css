@@ -1034,6 +1034,21 @@
    Only colour tokens are overridden; non-colour tokens are theme-agnostic.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════════════
+   CONTENT TYPE — Viðburður
+   A Viðburður needs an identity that is neither the green of a Dagskrá nor the
+   neutral of a Verkefni, so a leader can tell the three apart at a glance
+   wherever they meet them. Violet, borrowed from the aðrir patrol ramp.
+   Both the Dagskrárbankinn and Yfirferð kits were carrying their own private
+   copy of this; it is one idea, so it lives here.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --sl-color-event: var(--sl-primitive-adrir-600);
+  --sl-color-event-subtle: var(--sl-primitive-adrir-50);
+  --sl-color-event-text: var(--sl-primitive-adrir-800);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     /* Primary border shifts lighter for visibility on dark backgrounds */
@@ -1044,7 +1059,28 @@
     --sl-color-surface-raised: 0 0% 14%;
     /* Sunken surface on dark is a slightly darker shade */
     --sl-color-surface-sunken: 0 0% 8%;
+    /* Viðburður lightens so it reads on a dark surface */
+    --sl-color-event: var(--sl-primitive-adrir-400);
+    --sl-color-event-subtle: 270 38% 19%;
+    --sl-color-event-text: var(--sl-primitive-adrir-200);
   }
+}
+
+/* The same four, for the in-app theme toggle.
+   The `[data-theme="dark"]` block far above cannot carry them: a later `:root`
+   redeclares all four, and `:root` and `[data-theme="dark"]` have identical
+   specificity, so source order decides and the light values win. Repeating
+   them here — after that `:root` — is what makes the toggle work for someone
+   whose OS is set to light. Without it `--sl-color-primary-text` stays
+   green-800 on a dark surface, which is unreadable. */
+[data-theme="dark"] {
+  --sl-color-primary-border: var(--sl-primitive-green-600);
+  --sl-color-primary-text: var(--sl-primitive-green-200);
+  --sl-color-surface-raised: 0 0% 14%;
+  --sl-color-surface-sunken: 0 0% 8%;
+  --sl-color-event: var(--sl-primitive-adrir-400);
+  --sl-color-event-subtle: 270 38% 19%;
+  --sl-color-event-text: var(--sl-primitive-adrir-200);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
