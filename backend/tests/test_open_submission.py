@@ -7,18 +7,20 @@ tightening edit and delete, because `editor` used to be enough to change
 *someone else's* content. These tests pin both halves.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.core.auth import check_content_edit_access, get_current_user
 from app.core.db import get_session
-from app.domain.enums import Permissions, WorkspaceRole
+from app.domain.enums import EventInterval, Permissions, Weekday, WorkspaceRole
 from app.main import create_app
+from app.schemas.event import EventOut
 from app.schemas.task import TaskOut
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceNested
@@ -50,6 +52,23 @@ def _make_task(workspace_id, author_id, created_at=None):
         author_id=author_id,
         author_name="Viewer User",
         created_at=created_at or datetime.now(timezone.utc),
+        author=UserOut(
+            id=author_id, name="Viewer User", email="viewer@test.com", auth0_id="auth0|viewer_test"
+        ),
+        workspace=WorkspaceNested(id=workspace_id, name="Dagskrárbankinn"),
+    )
+
+
+def _make_event(workspace_id, author_id, start_dt=None):
+    return EventOut(
+        id=uuid4(),
+        workspace_id=workspace_id,
+        name="Vetrarútilega",
+        author_id=author_id,
+        author_name="Viewer User",
+        created_at=datetime.now(timezone.utc),
+        start_dt=start_dt,
+        program_id=None,
         author=UserOut(
             id=author_id, name="Viewer User", email="viewer@test.com", auth0_id="auth0|viewer_test"
         ),
@@ -291,3 +310,69 @@ def test_patch_cannot_reassign_authorship(member_client, viewer_user):
     body = update.await_args.args[1]
     assert "author_id" not in body.model_fields_set
     assert not hasattr(body, "author_id")
+
+
+# ── Everyone can reach the bank ──────────────────────────────────────────────
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_enrolling_everyone_adds_only_the_missing(db):
+    """The bulk enrol that opens the bank to accounts that predate it.
+
+    Membership of the default workspace is what makes the bank readable and
+    submittable, and it used to be arranged only when an account was *created* —
+    so everyone who signed up before the workspace was configured was locked
+    out. This is the sweep that closes that, and it has to be safe to run on a
+    live database: it may only ever add.
+    """
+    from app.models import User, Workspace, WorkspaceMembership
+    from app.repositories.workspaces import WorkspaceRepository
+
+    workspace = Workspace(
+        name="Dagskrárbankinn",
+        default_meeting_weekday=Weekday.monday,
+        default_start_time=time(20, 0),
+        default_end_time=time(21, 30),
+        default_interval=EventInterval.weekly,
+        season_start=date(2026, 9, 1),
+    )
+    db.add(workspace)
+    await db.flush()
+
+    already = User(name="Owner", auth0_id="auth0|owner", email="owner@test.is")
+    missing_one = User(name="Gamall", auth0_id="auth0|old1", email="old1@test.is")
+    missing_two = User(name="Eldri", auth0_id="auth0|old2", email="old2@test.is")
+    db.add_all([already, missing_one, missing_two])
+    await db.flush()
+
+    db.add(
+        WorkspaceMembership(workspace_id=workspace.id, user_id=already.id, role=WorkspaceRole.owner)
+    )
+    await db.flush()
+
+    repo = WorkspaceRepository(db)
+    assert await repo.count_users_missing_from(workspace.id) == 2
+
+    added = await repo.enroll_all_users_as_viewers(workspace.id)
+    await db.flush()
+    assert added == 2, "only the two without a membership"
+
+    roles = {
+        m.user_id: m.role
+        for m in (
+            await db.execute(
+                select(WorkspaceMembership).where(WorkspaceMembership.workspace_id == workspace.id)
+            )
+        )
+        .scalars()
+        .all()
+    }
+    # The whole point: never a downgrade. set_member_role even refuses to demote
+    # an owner outright, so getting this wrong would break their login.
+    assert roles[already.id] == WorkspaceRole.owner
+    assert roles[missing_one.id] == WorkspaceRole.viewer
+    assert roles[missing_two.id] == WorkspaceRole.viewer
+
+    # Running it twice must be a no-op, because a deploy runs the seed every time.
+    assert await repo.enroll_all_users_as_viewers(workspace.id) == 0

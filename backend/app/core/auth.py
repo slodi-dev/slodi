@@ -287,6 +287,56 @@ def verify_auth0_token(token: str) -> TokenPayload:
 _DEFAULT_WORKSPACE_ID: UUID | None = get_default_workspace_id()
 
 
+async def _ensure_default_workspace_membership(session: AsyncSession, user: UserOut) -> None:
+    """Make sure this account can reach the dagskrárbanki.
+
+    Opening the bank to public submissions rests on one assumption: that every
+    account is a member of the default workspace. That was only ever arranged at
+    *account creation*, which quietly excluded two whole populations — everyone
+    who signed up before `DEFAULT_WORKSPACE_ID` was configured, and everyone
+    created during any window where the setting was missing or wrong. For them
+    the bank 403s on read and 404s on submit, which reads as the feature being
+    broken rather than as a membership they never got.
+
+    So it is checked on every login rather than once. It is idempotent, costs a
+    cached lookup for the overwhelming majority of calls, and means a
+    misconfiguration heals itself the next time people sign in instead of
+    needing somebody to remember a backfill script.
+
+    Never downgrades: an existing role of any kind is left exactly as it is.
+    Failure is logged and swallowed — not being able to add someone to a
+    workspace is not a reason to refuse them a login.
+    """
+    if _DEFAULT_WORKSPACE_ID is None:
+        return
+
+    role = await _get_workspace_role(_DEFAULT_WORKSPACE_ID, user.id, session)
+    if role is not None:
+        return
+
+    try:
+        await WorkspaceService(session).set_member_role(
+            _DEFAULT_WORKSPACE_ID, user.id, WorkspaceRole.viewer
+        )
+    except Exception:
+        # A workspace that does not exist, a race with a parallel first request,
+        # a transient failure — none of them should cost the user their session.
+        logger.warning(
+            "Could not add user %s to default workspace %s",
+            user.id,
+            _DEFAULT_WORKSPACE_ID,
+            exc_info=True,
+        )
+        return
+
+    # `_get_workspace_role` has just cached "not a member" for this pair, and
+    # that entry would outlive the membership we only now created — leaving the
+    # user locked out for the length of the TTL, by the very code meant to let
+    # them in.
+    await membership_cache.set(user.id, _DEFAULT_WORKSPACE_ID, WorkspaceRole.viewer)
+    logger.info("Added user %s to default workspace %s", user.id, _DEFAULT_WORKSPACE_ID)
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),  # noqa: B008
     session: AsyncSession = Depends(get_session),  # noqa: B008
@@ -341,6 +391,10 @@ async def get_current_user(
         name_from_token: str | None = payload.name
         if name_from_token and name_from_token != user.name:
             user = await user_service.update(user.id, UserUpdateAdmin(name=name_from_token))
+        # Not just on create. Every account that predates the default workspace
+        # being configured has no membership, and without this they can neither
+        # read the bank nor submit to it — see the docstring below.
+        await _ensure_default_workspace_membership(session, user)
         await user_cache.set(auth0_id, user)
         return user
 
@@ -403,18 +457,7 @@ async def get_current_user(
             user.id,
         )
 
-    if _DEFAULT_WORKSPACE_ID:
-        try:
-            ws_service = WorkspaceService(session)
-            await ws_service.set_member_role(_DEFAULT_WORKSPACE_ID, user.id, WorkspaceRole.viewer)
-            logger.info("Added new user %s to default workspace %s", user.id, _DEFAULT_WORKSPACE_ID)
-        except Exception:
-            logger.warning(
-                "Failed to add new user %s to default workspace %s",
-                user.id,
-                _DEFAULT_WORKSPACE_ID,
-                exc_info=True,
-            )
+    await _ensure_default_workspace_membership(session, user)
 
     await user_cache.set(auth0_id, user)
     return user

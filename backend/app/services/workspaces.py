@@ -93,6 +93,12 @@ class WorkspaceService:
         await self.session.refresh(membership)
         return WorkspaceMembershipOut.model_validate(membership), displaced_owner_id
 
+    async def enroll_all_users_as_viewers(self, workspace_id: UUID) -> int:
+        """Bulk-add every account to this workspace as a viewer. Never downgrades."""
+        added = await self.repo.enroll_all_users_as_viewers(workspace_id)
+        await self.session.commit()
+        return added
+
     async def find_user_role(self, workspace_id: UUID, user_id: UUID) -> WorkspaceRole | None:
         """Return the user's workspace role, or None if not a member. Does not raise on miss."""
         membership = await self.repo.get_user_membership(workspace_id, user_id)
