@@ -98,13 +98,26 @@ function Avatar({ src, alt }: { src?: string; alt: string }) {
   }
   return (
     <div className={styles.avatar} aria-label="Notendamynd">
-      <Image
+      {/* Plain <img>, not next/image, and deliberately so.
+          `user.picture` is whatever the identity provider hands us — Google
+          serves it from lh3…lh6.googleusercontent.com, and there is also
+          Gravatar, Facebook and Auth0's own default avatars. Putting that set
+          in `remotePatterns` means either an unbounded allowlist or the
+          wildcard that #135 removed on purpose, and the optimiser would be
+          proxying and re-encoding an image the provider already delivered at
+          the exact size we asked for (`=s96-c`) from its own CDN.
+          `referrerPolicy` stays: the provider does not need to know which of
+          our pages you are on. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={src}
         alt={alt}
         width={size}
         height={size}
         className={styles.avatarImg}
         referrerPolicy="no-referrer"
+        loading="lazy"
+        decoding="async"
       />
     </div>
   );

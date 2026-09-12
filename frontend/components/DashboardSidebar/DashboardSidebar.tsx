@@ -36,7 +36,6 @@ import {
   PanelLeftClose, // Collapse sidebar icon
   PanelLeftOpen, // Expand sidebar icon
 } from "lucide-react";
-import Image from "next/image";
 import {
   type UserPermissions,
   hasPermission as hasPlatformPermission,
@@ -336,7 +335,24 @@ export default function DashboardSidebar({
               title={isCollapsed ? userName : undefined}
             >
               {userAvatar ? (
-                <Image src={userAvatar} alt="" className={styles.userAvatar} aria-hidden="true" />
+                /* Same reasoning as the settings avatar: an identity-provider
+                   URL cannot be allowlisted for next/image without either an
+                   unbounded host list or the wildcard #135 removed. This one
+                   was also missing the width/height next/image requires, so it
+                   would have thrown for every signed-in user on every
+                   dashboard page. */
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={userAvatar}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className={styles.userAvatar}
+                  aria-hidden="true"
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <div className={styles.userAvatarPlaceholder} aria-hidden="true">
                   {userName.charAt(0).toUpperCase()}

@@ -299,7 +299,29 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  /* The design system's own stack, not Geist.
+     Two reasons. It is what `slodi-tokens.css` says the body font is — the
+     token resolves to "Roboto Condensed" followed by the native UI fonts — so
+     the app was rendering something the design system does not specify.
+     And `--font-geist-sans` is a next/font variable: next/font fetches from
+     Google at compile time, so on any machine that cannot reach
+     fonts.googleapis.com the family and its metric-matched fallback both fail
+     to load, `var()` still resolves (to a font nobody has), and the browser
+     drops all the way to its default serif. This chain ends in `sans-serif`,
+     which cannot fail. Geist is kept ahead of it as an enhancement for when
+     the fetch did work. */
+  /* The design system's own stack, not Geist.
+     `slodi-tokens.css` says the body font is "Roboto Condensed" followed by
+     the native UI fonts, so the app was rendering something the system does
+     not specify. The old value was `var(--font-geist-sans, …)`, a next/font
+     variable — and next/font fetches from Google at compile time, so on a
+     machine that cannot reach fonts.googleapis.com both Geist and its
+     metric-matched fallback fail to load while `var()` still resolves happily
+     to a family nobody has, and the browser drops all the way to its default
+     serif. This chain ends in `sans-serif`, which cannot fail. Referenced
+     without a `var()` fallback on purpose: an undefined custom property would
+     make the whole declaration invalid, which is the trap the old one was in. */
+  font-family: var(--sl-font-family-body);
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
