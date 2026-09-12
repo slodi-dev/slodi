@@ -29,7 +29,14 @@ class Event(Content):
         nullable=False,
     )
 
-    start_dt: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
+    # Nullable because the bank holds *templates*, not occurrences. A
+    # "Viðburður" submitted to the dagskrárbanki is a pattern somebody may run
+    # in March or in September; stamping it with a date nobody chose makes it
+    # sort and filter as though it were a real event on that day.
+    # Planner events set it; bank entries leave it null.
+    start_dt: Mapped[dt.datetime | None] = mapped_column(
+        SADateTime(timezone=True), nullable=True
+    )
     end_dt: Mapped[dt.datetime | None] = mapped_column(SADateTime(timezone=True), nullable=True)
 
     program_id: Mapped[UUID | None] = mapped_column(

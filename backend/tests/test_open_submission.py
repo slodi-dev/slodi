@@ -312,6 +312,49 @@ def test_patch_cannot_reassign_authorship(member_client, viewer_user):
     assert not hasattr(body, "author_id")
 
 
+# ── A bank Viðburður has no date ─────────────────────────────────────────────
+
+
+def _post_event(client, workspace_id, role, **body):
+    with (
+        patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
+        patch(
+            "app.services.events.EventService.create_under_workspace", new_callable=AsyncMock
+        ) as create,
+    ):
+        lookup.return_value = role
+        create.return_value = _make_event(workspace_id, uuid4())
+        response = client.post(
+            f"/workspaces/{workspace_id}/events", json={"name": "Vetrarútilega", **body}
+        )
+    return response, create
+
+
+def test_a_bank_event_may_be_submitted_without_a_date(member_client, bank):
+    """The bank holds templates, not occurrences.
+
+    `start_dt` used to be NOT NULL with `default_factory=get_current_datetime`,
+    so an omitted date silently became the moment of submission. A leader
+    writing up "vetrarútilega" in September got an event dated September, which
+    then sorted and filtered as though it had happened that day. The create form
+    deliberately asks for no date, so the API must accept its absence.
+    """
+    response, create = _post_event(member_client, bank, WorkspaceRole.viewer)
+    assert response.status_code == status.HTTP_201_CREATED
+
+    stored = create.await_args.args[1]
+    assert stored.start_dt is None, "an omitted date must stay absent, not become now()"
+
+
+def test_a_planner_event_still_carries_its_date(member_client, bank):
+    """Nullable is not the same as ignored — a supplied date is kept."""
+    when = datetime(2026, 3, 14, 18, 0, tzinfo=timezone.utc)
+    _, create = _post_event(member_client, bank, WorkspaceRole.viewer, start_dt=when.isoformat())
+
+    stored = create.await_args.args[1]
+    assert stored.start_dt == when
+
+
 # ── Everyone can reach the bank ──────────────────────────────────────────────
 
 

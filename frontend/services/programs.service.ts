@@ -1,4 +1,5 @@
 import { buildApiUrl } from "@/lib/api-utils";
+import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 import { fetchWithAuth } from "@/lib/api";
 import { User } from "@/services/users.service";
 
@@ -131,7 +132,33 @@ export async function fetchProgramById(
  * Create a new program
  * Requires authentication - backend will set author_id from authenticated user
  */
-export async function createProgram(
+/**
+ * Where each content type is created, and what it calls itself on the wire.
+ *
+ * The three share every field a bank submission carries — a Verkefni and a
+ * Viðburður differ in what they *are*, not in what you write about them — so
+ * one payload serves all three and only the route and the discriminator change.
+ */
+const CREATE_ROUTE: Record<BankContentType, string> = {
+  task: "tasks",
+  event: "events",
+  program: "programs",
+};
+
+/**
+ * Put something in the bank.
+ *
+ * Everything used to go through `createProgram`, which hardcoded
+ * `content_type: "program"` — so a leikur submitted by a leader was stored as a
+ * Dagskrá, a *collection*, and arrived in the review queue as an empty one.
+ * The type is now the caller's to state, and `ContentTypeChooser` is what asks.
+ *
+ * **No date is sent for an event.** A bank Viðburður is a template somebody may
+ * run in March or September; `start_dt` is nullable precisely so it can stay
+ * unanswered rather than defaulting to the moment of submission.
+ */
+export async function createBankContent(
+  type: BankContentType,
   input: ProgramCreateInput,
   getToken: () => Promise<string | null>
 ): Promise<Program> {
@@ -151,10 +178,10 @@ export async function createProgram(
     count_max: input.count_max ?? null,
     price: input.price ?? null,
     tag_names: input.tagNames && input.tagNames.length > 0 ? input.tagNames : null,
-    content_type: "program" as const,
+    content_type: type,
   };
 
-  const url = buildApiUrl(`/workspaces/${input.workspaceId}/programs`);
+  const url = buildApiUrl(`/workspaces/${input.workspaceId}/${CREATE_ROUTE[type]}`);
 
   const data = await fetchWithAuth<Program | Program[]>(
     url,
@@ -169,6 +196,14 @@ export async function createProgram(
   );
 
   return Array.isArray(data) ? data[0] : data;
+}
+
+/** Back-compat shim for callers that only ever make a Dagskrá. */
+export async function createProgram(
+  input: ProgramCreateInput,
+  getToken: () => Promise<string | null>
+): Promise<Program> {
+  return createBankContent("program", input, getToken);
 }
 
 /**

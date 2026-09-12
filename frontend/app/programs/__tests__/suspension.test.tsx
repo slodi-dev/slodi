@@ -7,9 +7,9 @@ describe("what a suspended leader sees", () => {
   it("disables the button with a reason rather than hiding it", () => {
     // A button that vanishes reads as a bug and produces a support message
     // instead of understanding.
-    render(<ProgramsHeader onNewProgram={vi.fn()} suspendedUntil="2026-10-01" />);
+    render(<ProgramsHeader onNewContent={vi.fn()} suspendedUntil="2026-10-01" />);
 
-    const fab = screen.getByRole("button");
+    const fab = screen.getByRole("button", { expanded: false });
     expect(fab).toBeDisabled();
     expect(fab).toHaveAccessibleName(/fram til 1\. október 2026/);
   });
@@ -17,19 +17,19 @@ describe("what a suspended leader sees", () => {
   it("names no date for an open-ended suspension", () => {
     // Inventing one would be a lie, and "fram til" with nothing after it is
     // worse than saying plainly that there is no end yet.
-    render(<ProgramsHeader onNewProgram={vi.fn()} suspendedUntil="open-ended" />);
+    render(<ProgramsHeader onNewContent={vi.fn()} suspendedUntil="open-ended" />);
 
-    const fab = screen.getByRole("button");
+    const fab = screen.getByRole("button", { expanded: false });
     expect(fab).toBeDisabled();
     expect(fab).toHaveAccessibleName("Þú getur ekki sent inn efni");
   });
 
   it("says nothing at all when there is nothing to say", () => {
-    render(<ProgramsHeader onNewProgram={vi.fn()} />);
+    render(<ProgramsHeader onNewContent={vi.fn()} />);
 
-    const fab = screen.getByRole("button");
+    const fab = screen.getByRole("button", { expanded: false });
     expect(fab).toBeEnabled();
-    expect(fab).toHaveAccessibleName("Bæta við dagskrá");
+    expect(fab).toHaveAccessibleName("Bæta við í bankann");
   });
 
   it("reads the end date out of the API's own refusal", () => {

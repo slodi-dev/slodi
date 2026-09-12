@@ -8,6 +8,7 @@ import ProgramSort from "./components/ProgramSort";
 import type { SortOption } from "./components/ProgramSort";
 import Pagination from "./components/Pagination";
 import { ProgramsHeader } from "./components/ProgramsHeader";
+import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 import SearchInput from "@/components/filters/SearchInput";
 import FilterSidebar, { FilterDrawer } from "@/components/filters/FilterSidebar";
 import ActiveFilterBar from "@/components/filters/ActiveFilterBar";
@@ -56,6 +57,7 @@ const LEGACY_TO_SORT: Record<SortOption, FilterState["sortBy"]> = {
  */
 function ProgramsPageInner() {
   const [showNewProgram, setShowNewProgram] = useState(false);
+  const [newType, setNewType] = useState<BankContentType>("task");
   // Read on arrival: a leader should learn they cannot submit before writing
   // something, not after the API refuses it.
   const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null);
@@ -198,17 +200,25 @@ function ProgramsPageInner() {
         </p>
       )}
       <ProgramsHeader
-        onNewProgram={() => setShowNewProgram(true)}
+        onNewContent={(type) => {
+          setNewType(type);
+          setShowNewProgram(true);
+        }}
         suspendedUntil={suspendedUntil}
       />
 
-      {/* New Program Modal */}
+      {/* New content modal. The title names what is being made — the leader has
+          already chosen, so echoing it back confirms the choice landed. */}
       <Modal
         open={showNewProgram}
         onClose={() => setShowNewProgram(false)}
-        title="Bæta hugmynd í bankann"
+        title={NEW_CONTENT_TITLE[newType]}
       >
-        <NewProgramForm workspaceId={postWorkspaceId} onCreated={handleProgramCreated} />
+        <NewProgramForm
+          contentType={newType}
+          workspaceId={postWorkspaceId}
+          onCreated={handleProgramCreated}
+        />
       </Modal>
 
       {/* Top bar: Search + mobile filter toggle + Sort */}
@@ -339,6 +349,14 @@ function ProgramsPageInner() {
  *
  * Wrapped in Suspense because useProgramFilters uses useSearchParams().
  */
+/** Named per type, because "Bæta hugmynd í bankann" told a leader nothing about
+ *  which of the three they were now filling in. */
+const NEW_CONTENT_TITLE: Record<BankContentType, string> = {
+  task: "Nýtt verkefni",
+  event: "Nýr viðburður",
+  program: "Ný dagskrá",
+};
+
 export default function ProgramsPage() {
   return (
     <Suspense>

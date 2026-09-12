@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import styles from "./NewProgramForm.module.css";
 import type { Program } from "@/services/programs.service";
-import { createProgram } from "@/services/programs.service";
+import { createBankContent } from "@/services/programs.service";
+import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 import { useTags } from "@/hooks/useTags";
 import { useDraft } from "@/hooks/useDraft";
 import { handleApiErrorIs } from "@/lib/api-utils";
@@ -78,17 +79,34 @@ type Props = {
   workspaceId: string;
   onCreated?: (program: Program) => void;
   onCancel?: () => void;
+  /** What is being made. Decides the endpoint, the draft bucket and the label. */
+  contentType?: BankContentType;
+};
+
+/** The form is one shell for all three — a Verkefni and a Viðburður differ in
+ *  what they *are*, not in what a leader writes about them. */
+const FORM_LABEL: Record<BankContentType, string> = {
+  task: "Nýtt verkefni",
+  event: "Nýr viðburður",
+  program: "Ný dagskrá",
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Props) {
+export default function NewProgramForm({
+  workspaceId,
+  onCreated,
+  onCancel,
+  contentType = "task",
+}: Props) {
   const { getToken } = useAuth();
   const { tagNames: availableTags } = useTags();
   const displayTags = availableTags ?? [];
 
-  // Draft state — workspace-scoped key so drafts don't bleed between workspaces
-  const draftKey = `prog-draft-${workspaceId}`;
+  // Draft state — keyed by workspace *and* type. Workspace alone was enough
+  // while everything was a Dagskrá; now a half-written viðburður would
+  // reappear inside a new verkefni, which reads as the form being haunted.
+  const draftKey = `prog-draft-${workspaceId}-${contentType}`;
   const { draft, updateDraft, clearDraft } = useDraft<ProgramDraft>(draftKey, INITIAL_DRAFT);
 
   // Transient UI state (not persisted)
@@ -217,7 +235,8 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
 
     setLoading(true);
     try {
-      const program = await createProgram(
+      const program = await createBankContent(
+        contentType,
         {
           name: draft.name.trim(),
           description: draft.description.trim() || undefined,
@@ -256,7 +275,7 @@ export default function NewProgramForm({ workspaceId, onCreated, onCancel }: Pro
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit} aria-label="Ný dagskrá">
+    <form className={styles.form} onSubmit={handleSubmit} aria-label={FORM_LABEL[contentType]}>
       {/* ── Draft restored banner ── */}
       {showDraftBanner && (
         <div className={styles.draftBanner} role="status">

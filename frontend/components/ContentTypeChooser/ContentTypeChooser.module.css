@@ -1,0 +1,383 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   CONTENT TYPE CHOOSER — the bank's create launcher
+   Translated from `dagskrarbankinn.css` on claude.ai/design. Consumes the live
+   tokens: nothing here inlines a colour.
+
+   The sheet and the button are ONE object. The frame, the shadow and the radius
+   belong to `.launcher`; the button is square-cornered inside it. Opening does
+   not spawn a popover — it unrolls the sheet out of the button's own top edge,
+   so what you reach for is what opens.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.launcher {
+  --db-touch: 48px;
+  --db-ease-glide: cubic-bezier(0.16, 0.84, 0.44, 1);
+  --db-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --db-ease-press: cubic-bezier(0.2, 0, 0, 1);
+  --db-dur-unroll: 260ms;
+  --db-dur-roll: 170ms;
+  --db-dur-hover: 180ms;
+  --db-dur-press: 90ms;
+  --db-ball: 56px; /* resting diameter — above the 48px touch floor */
+  --db-fab-w: 268px; /* stretched width, set by the longest label */
+
+  position: relative;
+  width: var(--db-ball);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid hsl(var(--sl-color-primary-text));
+  border-radius: 999px;
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card);
+  overflow: hidden;
+  transition:
+    width var(--db-dur-roll) var(--db-ease-exit),
+    border-radius var(--db-dur-roll) var(--db-ease-exit),
+    border-color var(--db-dur-roll) var(--db-ease-exit),
+    box-shadow var(--db-dur-roll) var(--db-ease-exit);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launcher {
+    --db-dur-unroll: 1ms;
+    --db-dur-roll: 1ms;
+    --db-dur-hover: 1ms;
+    --db-dur-press: 1ms;
+  }
+}
+
+.launcher:hover,
+.launcher:focus-within {
+  width: var(--db-fab-w);
+  border-radius: var(--sl-radius-card);
+  transition-duration: calc(var(--db-dur-hover) * 1.2);
+  transition-timing-function: var(--db-ease-glide);
+}
+
+.launcher.open {
+  width: var(--db-fab-w);
+  border-radius: var(--sl-radius-card);
+  border-color: hsl(var(--sl-color-border));
+  box-shadow: var(--sl-shadow-modal);
+  transition-duration: var(--db-dur-unroll);
+  transition-timing-function: var(--db-ease-glide);
+}
+
+/* There is no hover on a phone, so a collapsed icon-only launcher would hide
+   its own name. On a coarse pointer it never collapses. */
+@media (pointer: coarse) {
+  .launcher {
+    width: 100%;
+  }
+}
+
+.launcher:active {
+  transform: translateY(1px) scale(0.985);
+  transition: transform var(--db-dur-press) var(--db-ease-press);
+}
+/* Open, it is a surface rather than a key, so it does not sink. */
+.launcher.open:active {
+  transform: none;
+}
+
+/* ══ The button — corner-less, because the launcher is the frame ═══════════ */
+.fab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  width: 100%;
+  min-height: var(--db-ball);
+  padding: 0 0 0 calc((var(--db-ball) - 18px) / 2);
+  justify-content: flex-start;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  font-family: inherit;
+  cursor: pointer;
+}
+.fab:hover {
+  background: hsl(var(--sl-color-primary-text) / 0.88);
+}
+.fab:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -3px;
+}
+.fab:active {
+  transform: none;
+}
+
+/* The plus is pinned to the left inset, so as the assembly grows leftward it
+   travels across the screen — and spins half a turn while it goes, which is what
+   makes the stretch read as a ball rolling open rather than a box getting wider.
+   A plus has 90° symmetry, so the spin is visible only in motion. */
+.plus {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  transform: rotate(-180deg);
+  transition: transform calc(var(--db-dur-roll) * 1.4) var(--db-ease-exit);
+}
+.launcher:hover .plus,
+.launcher:focus-within .plus {
+  transform: rotate(0deg);
+  transition: transform calc(var(--db-dur-hover) * 1.8) var(--db-ease-glide);
+}
+/* Once open the same glyph turns an eighth of a turn into a close mark, so the
+   button states what it is doing. */
+.launcher.open .plus {
+  transform: rotate(45deg);
+  transition: transform var(--db-dur-unroll) var(--db-ease-glide);
+}
+@media (pointer: coarse) {
+  .plus {
+    transform: rotate(0deg);
+  }
+}
+
+/* Clipped to nothing at rest, riding out on the stretch. It stays in the DOM
+   throughout, so the accessible name never depends on the animation. */
+.label {
+  flex: 1;
+  text-align: center;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+  white-space: nowrap;
+  max-width: 0;
+  padding-right: 0;
+  opacity: 0;
+  transform: translateX(8px);
+  transition:
+    max-width var(--db-dur-roll) var(--db-ease-exit),
+    padding var(--db-dur-roll) var(--db-ease-exit),
+    opacity calc(var(--db-dur-roll) * 0.5) linear,
+    transform var(--db-dur-roll) var(--db-ease-exit);
+}
+.launcher:hover .label,
+.launcher:focus-within .label,
+.launcher.open .label {
+  max-width: 340px;
+  padding-right: calc(var(--db-ball) - 19px);
+  opacity: 1;
+  transform: none;
+  transition:
+    max-width calc(var(--db-dur-hover) * 1.2) var(--db-ease-glide),
+    padding calc(var(--db-dur-hover) * 1.2) var(--db-ease-glide),
+    opacity var(--db-dur-hover) linear calc(var(--db-dur-hover) * 0.35),
+    transform calc(var(--db-dur-hover) * 1.4) var(--db-ease-glide) calc(var(--db-dur-hover) * 0.2);
+}
+@media (pointer: coarse) {
+  .label {
+    max-width: 340px;
+    padding-right: calc(var(--db-ball) - 19px);
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ══ The unroll ═══════════════════════════════════════════════════════════
+   The row grows 0fr → 1fr while the sheet is revealed from its bottom edge —
+   the seam with the button — upward. Same curve on both, so the content never
+   slides against its own container. */
+.sheetwrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--db-dur-roll) var(--db-ease-exit);
+}
+.launcher.open .sheetwrap {
+  grid-template-rows: 1fr;
+  transition-duration: var(--db-dur-unroll);
+  transition-timing-function: var(--db-ease-glide);
+}
+.sheet {
+  min-height: 0;
+  overflow: hidden;
+  clip-path: inset(100% 0 0 0);
+  opacity: 0;
+  transition:
+    clip-path var(--db-dur-roll) var(--db-ease-exit),
+    opacity calc(var(--db-dur-roll) * 0.5) linear;
+}
+.launcher.open .sheet {
+  clip-path: inset(0 0 0 0);
+  opacity: 1;
+  transition-duration: var(--db-dur-unroll), calc(var(--db-dur-unroll) * 0.3);
+  transition-timing-function: var(--db-ease-glide), linear;
+}
+/* a hairline where sheet meets button, in the button's own colour */
+.seam {
+  height: 1px;
+  background: hsl(var(--sl-color-primary-text));
+}
+.sheetTitle {
+  margin: 0;
+  padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm) var(--sl-spacing-gap-xs);
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ══ Options ══════════════════════════════════════════════════════════════ */
+.opt {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-gap-sm);
+  width: 100%;
+  min-height: var(--db-touch);
+  padding: 10px var(--sl-spacing-inset-sm) 10px calc(var(--sl-spacing-inset-sm) + 3px);
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: hsl(var(--sl-color-text-primary));
+  transition:
+    background-color var(--db-dur-hover) var(--db-ease-glide),
+    transform var(--db-dur-press) var(--db-ease-press),
+    opacity calc(var(--db-dur-roll) * 0.6) linear;
+}
+.opt + .opt {
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+/* each option rises out of the seam, the one nearest the button leaving first */
+.sheet .opt {
+  transform: translateY(9px);
+  opacity: 0;
+}
+.launcher.open .sheet .opt {
+  transform: none;
+  opacity: 1;
+  transition:
+    background-color var(--db-dur-hover) var(--db-ease-glide),
+    transform calc(var(--db-dur-unroll) * 0.8) var(--db-ease-glide),
+    opacity calc(var(--db-dur-unroll) * 0.5) linear;
+}
+.launcher.open .sheet .opt:nth-of-type(1) {
+  transition-delay: calc(var(--db-dur-unroll) * 0.26);
+}
+.launcher.open .sheet .opt:nth-of-type(2) {
+  transition-delay: calc(var(--db-dur-unroll) * 0.13);
+}
+.launcher.open .sheet .opt:nth-of-type(3) {
+  transition-delay: 0ms;
+}
+.opt:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.opt:active {
+  background: hsl(var(--sl-color-surface-active));
+  transform: scale(0.995);
+}
+.opt:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+/* accent rail: grows from the middle out, so hover reads as the row waking up */
+.opt::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: hsl(var(--db-accent));
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform var(--db-dur-hover) var(--db-ease-glide);
+}
+.opt:hover::before,
+.opt:focus-visible::before {
+  transform: scaleY(1);
+}
+.optIcon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  border-radius: var(--sl-radius-sm);
+  display: grid;
+  place-items: center;
+  background: hsl(var(--db-accent-bg));
+  color: hsl(var(--db-accent-text));
+  transition: transform var(--db-dur-hover) var(--db-ease-glide);
+}
+.opt:hover .optIcon {
+  transform: scale(1.07) translateX(1px);
+}
+.opt:active .optIcon {
+  transform: scale(0.95);
+}
+.optIcon svg {
+  width: 16px;
+  height: 16px;
+}
+.optBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.optName {
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-tight);
+}
+/* The three names do not say what they mean — a leikur is a Verkefni, not a
+   Dagskrá — so the hint line is the design itself and must not fade.
+   text-secondary, not tertiary: it is the likeliest thing here to fail AA. */
+.optHint {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  line-height: var(--sl-line-height-body);
+  text-wrap: pretty;
+}
+
+/* ══ Type accents ═════════════════════════════════════════════════════════
+   Verkefni is neutral on purpose — it is the default and the most common. */
+.typeTask {
+  --db-accent: var(--sl-color-border-strong);
+  --db-accent-bg: var(--sl-color-background-tertiary);
+  --db-accent-text: var(--sl-color-text-secondary);
+}
+.typeEvent {
+  --db-accent: var(--sl-color-event);
+  --db-accent-bg: var(--sl-color-event-subtle);
+  --db-accent-text: var(--sl-color-event-text);
+}
+.typeProgram {
+  --db-accent: var(--sl-color-primary);
+  --db-accent-bg: var(--sl-color-primary-subtle);
+  --db-accent-text: var(--sl-color-primary-text);
+}
+
+/* ══ Scrim ════════════════════════════════════════════════════════════════ */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: hsl(var(--sl-color-background-inverse) / 0.34);
+  opacity: 1;
+  z-index: var(--sl-z-modal-backdrop);
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scrim {
+    animation: scrimIn var(--db-dur-unroll, 260ms) cubic-bezier(0.16, 0.84, 0.44, 1);
+  }
+}
+@keyframes scrimIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

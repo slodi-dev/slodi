@@ -1,36 +1,35 @@
+"use client";
+
 // frontend/app/programs/components/ProgramsHeader.tsx
+import ContentTypeChooser, {
+  type BankContentType,
+} from "@/components/ContentTypeChooser/ContentTypeChooser";
 import { formatIcelandicDate } from "@/lib/format";
 import styles from "./ProgramsHeader.module.css";
 
 interface ProgramsHeaderProps {
-  onNewProgram: () => void;
+  /** Called with what the leader chose to make, not just that they want to. */
+  onNewContent: (type: BankContentType) => void;
   /** ISO date this leader can submit again, if they are in skammarkrókur. */
   suspendedUntil?: string | null;
 }
 
-export function ProgramsHeader({ onNewProgram, suspendedUntil }: ProgramsHeaderProps) {
-  const label = !suspendedUntil
-    ? "Bæta við dagskrá"
+export function ProgramsHeader({ onNewContent, suspendedUntil }: ProgramsHeaderProps) {
+  const reason = !suspendedUntil
+    ? undefined
     : suspendedUntil === "open-ended"
       ? "Þú getur ekki sent inn efni"
       : `Þú getur ekki sent inn efni fram til ${formatIcelandicDate(suspendedUntil)}`;
 
   return (
-    <>
-      {/* Disabled with a reason, never hidden. A button that vanishes reads as
-          a bug and produces a support message instead of understanding. */}
-      <button
-        className={styles.fab}
-        onClick={onNewProgram}
+    // Disabled with a reason, never hidden. A button that vanishes reads as a
+    // bug and produces a support message instead of understanding.
+    <div className={styles.fabAnchor}>
+      <ContentTypeChooser
+        onChoose={onNewContent}
         disabled={!!suspendedUntil}
-        aria-label={label}
-        title={suspendedUntil ? label : undefined}
-      >
-        <svg className={styles.fabIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        <span className={styles.fabLabel}>Bæta við í dagskrá</span>
-      </button>
-    </>
+        disabledReason={reason}
+      />
+    </div>
   );
 }

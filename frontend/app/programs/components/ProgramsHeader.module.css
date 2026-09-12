@@ -1,3 +1,21 @@
+/* The launcher places itself; this only decides where on the page it sits.
+   The old `.fab` painted white on `--sl-color-primary`, a mid-tone that does
+   not carry white at AA — ContentTypeChooser rides the `-text` tier instead. */
+.fabAnchor {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: var(--sl-z-fixed);
+}
+
+@media (max-width: 640px) {
+  .fabAnchor {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    PROGRAMS HEADER
    Top section with title and floating action button
