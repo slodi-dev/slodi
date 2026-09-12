@@ -2,13 +2,13 @@
 
 import React, { useState, useRef, useEffect, Suspense } from "react";
 import Modal from "@/components/Modal/Modal";
-import NewProgramForm from "@/app/programs/components/NewProgramForm";
 import ProgramGrid from "./components/ProgramGrid";
 import ProgramSort from "./components/ProgramSort";
 import type { SortOption } from "./components/ProgramSort";
 import Pagination from "./components/Pagination";
 import { ProgramsHeader } from "./components/ProgramsHeader";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
+import ContentCreateModal from "@/components/ContentCreateModal/ContentCreateModal";
 import SearchInput from "@/components/filters/SearchInput";
 import FilterSidebar, { FilterDrawer } from "@/components/filters/FilterSidebar";
 import ActiveFilterBar from "@/components/filters/ActiveFilterBar";
@@ -207,19 +207,16 @@ function ProgramsPageInner() {
         suspendedUntil={suspendedUntil}
       />
 
-      {/* New content modal. The title names what is being made — the leader has
-          already chosen, so echoing it back confirms the choice landed. */}
-      <Modal
-        open={showNewProgram}
-        onClose={() => setShowNewProgram(false)}
-        title={NEW_CONTENT_TITLE[newType]}
-      >
-        <NewProgramForm
+      {/* The create form owns its whole dialog — fixed header, scrolling body
+          and a pinned footer — so it is not wrapped in `components/Modal`. */}
+      {showNewProgram && (
+        <ContentCreateModal
           contentType={newType}
           workspaceId={postWorkspaceId}
-          onCreated={handleProgramCreated}
+          onCreated={() => void handleProgramCreated()}
+          onClose={() => setShowNewProgram(false)}
         />
-      </Modal>
+      )}
 
       {/* Top bar: Search + mobile filter toggle + Sort */}
       <div className={styles.topBar}>
@@ -349,14 +346,6 @@ function ProgramsPageInner() {
  *
  * Wrapped in Suspense because useProgramFilters uses useSearchParams().
  */
-/** Named per type, because "Bæta hugmynd í bankann" told a leader nothing about
- *  which of the three they were now filling in. */
-const NEW_CONTENT_TITLE: Record<BankContentType, string> = {
-  task: "Nýtt verkefni",
-  event: "Nýr viðburður",
-  program: "Ný dagskrá",
-};
-
 export default function ProgramsPage() {
   return (
     <Suspense>

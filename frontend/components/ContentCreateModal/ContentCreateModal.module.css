@@ -1,0 +1,531 @@
+/* The scrim. This component renders its own rather than sitting inside
+   `components/Modal`: that one supplies its own `role="dialog"` and its own
+   close button, and two of each in one tree is worse than a little
+   duplication here. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sl-z-modal);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: hsl(var(--sl-color-background-inverse) / 0.34);
+  overflow-y: auto;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CONTENT CREATE MODAL — the bank's create form
+   Translated from the reviewed `ContentCreateModal` card on claude.ai/design.
+   Consumes the live tokens: nothing here inlines a colour.
+
+   Three things the design fixes, all of which had shipped:
+     · errors sat at the bottom of a scrolling modal, so on a phone a failed
+       submit looked like the form had done nothing. The error region and the
+       actions are pinned below the scroll.
+     · a collapsed section hid its own error. It now reads "1 villa" and
+       expands itself on submit.
+     · the draft notice competed with the first field. It is one line in the
+       fixed header now, above the scroll, so it pushes nothing down.
+
+   This is the accordion layout — the phone-first one. The wide (≥1080px)
+   variant with an index rail is a separate card and is not implemented yet.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.dialog {
+  --db-touch: 48px;
+  --db-ease-glide: cubic-bezier(0.16, 0.84, 0.44, 1);
+  --db-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --db-ease-press: cubic-bezier(0.2, 0, 0, 1);
+  --db-dur-unroll: 260ms;
+  --db-dur-roll: 170ms;
+  --db-dur-hover: 180ms;
+  --db-dur-press: 90ms;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 460px;
+  /* dvh: the browser chrome on a phone makes vh taller than the viewport,
+     which would push the pinned footer off screen — the one thing this
+     layout exists to prevent. */
+  max-height: min(560px, calc(100dvh - 80px));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-modal);
+  box-shadow: var(--sl-shadow-modal);
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    --db-dur-unroll: 1ms;
+    --db-dur-roll: 1ms;
+    --db-dur-hover: 1ms;
+    --db-dur-press: 1ms;
+  }
+}
+@media (max-width: 640px) {
+  .dialog {
+    max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    border-radius: var(--sl-radius-card);
+  }
+}
+
+/* ══ Fixed header ═════════════════════════════════════════════════════════ */
+.head {
+  flex-shrink: 0;
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-md) var(--sl-spacing-gap-sm);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+}
+.headRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-gap-sm);
+}
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+}
+/* The type is the one word that changes, so it carries the type's own colour. */
+.title em {
+  font-style: normal;
+  color: hsl(var(--db-accent-text));
+}
+.close {
+  flex-shrink: 0;
+  width: var(--db-touch);
+  height: var(--db-touch);
+  margin: -10px -10px 0 0;
+  border: 0;
+  background: none;
+  border-radius: var(--sl-radius-button);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    background-color var(--db-dur-hover) var(--db-ease-glide),
+    color var(--db-dur-hover) var(--db-ease-glide),
+    transform var(--db-dur-press) var(--db-ease-press);
+}
+.close:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+.close:active {
+  transform: scale(0.9);
+}
+.close:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+.close svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Draft strip — in the fixed header, one line, so it never pushes the first
+   field out of view. Info, not warning: a recovered draft is good news —
+   nothing was lost and nothing is wrong. Amber reads as "careful", and red is
+   spoken for by the error region a few hundred pixels below in the same
+   modal. Teal keeps the two apart at a glance. */
+.draft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-info-subtle));
+  color: hsl(var(--sl-color-info-text));
+  border: 1px solid hsl(var(--sl-color-info) / 0.45);
+  font-size: var(--sl-text-body-sm);
+}
+.draftIcon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.draftText {
+  flex: 1;
+  min-width: 14ch;
+  margin: 0;
+}
+.draftAct {
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  border-radius: var(--sl-radius-xs);
+}
+.draftAct:hover {
+  background: hsl(var(--sl-color-info) / 0.18);
+}
+
+/* ══ Scrolling body ═══════════════════════════════════════════════════════ */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sl-spacing-gap-sm) 0;
+}
+
+/* ══ Sections — the launcher's unroll, mirrored downward ═══════════════════ */
+.sec {
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.secBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  width: 100%;
+  min-height: var(--db-touch);
+  padding: 0 var(--sl-spacing-inset-md);
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: hsl(var(--sl-color-text-primary));
+  transition: background-color var(--db-dur-hover) var(--db-ease-glide);
+}
+.secBtn:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.secBtn:active {
+  background: hsl(var(--sl-color-surface-active));
+}
+.secBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+.panelWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--db-dur-roll) var(--db-ease-exit);
+}
+.secOpen > .panelWrap {
+  grid-template-rows: 1fr;
+  transition-duration: var(--db-dur-unroll);
+  transition-timing-function: var(--db-ease-glide);
+}
+.panel {
+  min-height: 0;
+  overflow: hidden;
+  clip-path: inset(0 0 100% 0);
+  opacity: 0;
+  padding: 0 var(--sl-spacing-inset-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-md);
+  transition:
+    clip-path var(--db-dur-roll) var(--db-ease-exit),
+    padding var(--db-dur-roll) var(--db-ease-exit),
+    opacity calc(var(--db-dur-roll) * 0.5) linear;
+}
+.secOpen .panel {
+  clip-path: inset(0 0 0 0);
+  opacity: 1;
+  padding-top: 2px;
+  padding-bottom: var(--sl-spacing-inset-md);
+  transition-duration: var(--db-dur-unroll), var(--db-dur-unroll), calc(var(--db-dur-unroll) * 0.4);
+  transition-timing-function: var(--db-ease-glide), var(--db-ease-glide), linear;
+}
+
+/* The marker carries the section's state in shape as well as colour: empty
+   ring untouched, tick complete, exclamation when it holds an error. */
+.dot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--sl-color-border-strong));
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition:
+    background-color var(--db-dur-hover) var(--db-ease-glide),
+    border-color var(--db-dur-hover) var(--db-ease-glide),
+    color var(--db-dur-hover) var(--db-ease-glide);
+}
+.dot svg {
+  width: 11px;
+  height: 11px;
+}
+.secComplete .dot {
+  background: hsl(var(--sl-color-primary-text));
+  border-color: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+.secError .dot {
+  background: hsl(var(--sl-color-error-subtle));
+  border-color: hsl(var(--sl-color-error));
+  color: hsl(var(--sl-color-error-text));
+}
+.secLabel {
+  flex: 1;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+}
+.req {
+  color: hsl(var(--sl-color-error-text));
+}
+/* A collapsed section has to be able to say it holds an error — hiding it is
+   what made "submit appears to do nothing" possible. */
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  text-transform: none;
+  letter-spacing: 0;
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+  border: 1px solid hsl(var(--sl-color-error) / 0.45);
+}
+.chev {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: hsl(var(--sl-color-text-tertiary));
+  transition: transform calc(var(--db-dur-hover) * 1.2) var(--db-ease-glide);
+}
+.secOpen .chev {
+  transform: rotate(180deg);
+}
+
+/* ══ Fields ═══════════════════════════════════════════════════════════════ */
+.fld {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.lab {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.lab span {
+  color: hsl(var(--sl-color-error-text));
+}
+.input {
+  min-height: var(--db-touch);
+  width: 100%;
+  display: block;
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  padding: 0 var(--sl-spacing-gap-md);
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-primary));
+  transition:
+    border-color var(--db-dur-hover) var(--db-ease-glide),
+    box-shadow var(--db-dur-hover) var(--db-ease-glide);
+}
+.input::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.input:focus-visible {
+  outline: 0;
+  border-color: hsl(var(--sl-input-border-focus));
+  box-shadow: var(--sl-shadow-focus);
+}
+textarea.input {
+  min-height: 76px;
+  padding-top: 12px;
+  resize: vertical;
+  line-height: var(--sl-line-height-body);
+}
+.inputNum {
+  max-width: 140px;
+  font-variant-numeric: tabular-nums;
+}
+.fldError .input {
+  border-color: hsl(var(--sl-color-error));
+}
+.fldError .input:focus-visible {
+  box-shadow: var(--sl-shadow-focus-error);
+}
+.err {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-error-text));
+}
+.err svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.help {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ══ Pinned footer — the whole point of the layout ════════════════════════ */
+.foot {
+  flex-shrink: 0;
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+  background: hsl(var(--sl-color-surface));
+}
+.errBar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px var(--sl-spacing-inset-md);
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  border-bottom: 1px solid hsl(var(--sl-color-error) / 0.4);
+}
+.errBar svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.okBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px var(--sl-spacing-inset-md);
+  background: hsl(var(--sl-color-success-subtle));
+  color: hsl(var(--sl-color-success-text));
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+.okBar svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.acts {
+  display: flex;
+  gap: var(--sl-spacing-gap-sm);
+  justify-content: flex-end;
+  padding: var(--sl-spacing-gap-md) var(--sl-spacing-inset-md);
+}
+@media (max-width: 640px) {
+  /* column-reverse: the primary action sits nearest the thumb. */
+  .acts {
+    flex-direction: column-reverse;
+  }
+  .acts .btn {
+    width: 100%;
+  }
+}
+
+/* ══ Buttons ══════════════════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--db-touch);
+  padding: 0 var(--sl-spacing-inset-md);
+  border-radius: var(--sl-radius-button);
+  border: 1px solid transparent;
+  background: none;
+  font-family: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--db-dur-hover) var(--db-ease-glide),
+    border-color var(--db-dur-hover) var(--db-ease-glide),
+    transform var(--db-dur-press) var(--db-ease-press);
+}
+.btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+.btn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+.btn[aria-disabled="true"],
+.btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+/* The submit carries the same weight as the launcher label — it is the same
+   promise at the other end of the flow. Filled buttons ride the -text tier,
+   which flips with the theme, so one pairing with text-inverse clears AA in
+   both. */
+.btnPrimary {
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  border-color: hsl(var(--sl-color-primary-text));
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+  padding: 0 var(--sl-spacing-inset-lg);
+}
+.btnPrimary:hover {
+  background: hsl(var(--sl-color-primary-text) / 0.88);
+}
+.btnGhost {
+  color: hsl(var(--sl-color-text-secondary));
+}
+.btnGhost:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+.spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation-duration: 2500ms;
+  }
+}
+
+/* ══ Type accents — same four as the chooser ══════════════════════════════ */
+.typeTask {
+  --db-accent-text: var(--sl-color-text-secondary);
+}
+.typeFundur {
+  --db-accent-text: var(--sl-color-primary-text);
+}
+.typeHringur {
+  --db-accent-text: var(--sl-color-cycle-text);
+}
+.typeEvent {
+  --db-accent-text: var(--sl-color-event-text);
+}
