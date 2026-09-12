@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 
 from app.core.db import get_session
@@ -252,3 +252,33 @@ def test_upload_endpoints_require_auth(mock_db_session):
 
     resp = unauth.post("/uploads/sas", json={"content_type": "image/png", "purpose": "image"})
     assert resp.status_code in (401, 403)
+
+
+# ── Önnur gögn — the documents a foringi actually has ────────────────────────
+
+
+@pytest.mark.parametrize(
+    "mime",
+    [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+        "text/markdown",
+    ],
+)
+def test_document_uploads_accept_the_formats_leaders_have(client, mime):
+    """A leiðbeining is as often a Word file or a text list as it is a PDF."""
+    response = client.post("/uploads/sas", json={"purpose": "document", "content_type": mime})
+    assert response.status_code == status.HTTP_200_OK, response.text
+
+
+@pytest.mark.parametrize("mime", ["text/html", "image/svg+xml", "application/x-msdownload"])
+def test_document_uploads_refuse_anything_that_can_carry_script(client, mime):
+    """Forcing `Content-Disposition: attachment` is a mitigation, not a licence.
+
+    A blob URL is same-origin enough that serving HTML or SVG from it is worth
+    refusing outright rather than relying on one header.
+    """
+    response = client.post("/uploads/sas", json={"purpose": "document", "content_type": mime})
+    assert response.status_code != status.HTTP_200_OK
