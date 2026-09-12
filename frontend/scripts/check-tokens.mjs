@@ -81,8 +81,7 @@ for (const file of files) {
       if (NEEDS_HSL.test(token) && !isDefinition) {
         const before = raw.slice(0, m.index);
         const lastHsl = before.lastIndexOf("hsl");
-        const wrapped =
-          lastHsl !== -1 && !before.slice(lastHsl).includes(")");
+        const wrapped = lastHsl !== -1 && !before.slice(lastHsl).includes(")");
         if (!wrapped) {
           add(file, line, "error", "unwrapped-color-token", `use hsl(var(${token}))`);
         }
@@ -91,7 +90,9 @@ for (const file of files) {
 
     if (isTokenFile) return;
 
-    const hex = raw.match(/#[0-9a-fA-F]{3,8}\b/);
+    // `&#8594;` is a right arrow, not a colour. Require the # to be preceded
+    // by something other than `&`, and to be a valid hex length.
+    const hex = raw.match(/(?<![&\w])#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/);
     if (hex && !isDefinition) {
       add(file, line, "error", "hardcoded-color", `${hex[0]} — use a --sl-color-* token`);
     }
@@ -103,7 +104,13 @@ for (const file of files) {
       /var\(--(background|foreground|primary|secondary|muted|accent|border|input|ring|card|popover|destructive)(-[a-z]+)?\)/
     );
     if (legacy) {
-      add(file, line, "warn", "legacy-token", `${legacy[0]} — the --sl-* set is the source of truth`);
+      add(
+        file,
+        line,
+        "warn",
+        "legacy-token",
+        `${legacy[0]} — the --sl-* set is the source of truth`
+      );
     }
   });
 }

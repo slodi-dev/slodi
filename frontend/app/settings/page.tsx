@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import Image from "next/image";
 import { ShieldCheck } from "lucide-react";
 import { auth0 } from "@/lib/auth0";
 import styles from "./settings.module.css";
