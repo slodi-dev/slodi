@@ -4,7 +4,7 @@ import datetime as dt
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, func, or_, select, update
+from sqlalchemy import ColumnElement, Select, func, or_, select, true, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -13,7 +13,8 @@ from app.models.comment import Comment
 from app.models.content import Content
 from app.models.event import Event
 from app.models.program import Program
-from app.models.tag import ContentTag
+from app.models.tag import ContentTag, Tag
+from app.models.user import User
 from app.repositories.base import Repository
 from app.repositories.content import (
     ContentStats,
@@ -131,8 +132,32 @@ class ProgramRepository(Repository):
             stmt = stmt.where(
                 or_(*(Content.equipment.contains([item]) for item in filters.equipment))
             )
+        if filters.tags:
+            # Case-insensitive, OR logic. A subquery rather than a join: joining
+            # content_tags multiplies rows per matching tag, which is invisible
+            # in a listing but silently inflates `count()`.
+            #
+            # Lowercased on both sides because the bank's own vocabulary is
+            # capitalised („Útivist") while a URL or a hand-typed filter is not
+            # — an exact match is how a tag that plainly exists comes back empty.
+            wanted = [t.strip().lower() for t in filters.tags if t.strip()]
+            if wanted:
+                stmt = stmt.where(
+                    Content.id.in_(
+                        select(ContentTag.content_id)
+                        .join(Tag, Tag.id == ContentTag.tag_id)
+                        .where(func.lower(Tag.name).in_(wanted))
+                    )
+                )
         if filters.author_id is not None:
             stmt = stmt.where(Content.author_id == filters.author_id)
+        if filters.author_name:
+            # The sidebar filters by name, not id — a leader looking for their
+            # own submissions knows what they are called, not their UUID.
+            escaped = filters.author_name.replace("%", r"\%").replace("_", r"\_")
+            stmt = stmt.where(
+                Content.author_id.in_(select(User.id).where(User.name.ilike(f"%{escaped}%")))
+            )
         return stmt
 
     def _apply_sort(
@@ -171,6 +196,66 @@ class ProgramRepository(Repository):
         stmt = self._apply_filters(stmt, filters or ProgramFilters())
         result = await self.session.scalar(stmt)
         return result or 0
+
+    async def facets_for_workspace(self, workspace_id: UUID) -> dict[str, list[str]]:
+        """The distinct values the filter sidebar offers, across the whole bank.
+
+        These used to be derived in the browser from whatever had been fetched.
+        That was already only a slice of the bank, and it became plainly wrong
+        once the grid started fetching one page at a time: a checkbox list
+        built from twelve rows offers twelve rows' worth of equipment and
+        silently hides the rest.
+
+        One round trip, four cheap DISTINCTs over an indexed workspace column.
+        """
+        base = [
+            Content.workspace_id == workspace_id,
+            Content.deleted_at.is_(None),
+            Content.hidden_at.is_(None),
+        ]
+
+        locations = await self.session.scalars(
+            select(Content.location)
+            .where(*base, Content.location.is_not(None), Content.location != "")
+            .distinct()
+            .order_by(Content.location)
+        )
+
+        # `equipment` is a JSONB array, so the distinct values live one level
+        # down — unnest before collecting them.
+        item = func.jsonb_array_elements_text(Content.equipment).table_valued("value")
+        equipment = await self.session.scalars(
+            select(item.c.value)
+            .select_from(Content)
+            .join(item, true())
+            .where(*base, Content.equipment.is_not(None))
+            .distinct()
+            .order_by(item.c.value)
+        )
+
+        authors = await self.session.scalars(
+            select(User.name)
+            .join(Content, Content.author_id == User.id)
+            .where(*base)
+            .distinct()
+            .order_by(User.name)
+        )
+
+        tags = await self.session.scalars(
+            select(Tag.name)
+            .join(ContentTag, ContentTag.tag_id == Tag.id)
+            .join(Content, Content.id == ContentTag.content_id)
+            .where(*base)
+            .distinct()
+            .order_by(Tag.name)
+        )
+
+        return {
+            "locations": [v for v in locations if v],
+            "equipment": [v for v in equipment if v],
+            "authors": [v for v in authors if v],
+            "tags": [v for v in tags if v],
+        }
 
     async def get_content_type(self, content_id: UUID) -> str | None:
         """The discriminator for one row, without loading the row itself.

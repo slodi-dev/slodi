@@ -47,6 +47,9 @@ class ProgramService:
         )
         return [ProgramListOut.from_row(prog, stats) for prog, stats in rows]
 
+    async def facets_for_workspace(self, workspace_id: UUID) -> dict[str, list[str]]:
+        return await self.repo.facets_for_workspace(workspace_id)
+
     async def count_content_for_workspace(
         self, workspace_id: UUID, filters: ProgramFilters | None = None
     ) -> int:

@@ -303,3 +303,89 @@ def test_get_content_unknown_id_is_404(client):
         response = client.get(f"/content/{uuid4()}")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+# ── Filtering and paging the bank ─────────────────────────────────────────────
+
+
+def test_content_list_passes_tags_and_author_to_the_service(client, sample_workspace):
+    """Both filters exist because the sidebar offers them.
+
+    Neither had a server-side equivalent while the bank filtered in the
+    browser, so moving filtering to the server would silently have dropped
+    them — the two most-used narrowings in the sidebar.
+    """
+    with (
+        patch(
+            "app.services.programs.ProgramService.list_content_for_workspace",
+            new_callable=AsyncMock,
+        ) as mock_list,
+        patch(
+            "app.services.programs.ProgramService.count_content_for_workspace",
+            new_callable=AsyncMock,
+        ) as mock_count,
+    ):
+        mock_list.return_value = []
+        mock_count.return_value = 0
+
+        response = client.get(
+            f"/workspaces/{sample_workspace.id}/content",
+            params={"tags": ["Útivist", "Leikir"], "author": "Halld", "limit": 12, "offset": 24},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        filters = mock_list.call_args.kwargs["filters"]
+        assert filters.tags == ["Útivist", "Leikir"]
+        assert filters.author_name == "Halld"
+        # The count must see the same filters, or the pager reports a total for
+        # a different query than the one on screen.
+        assert mock_count.call_args.kwargs["filters"].tags == ["Útivist", "Leikir"]
+        assert mock_list.call_args.kwargs["limit"] == 12
+        assert mock_list.call_args.kwargs["offset"] == 24
+
+
+def test_content_list_reports_the_bank_total_not_the_page_size(client, sample_workspace):
+    """`X-Total-Count` is what the pager divides into pages.
+
+    The bank fetched a flat 200 rows and counted those, so it advertised
+    seventeen pages of a ten-thousand-row bank.
+    """
+    with (
+        patch(
+            "app.services.programs.ProgramService.list_content_for_workspace",
+            new_callable=AsyncMock,
+        ) as mock_list,
+        patch(
+            "app.services.programs.ProgramService.count_content_for_workspace",
+            new_callable=AsyncMock,
+        ) as mock_count,
+    ):
+        mock_list.return_value = []
+        mock_count.return_value = 10004
+
+        response = client.get(
+            f"/workspaces/{sample_workspace.id}/content", params={"limit": 12, "offset": 0}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.headers["X-Total-Count"] == "10004"
+        assert 'rel="next"' in response.headers["Link"]
+
+
+def test_content_facets_are_listed_for_the_sidebar(client, sample_workspace):
+    with patch(
+        "app.services.programs.ProgramService.facets_for_workspace",
+        new_callable=AsyncMock,
+    ) as mock_facets:
+        mock_facets.return_value = {
+            "locations": ["Úti, í skóglendi"],
+            "equipment": ["Kaðall", "Hjálmar"],
+            "authors": ["Halldór Valberg"],
+            "tags": ["Útivist"],
+        }
+
+        response = client.get(f"/workspaces/{sample_workspace.id}/content/facets")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["equipment"] == ["Kaðall", "Hjálmar"]
+        mock_facets.assert_awaited_once_with(sample_workspace.id)

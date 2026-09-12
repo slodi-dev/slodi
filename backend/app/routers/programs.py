@@ -99,9 +99,17 @@ async def list_workspace_content(
         default=None,
         description="Filter by equipment items (OR logic — programs with any of these items)",
     ),
+    tags: list[str] | None = Query(
+        default=None,
+        description="Filter by tag names (OR logic, case-insensitive)",
+    ),
     author_id: UUID | None = Query(
         default=None,
         description="Filter by author ID (exact UUID match)",
+    ),
+    author: str | None = Query(
+        default=None,
+        description="Case-insensitive partial match on the author's name",
     ),
     sort_by: ProgramSortBy | None = Query(
         default=None,
@@ -133,7 +141,9 @@ async def list_workspace_content(
         price_max=price_max,
         location=location,
         equipment=equipment,
+        tags=tags,
         author_id=author_id,
+        author_name=author,
         sort_by=sort_by,
     )
 
@@ -333,6 +343,29 @@ async def copy_program_to_workspace(
 
 
 # ----- item endpoints -----
+
+
+@router.get("/workspaces/{workspace_id}/content/facets", response_model=dict[str, list[str]])
+async def list_workspace_content_facets(
+    session: SessionDep,
+    workspace_id: UUID,
+    response: Response,
+    current_user: UserOut = Depends(get_current_user),
+) -> dict[str, list[str]]:
+    """The values the filter sidebar can offer: locations, equipment, authors, tags.
+
+    The browser used to derive these from the rows it happened to have. Once the
+    grid pages server-side that list is one page long, so the options have to
+    come from the bank rather than from the page.
+    """
+    await check_workspace_access(
+        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
+    )
+    svc = ProgramService(session)
+    # The vocabulary moves when someone submits, not between two clicks of a
+    # checkbox, so a short shared cache is safe and saves four DISTINCTs a page.
+    response.headers["Cache-Control"] = "private, max-age=300"
+    return await svc.facets_for_workspace(workspace_id)
 
 
 @router.get("/content/{content_id}", response_model=ContentOut)

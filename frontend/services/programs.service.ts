@@ -108,29 +108,99 @@ export function canEditProgram(user: User | null, program: Program): boolean {
   return user.id === program.author_id;
 }
 
+/** What the bank can be narrowed by. Mirrors the query params on `/content`. */
+export type ContentQuery = {
+  search?: string;
+  ages?: string[];
+  tags?: string[];
+  equipment?: string[];
+  author?: string;
+  location?: string;
+  durationMin?: number;
+  durationMax?: number;
+  prepMin?: number;
+  prepMax?: number;
+  countMin?: number;
+  countMax?: number;
+  freeOnly?: boolean;
+  priceMax?: number;
+  sortBy?: string;
+};
+
+/** The option lists the filter sidebar offers, across the whole bank. */
+export type ContentFacets = {
+  locations: string[];
+  equipment: string[];
+  authors: string[];
+  tags: string[];
+};
+
+function buildContentParams(query: ContentQuery, limit: number, offset: number): URLSearchParams {
+  const p = new URLSearchParams();
+  p.set("limit", String(limit));
+  p.set("offset", String(offset));
+
+  if (query.search?.trim()) p.set("search", query.search.trim());
+  for (const age of query.ages ?? []) p.append("age", age);
+  for (const tag of query.tags ?? []) p.append("tags", tag);
+  for (const item of query.equipment ?? []) p.append("equipment", item);
+  if (query.author?.trim()) p.set("author", query.author.trim());
+  if (query.location?.trim()) p.set("location", query.location.trim());
+  if (query.durationMin !== undefined) p.set("duration_min", String(query.durationMin));
+  if (query.durationMax !== undefined) p.set("duration_max", String(query.durationMax));
+  if (query.prepMin !== undefined) p.set("prep_time_min", String(query.prepMin));
+  if (query.prepMax !== undefined) p.set("prep_time_max", String(query.prepMax));
+  if (query.countMin !== undefined) p.set("count_min", String(query.countMin));
+  if (query.countMax !== undefined) p.set("count_max", String(query.countMax));
+  // `freeOnly` is price_max=0, which the backend reads as "free or unpriced".
+  if (query.freeOnly) p.set("price_max", "0");
+  else if (query.priceMax !== undefined) p.set("price_max", String(query.priceMax));
+  if (query.sortBy) p.set("sort_by", query.sortBy);
+
+  return p;
+}
+
 /**
- * Fetch all programs for a workspace
- * Requires authentication
+ * One page of the bank, filtered and sorted by the server.
+ *
+ * Both halves of that sentence matter. This used to fetch a flat `limit=200`
+ * and let the browser filter and slice it, which meant the bank showed 200 of
+ * 10.004 items and called the result "everything" — a filter that matched
+ * nothing on the first 200 rows reported an empty bank.
+ *
+ * `/content`, not `/programs`: the latter returns only rows whose content_type
+ * is "program", which was indistinguishable from "everything" while the create
+ * form filed every submission as one.
  */
 export async function fetchPrograms(
   workspaceId: string,
-  getToken: () => Promise<string | null>
+  getToken: () => Promise<string | null>,
+  options: { query?: ContentQuery; limit?: number; offset?: number } = {}
 ): Promise<{ items: Program[]; total: number | null }> {
-  // `/content`, not `/programs`: the latter returns only rows whose
-  // content_type is "program", which was indistinguishable from "everything"
-  // while the create form filed every submission as one. The moment the
-  // chooser started filing a Verkefni as a task, those vanished from the bank
-  // they had just been added to.
-  const url = buildApiUrl(`/workspaces/${workspaceId}/content?limit=200`);
-  const page = await fetchPageWithAuth<Program>(
-    url,
-    {
-      method: "GET",
-    },
-    getToken
-  );
+  const { query = {}, limit = 24, offset = 0 } = options;
+  const params = buildContentParams(query, limit, offset);
+  const url = buildApiUrl(`/workspaces/${workspaceId}/content?${params.toString()}`);
+  return fetchPageWithAuth<Program>(url, { method: "GET" }, getToken);
+}
 
-  return page;
+/**
+ * The filter sidebar's option lists.
+ *
+ * Derived in the browser before, from whatever rows had been fetched — which
+ * offered one page's worth of equipment once the grid started paging.
+ */
+export async function fetchContentFacets(
+  workspaceId: string,
+  getToken: () => Promise<string | null>
+): Promise<ContentFacets> {
+  const url = buildApiUrl(`/workspaces/${workspaceId}/content/facets`);
+  const raw = await fetchWithAuth<Partial<ContentFacets>>(url, { method: "GET" }, getToken);
+  return {
+    locations: raw.locations ?? [],
+    equipment: raw.equipment ?? [],
+    authors: raw.authors ?? [],
+    tags: raw.tags ?? [],
+  };
 }
 
 /**
@@ -297,14 +367,6 @@ export async function unlikeProgram(
 ): Promise<void> {
   const url = buildApiUrl(`/content/${programId}/likes`);
   await fetchWithAuth<void>(url, { method: "DELETE" }, getToken);
-}
-
-/**
- * Extract unique tags from programs list
- */
-export function extractTags(programs: Program[]): string[] {
-  const tagNames = programs.flatMap((p) => (p.tags || []).map((t) => t.name));
-  return Array.from(new Set(tagNames));
 }
 
 /**

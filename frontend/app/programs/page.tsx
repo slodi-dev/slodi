@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, Suspense } from "react";
+import React, { useState, useRef, useEffect, useMemo, Suspense } from "react";
 import Modal from "@/components/Modal/Modal";
 import ProgramGrid from "./components/ProgramGrid";
 import ProgramSort from "./components/ProgramSort";
@@ -17,7 +17,6 @@ import usePrograms from "@/hooks/usePrograms";
 import { useUserWorkspace } from "@/hooks/useUserWorkspace";
 import { useProgramFilters } from "@/hooks/useProgramFilters";
 import type { FilterState } from "@/hooks/useProgramFilters";
-import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchMySuspension } from "@/services/suspensions.service";
 import { formatIcelandicDate, formatIcelandicNumber } from "@/lib/format";
@@ -28,6 +27,7 @@ import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
 import {
   updateProgram,
   deleteProgram,
+  type ContentQuery,
   type Program,
   type ProgramUpdateInput,
 } from "@/services/programs.service";
@@ -67,14 +67,56 @@ function ProgramsPageInner() {
   // Resolve the shared workspace ID
   const defaultWorkspaceId = useDefaultWorkspaceId();
 
-  // Fetch data
+  // ── Filters ────────────────────────────────────────────────────────────
+  // The array argument is now only there for the hook's own unique-value
+  // helpers, which this page no longer uses: the option lists come from the
+  // server's facets, and filtering happens there too.
+  const { filters, setFilters, activeChips, clearAll } = useProgramFilters([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const query: ContentQuery = useMemo(
+    () => ({
+      search: filters.search,
+      ages: filters.ages,
+      tags: filters.tags,
+      equipment: filters.equipment,
+      author: filters.author,
+      location: filters.location,
+      durationMin: filters.durationMin,
+      durationMax: filters.durationMax,
+      prepMin: filters.prepMin,
+      prepMax: filters.prepMax,
+      countMin: filters.countMin,
+      countMax: filters.countMax,
+      freeOnly: filters.freeOnly,
+      priceMax: filters.priceMax,
+      sortBy: filters.sortBy,
+    }),
+    [filters]
+  );
+
+  // Narrowing the bank has to send you back to the front of it. Staying on
+  // page seven of a result set that now holds four items shows an empty grid
+  // and reads as "nothing matched".
+  const queryKey = JSON.stringify(query);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [queryKey]);
+
+  // Fetch one page, filtered and sorted by the server.
   const {
     programs,
     total,
+    facets,
     loading: programsLoading,
     error: programsError,
     refetch,
-  } = usePrograms(defaultWorkspaceId);
+  } = usePrograms(defaultWorkspaceId, {
+    query,
+    page: currentPage,
+    pageSize: PROGRAMS_PER_PAGE,
+  });
 
   // User's private workspace (retained for future toggle)
   const { workspaceId: userWorkspaceId } = useUserWorkspace();
@@ -125,22 +167,11 @@ function ProgramsPageInner() {
     }
   };
 
-  // ── Filters (new comprehensive hook from 4A) ──────────────────────────
-  const {
-    filters,
-    setFilters,
-    filtered,
-    activeChips,
-    clearAll,
-    uniqueLocations,
-    uniqueAuthors,
-    uniqueTags,
-    uniqueEquipment,
-  } = useProgramFilters(programs || []);
-
   // ── Pagination ─────────────────────────────────────────────────────────
-  const { currentPage, totalPages, paginatedItems, setCurrentPage, totalItems, itemsPerPage } =
-    usePagination(filtered, PROGRAMS_PER_PAGE);
+  // Driven by the server's count, not by the length of what was fetched.
+  const totalItems = total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PROGRAMS_PER_PAGE));
+  const itemsPerPage = PROGRAMS_PER_PAGE;
 
   const handleProgramCreated = async () => {
     setShowNewProgram(false);
@@ -152,17 +183,17 @@ function ProgramsPageInner() {
     selectedAges: filters.ages,
     onAgesChange: (ages: string[]) => setFilters({ ages }),
 
-    availableTags: uniqueTags,
+    availableTags: facets.tags,
     selectedTags: filters.tags,
     onTagsChange: (tags: string[]) => setFilters({ tags }),
 
-    uniqueEquipment,
+    uniqueEquipment: facets.equipment,
     selectedEquipment: filters.equipment,
     onEquipmentChange: (equipment: string[]) => setFilters({ equipment }),
 
     authorValue: filters.author,
     onAuthorChange: (author: string) => setFilters({ author }),
-    uniqueAuthors,
+    uniqueAuthors: facets.authors,
 
     durationMin: filters.durationMin,
     durationMax: filters.durationMax,
@@ -186,19 +217,13 @@ function ProgramsPageInner() {
 
     locationValue: filters.location,
     onLocationChange: (location: string) => setFilters({ location }),
-    uniqueLocations,
+    uniqueLocations: facets.locations,
   };
 
-  const filtering = filtered.length !== (programs?.length ?? 0);
-  const countLabel = (() => {
-    const n = filtered.length;
-    if (n === 1) return "1 eining";
-    // While a filter is on, the honest number is what it matched. Otherwise it
-    // is what the bank holds — and if more is held than was fetched, say both
-    // rather than passing the page off as the whole.
-    if (filtering || total === null || total <= n) return `${formatIcelandicNumber(n)} einingar`;
-    return `${formatIcelandicNumber(n)} af ${formatIcelandicNumber(total)} einingum`;
-  })();
+  // The server counts with the filters applied, so this is the honest total
+  // whether or not anything is narrowed — no more "200 of 10.004" hedging.
+  const countLabel =
+    totalItems === 1 ? "1 eining" : `${formatIcelandicNumber(totalItems)} einingar`;
 
   return (
     <div className={styles.page}>
@@ -297,7 +322,7 @@ function ProgramsPageInner() {
 
           {/* Program Grid */}
           <ProgramGrid
-            programs={paginatedItems}
+            programs={programs ?? []}
             isLoading={programsLoading}
             error={programsError ? "Villa kom upp við að sækja dagskrár" : undefined}
             onRetry={refetch}
@@ -308,7 +333,7 @@ function ProgramsPageInner() {
           />
 
           {/* Pagination */}
-          {filtered.length > 0 && (
+          {totalItems > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
