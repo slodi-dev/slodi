@@ -160,8 +160,14 @@ const NAV_ITEMS: NavItem[] = [
     path: "/admin",
     icon: Shield,
     group: "secondary",
-    roleRequired: "admin", // Admin-only access
-    disabled: true, // Not yet implemented
+    /*
+     * Platform permission, not workspace role. `UserManagement` guards itself
+     * on `permissions !== "admin"`, so gating the link on `roleRequired` meant
+     * the two disagreed in both directions: a workspace admin saw a link that
+     * then refused them, and a platform admin who happened not to be an admin
+     * of any workspace never saw the screen that appoints moderators.
+     */
+    permissionRequired: "admin",
   },
   // Personal navigation - user-specific items
   {
