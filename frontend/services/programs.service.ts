@@ -1,7 +1,6 @@
 import { buildApiUrl } from "@/lib/api-utils";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 import { fetchWithAuth, fetchPageWithAuth } from "@/lib/api";
-import { User } from "@/services/users.service";
 
 export type Program = {
   id: string;
@@ -126,15 +125,6 @@ export type ProgramUpdateInput = {
 };
 
 export type ProgramsResponse = Program[] | { programs: Program[] };
-
-/**
- * Check if a user can edit a program.
- * @deprecated Use `canEditProgram` from `@/lib/permissions` with workspace role for accurate checks.
- */
-export function canEditProgram(user: User | null, program: Program): boolean {
-  if (!user || !program) return false;
-  return user.id === program.author_id;
-}
 
 /** What the bank can be narrowed by. Mirrors the query params on `/content`. */
 export type ContentQuery = {

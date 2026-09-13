@@ -3,7 +3,7 @@
  * Centralized permission checking logic for the application
  */
 
-import type { User } from "@/services/users.service";
+import { type User, hasPermission } from "@/services/users.service";
 import type { Program } from "@/services/programs.service";
 import { type WorkspaceRole, hasWorkspaceRole } from "@/services/workspaces.service";
 
@@ -38,8 +38,15 @@ function canChangeContent(
   workspaceRole: WorkspaceRole | null | undefined
 ): boolean {
   if (!user || !content) return false;
-  // Platform admins bypass workspace membership entirely
-  if (user.permissions === "admin") return true;
+  // Platform admins bypass workspace membership entirely. Ranked rather than
+  // compared for equality: `=== "admin"` is how the backend's tags router ended
+  // up refusing moderators (sc-486), and `hasPermission` is right here.
+  if (hasPermission(user.permissions, "admin")) return true;
+  // Dagskrárstjórnarteymið, matching the server's fourth clause. This was
+  // missing, so the moderation team was offered neither action on anybody's
+  // item while the API allowed both — the mirror claimed a match it did not
+  // have, which is how the next divergence gets written "following the pattern".
+  if (hasPermission(user.permissions, "moderator")) return true;
   // Everyone else must at least be a member of the workspace
   if (!hasWorkspaceRole(workspaceRole, "viewer")) return false;
   return isOwner(user, content) || hasWorkspaceRole(workspaceRole, "admin");

@@ -48,6 +48,22 @@ describe("who may change a bank item", () => {
   });
 });
 
+describe("what the moderation team may change", () => {
+  const moderator = (id: string): User => ({ id, permissions: "moderator" }) as User;
+
+  it("lets a moderator edit and delete anybody's item", () => {
+    // Mirrors the backend's fourth clause in `check_content_edit_access`.
+    expect(canEditProgram(moderator("m1"), item(AUTHOR_ID), "viewer")).toBe(true);
+    expect(canDeleteProgram(moderator("m1"), item(AUTHOR_ID), "viewer")).toBe(true);
+  });
+
+  it("does not extend that to a plain member", () => {
+    expect(
+      canEditProgram({ id: "m2", permissions: "member" } as User, item(AUTHOR_ID), "viewer")
+    ).toBe(false);
+  });
+});
+
 describe("who may submit to the bank", () => {
   const BANK = "00000000-0000-0000-0000-0000000000bb";
   const SVEIT = "00000000-0000-0000-0000-0000000000cc";
