@@ -67,6 +67,7 @@ function Fact({ label, value }: { label: string; value: string | null }) {
 export default function ReviewDetailPane({
   detail,
   loading,
+  failed = false,
   busy,
   onAct,
   onComment,
@@ -74,6 +75,8 @@ export default function ReviewDetailPane({
 }: {
   detail: ReviewDetail | null;
   loading: boolean;
+  /** The load failed, as distinct from nothing being selected. */
+  failed?: boolean;
   busy: boolean;
   onAct: (action: "approve" | "reject" | "hide" | "unhide") => void;
   onComment: (body: string, visibility: ReviewCommentVisibility) => Promise<void>;
@@ -104,6 +107,13 @@ export default function ReviewDetailPane({
   }
 
   if (loading) return <p className={styles.state}>Hleð…</p>;
+  if (failed) {
+    return (
+      <p className={styles.state} role="alert">
+        Ekki tókst að sækja efnið. Reyndu aftur eða veldu annað atriði.
+      </p>
+    );
+  }
   if (!detail) {
     return <p className={styles.state}>Veldu efni til vinstri til að lesa það í heild.</p>;
   }
