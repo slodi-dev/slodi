@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -36,7 +37,28 @@ def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Backend API")
 
-    # Add CORS middleware
+    # ── Order matters here ──────────────────────────────────────────────
+    #
+    # Starlette always puts `ServerErrorMiddleware` outermost, so a response
+    # produced by `@app.exception_handler(Exception)` never passes back through
+    # `CORSMiddleware` — it arrives at the browser with no
+    # `access-control-allow-origin`, and `fetch` reports it as a network
+    # failure rather than as the 500 it is. This file used to claim the
+    # exception handler closed that gap. It did not, and the cost was real: a
+    # 500 on every tagged item in Yfirferð presented as "Failed to fetch", with
+    # no status and no body to read.
+    #
+    # So the catch-all is an ordinary middleware registered *before* CORS.
+    # `add_middleware` prepends, so the last one added ends up outermost —
+    # meaning CORS wraps this, sees a normal 500 response, and adds its headers.
+    @app.middleware("http")
+    async def catch_unhandled(request: Request, call_next: Any) -> Response:
+        try:
+            return await call_next(request)
+        except Exception:
+            _log.exception("Unhandled exception for %s %s", request.method, request.url)
+            return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -48,22 +70,6 @@ def create_app() -> FastAPI:
         # paginated endpoint sends them; nothing could see them until now.
         expose_headers=["X-Total-Count", "X-Limit", "X-Offset", "Link"],
     )
-
-    # Starlette's CORSMiddleware does not reliably add CORS headers when an
-    # unhandled Python exception propagates out of a route handler (the
-    # response is never "started", so the middleware's send-wrapper never
-    # fires).  Registering an explicit handler here converts every such
-    # exception into a proper JSONResponse *before* it reaches the CORS
-    # layer, guaranteeing the browser always gets the expected header and can
-    # read the error body — rather than seeing a misleading CORS failure that
-    # hides the real problem.
-    @app.exception_handler(Exception)
-    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        _log.exception("Unhandled exception for %s %s", request.method, request.url)
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "Internal server error"},
-        )
 
     app.include_router(email_list_router.router)
     app.include_router(email_router.router)

@@ -66,6 +66,10 @@ export default function YfirferdPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [detail, setDetail] = useState<ReviewDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  // A failed load must not look like an empty selection. It did, and that
+  // turned a 500 on every tagged item into a pane that calmly said "pick
+  // something" — with nothing in the console, because the error was swallowed.
+  const [detailError, setDetailError] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,13 +188,23 @@ export default function YfirferdPage() {
   useEffect(() => {
     if (!activeContentId) {
       setDetail(null);
+      setDetailError(false);
       return;
     }
     let cancelled = false;
     setDetailLoading(true);
+    setDetailError(false);
     fetchReviewDetail(activeContentId, getToken)
-      .then((d) => !cancelled && setDetail(d))
-      .catch(() => !cancelled && setDetail(null))
+      .then((d) => {
+        if (cancelled) return;
+        setDetail(d);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[yfirferd] could not load item", activeContentId, err);
+        setDetail(null);
+        setDetailError(true);
+      })
       .finally(() => !cancelled && setDetailLoading(false));
     return () => {
       cancelled = true;
@@ -653,6 +667,7 @@ export default function YfirferdPage() {
           <ReviewDetailPane
             detail={detail}
             loading={detailLoading}
+            failed={detailError}
             busy={busyId !== null}
             onComment={comment}
             shareUrl={

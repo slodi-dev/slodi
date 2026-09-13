@@ -67,7 +67,8 @@ class ModerationService:
         return ReviewDetail.model_validate(content).model_copy(
             update={
                 "reviewed_by_name": reviewer,
-                "tags": [ct.tag.name for ct in content.content_tags],
+                # `tags` is handled by ReviewDetail's own validator — correcting
+                # it here was too late, because validation had already raised.
                 "reports": [
                     ReportSummary.model_validate(r)
                     for r in content.reports
