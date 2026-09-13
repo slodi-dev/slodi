@@ -831,6 +831,35 @@
   font-weight: var(--sl-font-weight-emphasis);
 }
 
+/* The author's own view of how their submission fared. Sits under the
+   provenance because it is the same class of fact: reference, not action. */
+.review {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-left: 3px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-sunken));
+}
+
+/* Only the rejection is coloured. Waiting is not a warning. */
+.reviewRejected {
+  border-left-color: hsl(var(--sl-color-error));
+}
+
+.reviewState {
+  display: block;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.reviewNote {
+  margin: 6px 0 0;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
 .asideActions {
   display: flex;
   flex-direction: column;

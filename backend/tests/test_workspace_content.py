@@ -389,3 +389,79 @@ def test_content_facets_are_listed_for_the_sidebar(client, sample_workspace):
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["equipment"] == ["Kaðall", "Hjálmar"]
         mock_facets.assert_awaited_once_with(sample_workspace.id)
+
+
+def _reader_client(mock_db_session, viewer_user):
+    """A signed-in reader who is neither the author nor a moderator."""
+    from fastapi.testclient import TestClient
+
+    from app.core.auth import get_current_user
+    from app.core.db import get_session
+    from app.main import create_app
+
+    app = create_app()
+
+    async def _user():
+        return viewer_user
+
+    async def _session():
+        yield mock_db_session
+
+    app.dependency_overrides[get_current_user] = _user
+    app.dependency_overrides[get_session] = _session
+    return TestClient(app)
+
+
+def test_the_author_sees_their_own_review_state(client, sample_workspace, admin_user):
+    """A leader whose submission was rejected otherwise has no way to find out:
+    the item simply stops appearing."""
+    from app.domain.enums import ReviewState
+
+    task = _make_task(sample_workspace.id)
+    task.author_id = admin_user.id
+    task.review_state = ReviewState.rejected
+    task.review_note = "Of hættulegt"
+
+    with (
+        patch(
+            "app.repositories.programs.ProgramRepository.get_content_type",
+            new_callable=AsyncMock,
+        ) as mock_type,
+        patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as mock_get,
+    ):
+        mock_type.return_value = "task"
+        mock_get.return_value = task
+
+        body = client.get(f"/content/{task.id}").json()
+
+    assert body["review_state"] == "rejected"
+    assert body["review_note"] == "Of hættulegt"
+
+
+def test_another_reader_sees_no_review_state(mock_db_session, viewer_user, sample_workspace):
+    """Nobody needs to know how the team judged somebody else's idea."""
+    from app.domain.enums import ReviewState
+    from app.schemas.workspace import WorkspaceRole
+
+    task = _make_task(sample_workspace.id)  # written by somebody else
+    task.review_state = ReviewState.rejected
+    task.review_note = "Of hættulegt"
+
+    reader = _reader_client(mock_db_session, viewer_user)
+
+    with (
+        patch(
+            "app.repositories.programs.ProgramRepository.get_content_type",
+            new_callable=AsyncMock,
+        ) as mock_type,
+        patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.core.auth._get_workspace_role", new_callable=AsyncMock) as role,
+    ):
+        mock_type.return_value = "task"
+        mock_get.return_value = task
+        role.return_value = WorkspaceRole.viewer
+
+        body = reader.get(f"/content/{task.id}").json()
+
+    assert body["review_state"] is None
+    assert body["review_note"] is None

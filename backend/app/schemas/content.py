@@ -22,7 +22,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.domain.enums import AgeGroup, ContentType
+from app.domain.enums import AgeGroup, ContentType, ReviewState
 from app.repositories.content import ContentStats
 from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut
@@ -162,6 +162,12 @@ class ContentOut(ContentListOut):
     """Full content details, including author info and comments."""
 
     author: UserOutLimited
+    #: Only ever filled in for the item's own author and for moderators. A
+    #: leader needs to know whether their submission was looked at; nobody else
+    #: needs to know how the team judged somebody else's idea. The route strips
+    #: these rather than the schema, because the schema cannot see who is asking.
+    review_state: ReviewState | None = None
+    review_note: str | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
     media: dict[str, Any] | None = None

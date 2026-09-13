@@ -50,6 +50,14 @@ export type Program = {
     documents?: Array<{ name: string; url: string; content_type?: string | null }>;
   } | null;
   comments?: ContentComment[];
+  /**
+   * Only ever present for the item's own author and for moderators — the
+   * server strips it for everyone else. A leader needs to know whether their
+   * submission was looked at; nobody else needs to know how the team judged
+   * somebody else's idea.
+   */
+  review_state?: "unreviewed" | "approved" | "rejected" | null;
+  review_note?: string | null;
 };
 
 /** A leader's public comment on a bank item — not a reviewer's note. */

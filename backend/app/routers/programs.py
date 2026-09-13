@@ -415,6 +415,14 @@ async def get_content(
         minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
+
+    # Review state is for the person who wrote it and for the team. A leader
+    # whose submission was rejected or hidden otherwise has no way to find out
+    # — the item simply stops appearing — and nobody else needs to know how the
+    # team judged somebody else's idea.
+    if not (is_moderator or item.author_id == current_user.id):
+        item = item.model_copy(update={"review_state": None, "review_note": None})
+
     response.headers["Cache-Control"] = "private, max-age=60"
     return item
 
