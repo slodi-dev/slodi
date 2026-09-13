@@ -308,6 +308,35 @@ export async function createProgram(
  * Update an existing program
  * Requires authentication
  */
+/**
+ * Save an edit to a bank item of any kind.
+ *
+ * Each subtype has its own PATCH route, and `/programs/{id}` matches only rows
+ * whose content_type is "program" — the same joined-table trap that made every
+ * Verkefni 404 on the detail page. Editing one failed the same way, silently,
+ * because the type was assumed rather than passed.
+ */
+export async function updateBankContent(
+  type: BankContentType,
+  id: string,
+  input: ProgramUpdateInput,
+  getToken: () => Promise<string | null>
+): Promise<Program> {
+  const { tagNames, ...rest } = input;
+  const body = tagNames !== undefined ? { ...rest, tag_names: tagNames } : rest;
+  const url = buildApiUrl(`/${CREATE_ROUTE[type]}/${id}`);
+  return fetchWithAuth<Program>(
+    url,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    getToken
+  );
+}
+
+/** @deprecated Pass the content type — use `updateBankContent`. */
 export async function updateProgram(
   id: string,
   input: ProgramUpdateInput,

@@ -11,7 +11,7 @@ import ChipList from "./ChipList";
 import TagPicker from "./TagPicker";
 import FileDropZone, { type Attachment } from "./FileDropZone";
 import { AGE_GROUPS, getAgeGroupPatrol } from "@/lib/format";
-import { createBankContent, type Program } from "@/services/programs.service";
+import { createBankContent, updateBankContent, type Program } from "@/services/programs.service";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 
 /** The four kinds, in the accusative — the title reads "Bæta við — verkefni". */
@@ -74,6 +74,40 @@ const EMPTY: Draft = {
   documents: [],
 };
 
+/**
+ * Seed the form from an existing item.
+ *
+ * Every numeric field is a string here because the inputs are text: a number
+ * input that has been cleared reports `""`, and treating that as 0 is how a
+ * duration a leader deleted came back as "0 mín".
+ */
+function draftFromProgram(p: Program): Draft {
+  const num = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
+  return {
+    name: p.name ?? "",
+    description: p.description ?? "",
+    durationMin: num(p.duration_min),
+    durationMax: num(p.duration_max),
+    prepMin: num(p.prep_time_min),
+    prepMax: num(p.prep_time_max),
+    countMin: num(p.count_min),
+    countMax: num(p.count_max),
+    price: num(p.price),
+    location: p.location ?? "",
+    ages: p.age ?? [],
+    equipment: p.equipment ?? [],
+    instructions: p.instructions ?? "",
+    tagList: (p.tags ?? []).map((t) => t.name),
+    image: p.image ?? "",
+    documents:
+      p.media?.documents?.map((d) => ({
+        name: d.name,
+        url: d.url,
+        content_type: d.content_type ?? undefined,
+      })) ?? [],
+  };
+}
+
 /** Which section each field lives in, so a failed submit can open the right one. */
 const FIELD_SECTION: Record<string, SectionId> = {
   name: "basic",
@@ -112,12 +146,24 @@ export default function ContentCreateModal({
   workspaceId,
   onCreated,
   onClose,
+  variant = "modal",
+  initial = null,
 }: {
   contentType: BankContentType;
   workspaceId: string;
-  onCreated: (created: Program) => void;
+  onCreated: (saved: Program) => void;
   onClose: () => void;
+  /**
+   * `inline` drops the scrim and the dialog role and renders the same form in
+   * the page. Editing an item happens in place, and the alternative — a second
+   * form kept in step with this one by hand — is how the two drifted apart in
+   * the first place.
+   */
+  variant?: "modal" | "inline";
+  /** When present the form edits this item instead of creating a new one. */
+  initial?: Program | null;
 }) {
+  const editing = initial !== null;
   const { getToken } = useAuth();
   const { tagNames } = useTags();
   // Three layouts, one form. Above 620px nothing collapses, so "an error
@@ -127,8 +173,12 @@ export default function ContentCreateModal({
 
   // Keyed by workspace *and* type: with four kinds, a half-written viðburður
   // reappearing inside a new verkefni reads as the form being haunted.
-  const draftKey = `bank-draft-${workspaceId}-${contentType}`;
-  const { draft, updateDraft, clearDraft } = useDraft<Draft>(draftKey, EMPTY);
+  const draftKey = editing ? `bank-edit-${initial.id}` : `bank-draft-${workspaceId}-${contentType}`;
+  // Editing starts from what is stored, not from an empty form; `useDraft`
+  // still restores an interrupted edit, keyed by the item so it cannot bleed
+  // into a different one.
+  const seed = useMemo(() => (initial ? draftFromProgram(initial) : EMPTY), [initial]);
+  const { draft, updateDraft, clearDraft } = useDraft<Draft>(draftKey, seed);
 
   const [open, setOpen] = useState<SectionId[]>(["basic"]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -301,32 +351,40 @@ export default function ContentCreateModal({
     setBusy(true);
     const num = (v: string) => (v.trim() === "" ? undefined : Number(v));
     try {
-      const created = await createBankContent(
-        contentType,
-        {
-          name: draft.name.trim(),
-          description: draft.description.trim() || undefined,
-          instructions: draft.instructions.trim() || undefined,
-          image: draft.image.trim() || undefined,
-          equipment: draft.equipment,
-          duration_min: num(draft.durationMin),
-          duration_max: num(draft.durationMax),
-          prep_time_min: num(draft.prepMin),
-          prep_time_max: num(draft.prepMax),
-          count_min: num(draft.countMin),
-          count_max: num(draft.countMax),
-          price: num(draft.price),
-          location: draft.location.trim() || undefined,
-          age: draft.ages.length ? draft.ages : undefined,
-          tagNames: draft.tagList,
-          media: draft.documents.length ? { documents: draft.documents } : undefined,
-          workspaceId,
-        },
-        getToken
+      const payload = {
+        name: draft.name.trim(),
+        description: draft.description.trim() || undefined,
+        instructions: draft.instructions.trim() || undefined,
+        image: draft.image.trim() || undefined,
+        equipment: draft.equipment,
+        duration_min: num(draft.durationMin),
+        duration_max: num(draft.durationMax),
+        prep_time_min: num(draft.prepMin),
+        prep_time_max: num(draft.prepMax),
+        count_min: num(draft.countMin),
+        count_max: num(draft.countMax),
+        price: num(draft.price),
+        location: draft.location.trim() || undefined,
+        age: draft.ages.length ? draft.ages : undefined,
+        tagNames: draft.tagList,
+        media: draft.documents.length ? { documents: draft.documents } : undefined,
+        workspaceId,
+      };
+
+      // Editing PATCHes the subtype's own route. `/programs/{id}` matches only
+      // rows whose content_type is "program", so assuming it here is what made
+      // saving a Verkefni fail the same way reading one did.
+      const saved = editing
+        ? await updateBankContent(contentType, initial.id, payload, getToken)
+        : await createBankContent(contentType, payload, getToken);
+
+      setDone(
+        editing
+          ? `Breytingar á ${draft.name.trim()} eru vistaðar.`
+          : `${draft.name.trim()} er komið í bankann.`
       );
-      setDone(`${draft.name.trim()} er komið í bankann.`);
       clearDraft();
-      onCreated(created);
+      onCreated(saved);
     } catch (e) {
       setSummary(e instanceof Error ? e.message : "Ekki tókst að vista. Reyndu aftur.");
     } finally {
@@ -627,6 +685,287 @@ export default function ContentCreateModal({
     ),
   };
 
+  const form = (
+    <div
+      ref={dialogRef}
+      className={cn(
+        styles.dialog,
+        variant === "inline" && styles.inline,
+        mode === "wide" && styles.wide,
+        mode === "half" && styles.half,
+        TYPE_ACCENT[contentType]
+      )}
+      // Inline is part of the page, not a layer over it: no dialog role, no
+      // modal semantics, and Escape belongs to the page rather than to this.
+      role={variant === "modal" ? "dialog" : undefined}
+      aria-modal={variant === "modal" ? true : undefined}
+      aria-labelledby={titleId}
+      onKeyDown={variant === "modal" ? onKeyDown : undefined}
+    >
+      <div className={styles.head}>
+        <div className={styles.headRow}>
+          <h2 className={styles.title} id={titleId}>
+            {editing ? "Breyta" : "Bæta við"} — <em>{TYPE_WORD[contentType]}</em>
+          </h2>
+          <button type="button" className={styles.close} aria-label="Loka" onClick={onClose}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+            </svg>
+          </button>
+        </div>
+        {draftOffer && (
+          <div className={styles.draft} role="status">
+            <svg
+              className={styles.draftIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="11" x2="12" y2="16" />
+              <line x1="12" y1="8" x2="12" y2="8" />
+            </svg>
+            <p className={styles.draftText}>
+              {editing
+                ? "Þú áttir óvistaðar breytingar frá því síðast."
+                : "Þú áttir ósent drög frá því síðast."}
+            </p>
+            <button type="button" className={styles.draftAct} onClick={() => setDraftOffer(false)}>
+              {editing ? "Halda áfram með þær" : "Halda áfram með þau"}
+            </button>
+            <button
+              type="button"
+              className={styles.draftAct}
+              onClick={() => {
+                clearDraft();
+                setDraftOffer(false);
+              }}
+            >
+              {editing ? "Byrja frá því sem er vistað" : "Byrja upp á nýtt"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {flowing ? (
+        <div className={cn(styles.body)}>
+          {/* Wide gets a rail beside the flow; half gets the same flow with the
+              index as a chip row. Both are `nav` landmarks with the same label,
+              so the shape changes and the meaning does not. */}
+          {mode === "wide" ? (
+            <nav className={styles.nav} aria-label="Hlutar eyðublaðsins">
+              <p className={styles.navTitle}>Á eyðublaðinu</p>
+              {SECTIONS.map(({ id, label, required }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn(styles.navItem, here === id && styles.navHere)}
+                  aria-current={here === id ? "true" : undefined}
+                  onClick={() => goTo(id)}
+                >
+                  {marker(id)}
+                  <span className={styles.navLabel}>
+                    {label}{" "}
+                    {required && (
+                      <span className={styles.blockReq} aria-hidden="true">
+                        *
+                      </span>
+                    )}
+                  </span>
+                  {/* The dot is decorative; this is the same state in words. */}
+                  <span className="sl-sr-only">{stateWord(id)}</span>
+                </button>
+              ))}
+            </nav>
+          ) : null}
+
+          <div className={styles.flow} ref={flowRef}>
+            {mode === "half" && (
+              <nav className={styles.rail} aria-label="Hlutar eyðublaðsins">
+                {SECTIONS.map(({ id, label, required }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={cn(styles.railChip, here === id && styles.railHere)}
+                    aria-current={here === id ? "true" : undefined}
+                    onClick={() => goTo(id)}
+                  >
+                    {marker(id)}
+                    {label}
+                    {required && (
+                      <span className={styles.blockReq} aria-hidden="true">
+                        *
+                      </span>
+                    )}
+                    <span className="sl-sr-only">{stateWord(id)}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
+
+            {SECTIONS.map(({ id, label, required }) => (
+              <section
+                key={id}
+                className={styles.block}
+                data-block={id}
+                aria-labelledby={`h-${id}`}
+              >
+                <div className={styles.blockHead}>
+                  {marker(id)}
+                  <h3 className={styles.blockLabel} id={`h-${id}`}>
+                    {label}{" "}
+                    {required && (
+                      <span className={styles.blockReq} aria-hidden="true">
+                        *
+                      </span>
+                    )}
+                  </h3>
+                  {errorsIn(id) > 0 && (
+                    <span className={styles.flag}>
+                      {errorsIn(id) === 1 ? "1 villa" : `${errorsIn(id)} villur`}
+                    </span>
+                  )}
+                </div>
+                {panels[id]}
+              </section>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.body}>
+          {SECTIONS.map(({ id, label, required }) => {
+            const isOpen = open.includes(id);
+            const bad = errorsIn(id);
+            const panelId = `panel-${id}`;
+            return (
+              <div
+                key={id}
+                className={cn(
+                  styles.sec,
+                  isOpen && styles.secOpen,
+                  bad > 0 ? styles.secError : filled[id] && styles.secComplete
+                )}
+              >
+                <button
+                  type="button"
+                  className={styles.secBtn}
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
+                  onClick={() => toggle(id)}
+                >
+                  {marker(id)}
+                  <span className={styles.secLabel}>
+                    {label}{" "}
+                    {required && (
+                      <span className={styles.req} aria-hidden="true">
+                        *
+                      </span>
+                    )}
+                  </span>
+                  <span className="sl-sr-only">{stateWord(id)}</span>
+                  {/* A closed section still says it holds an error. */}
+                  {bad > 0 && (
+                    <span className={styles.flag}>{bad === 1 ? "1 villa" : `${bad} villur`}</span>
+                  )}
+                  <svg
+                    className={styles.chev}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                <div className={styles.panelWrap}>
+                  <div className={styles.panel} id={panelId}>
+                    {panels[id]}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className={styles.foot}>
+        {summary && (
+          <p className={styles.errBar} role="alert">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="8" x2="12" y2="13" />
+              <line x1="12" y1="16" x2="12" y2="16" />
+            </svg>
+            {summary}
+          </p>
+        )}
+        {done && (
+          <p className={styles.okBar} role="status">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {done}
+          </p>
+        )}
+        <div className={styles.acts}>
+          <button
+            type="button"
+            className={cn(styles.btn, styles.btnGhost)}
+            onClick={() => {
+              clearDraft();
+              setErrors({});
+              setSummary(null);
+              setDone(null);
+              if (editing) onClose();
+            }}
+          >
+            {editing ? "Hætta við" : "Hreinsa"}
+          </button>
+          <button
+            type="button"
+            className={cn(styles.btn, styles.btnPrimary)}
+            aria-disabled={busy}
+            disabled={busy}
+            onClick={() => void submit()}
+          >
+            {busy && <span className={styles.spin} aria-hidden="true" />}
+            {editing ? "Vista breytingar" : "Bæta í bankann"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (variant === "inline") return form;
+
   return (
     <div
       className={styles.backdrop}
@@ -636,278 +975,7 @@ export default function ContentCreateModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        ref={dialogRef}
-        className={cn(
-          styles.dialog,
-          mode === "wide" && styles.wide,
-          mode === "half" && styles.half,
-          TYPE_ACCENT[contentType]
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onKeyDown={onKeyDown}
-      >
-        <div className={styles.head}>
-          <div className={styles.headRow}>
-            <h2 className={styles.title} id={titleId}>
-              Bæta við — <em>{TYPE_WORD[contentType]}</em>
-            </h2>
-            <button type="button" className={styles.close} aria-label="Loka" onClick={onClose}>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                aria-hidden="true"
-              >
-                <line x1="6" y1="6" x2="18" y2="18" />
-                <line x1="18" y1="6" x2="6" y2="18" />
-              </svg>
-            </button>
-          </div>
-          {draftOffer && (
-            <div className={styles.draft} role="status">
-              <svg
-                className={styles.draftIcon}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <line x1="12" y1="11" x2="12" y2="16" />
-                <line x1="12" y1="8" x2="12" y2="8" />
-              </svg>
-              <p className={styles.draftText}>Þú áttir ósent drög frá því síðast.</p>
-              <button
-                type="button"
-                className={styles.draftAct}
-                onClick={() => setDraftOffer(false)}
-              >
-                Halda áfram með þau
-              </button>
-              <button
-                type="button"
-                className={styles.draftAct}
-                onClick={() => {
-                  clearDraft();
-                  setDraftOffer(false);
-                }}
-              >
-                Byrja upp á nýtt
-              </button>
-            </div>
-          )}
-        </div>
-
-        {flowing ? (
-          <div className={cn(styles.body)}>
-            {/* Wide gets a rail beside the flow; half gets the same flow with the
-              index as a chip row. Both are `nav` landmarks with the same label,
-              so the shape changes and the meaning does not. */}
-            {mode === "wide" ? (
-              <nav className={styles.nav} aria-label="Hlutar eyðublaðsins">
-                <p className={styles.navTitle}>Á eyðublaðinu</p>
-                {SECTIONS.map(({ id, label, required }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={cn(styles.navItem, here === id && styles.navHere)}
-                    aria-current={here === id ? "true" : undefined}
-                    onClick={() => goTo(id)}
-                  >
-                    {marker(id)}
-                    <span className={styles.navLabel}>
-                      {label}{" "}
-                      {required && (
-                        <span className={styles.blockReq} aria-hidden="true">
-                          *
-                        </span>
-                      )}
-                    </span>
-                    {/* The dot is decorative; this is the same state in words. */}
-                    <span className="sl-sr-only">{stateWord(id)}</span>
-                  </button>
-                ))}
-              </nav>
-            ) : null}
-
-            <div className={styles.flow} ref={flowRef}>
-              {mode === "half" && (
-                <nav className={styles.rail} aria-label="Hlutar eyðublaðsins">
-                  {SECTIONS.map(({ id, label, required }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      className={cn(styles.railChip, here === id && styles.railHere)}
-                      aria-current={here === id ? "true" : undefined}
-                      onClick={() => goTo(id)}
-                    >
-                      {marker(id)}
-                      {label}
-                      {required && (
-                        <span className={styles.blockReq} aria-hidden="true">
-                          *
-                        </span>
-                      )}
-                      <span className="sl-sr-only">{stateWord(id)}</span>
-                    </button>
-                  ))}
-                </nav>
-              )}
-
-              {SECTIONS.map(({ id, label, required }) => (
-                <section
-                  key={id}
-                  className={styles.block}
-                  data-block={id}
-                  aria-labelledby={`h-${id}`}
-                >
-                  <div className={styles.blockHead}>
-                    {marker(id)}
-                    <h3 className={styles.blockLabel} id={`h-${id}`}>
-                      {label}{" "}
-                      {required && (
-                        <span className={styles.blockReq} aria-hidden="true">
-                          *
-                        </span>
-                      )}
-                    </h3>
-                    {errorsIn(id) > 0 && (
-                      <span className={styles.flag}>
-                        {errorsIn(id) === 1 ? "1 villa" : `${errorsIn(id)} villur`}
-                      </span>
-                    )}
-                  </div>
-                  {panels[id]}
-                </section>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className={styles.body}>
-            {SECTIONS.map(({ id, label, required }) => {
-              const isOpen = open.includes(id);
-              const bad = errorsIn(id);
-              const panelId = `panel-${id}`;
-              return (
-                <div
-                  key={id}
-                  className={cn(
-                    styles.sec,
-                    isOpen && styles.secOpen,
-                    bad > 0 ? styles.secError : filled[id] && styles.secComplete
-                  )}
-                >
-                  <button
-                    type="button"
-                    className={styles.secBtn}
-                    aria-expanded={isOpen}
-                    aria-controls={panelId}
-                    onClick={() => toggle(id)}
-                  >
-                    {marker(id)}
-                    <span className={styles.secLabel}>
-                      {label}{" "}
-                      {required && (
-                        <span className={styles.req} aria-hidden="true">
-                          *
-                        </span>
-                      )}
-                    </span>
-                    <span className="sl-sr-only">{stateWord(id)}</span>
-                    {/* A closed section still says it holds an error. */}
-                    {bad > 0 && (
-                      <span className={styles.flag}>{bad === 1 ? "1 villa" : `${bad} villur`}</span>
-                    )}
-                    <svg
-                      className={styles.chev}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      aria-hidden="true"
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-                  <div className={styles.panelWrap}>
-                    <div className={styles.panel} id={panelId}>
-                      {panels[id]}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className={styles.foot}>
-          {summary && (
-            <p className={styles.errBar} role="alert">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <line x1="12" y1="8" x2="12" y2="13" />
-                <line x1="12" y1="16" x2="12" y2="16" />
-              </svg>
-              {summary}
-            </p>
-          )}
-          {done && (
-            <p className={styles.okBar} role="status">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              {done}
-            </p>
-          )}
-          <div className={styles.acts}>
-            <button
-              type="button"
-              className={cn(styles.btn, styles.btnGhost)}
-              onClick={() => {
-                clearDraft();
-                setErrors({});
-                setSummary(null);
-                setDone(null);
-              }}
-            >
-              Hreinsa
-            </button>
-            <button
-              type="button"
-              className={cn(styles.btn, styles.btnPrimary)}
-              aria-disabled={busy}
-              disabled={busy}
-              onClick={() => void submit()}
-            >
-              {busy && <span className={styles.spin} aria-hidden="true" />}
-              Bæta í bankann
-            </button>
-          </div>
-        </div>
-      </div>
+      {form}
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo, Suspense } from "react";
-import Modal from "@/components/Modal/Modal";
 import ProgramGrid from "./components/ProgramGrid";
 import ProgramSort from "./components/ProgramSort";
 import type { SortOption } from "./components/ProgramSort";
@@ -24,14 +23,7 @@ import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import {
-  updateProgram,
-  deleteProgram,
-  type ContentQuery,
-  type Program,
-  type ProgramUpdateInput,
-} from "@/services/programs.service";
-import ProgramDetailEdit from "@/app/programs/[id]/components/ProgramDetailEdit";
+import { deleteProgram, type ContentQuery, type Program } from "@/services/programs.service";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
 /**
@@ -146,12 +138,6 @@ function ProgramsPageInner() {
   void userWorkspaceId; // retained for future toggle
 
   // ── Edit / delete handlers ─────────────────────────────────────────────
-  const handleEditSave = async (data: ProgramUpdateInput) => {
-    if (!editingProgram) return;
-    await updateProgram(editingProgram.id, data, getToken);
-    setEditingProgram(null);
-    await refetch();
-  };
 
   const handleDeleteConfirm = async () => {
     if (!pendingDeleteProgram) return;
@@ -354,21 +340,21 @@ function ProgramsPageInner() {
         {...filterSidebarProps}
       />
 
-      {/* Edit modal */}
-      <Modal open={!!editingProgram} onClose={() => setEditingProgram(null)} title="Breyta dagskrá">
-        {editingProgram && (
-          <ProgramDetailEdit
-            program={editingProgram}
-            onSave={handleEditSave}
-            onCancel={() => setEditingProgram(null)}
-            onDeleteRequest={() => {
-              setPendingDeleteProgram(editingProgram);
-              setEditingProgram(null);
-            }}
-            isDeleting={false}
-          />
-        )}
-      </Modal>
+      {/* Editing uses the same form as creating — and the same one the detail
+          page shows inline. The title came from a second, hand-maintained form
+          and always said „dagskrá", whatever kind the item actually was. */}
+      {editingProgram && (
+        <ContentCreateModal
+          contentType={(editingProgram.content_type ?? "task") as BankContentType}
+          workspaceId={editingProgram.workspace_id}
+          initial={editingProgram}
+          onCreated={() => {
+            setEditingProgram(null);
+            void refetch();
+          }}
+          onClose={() => setEditingProgram(null)}
+        />
+      )}
 
       {/* Delete confirmation modal */}
       <DeleteConfirmModal

@@ -58,6 +58,19 @@
   box-shadow: var(--sl-shadow-modal);
   overflow: hidden;
 }
+
+/*
+ * Inline: the same form, rendered in the page rather than over it. The dialog
+ * keeps its own height and shadow because it is a layer; in the page those
+ * belong to the page, so they are unset rather than overridden piecemeal.
+ */
+.inline {
+  max-height: none;
+  height: auto;
+  box-shadow: none;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  animation: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .dialog {
     --db-dur-unroll: 1ms;
