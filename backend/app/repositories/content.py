@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -11,6 +12,15 @@ from app.models.comment import Comment
 from app.models.content import Content
 from app.models.like import UserLikedContent
 from app.repositories.base import Repository
+
+
+@dataclass
+class ContentAccess:
+    """The three facts an access check needs about an item, in one query."""
+
+    workspace_id: UUID
+    author_id: UUID
+    hidden_at: dt.datetime | None
 
 
 @dataclass
@@ -89,3 +99,18 @@ class ContentRepository(Repository):
 
     async def get_name(self, content_id: UUID) -> str | None:
         return await self.session.scalar(select(Content.name).where(Content.id == content_id))
+
+    async def get_access(self, content_id: UUID) -> ContentAccess | None:
+        """Who owns it, where it lives, and whether it has been unlisted.
+
+        Filters `deleted_at` — the single-column getters above do not, which is
+        how commenting on a withdrawn item stayed possible.
+        """
+        row = (
+            await self.session.execute(
+                select(Content.workspace_id, Content.author_id, Content.hidden_at).where(
+                    Content.id == content_id, Content.deleted_at.is_(None)
+                )
+            )
+        ).first()
+        return ContentAccess(row[0], row[1], row[2]) if row else None

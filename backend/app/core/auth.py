@@ -29,10 +29,10 @@ from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
 from app.domain.icelandic_dates import format_date
+from app.repositories.content import ContentRepository
 from app.repositories.posting_suspensions import PostingSuspensionRepository
 from app.schemas.content import ContentOut
 from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
-from app.services.content import ContentService
 from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
@@ -674,31 +674,49 @@ async def check_content_workspace_access(
     minimum_role: WorkspaceRole = WorkspaceRole.viewer,
 ) -> UUID:
     """
-    Raise 404 unless the user may reach the workspace this content lives in.
+    Raise 404 unless the user may reach this content at all.
 
-    Comments and likes address content by id and never name a workspace, so
-    without this a member of one workspace can write to content in another that
-    they cannot even read. Returns the workspace id so the caller need not look
-    it up a second time.
+    Comments, likes and reports address content by id and never name a
+    workspace, so without this a member of one workspace can write to content in
+    another that they cannot even read. Returns the workspace id so the caller
+    need not look it up a second time.
+
+    **A hidden item is not reachable here either.** `hidden_at` used to be
+    consulted by the content read paths and nowhere else, so after a moderator
+    hid something any member could still read its comment thread, add to it, and
+    like it — the discussion carried on underneath content the team had removed.
+    Hiding is the safeguarding lever and comments are the bank's only public
+    free-text surface, which makes that combination the case hiding exists for.
+
+    The item's own author still gets through, on the same terms as sc-482: they
+    can open a hidden item, so its thread should not 404 underneath them.
+    Writing to it is left open for them too rather than introducing a second
+    axis here — a leader adding a comment to their own unlisted item reaches
+    nobody, and the alternative is a read/write split in a function whose whole
+    value is being the one funnel.
     """
-    try:
-        workspace_id = await ContentService(session).get_workspace_id(content_id)
-    except HTTPException as exc:
-        if exc.status_code != status.HTTP_404_NOT_FOUND:
-            raise
-        # The service says "Content not found" and check_workspace_access says
-        # "Not found". Two different bodies behind the same status tell a caller
-        # whether an id they hold still exists in a workspace they were removed
-        # from — which is the one thing hide_from_non_members exists to withhold.
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found") from exc
+    access = await ContentRepository(session).get_access(content_id)
+    if access is None:
+        # The service would say "Content not found" and check_workspace_access
+        # says "Not found". Two different bodies behind the same status tell a
+        # caller whether an id they hold still exists in a workspace they were
+        # removed from — the one thing hide_from_non_members exists to withhold.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
     await check_workspace_access(
-        workspace_id,
+        access.workspace_id,
         current_user,
         session,
         minimum_role=minimum_role,
         hide_from_non_members=True,
     )
-    return workspace_id
+
+    if access.hidden_at is not None and not (
+        is_content_moderator(current_user) or access.author_id == current_user.id
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    return access.workspace_id
 
 
 async def check_group_access(

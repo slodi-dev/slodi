@@ -25,8 +25,15 @@ from app.schemas.workspace import WorkspaceRole
 from app.utils import get_current_datetime
 
 ROLE_LOOKUP = "app.core.auth._get_workspace_role"
-WS_LOOKUP = "app.services.content.ContentService.get_workspace_id"
+WS_LOOKUP = "app.repositories.content.ContentRepository.get_access"
 NAME_LOOKUP = "app.services.content.ContentService.get_name"
+
+
+def _reachable(*, hidden_at=None, author_id=None):
+    """What the access lookup returns for an item that exists."""
+    from app.repositories.content import ContentAccess
+
+    return ContentAccess(workspace_id=uuid4(), author_id=author_id or uuid4(), hidden_at=hidden_at)
 
 
 def _client(user):
@@ -87,7 +94,7 @@ def test_any_member_can_report(member_client, viewer_user):
             "app.services.content_reports.ContentReportService.report", new_callable=AsyncMock
         ) as report,
     ):
-        ws.return_value = uuid4()
+        ws.return_value = _reachable()
         role.return_value = WorkspaceRole.viewer
         name.return_value = "Kveikjuleikur"
         report.return_value = _report(content_id, viewer_user.id)
@@ -105,7 +112,7 @@ def test_reporting_content_you_cannot_reach_is_hidden(member_client):
         patch(WS_LOOKUP, new_callable=AsyncMock) as ws,
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as role,
     ):
-        ws.return_value = uuid4()
+        ws.return_value = _reachable()
         role.return_value = None
         response = member_client.post(f"/content/{uuid4()}/reports", json={"reason": "spam"})
 
@@ -399,7 +406,7 @@ def test_a_comment_can_be_reported(member_client, viewer_user):
         ) as report,
     ):
         get_c.return_value = SimpleNamespace(id=comment_id, content_id=content_id)
-        ws.return_value = uuid4()
+        ws.return_value = _reachable()
         role.return_value = WorkspaceRole.viewer
         name.return_value = "Kveikjuleikur"
         report.return_value = _report(content_id, viewer_user.id)
@@ -425,7 +432,7 @@ def test_reporting_a_comment_you_cannot_reach_is_hidden(member_client):
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as role,
     ):
         get_c.return_value = SimpleNamespace(id=uuid4(), content_id=uuid4())
-        ws.return_value = uuid4()
+        ws.return_value = _reachable()
         role.return_value = None
 
         response = member_client.post(f"/comments/{uuid4()}/reports", json={"reason": "spam"})

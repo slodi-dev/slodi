@@ -21,10 +21,12 @@ def _content_is_reachable():
     tests are about likes and comments, not about that check — give them a
     workspace and let the real check run against it.
     """
+    from app.repositories.content import ContentAccess
+
     with patch(
-        "app.services.content.ContentService.get_workspace_id", new_callable=AsyncMock
-    ) as ws:
-        ws.return_value = uuid4()
+        "app.repositories.content.ContentRepository.get_access", new_callable=AsyncMock
+    ) as access:
+        access.return_value = ContentAccess(workspace_id=uuid4(), author_id=uuid4(), hidden_at=None)
         yield
 
 
