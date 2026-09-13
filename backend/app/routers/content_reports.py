@@ -19,6 +19,7 @@ from app.schemas.content_report import (
 )
 from app.schemas.moderation import ReportQueueItem
 from app.schemas.user import UserOut
+from app.services.comments import CommentService
 from app.services.content import ContentService
 from app.services.content_reports import ContentReportService
 
@@ -52,6 +53,45 @@ async def report_content(
     content = await ContentService(session).get_name(content_id)
     return await ContentReportService(session).report(
         content_id, current_user.id, body, background_tasks, content
+    )
+
+
+@router.post(
+    "/comments/{comment_id}/reports",
+    response_model=ContentReportOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def report_comment(
+    session: SessionDep,
+    comment_id: UUID,
+    body: ContentReportCreate,
+    background_tasks: BackgroundTasks,
+    current_user: UserOut = Depends(get_current_user),
+    _: None = Depends(user_rate_limit(20, 60)),
+) -> ContentReportOut:
+    """Flag a comment.
+
+    Comments are the bank's only public text surface and could not be flagged at
+    all: reports keyed on the item alone, so the one place a stranger can write
+    free text under someone else's idea had no way to raise a hand.
+
+    The item the comment hangs under is recorded too, so the review board can
+    name it without a second join, and so an `unsafe` comment escalates by the
+    same path an `unsafe` item does.
+    """
+    comment = await CommentService(session).get_model(comment_id)
+    content_id = comment.content_id
+
+    await check_content_workspace_access(content_id, current_user, session)
+    content = await ContentService(session).get_name(content_id)
+
+    return await ContentReportService(session).report(
+        content_id,
+        current_user.id,
+        body,
+        background_tasks,
+        content,
+        comment_id=comment_id,
     )
 
 

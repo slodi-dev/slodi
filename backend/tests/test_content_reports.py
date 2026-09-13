@@ -190,8 +190,52 @@ async def test_one_report_per_person_per_item(db):
                 created_at=get_current_datetime(),
             )
         )
-    with pytest.raises(IntegrityError, match="uq_content_reports_content_reporter"):
+    # Enforced by a partial unique index rather than a plain constraint, since
+    # `comment_id` is nullable and NULL is distinct from NULL in Postgres.
+    with pytest.raises(IntegrityError, match="uq_content_reports_item_reporter"):
         await db.flush()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_reporting_an_item_does_not_block_reporting_a_comment_under_it(db):
+    """They are different complaints about different things.
+
+    A single `UNIQUE(content_id, reporter_id)` would have refused the second
+    one, which is why the item and comment rules are two partial indexes.
+    """
+    user, task = await _content(db)
+
+    comment = m.Comment(
+        body="Þetta á ekki heima hér",
+        user_id=user.id,
+        content_id=task.id,
+        created_at=get_current_datetime(),
+    )
+    db.add(comment)
+    await db.flush()
+
+    db.add(
+        m.ContentReport(
+            content_id=task.id,
+            reporter_id=user.id,
+            reason=ReportReason.spam,
+            status=ReportStatus.open,
+            created_at=get_current_datetime(),
+        )
+    )
+    db.add(
+        m.ContentReport(
+            content_id=task.id,
+            comment_id=comment.id,
+            reporter_id=user.id,
+            reason=ReportReason.inappropriate,
+            status=ReportStatus.open,
+            created_at=get_current_datetime(),
+        )
+    )
+
+    await db.flush()  # both stand
 
 
 @pytest.mark.integration
@@ -329,3 +373,77 @@ async def test_the_board_says_what_a_report_is_about(db):
     queue = await ContentReportService(db).list_open(limit=10, offset=0)
     assert queue[0].content_name == "Kveikjuleikur"
     assert queue[0].content_author_name == "Foringi"
+
+
+# ── Reporting a comment ───────────────────────────────────────────────────────
+
+
+def test_a_comment_can_be_reported(member_client, viewer_user):
+    """Comments are the bank's only public text surface.
+
+    Reports keyed on the item alone, so the one place a stranger can write free
+    text under someone else's idea had no way to raise a hand at all.
+    """
+    from types import SimpleNamespace
+
+    content_id = uuid4()
+    comment_id = uuid4()
+
+    with (
+        patch("app.services.comments.CommentService.get_model", new_callable=AsyncMock) as get_c,
+        patch(WS_LOOKUP, new_callable=AsyncMock) as ws,
+        patch(ROLE_LOOKUP, new_callable=AsyncMock) as role,
+        patch(NAME_LOOKUP, new_callable=AsyncMock) as name,
+        patch(
+            "app.services.content_reports.ContentReportService.report", new_callable=AsyncMock
+        ) as report,
+    ):
+        get_c.return_value = SimpleNamespace(id=comment_id, content_id=content_id)
+        ws.return_value = uuid4()
+        role.return_value = WorkspaceRole.viewer
+        name.return_value = "Kveikjuleikur"
+        report.return_value = _report(content_id, viewer_user.id)
+
+        response = member_client.post(
+            f"/comments/{comment_id}/reports", json={"reason": "inappropriate"}
+        )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    # The item is recorded too, so the board can name it without a second join.
+    assert report.await_args.args[0] == content_id
+    assert report.await_args.kwargs["comment_id"] == comment_id
+
+
+def test_reporting_a_comment_you_cannot_reach_is_hidden(member_client):
+    """The workspace check runs before anything else here too, so a comment
+    report cannot be used to probe for content in a workspace you are not in."""
+    from types import SimpleNamespace
+
+    with (
+        patch("app.services.comments.CommentService.get_model", new_callable=AsyncMock) as get_c,
+        patch(WS_LOOKUP, new_callable=AsyncMock) as ws,
+        patch(ROLE_LOOKUP, new_callable=AsyncMock) as role,
+    ):
+        get_c.return_value = SimpleNamespace(id=uuid4(), content_id=uuid4())
+        ws.return_value = uuid4()
+        role.return_value = None
+
+        response = member_client.post(f"/comments/{uuid4()}/reports", json={"reason": "spam"})
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_reporting_a_comment_is_separate_from_reporting_its_item():
+    """`find_by_reporter` has to scope to the exact target.
+
+    Otherwise reporting a comment returns the reporter's earlier report of the
+    item it hangs under, and the comment is never flagged at all. `comment_id IS
+    NULL` also has to be written out — `== None` is not `IS NULL` in SQL.
+    """
+    import inspect
+
+    from app.repositories.content_reports import ContentReportRepository
+
+    src = inspect.getsource(ContentReportRepository.find_by_reporter)
+    assert "comment_id" in src
+    assert "is_(None)" in src

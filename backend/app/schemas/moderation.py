@@ -226,3 +226,7 @@ class ReportQueueItem(ContentReportOut):
 
     content_name: str
     content_author_name: str
+    #: Set when the report is about a comment. The board shows the text itself,
+    #: because "a comment was reported" without the words is not reviewable.
+    comment_body: str | None = None
+    comment_author_name: str | None = None

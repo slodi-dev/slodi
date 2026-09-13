@@ -166,20 +166,19 @@ def test_delete_tag_not_found_returns_404(client):
 
 
 def test_delete_comment_returns_204(client, admin_user):
-    from app.schemas.comment import CommentOut
+    from types import SimpleNamespace
 
     comment_id = uuid4()
-    sample_comment = CommentOut(
+    # The route authorises against the row, which carries the comment's author
+    # and the workspace of the content it hangs under.
+    sample_comment = SimpleNamespace(
         id=comment_id,
-        body="Nice!",
         user_id=admin_user.id,
-        content_id=uuid4(),
-        created_at=dt.datetime.now(dt.timezone.utc),
-        author_name="Test User",
+        content=SimpleNamespace(workspace_id=uuid4()),
     )
 
     with (
-        patch("app.services.comments.CommentService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.services.comments.CommentService.get_model", new_callable=AsyncMock) as mock_get,
         patch("app.services.comments.CommentService.delete", new_callable=AsyncMock) as mock_del,
     ):
         mock_get.return_value = sample_comment
@@ -191,7 +190,9 @@ def test_delete_comment_returns_204(client, admin_user):
 
 
 def test_delete_comment_not_found_returns_404(client):
-    with patch("app.services.comments.CommentService.get", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "app.services.comments.CommentService.get_model", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.side_effect = _not_found()
 
         resp = client.delete(f"/comments/{uuid4()}")

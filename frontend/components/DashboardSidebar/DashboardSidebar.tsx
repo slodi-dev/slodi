@@ -14,7 +14,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./DashboardSidebar.module.css";
@@ -206,13 +206,29 @@ export default function DashboardSidebar({
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
 
+  /*
+   * Permissions arrive from an async fetch, so the server renders the sidebar
+   * without them and the client may render it with them — different markup for
+   * the same tree, which React reports as a hydration mismatch and then throws
+   * the server's HTML away.
+   *
+   * Holding the gated items back until after mount makes the first client paint
+   * identical to the server's by construction. They appear a moment later,
+   * which is the honest behaviour anyway: until the fetch lands nobody knows
+   * whether this person is a moderator.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   /**
    * Check if user has permission to see a navigation item
    * Implements hierarchical role system: admin > editor > leader
    */
   const hasPermission = (item: NavItem): boolean => {
-    if (item.permissionRequired && !hasPlatformPermission(userPermissions, item.permissionRequired))
-      return false;
+    if (item.permissionRequired) {
+      if (!mounted) return false;
+      if (!hasPlatformPermission(userPermissions, item.permissionRequired)) return false;
+    }
     if (!item.roleRequired) return true;
     if (item.roleRequired === "admin") return userRole === "admin";
     if (item.roleRequired === "editor") return userRole === "editor" || userRole === "admin";

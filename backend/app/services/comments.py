@@ -51,6 +51,18 @@ class CommentService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
         return CommentOut.model_validate(row)
 
+    async def get_model(self, comment_id: UUID) -> Comment:
+        """The row itself, for callers that need to authorise against it.
+
+        Deciding who may remove a comment needs two facts the serialised form
+        does not carry: who wrote it, and which workspace the content it hangs
+        under belongs to. The repository eager-loads both.
+        """
+        row = await self.repo.get(comment_id)
+        if not row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        return row
+
     async def update(self, comment_id: UUID, data: CommentUpdate) -> CommentOut:
         row = await self.repo.get(comment_id)
         if not row:

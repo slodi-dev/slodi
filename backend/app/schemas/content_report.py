@@ -43,6 +43,8 @@ class ContentReportOut(BaseModel):
 
     id: UUID
     content_id: UUID
+    #: Set when the report is about a comment under the item rather than the item.
+    comment_id: UUID | None = None
     reporter_id: UUID
     reason: ReportReason
     note: str | None = None

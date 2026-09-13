@@ -35,8 +35,9 @@ class ContentReportService:
         data: ContentReportCreate,
         background_tasks: BackgroundTasks,
         content_name: str,
+        comment_id: UUID | None = None,
     ) -> ContentReportOut:
-        existing = await self.repo.find_by_reporter(content_id, reporter_id)
+        existing = await self.repo.find_by_reporter(content_id, reporter_id, comment_id)
         if existing is not None:
             # Idempotent rather than an error. The person has already said this;
             # a 409 here would read as "your report failed" and invite a retry.
@@ -44,6 +45,7 @@ class ContentReportService:
 
         report = ContentReport(
             content_id=content_id,
+            comment_id=comment_id,
             reporter_id=reporter_id,
             reason=data.reason,
             note=data.note,
@@ -58,7 +60,7 @@ class ContentReportService:
             # constraint is the real guard; this just turns it back into the
             # same answer the first branch gives.
             await self.session.rollback()
-            existing = await self.repo.find_by_reporter(content_id, reporter_id)
+            existing = await self.repo.find_by_reporter(content_id, reporter_id, comment_id)
             if existing is None:
                 raise
             return ContentReportOut.model_validate(existing)
@@ -104,8 +106,10 @@ class ContentReportService:
                 **ContentReportOut.model_validate(r).model_dump(),
                 content_name=name,
                 content_author_name=author,
+                comment_body=comment_body,
+                comment_author_name=comment_author,
             )
-            for r, name, author in rows
+            for r, name, author, comment_body, comment_author in rows
         ]
 
     async def count_open(self) -> int:

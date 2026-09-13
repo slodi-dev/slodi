@@ -4,7 +4,7 @@ import datetime as dt
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String, text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -30,11 +30,29 @@ class ContentReport(Base):
 
     __tablename__ = "content_reports"
     __table_args__ = (
-        # One report per person per item. Without this a single account can
-        # stack a queue against an item it dislikes, and the count a reviewer
+        # One report per person per target. Without this a single account can
+        # stack a queue against something it dislikes, and the count a reviewer
         # reads stops meaning "how many people" and starts meaning "how
         # determined was one person".
-        UniqueConstraint("content_id", "reporter_id", name="uq_content_reports_content_reporter"),
+        #
+        # Two partial indexes rather than one constraint over three columns:
+        # in Postgres NULL is distinct from NULL, so a plain
+        # UNIQUE(content_id, comment_id, reporter_id) would stop deduplicating
+        # item reports the moment `comment_id` was allowed to be null.
+        Index(
+            "uq_content_reports_item_reporter",
+            "content_id",
+            "reporter_id",
+            unique=True,
+            postgresql_where=text("comment_id IS NULL"),
+        ),
+        Index(
+            "uq_content_reports_comment_reporter",
+            "comment_id",
+            "reporter_id",
+            unique=True,
+            postgresql_where=text("comment_id IS NOT NULL"),
+        ),
         # The review board's query: open reports, newest first.
         Index("ix_content_reports_status_created_at", "status", "created_at"),
         # Counting an author's reports means joining through content.
@@ -51,6 +69,15 @@ class ContentReport(Base):
     content_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("content.id", ondelete="CASCADE"), nullable=False
     )
+    comment_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
+    )
+    """Set when the report is about a comment rather than the item itself.
+
+    `content_id` stays populated either way: a comment always hangs under an
+    item, and the board needs to say which one without a second join.
+    """
+
     reporter_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
