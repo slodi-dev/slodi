@@ -6,11 +6,12 @@ helps nobody, and it is the part a future refactor is most likely to break.
 """
 
 import datetime as dt
+import inspect
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
-from fastapi import BackgroundTasks, HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, params, status
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 
@@ -138,31 +139,43 @@ async def test_someone_not_suspended_passes_straight_through():
         assert await require_not_suspended(user, AsyncMock()) is user
 
 
-def test_reporting_is_never_blocked(mock_db_session):
+def _guarded_routes() -> set[tuple[tuple[str, ...], str]]:
+    """Every (methods, path) that declares `require_not_suspended`.
+
+    Read from the endpoint's own signature rather than from
+    `route.dependant.dependencies`. The latter is a FastAPI internal whose shape
+    differs between versions: it yielded nothing at all on CI's resolution,
+    which silently emptied this set and made both tests below pass while
+    asserting nothing. `inspect.signature` on the endpoint is the public surface
+    and does not move.
+    """
+    guarded: set[tuple[tuple[str, ...], str]] = set()
+    for route in create_app().routes:
+        endpoint = getattr(route, "endpoint", None)
+        if endpoint is None:
+            continue
+        for param in inspect.signature(endpoint).parameters.values():
+            dep = param.default
+            if isinstance(dep, params.Depends) and (
+                getattr(dep.dependency, "__name__", "") == "require_not_suspended"
+            ):
+                guarded.add((tuple(sorted(route.methods)), route.path))
+                break
+    # An empty set must never be mistaken for "nothing is wrong". Both callers
+    # assert absence of something, so a lookup that quietly returns nothing
+    # turns them into tests that cannot fail.
+    assert guarded, "found no guarded routes at all — the lookup is broken, not the app"
+    return guarded
+
+
+def test_reporting_is_never_blocked():
     """Someone in skammarkrókur can still flag genuinely unsafe content.
     Removing that protects nobody."""
-    app = create_app()
-    guarded = [
-        r.path
-        for r in app.routes
-        if any(
-            getattr(d.call, "__name__", "") == "require_not_suspended"
-            for d in getattr(getattr(r, "dependant", None), "dependencies", [])
-        )
-    ]
-    assert not any("reports" in p for p in guarded)
+    assert not [p for _, p in _guarded_routes() if "reports" in p]
 
 
 def test_the_guard_is_on_writes_and_not_on_reads():
-    app = create_app()
-    guarded = {
-        (tuple(sorted(r.methods)), r.path)
-        for r in app.routes
-        if any(
-            getattr(d.call, "__name__", "") == "require_not_suspended"
-            for d in getattr(getattr(r, "dependant", None), "dependencies", [])
-        )
-    }
+    guarded = _guarded_routes()
     methods = {m for ms, _ in guarded for m in ms}
     assert methods <= {"POST", "PATCH", "PUT", "DELETE"}, f"a read path is guarded: {guarded}"
 
