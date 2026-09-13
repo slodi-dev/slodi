@@ -83,11 +83,35 @@ def create_app() -> FastAPI:
     app.include_router(game_scores_router.router)
     app.include_router(uploads_router.router)
 
+    _warn_if_escalation_is_deaf()
+
     @app.get("/healthz")
     async def healthz() -> dict[str, bool]:
-        return {"ok": True}
+        return {"ok": True, "unsafe_escalation": bool(settings.moderation_email_list)}
 
     return app
+
+
+def _warn_if_escalation_is_deaf() -> None:
+    """Say loudly at boot when an `unsafe` report has nowhere to go.
+
+    The release constraint is that `unsafe` is escalated rather than queued, and
+    one of its measurable goals is zero unsafe reports unresolved past 24 hours.
+    Both depend on `MODERATION_EMAILS` (or `ADMIN_EMAILS`, which it falls back
+    to) being set in the deployed environment.
+
+    When neither is, `ContentReportService._escalate` writes one line to the log
+    per dropped escalation and returns — a failure nobody sees until they go
+    looking for why the alias never heard about something. The board still pins
+    unsafe reports to the top, so this is the out-of-band channel going quiet,
+    not the report vanishing; that is worth knowing at boot rather than at
+    incident time.
+    """
+    if not settings.moderation_email_list:
+        _log.error(
+            "MODERATION_EMAILS and ADMIN_EMAILS are both unset — an `unsafe` report "
+            "will be pinned in Yfirferð but will not email anybody."
+        )
 
 
 app = create_app()
