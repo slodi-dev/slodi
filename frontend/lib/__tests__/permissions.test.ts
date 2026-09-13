@@ -49,25 +49,32 @@ describe("who may change a bank item", () => {
 });
 
 describe("who may submit to the bank", () => {
+  const BANK = "00000000-0000-0000-0000-0000000000bb";
+  const SVEIT = "00000000-0000-0000-0000-0000000000cc";
+
   it("accepts any member of the bank, which is every account", () => {
-    expect(canCreateProgram("viewer", true)).toBe(true);
-    expect(canCreateProgram("editor", true)).toBe(true);
-    expect(canCreateProgram("admin", true)).toBe(true);
+    expect(canCreateProgram("viewer", BANK, BANK)).toBe(true);
+    expect(canCreateProgram("editor", BANK, BANK)).toBe(true);
+    expect(canCreateProgram("admin", BANK, BANK)).toBe(true);
   });
 
   it("still requires editor in an ordinary workspace", () => {
     // Opening the bank must not delete the read-only role everywhere else.
-    expect(canCreateProgram("viewer", false)).toBe(false);
-    expect(canCreateProgram("editor", false)).toBe(true);
-  });
-
-  it("defaults to the stricter answer when the caller does not say", () => {
-    expect(canCreateProgram("viewer")).toBe(false);
+    expect(canCreateProgram("viewer", SVEIT, BANK)).toBe(false);
+    expect(canCreateProgram("editor", SVEIT, BANK)).toBe(true);
   });
 
   it("refuses someone with no membership", () => {
-    expect(canCreateProgram(null, true)).toBe(false);
-    expect(canCreateProgram(undefined, true)).toBe(false);
+    expect(canCreateProgram(null, BANK, BANK)).toBe(false);
+    expect(canCreateProgram(undefined, BANK, BANK)).toBe(false);
+  });
+
+  it("holds the button shut until the bank's id is known", () => {
+    // The id arrives a tick after mount. Answering `viewer` on a null default
+    // would open the button to any member of any workspace for that tick.
+    expect(canCreateProgram("viewer", BANK, null)).toBe(false);
+    expect(canCreateProgram("viewer", undefined, undefined)).toBe(false);
+    expect(canCreateProgram("viewer", "", "")).toBe(false);
   });
 });
 

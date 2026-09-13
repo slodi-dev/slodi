@@ -22,7 +22,7 @@ import { formatIcelandicDate, formatIcelandicNumber } from "@/lib/format";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
-import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
+import { canCreateProgram, canEditProgram, canDeleteProgram } from "@/lib/permissions";
 import { deleteProgram, type ContentQuery, type Program } from "@/services/programs.service";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
@@ -228,6 +228,7 @@ function ProgramsPageInner() {
           setShowNewProgram(true);
         }}
         suspendedUntil={suspendedUntil}
+        canCreate={canCreateProgram(role, postWorkspaceId, defaultWorkspaceId)}
       />
 
       {/* The create form owns its whole dialog — fixed header, scrolling body

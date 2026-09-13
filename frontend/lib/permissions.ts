@@ -87,14 +87,24 @@ export function canDeleteProgram(
  * that adds a co-leader or a parent as a viewer so they can read the plan has
  * not agreed to let them write to it.
  *
- * @param openSubmissions true when the workspace is the bank. Defaults to false,
- *   so a caller that forgets it gets the stricter answer rather than the laxer one.
+ * **This takes the two ids rather than an `isTheBank` flag on purpose.** The
+ * backend decides openness by comparing the target workspace against the default
+ * one, and a boolean here would have to be supplied correctly by every caller to
+ * agree with it. A caller who omitted it would get `editor` — silently closing
+ * public submission, with a hidden button and no error anywhere to explain it.
+ * The ids are things a caller already has in hand, so there is nothing to forget.
+ *
+ * Until the default workspace id has loaded, `defaultWorkspaceId` is null and
+ * this answers `editor`. That is the right way round: the button appears a beat
+ * late rather than appearing and then refusing the click.
  */
 export function canCreateProgram(
   workspaceRole: WorkspaceRole | null | undefined,
-  openSubmissions: boolean = false
+  workspaceId: string | null | undefined,
+  defaultWorkspaceId: string | null | undefined
 ): boolean {
-  return hasWorkspaceRole(workspaceRole, openSubmissions ? "viewer" : "editor");
+  const isOpenBank = Boolean(workspaceId) && workspaceId === defaultWorkspaceId;
+  return hasWorkspaceRole(workspaceRole, isOpenBank ? "viewer" : "editor");
 }
 
 /**
