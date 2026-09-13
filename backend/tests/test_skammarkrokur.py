@@ -7,6 +7,7 @@ helps nobody, and it is the part a future refactor is most likely to break.
 
 import datetime as dt
 import inspect
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -139,54 +140,54 @@ async def test_someone_not_suspended_passes_straight_through():
         assert await require_not_suspended(user, AsyncMock()) is user
 
 
+def _iter_endpoints(routes: object) -> "Iterator[object]":
+    """Yield leaf routes, flattening whatever nesting this FastAPI uses.
+
+    `app.routes` is **not** a flat list of endpoints on every version. On
+    FastAPI 0.128 it is already flattened; on 0.141 it holds one
+    `_IncludedRouter` wrapper per `include_router` call, and that wrapper
+    exposes its contents as `original_router.routes` rather than as `.routes`.
+    Walking it without unwrapping yields objects with no `endpoint`, no
+    `methods` and no `dependant`, which is how this test found zero guarded
+    routes on CI while passing locally.
+
+    Both shapes are handled rather than either being pinned, because the point
+    of the test is what the assembled app serves, not which FastAPI built it.
+    """
+    for route in routes:  # type: ignore[attr-defined]
+        nested = getattr(route, "routes", None)
+        if nested is None:
+            nested = getattr(getattr(route, "original_router", None), "routes", None)
+        if nested:
+            yield from _iter_endpoints(nested)
+        else:
+            yield route
+
+
 def _guarded_routes() -> set[tuple[tuple[str, ...], str]]:
     """Every (methods, path) that declares `require_not_suspended`.
 
-    Read from the endpoint's own signature. `route.dependant.dependencies` was
-    tried first and returned nothing on CI — it is a FastAPI internal whose
-    shape is not guaranteed.
-
-    Deliberately duck-typed rather than `isinstance(dep, params.Depends)`: an
-    isinstance check fails silently and completely if the test and the routers
-    ever resolve `fastapi.params` to different module objects, which is exactly
-    the kind of difference that shows up on CI and not locally.
+    Read from the endpoint's own signature, duck-typed rather than
+    `isinstance(..., params.Depends)`, so it does not depend on either FastAPI
+    internals or on two modules resolving to the same class object.
     """
     guarded: set[tuple[tuple[str, ...], str]] = set()
-    routes = list(create_app().routes)
-    for route in routes:
+    for route in _iter_endpoints(create_app().routes):
         endpoint = getattr(route, "endpoint", None)
         methods = getattr(route, "methods", None)
-        if endpoint is None or not methods:
+        path = getattr(route, "path", None)
+        if endpoint is None or not methods or path is None:
             continue
         for param in inspect.signature(endpoint).parameters.values():
             dependency = getattr(param.default, "dependency", None)
             if getattr(dependency, "__name__", "") == "require_not_suspended":
-                guarded.add((tuple(sorted(methods)), route.path))
+                guarded.add((tuple(sorted(methods)), path))
                 break
 
     # An empty set must never be mistaken for "nothing is wrong": both callers
     # assert the *absence* of something, so a lookup that quietly comes back
-    # empty turns them into tests that cannot fail. If this ever trips, the
-    # message has to be enough to diagnose it without another push.
-    if not guarded:
-        sample = [
-            (
-                getattr(r, "path", "?"),
-                [
-                    (n, type(p.default).__module__ + "." + type(p.default).__qualname__)
-                    for n, p in inspect.signature(r.endpoint).parameters.items()
-                ],
-            )
-            for r in routes
-            if getattr(r, "path", "") == "/workspaces/{workspace_id}/tasks"
-            and getattr(r, "endpoint", None) is not None
-        ]
-        raise AssertionError(
-            "found no guarded routes at all — the lookup is broken, not the app. "
-            f"routes={len(routes)}, with_endpoint="
-            f"{sum(1 for r in routes if getattr(r, 'endpoint', None))}, "
-            f"probe={sample}"
-        )
+    # empty turns them into tests that cannot fail.
+    assert guarded, "found no guarded routes at all — the lookup is broken, not the app"
     return guarded
 
 
