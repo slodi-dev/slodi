@@ -40,8 +40,15 @@ export type Program = {
   count_min?: number | null;
   count_max?: number | null;
   price?: number | null;
-  /** Documents uploaded alongside the item; images go to `image`. */
-  media?: { documents?: Array<{ name: string; url: string; content_type?: string | null }> } | null;
+  /**
+   * Attachments. `images` is ordered and its first entry is the hero, which is
+   * mirrored into `image` so cards, listings and Yfirferð keep reading a single
+   * URL. Items created before the list carry only `image`.
+   */
+  media?: {
+    images?: Array<{ name: string; url: string; content_type?: string | null }>;
+    documents?: Array<{ name: string; url: string; content_type?: string | null }>;
+  } | null;
   comments?: ContentComment[];
 };
 

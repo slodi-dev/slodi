@@ -254,12 +254,24 @@ class AttachmentVerifier:
             raise AttachmentTooLarge(size=size, limit=limit)
 
     def check_content(self, image: str | None, media: dict[str, Any] | None) -> None:
-        """Check every blob a piece of content is about to reference."""
+        """Check every blob a piece of content is about to reference.
+
+        `image` is the hero and is also the first entry of `media.images`, so
+        it is checked twice on a normal submit. That is deliberate: the two can
+        be set independently over the wire, and a ceiling that only holds when
+        the client keeps them in step is not a ceiling.
+        """
         if image:
             self.check(image)
         if isinstance(media, dict):
-            entries = media.get("documents")
-            if isinstance(entries, list):
+            # Images and documents have different ceilings; `check` reads the
+            # purpose back from the blob path, so both lists go through it.
+            for key in ("images", "documents"):
+                entries = media.get(key)
+                if not isinstance(entries, list):
+                    continue
                 for entry in entries:
                     if isinstance(entry, dict) and isinstance(entry.get("url"), str):
                         self.check(entry["url"])
+                    elif isinstance(entry, str):
+                        self.check(entry)

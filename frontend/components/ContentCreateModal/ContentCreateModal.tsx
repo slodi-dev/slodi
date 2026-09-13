@@ -53,7 +53,7 @@ type Draft = {
   equipment: string[];
   instructions: string;
   tagList: string[];
-  image: string;
+  images: Attachment[];
   documents: Attachment[];
 };
 
@@ -72,7 +72,7 @@ const EMPTY: Draft = {
   equipment: [],
   instructions: "",
   tagList: [],
-  image: "",
+  images: [],
   documents: [],
 };
 
@@ -100,7 +100,14 @@ function draftFromProgram(p: Program): Draft {
     equipment: p.equipment ?? [],
     instructions: p.instructions ?? "",
     tagList: (p.tags ?? []).map((t) => t.name),
-    image: p.image ?? "",
+    // Older items predate the list and carry only a hero; treat that as a
+    // one-image list so nothing has to be migrated.
+    images:
+      p.media?.images?.map((i) => ({
+        name: i.name,
+        url: i.url,
+        content_type: i.content_type ?? undefined,
+      })) ?? (p.image ? [{ name: "Mynd", url: p.image }] : []),
     documents:
       p.media?.documents?.map((d) => ({
         name: d.name,
@@ -108,6 +115,57 @@ function draftFromProgram(p: Program): Draft {
         content_type: d.content_type ?? undefined,
       })) ?? [],
   };
+}
+
+/**
+ * Add an image the leader already has hosted somewhere.
+ *
+ * Its own small control rather than a plain field, because it appends to a
+ * list: a text input bound straight to the list would add a new image on every
+ * keystroke.
+ */
+function ImageUrlAdd({ onAdd }: { onAdd: (url: string) => void }) {
+  const [value, setValue] = useState("");
+  const id = "image-url-add";
+
+  function add() {
+    const url = value.trim();
+    if (!url) return;
+    onAdd(url);
+    setValue("");
+  }
+
+  return (
+    <div className={styles.fld}>
+      <label className={styles.lab} htmlFor={id}>
+        Eða vefslóð myndar
+      </label>
+      <div className={styles.chipRow}>
+        <input
+          id={id}
+          className={styles.input}
+          value={value}
+          placeholder="https://…"
+          onChange={(e) => setValue(e.target.value)}
+          // Enter adds the image; it must not submit the whole form.
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className={cn(styles.btn, styles.btnGhost)}
+          onClick={add}
+          disabled={!value.trim()}
+        >
+          Bæta við
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /** Which section each field lives in, so a failed submit can open the right one. */
@@ -294,7 +352,7 @@ export default function ContentCreateModal({
       equipment: draft.equipment.length > 0,
       instructions: Boolean(draft.instructions.trim()),
       tags: draft.tagList.length > 0,
-      media: Boolean(draft.image.trim() || draft.documents.length),
+      media: Boolean(draft.images.length || draft.documents.length),
     }),
     [draft]
   );
@@ -374,7 +432,7 @@ export default function ContentCreateModal({
         name: draft.name.trim(),
         description: text(draft.description),
         instructions: text(draft.instructions),
-        image: text(draft.image),
+        image: draft.images[0]?.url ?? blank,
         equipment: draft.equipment,
         duration_min: num(draft.durationMin),
         duration_max: num(draft.durationMax),
@@ -387,10 +445,12 @@ export default function ContentCreateModal({
         age: draft.ages.length ? draft.ages : blank,
         tagNames: draft.tagList,
         // Preserve any other keys `media` carries; only `documents` is ours.
+        // `image` stays the hero so cards, Yfirferð and the listings keep
+        // reading one URL; `media.images` carries the order.
         media: editing
-          ? { ...(initial.media ?? {}), documents: draft.documents }
-          : draft.documents.length
-            ? { documents: draft.documents }
+          ? { ...(initial.media ?? {}), images: draft.images, documents: draft.documents }
+          : draft.images.length || draft.documents.length
+            ? { images: draft.images, documents: draft.documents }
             : undefined,
         workspaceId,
       };
@@ -694,9 +754,22 @@ export default function ContentCreateModal({
     media: (
       <>
         <FileDropZone
-          image={draft.image}
+          images={draft.images}
           documents={draft.documents}
-          onImage={(url) => updateDraft({ image: url })}
+          onAddImages={(added) =>
+            updateDraft((prev) => ({ ...prev, images: [...prev.images, ...added] }))
+          }
+          onRemoveImage={(url) =>
+            updateDraft((prev) => ({ ...prev, images: prev.images.filter((i) => i.url !== url) }))
+          }
+          onReorderImages={(from, to) =>
+            updateDraft((prev) => {
+              const next = [...prev.images];
+              const [moved] = next.splice(from, 1);
+              next.splice(to, 0, moved);
+              return { ...prev, images: next };
+            })
+          }
           onAddDocuments={(added) =>
             updateDraft((prev) => ({ ...prev, documents: [...prev.documents, ...added] }))
           }
@@ -709,8 +782,16 @@ export default function ContentCreateModal({
           }
         />
         {/* …or a link. A leader who already has the picture hosted should not
-            have to download it in order to re-upload it. */}
-        {field("image", "Eða vefslóð myndar", { placeholder: "https://…" })}
+            have to download it in order to re-upload it. It appends to the
+            list like any other image. */}
+        <ImageUrlAdd
+          onAdd={(url) =>
+            updateDraft((prev) => ({
+              ...prev,
+              images: [...prev.images, { name: "Mynd af vefslóð", url }],
+            }))
+          }
+        />
       </>
     ),
   };

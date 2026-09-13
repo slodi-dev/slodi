@@ -267,7 +267,7 @@
   margin: 0;
   padding: 3px 10px;
   border-radius: var(--sl-radius-pill);
-  background: hsl(var(--sl-color-background-inverse) / 0.72);
+  background: hsl(var(--sl-color-background-inverse) / 0.5);
   color: hsl(var(--sl-color-text-inverse));
   font-size: var(--sl-text-caption);
   font-variant-numeric: tabular-nums;

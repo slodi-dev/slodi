@@ -1187,3 +1187,105 @@ textarea.input {
   align-self: start;
   max-height: calc(100dvh - 96px);
 }
+
+/* ══ Image gallery — ordered, first is the hero ════════════════════════════ */
+.shotsHint {
+  margin: 0 0 var(--sl-spacing-gap-sm);
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.shots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sl-spacing-gap-sm);
+  margin: 0 0 var(--sl-spacing-gap-md);
+  padding: 0;
+  list-style: none;
+}
+
+.shot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface));
+  cursor: grab;
+}
+
+.shot:active {
+  cursor: grabbing;
+}
+
+/* The drop target, while a picture is being dragged over it. */
+.shotOver {
+  border-color: hsl(var(--sl-color-primary));
+  outline: 2px solid hsl(var(--sl-color-primary) / 0.35);
+  outline-offset: -1px;
+}
+
+.shotImg {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-sunken));
+  pointer-events: none;
+}
+
+/* Says which one leads, rather than leaving it to position alone. */
+.heroTag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 8px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.shotName {
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shotActs {
+  display: flex;
+  gap: 4px;
+}
+
+.shotBtn {
+  flex: 1;
+  min-height: 32px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-secondary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  cursor: pointer;
+}
+
+.shotBtn:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.shotBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.shotBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

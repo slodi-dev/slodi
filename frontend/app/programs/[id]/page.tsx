@@ -67,12 +67,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     [id, getToken]
   );
   const images: HeroImage[] = useMemo(() => {
-    if (!program?.image) return [];
-    /* One image is all the model stores today — the create modal keeps the
-       first and discards the rest. `ItemHero` handles N so the carousel is
-       ready when that changes; with one it renders no arrows and no counter. */
-    return [{ url: program.image, alt: "" }];
-  }, [program?.image]);
+    /* `media.images` is the ordered list and its first entry is the hero.
+       Items created before the list have only `image`, which is the same thing
+       with one entry — so no migration, and both shapes read the same here. */
+    const listed = program?.media?.images ?? [];
+    if (listed.length) return listed.map((i) => ({ url: i.url, alt: "" }));
+    return program?.image ? [{ url: program.image, alt: "" }] : [];
+  }, [program?.media?.images, program?.image]);
   if (error) return <ProgramDetailError error={error} />;
   if (isLoading) return <ProgramDetailSkeleton />;
   if (!program) notFound();

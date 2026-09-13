@@ -89,16 +89,21 @@ function typeFor(file: File): string {
  * and every result is announced politely rather than only appearing.
  */
 export default function FileDropZone({
-  image,
+  images,
   documents,
-  onImage,
+  onAddImages,
+  onRemoveImage,
+  onReorderImages,
   onAddDocuments,
   onRemoveDocument,
   onPreviewDocument,
 }: {
-  image: string;
+  /** Ordered. The first is the one the item leads with. */
+  images: Attachment[];
   documents: Attachment[];
-  onImage: (url: string) => void;
+  onAddImages: (added: Attachment[]) => void;
+  onRemoveImage: (url: string) => void;
+  onReorderImages: (from: number, to: number) => void;
   /** Emit what arrived, not the whole list — see the note in TagPicker. */
   onAddDocuments: (added: Attachment[]) => void;
   onRemoveDocument: (url: string) => void;
@@ -112,7 +117,8 @@ export default function FileDropZone({
   const [said, setSaid] = useState("");
   const [failed, setFailed] = useState<string | null>(null);
   const [skipped, setSkipped] = useState<string | null>(null);
-  const [imageName, setImageName] = useState<string | null>(null);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
 
   async function take(files: FileList | null) {
     if (!files?.length) return;
@@ -120,29 +126,16 @@ export default function FileDropZone({
     setFailed(null);
     setSkipped(null);
     const added: Attachment[] = [];
-    let picture: { url: string; name: string } | null = null;
+    const pictures: Attachment[] = [];
 
-    // A bank entry has one picture, so only the first image is uploaded. The
-    // rest are named and left alone rather than uploaded and then discarded —
-    // silently spending somebody's bandwidth on bytes we throw away is worse
-    // than telling them we only keep one.
+    // Every image is kept now, in the order they arrived. The first in the
+    // list is the one the item leads with, and it can be changed by reordering
+    // rather than by re-uploading.
     const chosen = Array.from(files);
-    const images = chosen.filter((f) => IMAGE_TYPES.includes(typeFor(f)));
-    const extraImages = image ? images : images.slice(1);
-    if (extraImages.length) {
-      setSkipped(
-        `Aðeins ein mynd fylgir hverri einingu. ${
-          image ? "Myndin sem þegar er valin heldur sér" : `„${images[0].name}“ var valin`
-        } — ${extraImages.map((f) => `„${f.name}“`).join(", ")} ${
-          extraImages.length === 1 ? "var" : "voru"
-        } sleppt.`
-      );
-    }
 
     for (const file of chosen) {
       const contentType = typeFor(file);
       const isImage = IMAGE_TYPES.includes(contentType);
-      if (isImage && extraImages.includes(file)) continue;
       if (!isImage && !DOC_TYPES.includes(contentType)) {
         // Name the file and the reason. "Unsupported file" after dropping five
         // of them tells the reader nothing about which one to convert.
@@ -160,7 +153,7 @@ export default function FileDropZone({
         const payload =
           contentType === file.type ? file : new File([file], file.name, { type: contentType });
         const url = await uploadFile(payload, purpose, getToken);
-        if (isImage) picture = { url, name: file.name };
+        if (isImage) pictures.push({ name: file.name, url, content_type: contentType });
         else added.push({ name: file.name, url, content_type: contentType });
       } catch (e) {
         setFailed(
@@ -169,14 +162,11 @@ export default function FileDropZone({
       }
     }
 
-    if (picture) {
-      onImage(picture.url);
-      setImageName(picture.name);
-    }
+    if (pictures.length) onAddImages(pictures);
     if (added.length) onAddDocuments(added);
 
     const parts = [
-      picture ? "mynd" : null,
+      pictures.length ? `${pictures.length} mynd${pictures.length === 1 ? "" : "ir"}` : null,
       added.length ? `${added.length} skjal${added.length === 1 ? "" : "i"}` : null,
     ].filter(Boolean);
     if (parts.length) setSaid(`${parts.join(" og ")} komin inn.`);
@@ -236,22 +226,73 @@ export default function FileDropZone({
           </button>
         </div>
 
-        {image && (
-          <div className={styles.preview}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.previewImg} src={image} alt="" />
-            <span className={styles.previewName}>{imageName ?? "Forsíðumynd"}</span>
-            <button
-              type="button"
-              className={cn(styles.btn, styles.btnGhost)}
-              onClick={() => {
-                onImage("");
-                setImageName(null);
-              }}
-            >
-              Fjarlægja mynd
-            </button>
-          </div>
+        {images.length > 0 && (
+          <>
+            <p className={styles.shotsHint}>Fyrsta myndin er forsíðumyndin. Dragðu til að raða.</p>
+            <ul className={styles.shots}>
+              {images.map((img, i) => (
+                <li
+                  key={img.url}
+                  className={cn(styles.shot, dragOver === i && styles.shotOver)}
+                  draggable
+                  onDragStart={() => setDragFrom(i)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(i);
+                  }}
+                  onDragLeave={() => setDragOver((v) => (v === i ? null : v))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragFrom !== null && dragFrom !== i) onReorderImages(dragFrom, i);
+                    setDragFrom(null);
+                    setDragOver(null);
+                  }}
+                  onDragEnd={() => {
+                    setDragFrom(null);
+                    setDragOver(null);
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- blob URL, not optimisable */}
+                  <img className={styles.shotImg} src={img.url} alt="" />
+                  {i === 0 && <span className={styles.heroTag}>Forsíðumynd</span>}
+                  <span className={styles.shotName}>{img.name}</span>
+                  {/*
+                    Dragging is unreachable from a keyboard, so the order is
+                    also changeable with two buttons. Without them the hero
+                    image could only be chosen with a mouse.
+                  */}
+                  <span className={styles.shotActs}>
+                    <button
+                      type="button"
+                      className={styles.shotBtn}
+                      aria-label={`Færa ${img.name} framar`}
+                      disabled={i === 0}
+                      onClick={() => onReorderImages(i, i - 1)}
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.shotBtn}
+                      aria-label={`Færa ${img.name} aftar`}
+                      disabled={i === images.length - 1}
+                      onClick={() => onReorderImages(i, i + 1)}
+                    >
+                      →
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.shotBtn}
+                      aria-label={`Fjarlægja ${img.name}`}
+                      onClick={() => onRemoveImage(img.url)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
 
         {documents.length > 0 && (
