@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
-from fastapi import BackgroundTasks, HTTPException, params, status
+from fastapi import BackgroundTasks, HTTPException, status
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 
@@ -142,29 +142,51 @@ async def test_someone_not_suspended_passes_straight_through():
 def _guarded_routes() -> set[tuple[tuple[str, ...], str]]:
     """Every (methods, path) that declares `require_not_suspended`.
 
-    Read from the endpoint's own signature rather than from
-    `route.dependant.dependencies`. The latter is a FastAPI internal whose shape
-    differs between versions: it yielded nothing at all on CI's resolution,
-    which silently emptied this set and made both tests below pass while
-    asserting nothing. `inspect.signature` on the endpoint is the public surface
-    and does not move.
+    Read from the endpoint's own signature. `route.dependant.dependencies` was
+    tried first and returned nothing on CI — it is a FastAPI internal whose
+    shape is not guaranteed.
+
+    Deliberately duck-typed rather than `isinstance(dep, params.Depends)`: an
+    isinstance check fails silently and completely if the test and the routers
+    ever resolve `fastapi.params` to different module objects, which is exactly
+    the kind of difference that shows up on CI and not locally.
     """
     guarded: set[tuple[tuple[str, ...], str]] = set()
-    for route in create_app().routes:
+    routes = list(create_app().routes)
+    for route in routes:
         endpoint = getattr(route, "endpoint", None)
-        if endpoint is None:
+        methods = getattr(route, "methods", None)
+        if endpoint is None or not methods:
             continue
         for param in inspect.signature(endpoint).parameters.values():
-            dep = param.default
-            if isinstance(dep, params.Depends) and (
-                getattr(dep.dependency, "__name__", "") == "require_not_suspended"
-            ):
-                guarded.add((tuple(sorted(route.methods)), route.path))
+            dependency = getattr(param.default, "dependency", None)
+            if getattr(dependency, "__name__", "") == "require_not_suspended":
+                guarded.add((tuple(sorted(methods)), route.path))
                 break
-    # An empty set must never be mistaken for "nothing is wrong". Both callers
-    # assert absence of something, so a lookup that quietly returns nothing
-    # turns them into tests that cannot fail.
-    assert guarded, "found no guarded routes at all — the lookup is broken, not the app"
+
+    # An empty set must never be mistaken for "nothing is wrong": both callers
+    # assert the *absence* of something, so a lookup that quietly comes back
+    # empty turns them into tests that cannot fail. If this ever trips, the
+    # message has to be enough to diagnose it without another push.
+    if not guarded:
+        sample = [
+            (
+                getattr(r, "path", "?"),
+                [
+                    (n, type(p.default).__module__ + "." + type(p.default).__qualname__)
+                    for n, p in inspect.signature(r.endpoint).parameters.items()
+                ],
+            )
+            for r in routes
+            if getattr(r, "path", "") == "/workspaces/{workspace_id}/tasks"
+            and getattr(r, "endpoint", None) is not None
+        ]
+        raise AssertionError(
+            "found no guarded routes at all — the lookup is broken, not the app. "
+            f"routes={len(routes)}, with_endpoint="
+            f"{sum(1 for r in routes if getattr(r, 'endpoint', None))}, "
+            f"probe={sample}"
+        )
     return guarded
 
 
