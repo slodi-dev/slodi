@@ -35,7 +35,7 @@ const SECTIONS: { id: SectionId; label: string; required?: boolean }[] = [
   { id: "equipment", label: "Búnaður" },
   { id: "instructions", label: "Leiðbeiningar" },
   { id: "tags", label: "Merkimiðar" },
-  { id: "media", label: "Myndir og skrár" },
+  { id: "media", label: "Myndir og skjöl" },
 ];
 
 type Draft = {
@@ -774,6 +774,14 @@ export default function ContentCreateModal({
             updateDraft((prev) => ({ ...prev, documents: [...prev.documents, ...added] }))
           }
           onPreviewDocument={setPreviewDoc}
+          onReorderDocuments={(from, to) =>
+            updateDraft((prev) => {
+              const next = [...prev.documents];
+              const [moved] = next.splice(from, 1);
+              next.splice(to, 0, moved);
+              return { ...prev, documents: next };
+            })
+          }
           onRemoveDocument={(url) =>
             updateDraft((prev) => ({
               ...prev,

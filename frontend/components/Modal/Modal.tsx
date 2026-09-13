@@ -13,9 +13,26 @@ type Props = {
    * cannot usefully be squeezed into a 800px column.
    */
   size?: "default" | "wide";
+  /**
+   * Message to confirm before closing, for a modal holding work that would be
+   * lost. Off by default.
+   *
+   * Every close used to raise „Ertu viss…" — on a read-only document preview,
+   * and on the delete dialog, where it asked you to confirm before confirming.
+   * It also only ever guarded the ✕: Escape and a click on the scrim closed
+   * without asking, so it protected nothing it claimed to.
+   */
+  confirmOnClose?: string;
 };
 
-export default function Modal({ open, onClose, title, children, size = "default" }: Props) {
+export default function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  size = "default",
+  confirmOnClose,
+}: Props) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -26,6 +43,20 @@ export default function Modal({ open, onClose, title, children, size = "default"
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  const requestClose = () => {
+    if (!confirmOnClose) {
+      onClose();
+      return;
+    }
+    try {
+      if (window.confirm(confirmOnClose)) onClose();
+    } catch {
+      // If confirm is unavailable, closing is the safer failure: a modal that
+      // cannot be dismissed traps the reader.
+      onClose();
+    }
+  };
 
   if (!open) return null;
 
@@ -49,22 +80,7 @@ export default function Modal({ open, onClose, title, children, size = "default"
             <h2 id="modal-title" className={styles.title}>
               {title}
             </h2>
-            <button
-              className={styles.closeBtn}
-              aria-label="Loka"
-              onClick={() => {
-                // Ask for confirmation in Icelandic when the explicit X is pressed.
-                try {
-                  const ok = window.confirm(
-                    "Ertu viss um að þú viljir hætta? Öll óvista gögn munu tapast."
-                  );
-                  if (ok) onClose();
-                } catch {
-                  // Fallback: if confirm is unavailable, close
-                  onClose();
-                }
-              }}
-            >
+            <button className={styles.closeBtn} aria-label="Loka" onClick={requestClose}>
               ✕
             </button>
           </div>
@@ -78,16 +94,7 @@ export default function Modal({ open, onClose, title, children, size = "default"
               top: "var(--sl-spacing-inset-md)",
             }}
             aria-label="Loka"
-            onClick={() => {
-              try {
-                const ok = window.confirm(
-                  "Ertu viss um að þú viljir hætta? Öll óvista gögn munu tapast."
-                );
-                if (ok) onClose();
-              } catch {
-                onClose();
-              }
-            }}
+            onClick={requestClose}
           >
             ✕
           </button>

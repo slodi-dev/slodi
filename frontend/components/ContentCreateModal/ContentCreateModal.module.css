@@ -1236,17 +1236,52 @@ textarea.input {
   pointer-events: none;
 }
 
-/* Says which one leads, rather than leaving it to position alone. */
-.heroTag {
+/*
+ * Position, on every tile. The hero says so in words; the rest carry their
+ * number, so the order being dragged is readable without counting tiles.
+ */
+.shotTag {
   position: absolute;
   top: 10px;
   left: 10px;
+  min-width: 22px;
   padding: 2px 8px;
   border-radius: var(--sl-radius-pill);
-  background: hsl(var(--sl-color-primary-text));
-  color: hsl(var(--sl-color-text-inverse));
+  /* Sits on a photograph, so it needs its own ground rather than a page
+     token: dark ink at 62% carries white text over anything. */
+  background: hsl(var(--sl-primitive-neutral-1000) / 0.62);
+  color: hsl(var(--sl-primitive-neutral-0));
   font-size: var(--sl-text-overline);
   font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* A document tile has no photograph under its chip, so the chip takes the
+   page's own surface instead of the dark-on-image ground. */
+.shotTagDoc {
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-secondary));
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+/* The one that leads is named, and takes the primary rather than the neutral. */
+.shotTagHero {
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .shotName {
@@ -1288,4 +1323,46 @@ textarea.input {
 .shotBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ══ Document tiles — the image grid, with a file in place of a picture ════ */
+.docThumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 1px dashed hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+}
+
+.docThumb:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.docThumb:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.docThumb:disabled {
+  cursor: default;
+}
+
+.docThumb svg {
+  width: 34px;
+  height: 34px;
+}
+
+.docExt {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
 }

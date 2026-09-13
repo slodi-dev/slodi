@@ -135,7 +135,7 @@ describe("what a screen reader gets", () => {
       "Búnaður",
       "Leiðbeiningar",
       "Merkimiðar",
-      "Myndir og skrár",
+      "Myndir og skjöl",
     ]) {
       expect(screen.getByRole("heading", { name: new RegExp(label) })).toBeInTheDocument();
     }

@@ -88,6 +88,14 @@ function typeFor(file: File): string {
  * keyboard at all, so the same element is a button that opens the file picker,
  * and every result is announced politely rather than only appearing.
  */
+/** „gatlisti.pdf" → „PDF". Falls back to the MIME subtype, then to „SKJAL". */
+function extOf(doc: Attachment): string {
+  const ext = doc.name.split(".").pop();
+  if (ext && ext !== doc.name && ext.length <= 5) return ext.toUpperCase();
+  const sub = doc.content_type?.split("/").pop();
+  return sub ? sub.slice(0, 4).toUpperCase() : "SKJAL";
+}
+
 export default function FileDropZone({
   images,
   documents,
@@ -96,6 +104,7 @@ export default function FileDropZone({
   onReorderImages,
   onAddDocuments,
   onRemoveDocument,
+  onReorderDocuments,
   onPreviewDocument,
 }: {
   /** Ordered. The first is the one the item leads with. */
@@ -107,6 +116,7 @@ export default function FileDropZone({
   /** Emit what arrived, not the whole list — see the note in TagPicker. */
   onAddDocuments: (added: Attachment[]) => void;
   onRemoveDocument: (url: string) => void;
+  onReorderDocuments: (from: number, to: number) => void;
   /** Omitted where there is nowhere to show a preview. */
   onPreviewDocument?: (doc: Attachment) => void;
 }) {
@@ -119,6 +129,10 @@ export default function FileDropZone({
   const [skipped, setSkipped] = useState<string | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  /* Separate from the image indices: one shared pair would let a document be
+     dropped into the picture order. */
+  const [docFrom, setDocFrom] = useState<number | null>(null);
+  const [docOver, setDocOver] = useState<number | null>(null);
 
   async function take(files: FileList | null) {
     if (!files?.length) return;
@@ -178,7 +192,7 @@ export default function FileDropZone({
   return (
     <div className={styles.fld}>
       <span className={styles.lab} id="drop-label">
-        Mynd og önnur gögn
+        Myndir og skjöl
       </span>
       <div
         className={cn(styles.drop, over && styles.dropOver)}
@@ -201,9 +215,9 @@ export default function FileDropZone({
       >
         <div className={styles.dropHead}>
           <p className={styles.dropText}>
-            <strong>Dragðu skrár hingað</strong> — myndir verða forsíðumynd, annað fer í
-            gagnalistann. PDF, Word, Excel, PowerPoint, OpenDocument, texti og Markdown — mest 25 MB
-            hvert.
+            <strong>Dragðu skrár hingað</strong> — myndir raðast í myndalistann og sú fyrsta verður
+            forsíðumyndin, annað fer í skjalalistann. PDF, Word, Excel, PowerPoint, OpenDocument,
+            texti og Markdown — mest 25 MB hvert.
           </p>
           <input
             ref={inputRef}
@@ -254,7 +268,23 @@ export default function FileDropZone({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- blob URL, not optimisable */}
                   <img className={styles.shotImg} src={img.url} alt="" />
-                  {i === 0 && <span className={styles.heroTag}>Forsíðumynd</span>}
+                  {/*
+                    Every image carries its position, not just the first. A
+                    lone „Forsíðumynd" badge says which one leads but leaves
+                    the rest to be counted by eye, which is the thing the
+                    reader is reordering. The number is prefixed for a screen
+                    reader, where a bare "3" means nothing.
+                  */}
+                  <span className={cn(styles.shotTag, i === 0 && styles.shotTagHero)}>
+                    {i === 0 ? (
+                      "Forsíðumynd"
+                    ) : (
+                      <>
+                        <span className={styles.srOnly}>Mynd </span>
+                        {i + 1}
+                      </>
+                    )}
+                  </span>
                   <span className={styles.shotName}>{img.name}</span>
                   {/*
                     Dragging is unreachable from a keyboard, so the order is
@@ -296,45 +326,98 @@ export default function FileDropZone({
         )}
 
         {documents.length > 0 && (
-          <ul className={styles.chips} aria-labelledby="drop-label">
-            {documents.map((doc) => (
-              <li key={doc.url} className={styles.chip}>
-                {/* The name opens a preview. A file you uploaded ten minutes
-                    ago is easy to mistake for another, and the only way to
-                    check used to be to save and leave the form. */}
-                {onPreviewDocument ? (
+          <>
+            <p className={styles.shotsHint}>Skjölin sem fylgja einingunni. Dragðu til að raða.</p>
+            <ul className={styles.shots}>
+              {documents.map((doc, i) => (
+                <li
+                  key={doc.url}
+                  className={cn(styles.shot, docOver === i && styles.shotOver)}
+                  draggable
+                  onDragStart={() => setDocFrom(i)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDocOver(i);
+                  }}
+                  onDragLeave={() => setDocOver((v) => (v === i ? null : v))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (docFrom !== null && docFrom !== i) onReorderDocuments(docFrom, i);
+                    setDocFrom(null);
+                    setDocOver(null);
+                  }}
+                  onDragEnd={() => {
+                    setDocFrom(null);
+                    setDocOver(null);
+                  }}
+                >
+                  {/*
+                    A tile rather than a rendered page. Thumbnailing every
+                    document would mean fetching all of them — and minting a
+                    signature for each — the moment the form opens, most of
+                    which nobody looks at. The kind and the name identify it;
+                    the tile opens the real preview.
+                  */}
                   <button
                     type="button"
-                    className={cn(styles.chipText, styles.chipOpen)}
-                    onClick={() => onPreviewDocument(doc)}
-                    title="Skoða skjalið"
+                    className={styles.docThumb}
+                    onClick={() => onPreviewDocument?.(doc)}
+                    aria-label={`Skoða ${doc.name}`}
+                    disabled={!onPreviewDocument}
                   >
-                    {doc.name}
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                      <path d="M14 3v5h5" />
+                    </svg>
+                    <span className={styles.docExt}>{extOf(doc)}</span>
                   </button>
-                ) : (
-                  <span className={styles.chipText}>{doc.name}</span>
-                )}
-                <button
-                  type="button"
-                  className={styles.chipBtn}
-                  aria-label={`Fjarlægja ${doc.name}`}
-                  onClick={() => onRemoveDocument(doc.url)}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    aria-hidden="true"
-                  >
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                  </svg>
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <span className={cn(styles.shotTag, styles.shotTagDoc)}>
+                    <span className={styles.srOnly}>Skjal </span>
+                    {i + 1}
+                  </span>
+                  <span className={styles.shotName} title={doc.name}>
+                    {doc.name}
+                  </span>
+                  <span className={styles.shotActs}>
+                    <button
+                      type="button"
+                      className={styles.shotBtn}
+                      aria-label={`Færa ${doc.name} framar`}
+                      disabled={i === 0}
+                      onClick={() => onReorderDocuments(i, i - 1)}
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.shotBtn}
+                      aria-label={`Færa ${doc.name} aftar`}
+                      disabled={i === documents.length - 1}
+                      onClick={() => onReorderDocuments(i, i + 1)}
+                    >
+                      →
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.shotBtn}
+                      aria-label={`Fjarlægja ${doc.name}`}
+                      onClick={() => onRemoveDocument(doc.url)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
       {failed && (
