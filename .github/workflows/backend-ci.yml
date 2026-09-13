@@ -24,9 +24,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-caching: true
-          cache-dependency-glob: "backend/pyproject.toml"
+          cache-dependency-glob: "backend/uv.lock"
 
-      - run: uv sync --group dev
+      - run: uv sync --locked --group dev
 
       - name: Ruff lint
         run: uv run ruff check .
@@ -68,9 +68,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-caching: true
-          cache-dependency-glob: "backend/pyproject.toml"
+          cache-dependency-glob: "backend/uv.lock"
 
-      - run: uv sync --group dev
+      - run: uv sync --locked --group dev
 
       - name: Run unit tests
         run: PYTHONPATH=. uv run pytest -q -m "not integration"
