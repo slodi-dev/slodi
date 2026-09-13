@@ -18,6 +18,7 @@ from app.repositories.content import (
     comment_count_subq,
     like_count_subq,
     liked_by_me_subq,
+    listable,
 )
 
 
@@ -65,7 +66,7 @@ class TaskRepository(Repository):
                 selectinload(Task.comments).selectinload(Comment.user),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Task.id == task_id, Task.event_id == event_id, Task.deleted_at.is_(None))
+            .where(Task.id == task_id, Task.event_id == event_id, listable(Task))
         )
         row = (await self.session.execute(stmt)).first()
         if row is None:
@@ -75,9 +76,7 @@ class TaskRepository(Repository):
 
     async def count_tasks_for_event(self, event_id: UUID) -> int:
         result = await self.session.scalar(
-            select(func.count())
-            .select_from(Task)
-            .where(Task.event_id == event_id, Task.deleted_at.is_(None))
+            select(func.count()).select_from(Task).where(Task.event_id == event_id, listable(Task))
         )
         return result or 0
 
@@ -96,7 +95,7 @@ class TaskRepository(Repository):
                 selectinload(Task.workspace),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Task.event_id == event_id, Task.deleted_at.is_(None))
+            .where(Task.event_id == event_id, listable(Task))
             .order_by(Task.name)
             .limit(limit)
             .offset(offset)
@@ -111,7 +110,7 @@ class TaskRepository(Repository):
         result = await self.session.scalar(
             select(func.count())
             .select_from(Task)
-            .where(Task.workspace_id == workspace_id, Task.deleted_at.is_(None))
+            .where(Task.workspace_id == workspace_id, listable(Task))
         )
         return result or 0
 
@@ -130,7 +129,7 @@ class TaskRepository(Repository):
                 selectinload(Task.workspace),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Task.workspace_id == workspace_id, Task.deleted_at.is_(None))
+            .where(Task.workspace_id == workspace_id, listable(Task))
             .order_by(Task.name)
             .limit(limit)
             .offset(offset)

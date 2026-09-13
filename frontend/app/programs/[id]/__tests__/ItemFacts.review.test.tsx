@@ -38,6 +38,23 @@ describe("ItemFacts review state", () => {
     expect(screen.getByText("Bíður yfirferðar")).toBeInTheDocument();
   });
 
+  it("tells the author their item is hidden, since it is absent everywhere else", () => {
+    render(
+      <ItemFacts
+        program={makeProgram({ hidden_at: "2026-09-13T00:00:00Z" })}
+        typeLabel="verkefnið"
+      />
+    );
+
+    expect(screen.getByText("Falið")).toBeInTheDocument();
+  });
+
+  it("says nothing about hiding for an item that is not hidden", () => {
+    render(<ItemFacts program={makeProgram()} typeLabel="verkefnið" />);
+
+    expect(screen.queryByText("Falið")).not.toBeInTheDocument();
+  });
+
   it("shows a rejection together with the reason it was rejected", () => {
     render(
       <ItemFacts

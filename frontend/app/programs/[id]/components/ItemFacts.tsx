@@ -237,6 +237,16 @@ export default function ItemFacts({
         Only the rejection is coloured. Waiting is not a warning and approval is
         not a prize; the rejection is the one the author has to act on.
       */}
+      {program.hidden_at && (
+        <div className={cn(styles.review, styles.reviewRejected)}>
+          <span className={styles.reviewState}>Falið</span>
+          <p className={styles.reviewNote}>
+            Efnið er ekki sýnilegt í bankanum. Hafðu samband við Dagskrárstjórnarteymið ef þú vilt
+            fá það skoðað aftur.
+          </p>
+        </div>
+      )}
+
       {program.review_state && (
         <div
           className={cn(

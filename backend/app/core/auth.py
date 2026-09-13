@@ -13,6 +13,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
 from threading import Lock
+from typing import TypeVar
 from uuid import UUID
 
 import httpx
@@ -29,6 +30,7 @@ from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
 from app.domain.icelandic_dates import format_date
 from app.repositories.posting_suspensions import PostingSuspensionRepository
+from app.schemas.content import ContentOut
 from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
 from app.services.content import ContentService
 from app.services.groups import GroupService
@@ -36,6 +38,8 @@ from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
 from app.settings import settings
 from app.utils import get_current_datetime
+
+ContentOutT = TypeVar("ContentOutT", bound=ContentOut)
 
 logger = logging.getLogger(__name__)
 
@@ -722,3 +726,61 @@ async def check_group_access(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Requires {minimum_role.value} role or higher",
         )
+
+
+def is_content_moderator(current_user: UserOut) -> bool:
+    """
+    Is this user a member of Dagskrárstjórnarteymið, or above it?
+
+    Ranked, not a membership test against `(moderator, admin)`. That tuple was
+    written in three places and happens to agree with the rank today; it would
+    stop agreeing the moment a permission is added between the two, and the
+    disagreement would show up as a moderator quietly losing a capability rather
+    than as an error.
+    """
+    return _PERMISSION_RANK[current_user.permissions] >= _PERMISSION_RANK[Permissions.moderator]
+
+
+def may_see_review_state(item: ContentOut, current_user: UserOut) -> bool:
+    """The item's own author, and the team. Nobody else."""
+    return is_content_moderator(current_user) or item.author_id == current_user.id
+
+
+def assert_hidden_item_readable(item: ContentOut, current_user: UserOut) -> None:
+    """
+    A hidden item is unlisted, not unreachable by the person who wrote it.
+
+    Hiding removes an item from every listing. Making it 404 for its author too
+    meant the mail saying „efnið þitt er ekki lengur sýnilegt" pointed at a dead
+    link, and the review state on the item page — added precisely so a leader
+    could find out what happened — was unreadable in the one case where the item
+    actually disappeared.
+
+    Raises 404 rather than 403 for everyone else: a 403 would confirm that an
+    item exists at that id, which is the thing hiding is trying to stop.
+    """
+    if item.hidden_at is None:
+        return
+    if may_see_review_state(item, current_user):
+        return
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
+def apply_review_visibility(item: ContentOutT, current_user: UserOut) -> ContentOutT:
+    """
+    Blank the review fields unless this reader is entitled to them.
+
+    `review_note` is where a moderator writes *why* they turned something down,
+    written in the belief that it reaches the author and the team and nobody
+    else. `ProgramOut`, `EventOut` and `TaskOut` all inherit `ContentOut`, so
+    every one of them carries these fields and every read path has to answer
+    this question.
+
+    **This exists as one function because the first version of it did not.** The
+    rule was written inline in `GET /content/{id}` and the three type-specific
+    detail endpoints were left returning the note to any member of the workspace.
+    Route the response through here rather than repeating the condition.
+    """
+    if may_see_review_state(item, current_user):
+        return item
+    return item.model_copy(update={"review_state": None, "review_note": None, "hidden_at": None})

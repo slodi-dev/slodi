@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
+    apply_review_visibility,
+    assert_hidden_item_readable,
     check_content_create_access,
     check_content_edit_access,
     check_workspace_access,
@@ -17,7 +19,7 @@ from app.core.auth import (
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
-from app.domain.enums import AgeGroup, ContentType, Permissions, ProgramSortBy
+from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
 from app.schemas.content import ContentListOut, ContentOut
 from app.schemas.program import (
     ProgramCreate,
@@ -393,20 +395,15 @@ async def get_content(
     if content_type is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
 
-    # A hidden item stays reachable to the team that hid it, and to nobody else.
-    is_moderator = current_user.permissions in (Permissions.moderator, Permissions.admin)
-
+    # Fetched including hidden, then gated on who is asking: the repository
+    # cannot answer "is this reader its author?" without first loading the row.
     item: ContentOut
     if content_type == ContentType.program:
-        item = await svc.get(content_id, current_user.id, include_hidden=is_moderator)
+        item = await svc.get(content_id, current_user.id, include_hidden=True)
     elif content_type == ContentType.event:
-        item = await EventService(session).get(
-            content_id, current_user.id, include_hidden=is_moderator
-        )
+        item = await EventService(session).get(content_id, current_user.id, include_hidden=True)
     else:
-        item = await TaskService(session).get(
-            content_id, current_user.id, include_hidden=is_moderator
-        )
+        item = await TaskService(session).get(content_id, current_user.id, include_hidden=True)
 
     await check_workspace_access(
         item.workspace_id,
@@ -416,15 +413,10 @@ async def get_content(
         hide_from_non_members=True,
     )
 
-    # Review state is for the person who wrote it and for the team. A leader
-    # whose submission was rejected or hidden otherwise has no way to find out
-    # — the item simply stops appearing — and nobody else needs to know how the
-    # team judged somebody else's idea.
-    if not (is_moderator or item.author_id == current_user.id):
-        item = item.model_copy(update={"review_state": None, "review_note": None})
+    assert_hidden_item_readable(item, current_user)
 
     response.headers["Cache-Control"] = "private, max-age=60"
-    return item
+    return apply_review_visibility(item, current_user)
 
 
 @router.get("/programs/{program_id}", response_model=ProgramOut)
@@ -435,9 +427,7 @@ async def get_program(
     current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
     svc = ProgramService(session)
-    # A hidden item stays reachable to the team that hid it, and to nobody else.
-    is_moderator = current_user.permissions in (Permissions.moderator, Permissions.admin)
-    program = await svc.get(program_id, current_user.id, include_hidden=is_moderator)
+    program = await svc.get(program_id, current_user.id, include_hidden=True)
     await check_workspace_access(
         program.workspace_id,
         current_user,
@@ -445,8 +435,10 @@ async def get_program(
         minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
+    assert_hidden_item_readable(program, current_user)
+
     response.headers["Cache-Control"] = "private, max-age=60"
-    return program
+    return apply_review_visibility(program, current_user)
 
 
 @router.patch("/programs/{program_id}", response_model=ProgramOut)
@@ -466,7 +458,9 @@ async def update_program(
         session,
         hide_from_non_members=True,
     )
-    return await svc.update(program_id, body, current_user.id)
+    return apply_review_visibility(
+        await svc.update(program_id, body, current_user.id), current_user
+    )
 
 
 @router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)

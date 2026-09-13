@@ -19,6 +19,7 @@ from app.repositories.content import (
     comment_count_subq,
     like_count_subq,
     liked_by_me_subq,
+    listable,
 )
 
 
@@ -86,7 +87,7 @@ class EventRepository(Repository):
                 Event.id == event_id,
                 Event.program_id == program_id,
                 Event.workspace_id == workspace_id,
-                Event.deleted_at.is_(None),
+                listable(Event),
             )
         )
         row = (await self.session.execute(stmt)).first()
@@ -102,7 +103,7 @@ class EventRepository(Repository):
         date_from: dt.datetime | None = None,
         date_to: dt.datetime | None = None,
     ) -> int:
-        conds = [Event.workspace_id == workspace_id, Event.deleted_at.is_(None)]
+        conds = [Event.workspace_id == workspace_id, listable(Event)]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
         if date_to is not None:
@@ -123,7 +124,7 @@ class EventRepository(Repository):
         limit: int = 50,
         offset: int = 0,
     ) -> list[tuple[Event, ContentStats]]:
-        conds = [Event.workspace_id == workspace_id, Event.deleted_at.is_(None)]
+        conds = [Event.workspace_id == workspace_id, listable(Event)]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
         if date_to is not None:
@@ -160,7 +161,7 @@ class EventRepository(Repository):
         conds = [
             Event.workspace_id == workspace_id,
             Event.program_id == program_id,
-            Event.deleted_at.is_(None),
+            listable(Event),
         ]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
@@ -186,7 +187,7 @@ class EventRepository(Repository):
         conds = [
             Event.workspace_id == workspace_id,
             Event.program_id == program_id,
-            Event.deleted_at.is_(None),
+            listable(Event),
         ]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)

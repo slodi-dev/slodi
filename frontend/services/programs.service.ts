@@ -58,6 +58,12 @@ export type Program = {
    */
   review_state?: "unreviewed" | "approved" | "rejected" | null;
   review_note?: string | null;
+  /**
+   * Set when a moderator has unlisted the item. Carried on the same terms as
+   * the review fields, and the reason the author can still open it at all: the
+   * item is absent from every listing, including their own.
+   */
+  hidden_at?: string | null;
 };
 
 /** A leader's public comment on a bank item — not a reviewer's note. */

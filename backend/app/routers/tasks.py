@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
+    apply_review_visibility,
+    assert_hidden_item_readable,
     check_content_create_access,
     check_content_edit_access,
     check_workspace_access,
@@ -164,7 +166,7 @@ async def get_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> TaskOut:
     svc = TaskService(session)
-    task = await svc.get(task_id, current_user.id)
+    task = await svc.get(task_id, current_user.id, include_hidden=True)
     await check_workspace_access(
         task.workspace_id,
         current_user,
@@ -172,7 +174,8 @@ async def get_task(
         minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
-    return task
+    assert_hidden_item_readable(task, current_user)
+    return apply_review_visibility(task, current_user)
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskOut)
@@ -192,7 +195,7 @@ async def update_task(
         session,
         hide_from_non_members=True,
     )
-    return await svc.update(task_id, body, current_user.id)
+    return apply_review_visibility(await svc.update(task_id, body, current_user.id), current_user)
 
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)

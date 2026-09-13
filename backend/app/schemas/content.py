@@ -168,6 +168,11 @@ class ContentOut(ContentListOut):
     #: these rather than the schema, because the schema cannot see who is asking.
     review_state: ReviewState | None = None
     review_note: str | None = None
+    #: Set when a moderator has unlisted the item. Carried on the same terms as
+    #: the review fields: the author is told their item was hidden, so the item
+    #: has to be able to say so, and a stranger is not shown the timestamp of a
+    #: decision about somebody else.
+    hidden_at: dt.datetime | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
     media: dict[str, Any] | None = None

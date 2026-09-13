@@ -1,9 +1,10 @@
 """Tests for workspace content: programs, groups, and tags."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
+import pytest
 from fastapi import HTTPException, status
 
 from app.schemas.group import GroupOut
@@ -465,3 +466,104 @@ def test_another_reader_sees_no_review_state(mock_db_session, viewer_user, sampl
 
     assert body["review_state"] is None
     assert body["review_note"] is None
+
+
+@pytest.mark.parametrize(
+    ("path", "service_get"),
+    [
+        ("/content/{id}", "app.services.tasks.TaskService.get"),
+        ("/tasks/{id}", "app.services.tasks.TaskService.get"),
+    ],
+)
+def test_no_endpoint_hands_a_reviewers_note_to_a_stranger(
+    mock_db_session, viewer_user, sample_workspace, path, service_get
+):
+    """
+    `review_note` is where a moderator writes why they turned something down.
+
+    Every endpoint returning a `ContentOut` subclass carries the field, so every
+    one of them has to answer this. `/content/{id}` did and `/tasks/{id}` did
+    not, which is the whole reason `apply_review_visibility` exists — this is
+    parametrised so a new read path is a line here rather than a silent hole.
+    """
+    from app.domain.enums import ReviewState
+    from app.schemas.workspace import WorkspaceRole
+
+    task = _make_task(sample_workspace.id)  # written by somebody else
+    task.review_state = ReviewState.rejected
+    task.review_note = "Of hættulegt"
+
+    reader = _reader_client(mock_db_session, viewer_user)
+
+    with (
+        patch(
+            "app.repositories.programs.ProgramRepository.get_content_type",
+            new_callable=AsyncMock,
+        ) as mock_type,
+        patch(service_get, new_callable=AsyncMock) as mock_get,
+        patch("app.core.auth._get_workspace_role", new_callable=AsyncMock) as role,
+    ):
+        mock_type.return_value = "task"
+        mock_get.return_value = task
+        role.return_value = WorkspaceRole.viewer
+
+        body = reader.get(path.format(id=task.id)).json()
+
+    assert body["review_state"] is None, f"{path} leaked review_state"
+    assert body["review_note"] is None, f"{path} leaked review_note"
+
+
+def test_the_author_can_still_open_their_own_hidden_item(client, sample_workspace, admin_user):
+    """
+    Hiding sends the author a mail saying the item is no longer listed. If the
+    item then 404s for them, that mail points at a dead link — and the review
+    state on the page, added so a leader could find out what happened, is
+    unreadable in the one case where the item actually disappeared.
+    """
+    task = _make_task(sample_workspace.id)
+    task.author_id = admin_user.id
+    task.hidden_at = datetime(2026, 9, 13, tzinfo=UTC)
+
+    with (
+        patch(
+            "app.repositories.programs.ProgramRepository.get_content_type",
+            new_callable=AsyncMock,
+        ) as mock_type,
+        patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as mock_get,
+    ):
+        mock_type.return_value = "task"
+        mock_get.return_value = task
+
+        res = client.get(f"/content/{task.id}")
+
+    assert res.status_code == 200
+    assert res.json()["hidden_at"] is not None
+
+
+def test_a_hidden_item_is_not_found_for_anybody_else(
+    mock_db_session, viewer_user, sample_workspace
+):
+    """404 rather than 403: a 403 confirms an item exists at that id, which is
+    the thing hiding is trying to stop."""
+    from app.schemas.workspace import WorkspaceRole
+
+    task = _make_task(sample_workspace.id)  # written by somebody else
+    task.hidden_at = datetime(2026, 9, 13, tzinfo=UTC)
+
+    reader = _reader_client(mock_db_session, viewer_user)
+
+    with (
+        patch(
+            "app.repositories.programs.ProgramRepository.get_content_type",
+            new_callable=AsyncMock,
+        ) as mock_type,
+        patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as mock_get,
+        patch("app.core.auth._get_workspace_role", new_callable=AsyncMock) as role,
+    ):
+        mock_type.return_value = "task"
+        mock_get.return_value = task
+        role.return_value = WorkspaceRole.viewer
+
+        res = reader.get(f"/content/{task.id}")
+
+    assert res.status_code == 404

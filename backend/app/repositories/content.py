@@ -20,6 +20,24 @@ class ContentStats:
     liked_by_me: bool
 
 
+def listable(model: Any) -> Any:
+    """
+    The conditions every listing of bank content has to carry.
+
+    Deleted is obvious. **Hidden is the one that kept getting missed:** it was
+    enforced in the polymorphic bank listing and in the three `get()` methods,
+    and absent from all eight type-specific list and count methods, so a hidden
+    item stayed enumerable through `GET /workspaces/{id}/tasks` and its
+    siblings. Hiding is the moderators' one-click response to content that
+    should not be in front of a volunteer audience; a removal that only holds on
+    one of five read paths is not a removal.
+
+    Take this rather than writing the pair by hand, so "list content" cannot be
+    written without answering both.
+    """
+    return (model.deleted_at.is_(None)) & (model.hidden_at.is_(None))
+
+
 def like_count_subq() -> Any:
     """Correlated subquery: COUNT of likes for the current Content row."""
     return (

@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
+    apply_review_visibility,
+    assert_hidden_item_readable,
     check_content_create_access,
     check_content_edit_access,
     check_workspace_access,
@@ -178,7 +180,7 @@ async def get_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> EventOut:
     svc = EventService(session)
-    event = await svc.get(event_id, current_user.id)
+    event = await svc.get(event_id, current_user.id, include_hidden=True)
     await check_workspace_access(
         event.workspace_id,
         current_user,
@@ -186,7 +188,8 @@ async def get_event(
         minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
-    return event
+    assert_hidden_item_readable(event, current_user)
+    return apply_review_visibility(event, current_user)
 
 
 @router.patch("/events/{event_id}", response_model=EventOut)
@@ -206,7 +209,7 @@ async def update_event(
         session,
         hide_from_non_members=True,
     )
-    return await svc.update(event_id, body, current_user.id)
+    return apply_review_visibility(await svc.update(event_id, body, current_user.id), current_user)
 
 
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
