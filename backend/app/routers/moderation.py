@@ -233,10 +233,17 @@ async def review_content(
     session: SessionDep,
     content_id: UUID,
     body: ReviewDecision,
+    background_tasks: BackgroundTasks,
     current_user: UserOut = ModeratorDep,
 ) -> ReviewQueueItem:
-    """Approve or reject. Does **not** change what anyone can see — hiding does."""
-    return await ModerationService(session).review(content_id, current_user.id, body)
+    """Approve or reject. Does **not** change what anyone can see — hiding does.
+
+    A rejection carries its reason to the author, because a decision nobody is
+    told about is indistinguishable from their work disappearing.
+    """
+    return await ModerationService(session).review(
+        content_id, current_user.id, body, background_tasks
+    )
 
 
 @router.patch("/content/{content_id}/hidden", response_model=ReviewQueueItem)
@@ -244,7 +251,14 @@ async def set_content_hidden(
     session: SessionDep,
     content_id: UUID,
     body: HideDecision,
+    background_tasks: BackgroundTasks,
     current_user: UserOut = ModeratorDep,
 ) -> ReviewQueueItem:
-    """Take something out of the bank, or put it back."""
-    return await ModerationService(session).set_hidden(content_id, current_user.id, body)
+    """Take something out of the bank, or put it back.
+
+    Hiding tells the author; putting it back does not, because that is good
+    news they will see for themselves.
+    """
+    return await ModerationService(session).set_hidden(
+        content_id, current_user.id, body, background_tasks
+    )

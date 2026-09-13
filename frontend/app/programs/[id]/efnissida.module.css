@@ -506,13 +506,16 @@
  * the same column. Nothing shares a line with anything it can collide with.
  */
 .comment {
+  /* Tighter than the sections around it. A comment is a remark, not a
+     document, and at full card weight a handful of them drowned the item. */
+  position: relative;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  column-gap: 12px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
   align-items: start;
-  padding: 14px 16px;
+  padding: 10px 12px;
   border: 1px solid hsl(var(--sl-color-border-subtle));
-  border-radius: var(--sl-radius-card);
+  border-radius: var(--sl-radius-sm);
   background: hsl(var(--sl-color-surface-raised));
 }
 
@@ -532,6 +535,9 @@
 
 .comment .avatar {
   grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+  font-size: var(--sl-text-caption);
 }
 
 /* Your own avatar is the one that is not a stranger. */
@@ -551,7 +557,7 @@
 }
 
 .commentName {
-  font-size: var(--sl-text-body-sm);
+  font-size: var(--sl-text-caption);
   font-weight: var(--sl-font-weight-emphasis);
   color: hsl(var(--sl-color-text-primary));
 }
@@ -564,34 +570,66 @@
 
 .commentText {
   grid-column: 2;
-  margin: 9px 0 0;
+  margin: 5px 0 0;
+  /* Room for the actions parked in the corner, so a long last line does not
+     run underneath them. */
+  padding-right: 56px;
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-secondary));
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-/* The two actions on a comment. Quiet until wanted: a row of buttons under
-   every comment competes with the words above them, so they stay tertiary and
-   step up on hover and focus. */
+/*
+ * The two actions live in the bottom-right corner of the comment, as icons.
+ * Quiet until wanted: a labelled row under every comment competed with the
+ * words above it, which is the opposite of what a comment section is for.
+ * They stay in the tab order and appear on focus, so they are not
+ * mouse-only.
+ */
 .commentActs {
-  grid-column: 2;
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
   display: flex;
-  gap: var(--sl-spacing-gap-sm);
-  margin-top: 8px;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--sl-transition-fast);
+}
+
+.comment:hover .commentActs,
+.comment:focus-within .commentActs {
+  opacity: 1;
 }
 
 .commentAct {
-  padding: 4px 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: none;
+  border-radius: var(--sl-radius-xs);
   background: none;
   color: hsl(var(--sl-color-text-tertiary));
-  font: inherit;
-  font-size: var(--sl-text-caption);
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  transition: color var(--sl-transition-fast);
+}
+
+.commentAct svg {
+  width: 15px;
+  height: 15px;
+}
+
+.commentAct:hover {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.commentAct:focus-visible {
+  opacity: 1;
+  color: hsl(var(--sl-color-text-primary));
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
 }
 
 .commentAct:hover {
@@ -607,7 +645,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .commentAct {
+  .commentActs {
     transition: none;
   }
 }

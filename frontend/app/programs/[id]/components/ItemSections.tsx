@@ -305,15 +305,43 @@ function CommentSection({
                 type="button"
                 className={styles.commentAct}
                 onClick={() => onReportComment(c)}
+                aria-label={`Tilkynna athugasemd frá ${c.author_name}`}
+                title="Tilkynna"
               >
-                Tilkynna
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 21V4" />
+                  <path d="M6 4.5h12l-2.8 4.2L18 13H6z" />
+                </svg>
               </button>
               <button
                 type="button"
                 className={styles.commentAct}
                 onClick={() => onRemoveComment(c)}
+                aria-label={`Fjarlægja athugasemd frá ${c.author_name}`}
+                title="Fjarlægja"
               >
-                Fjarlægja
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M6 7l1 13h10l1-13" />
+                  <path d="M9 7V4h6v3" />
+                </svg>
               </button>
             </div>
           </article>
@@ -334,19 +362,35 @@ function CommentSection({
               <label className={styles.srOnly} htmlFor="ef-reply-input">
                 Skrifa athugasemd
               </label>
+              <span id="ef-reply-hint" className={styles.srOnly}>
+                Ýttu á Ctrl og Enter til að senda.
+              </span>
               <textarea
                 id="ef-reply-input"
                 ref={areaRef}
                 rows={1}
                 value={draft}
                 placeholder="Hvernig gekk hjá þínum hóp?"
+                aria-describedby="ef-reply-hint"
                 onChange={(e) => setDraft(e.target.value)}
+                /*
+                 * Ctrl/Cmd+Enter posts. Plain Enter has to stay a newline —
+                 * this is a multi-line box and a comment about how a fundur
+                 * went is often more than one line.
+                 */
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    void submit();
+                  }
+                }}
                 disabled={sending}
               />
               <button
                 type="submit"
                 className={styles.send}
                 aria-label="Senda athugasemd"
+                title="Senda — Ctrl+Enter"
                 disabled={sending || !draft.trim()}
               >
                 <svg

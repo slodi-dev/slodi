@@ -626,3 +626,75 @@ def test_no_attachments_is_not_an_error(media):
     from app.services.moderation import _documents_from
 
     assert _documents_from(media) == []
+
+
+# ── Telling the author ────────────────────────────────────────────────────────
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_a_rejection_reaches_the_author(db):
+    """Moderation nobody is told about is indistinguishable from their work
+    quietly disappearing."""
+    from fastapi import BackgroundTasks
+
+    _, _, task = await _bank(db)
+    reviewer = m.User(name="Yfirferð", auth0_id="auth0|mod-notify", email="mod-n@t.is")
+    db.add(reviewer)
+    await db.flush()
+
+    tasks = BackgroundTasks()
+    await ModerationService(db).review(
+        task.id,
+        reviewer.id,
+        ReviewDecision(review_state=ReviewState.rejected, note="Of hættulegt"),
+        tasks,
+    )
+
+    assert len(tasks.tasks) == 1, "the rejection should queue exactly one mail"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_approval_says_nothing(db):
+    """Silence is the right answer to "nothing was wrong". A mail per approved
+    item trains people to ignore the mails that matter."""
+    from fastapi import BackgroundTasks
+
+    _, _, task = await _bank(db)
+    reviewer = m.User(name="Yfirferð", auth0_id="auth0|mod-ok", email="mod-ok@t.is")
+    db.add(reviewer)
+    await db.flush()
+
+    tasks = BackgroundTasks()
+    await ModerationService(db).review(
+        task.id, reviewer.id, ReviewDecision(review_state=ReviewState.approved), tasks
+    )
+
+    assert tasks.tasks == []
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_hiding_tells_the_author_and_unhiding_does_not(db):
+    """Hiding removes it from every listing, including the author's own view, so
+    they have to be told. Putting it back is good news they will see."""
+    from fastapi import BackgroundTasks
+
+    from app.schemas.moderation import HideDecision
+
+    _, _, task = await _bank(db)
+    reviewer = m.User(name="Yfirferð", auth0_id="auth0|mod-hide", email="mod-h@t.is")
+    db.add(reviewer)
+    await db.flush()
+    svc = ModerationService(db)
+
+    hiding = BackgroundTasks()
+    await svc.set_hidden(
+        task.id, reviewer.id, HideDecision(hidden=True, note="Ekki við hæfi"), hiding
+    )
+    assert len(hiding.tasks) == 1
+
+    restoring = BackgroundTasks()
+    await svc.set_hidden(task.id, reviewer.id, HideDecision(hidden=False), restoring)
+    assert restoring.tasks == []

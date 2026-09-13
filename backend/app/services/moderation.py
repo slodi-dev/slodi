@@ -171,8 +171,34 @@ class ModerationService:
             ),
         )
 
+    def _notify_author(
+        self,
+        background_tasks: BackgroundTasks,
+        content: Content,
+        subject: str,
+        body_html: str,
+    ) -> None:
+        """Tell the author what happened to their submission.
+
+        Moderation a leader is not told about is indistinguishable from their
+        work quietly disappearing, which is the single most likely thing to
+        turn into a support message once the bank is open.
+        """
+        recipient = content.author.email if content.author else None
+        if not recipient:
+            logger.error(
+                "Decision on content %s could not be sent — the author has no address",
+                content.id,
+            )
+            return
+        send_email_background(background_tasks, [recipient], subject, body_html)
+
     async def review(
-        self, content_id: UUID, reviewer_id: UUID, decision: ReviewDecision
+        self,
+        content_id: UUID,
+        reviewer_id: UUID,
+        decision: ReviewDecision,
+        background_tasks: BackgroundTasks | None = None,
     ) -> ReviewQueueItem:
         """Record that the team has looked at this.
 
@@ -189,10 +215,32 @@ class ModerationService:
         content.reviewed_by_id = reviewer_id
         content.reviewed_at = get_current_datetime()
         await self.session.commit()
+
+        # Approval sends nothing. Silence is the right answer to "nothing was
+        # wrong", and a mail per approved item trains people to ignore the ones
+        # that matter.
+        if background_tasks is not None and decision.review_state == ReviewState.rejected:
+            self._notify_author(
+                background_tasks,
+                content,
+                f"Slóði — efnið þitt „{content.name}“ var ekki samþykkt",
+                (
+                    f"<p>Dagskrárstjórnarteymið fór yfir efnið þitt "
+                    f"<strong>{content.name}</strong> og samþykkti það ekki.</p>"
+                    f"<blockquote>{decision.note}</blockquote>"
+                    f"<p>Þú getur lagað efnið í dagskrárbankanum og sent það aftur. "
+                    f"Ef eitthvað er óljóst máttu hafa samband við teymið.</p>"
+                ),
+            )
+
         return await self._reload(content_id)
 
     async def set_hidden(
-        self, content_id: UUID, reviewer_id: UUID, decision: HideDecision
+        self,
+        content_id: UUID,
+        reviewer_id: UUID,
+        decision: HideDecision,
+        background_tasks: BackgroundTasks | None = None,
     ) -> ReviewQueueItem:
         """Take something out of the bank, or put it back.
 
@@ -211,6 +259,27 @@ class ModerationService:
             # queue for someone else to look at and hide again.
             content.review_state = ReviewState.rejected
         await self.session.commit()
+
+        # Only on hiding. Putting something back is good news the author will
+        # see for themselves the moment they look.
+        if background_tasks is not None and decision.hidden:
+            reason = (
+                f"<blockquote>{decision.note}</blockquote>"
+                if decision.note
+                else "<p>Engin skýring fylgdi.</p>"
+            )
+            self._notify_author(
+                background_tasks,
+                content,
+                f"Slóði — efnið þitt „{content.name}“ er ekki lengur í bankanum",
+                (
+                    f"<p>Dagskrárstjórnarteymið tók efnið þitt "
+                    f"<strong>{content.name}</strong> úr dagskrárbankanum.</p>"
+                    f"{reason}"
+                    f"<p>Hafðu samband við teymið ef þú vilt ræða það.</p>"
+                ),
+            )
+
         return await self._reload(content_id)
 
 
