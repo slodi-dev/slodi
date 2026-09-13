@@ -166,6 +166,11 @@
   align-items: start;
 }
 
+/* One column while editing — the form owns the page and needs the width. */
+.gridEditing {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .aside {
   position: sticky;
   top: 76px;

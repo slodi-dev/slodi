@@ -59,18 +59,6 @@
   overflow: hidden;
 }
 
-/*
- * Inline: the same form, rendered in the page rather than over it. The dialog
- * keeps its own height and shadow because it is a layer; in the page those
- * belong to the page, so they are unset rather than overridden piecemeal.
- */
-.inline {
-  max-height: none;
-  height: auto;
-  box-shadow: none;
-  border: 1px solid hsl(var(--sl-color-border-subtle));
-  animation: none;
-}
 @media (prefers-reduced-motion: reduce) {
   .dialog {
     --db-dur-unroll: 1ms;
@@ -869,6 +857,39 @@ textarea.input {
 .chipText {
   padding-right: 8px;
 }
+
+/* The document name doubles as the control that previews it. Styled as text,
+   not as a button: the chip already reads as one object, and a second button
+   inside it would compete with the remove control beside it. */
+.chipOpen {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--sl-transition-fast);
+}
+
+.chipOpen:hover {
+  text-decoration-color: currentColor;
+}
+
+.chipOpen:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+  border-radius: var(--sl-radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chipOpen {
+    transition: none;
+  }
+}
 /* The two actions appear on hover or focus, and are always in the DOM — a
    keyboard user never gets a control that only exists under a pointer. */
 /* Collapsed to nothing rather than merely transparent. `opacity: 0` still
@@ -1121,4 +1142,48 @@ textarea.input {
 }
 .pickerOpen .pickerChev {
   transform: rotate(180deg);
+}
+
+/* ══ Inline overrides ══════════════════════════════════════════════════════
+   Last in the file on purpose: `.wide .body` and `.inline .body` have the same
+   specificity, so whichever comes last wins, and the inline variant has to be
+   able to override the layout rules above regardless of which layout mode is
+   active.
+
+   Inline has no scroll of its own. In a dialog the body scrolls inside a fixed
+   frame, which is right for a layer over the page. In the page it gives the
+   reader two scrollbars — one for the form, one for the document — and no way
+   to tell which one they are in. The form opens to its full height and the
+   page scrolls. */
+.inline .body {
+  overflow: visible;
+  max-height: none;
+}
+
+/*
+ * Inline: the same form, rendered in the page rather than over it. The dialog
+ * keeps its own height and shadow because it is a layer; in the page those
+ * belong to the page. `.wide` sets a height too, so this has to come after it
+ * — equal specificity, and the later rule wins.
+ */
+.inline {
+  max-height: none;
+  height: auto;
+  box-shadow: none;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  animation: none;
+}
+
+/* `.flow` is the scrolling column in the wide layout — the one that actually
+   held the second scrollbar. Inline it grows instead. */
+.inline .flow {
+  overflow-y: visible;
+}
+
+/* The rail still needs to travel with the reader down a now-taller form. */
+.inline .nav {
+  position: sticky;
+  top: 76px;
+  align-self: start;
+  max-height: calc(100dvh - 96px);
 }

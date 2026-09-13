@@ -142,7 +142,9 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           </button>
         )}
       </div>
-      <div className={styles.grid}>
+      {/* Editing takes the whole width: the rail repeats, in a narrower and
+          less editable form, the very fields the form beside it is editing. */}
+      <div className={cn(styles.grid, isEditMode && styles.gridEditing)}>
         {isEditMode ? (
           /*
            * The same component the bank creates with, rendered inline. It used
@@ -174,14 +176,16 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             onOpenDocument={setOpenDoc}
           />
         )}
-        <aside className={styles.aside}>
-          <ItemFacts
-            program={program}
-            typeLabel={copy.definite}
-            onPrint={() => window.print()}
-            onReport={isAuthenticated ? () => setShowReport(true) : undefined}
-          />
-        </aside>
+        {!isEditMode && (
+          <aside className={styles.aside}>
+            <ItemFacts
+              program={program}
+              typeLabel={copy.definite}
+              onPrint={() => window.print()}
+              onReport={isAuthenticated ? () => setShowReport(true) : undefined}
+            />
+          </aside>
+        )}
       </div>
       <DocumentViewer doc={openDoc} open={openDoc !== null} onClose={() => setOpenDoc(null)} />
       <ReportContentModal

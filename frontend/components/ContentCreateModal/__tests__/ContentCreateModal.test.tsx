@@ -91,7 +91,7 @@ describe("one form, three navigation models", () => {
     );
     // five section bars, one of them open
     const bars = sectionBars();
-    expect(bars).toHaveLength(5);
+    expect(bars).toHaveLength(6);
     expect(bars.filter((b) => b.getAttribute("aria-expanded") === "true")).toHaveLength(1);
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
@@ -116,7 +116,7 @@ describe("one form, three navigation models", () => {
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
     const nav = screen.getByRole("navigation", { name: "Hlutar eyðublaðsins" });
     // The rail is a map, not a gate: one entry per section, all five present.
-    expect(nav.querySelectorAll("button")).toHaveLength(5);
+    expect(nav.querySelectorAll("button")).toHaveLength(6);
     // No *form section* is collapsed at this width. The tag picker collapses
     // too, but it is a control inside a section, not a section.
     expect(sectionBars()).toHaveLength(0);
@@ -132,9 +132,10 @@ describe("what a screen reader gets", () => {
     for (const label of [
       "Grunnupplýsingar",
       "Upplýsingar",
-      "Gögn og búnaður",
+      "Búnaður",
       "Leiðbeiningar",
-      "Merkimiðar og mynd",
+      "Merkimiðar",
+      "Myndir og skrár",
     ]) {
       expect(screen.getByRole("heading", { name: new RegExp(label) })).toBeInTheDocument();
     }
@@ -235,12 +236,12 @@ describe("lists, not sentences", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
 
-    const input = screen.getByLabelText("Búnaður");
+    const input = screen.getByLabelText("Hvað þarf?");
     await userEvent.type(input, "Kaðall");
     await userEvent.click(screen.getByRole("button", { name: "Bæta búnaði á lista" }));
     await userEvent.type(input, "Karabínur{Enter}");
 
-    const list = screen.getByRole("list", { name: "Búnaður" });
+    const list = screen.getByRole("list", { name: "Hvað þarf?" });
     expect(list.querySelectorAll("li")).toHaveLength(2);
     expect(screen.getByText("Kaðall")).toBeInTheDocument();
     expect(screen.getByText("Karabínur")).toBeInTheDocument();
@@ -251,11 +252,11 @@ describe("lists, not sentences", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
 
-    const input = screen.getByLabelText("Búnaður");
+    const input = screen.getByLabelText("Hvað þarf?");
     await userEvent.type(input, "Kaðall{Enter}");
     await userEvent.type(input, "kaðall{Enter}");
 
-    expect(screen.getByRole("list", { name: "Búnaður" }).querySelectorAll("li")).toHaveLength(1);
+    expect(screen.getByRole("list", { name: "Hvað þarf?" }).querySelectorAll("li")).toHaveLength(1);
   });
 
   it("editing an item takes it out of the list and back into the box", async () => {
@@ -265,11 +266,11 @@ describe("lists, not sentences", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
 
-    const input = screen.getByLabelText("Búnaður");
+    const input = screen.getByLabelText("Hvað þarf?");
     await userEvent.type(input, "Hjálmar{Enter}");
     await userEvent.click(screen.getByRole("button", { name: "Breyta Hjálmar" }));
 
-    expect(screen.queryByRole("list", { name: "Búnaður" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Hvað þarf?" })).not.toBeInTheDocument();
     expect(input).toHaveValue("Hjálmar");
     expect(input).toHaveFocus();
   });
@@ -279,7 +280,7 @@ describe("lists, not sentences", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
 
-    const input = screen.getByLabelText("Búnaður");
+    const input = screen.getByLabelText("Hvað þarf?");
     await userEvent.type(input, "Reipi{Enter}");
     await userEvent.click(screen.getByRole("button", { name: "Fjarlægja Reipi" }));
 
@@ -293,7 +294,7 @@ describe("lists, not sentences", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
 
-    await userEvent.type(screen.getByLabelText("Búnaður"), "Kaðall{Enter}");
+    await userEvent.type(screen.getByLabelText("Hvað þarf?"), "Kaðall{Enter}");
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(created).not.toHaveBeenCalled();
@@ -442,7 +443,7 @@ describe("merkimiðar are picked, not invented", () => {
     render(<ContentCreateModal {...props} />);
     await waitFor(() => expect(screen.getByRole("navigation")).toBeInTheDocument());
 
-    await userEvent.type(screen.getByLabelText("Búnaður"), "Snjóþrúgur{Enter}");
+    await userEvent.type(screen.getByLabelText("Hvað þarf?"), "Snjóþrúgur{Enter}");
     expect(screen.getByText("Snjóþrúgur")).toBeInTheDocument();
   });
 });

@@ -11,6 +11,7 @@ import ChipList from "./ChipList";
 import TagPicker from "./TagPicker";
 import FileDropZone, { type Attachment } from "./FileDropZone";
 import { AGE_GROUPS, getAgeGroupPatrol } from "@/lib/format";
+import DocumentViewer from "@/components/DocumentViewer/DocumentViewer";
 import { createBankContent, updateBankContent, type Program } from "@/services/programs.service";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 
@@ -26,14 +27,15 @@ const TYPE_ACCENT: Record<BankContentType, string> = {
   program: styles.typeHringur,
 };
 
-type SectionId = "basic" | "info" | "equipment" | "instructions" | "extras";
+type SectionId = "basic" | "info" | "equipment" | "instructions" | "tags" | "media";
 
 const SECTIONS: { id: SectionId; label: string; required?: boolean }[] = [
   { id: "basic", label: "Grunnupplýsingar", required: true },
   { id: "info", label: "Upplýsingar" },
-  { id: "equipment", label: "Gögn og búnaður" },
+  { id: "equipment", label: "Búnaður" },
   { id: "instructions", label: "Leiðbeiningar" },
-  { id: "extras", label: "Merkimiðar og mynd" },
+  { id: "tags", label: "Merkimiðar" },
+  { id: "media", label: "Myndir og skrár" },
 ];
 
 type Draft = {
@@ -186,6 +188,7 @@ export default function ContentCreateModal({
   const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [draftOffer, setDraftOffer] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<Attachment | null>(null);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const flowRef = useRef<HTMLDivElement>(null);
@@ -290,7 +293,8 @@ export default function ContentCreateModal({
       ),
       equipment: draft.equipment.length > 0,
       instructions: Boolean(draft.instructions.trim()),
-      extras: Boolean(draft.tagList.length || draft.image.trim() || draft.documents.length),
+      tags: draft.tagList.length > 0,
+      media: Boolean(draft.image.trim() || draft.documents.length),
     }),
     [draft]
   );
@@ -349,13 +353,28 @@ export default function ContentCreateModal({
 
     setSummary(null);
     setBusy(true);
-    const num = (v: string) => (v.trim() === "" ? undefined : Number(v));
+    /*
+     * An emptied field has to be *sent* when editing, not omitted.
+     *
+     * The PATCH uses `exclude_unset=True`, so an absent key means "leave this
+     * alone". Creating can omit an empty field — there is nothing to leave
+     * alone — but editing cannot: removing the last document, clearing a
+     * description or unticking every age band all looked like they worked and
+     * then came back on reload, because the payload simply left them out.
+     *
+     * So `blank` is `undefined` while creating and an explicit `null` while
+     * editing.
+     */
+    const blank = editing ? null : undefined;
+    const num = (v: string) => (v.trim() === "" ? blank : Number(v));
+    const text = (v: string) => v.trim() || blank;
+
     try {
       const payload = {
         name: draft.name.trim(),
-        description: draft.description.trim() || undefined,
-        instructions: draft.instructions.trim() || undefined,
-        image: draft.image.trim() || undefined,
+        description: text(draft.description),
+        instructions: text(draft.instructions),
+        image: text(draft.image),
         equipment: draft.equipment,
         duration_min: num(draft.durationMin),
         duration_max: num(draft.durationMax),
@@ -364,10 +383,15 @@ export default function ContentCreateModal({
         count_min: num(draft.countMin),
         count_max: num(draft.countMax),
         price: num(draft.price),
-        location: draft.location.trim() || undefined,
-        age: draft.ages.length ? draft.ages : undefined,
+        location: text(draft.location),
+        age: draft.ages.length ? draft.ages : blank,
         tagNames: draft.tagList,
-        media: draft.documents.length ? { documents: draft.documents } : undefined,
+        // Preserve any other keys `media` carries; only `documents` is ours.
+        media: editing
+          ? { ...(initial.media ?? {}), documents: draft.documents }
+          : draft.documents.length
+            ? { documents: draft.documents }
+            : undefined,
         workspaceId,
       };
 
@@ -630,7 +654,10 @@ export default function ContentCreateModal({
     equipment: (
       <>
         <ChipList
-          label="Búnaður"
+          // Not "Búnaður": the section is already called that, and a field
+          // repeating its own section's name is noise a screen reader reads
+          // twice. The form asks questions elsewhere — so does this.
+          label="Hvað þarf?"
           addLabel="Bæta búnaði á lista"
           placeholder="Kaðall, karabínur, hjálmar"
           items={draft.equipment}
@@ -650,20 +677,22 @@ export default function ContentCreateModal({
       area: true,
       placeholder: "Skref fyrir skref",
     }),
-    extras: (
+    tags: (
+      <TagPicker
+        available={tagNames ?? []}
+        selected={draft.tagList}
+        onToggle={(tag) =>
+          updateDraft((prev) => ({
+            ...prev,
+            tagList: prev.tagList.includes(tag)
+              ? prev.tagList.filter((t) => t !== tag)
+              : [...prev.tagList, tag],
+          }))
+        }
+      />
+    ),
+    media: (
       <>
-        <TagPicker
-          available={tagNames ?? []}
-          selected={draft.tagList}
-          onToggle={(tag) =>
-            updateDraft((prev) => ({
-              ...prev,
-              tagList: prev.tagList.includes(tag)
-                ? prev.tagList.filter((t) => t !== tag)
-                : [...prev.tagList, tag],
-            }))
-          }
-        />
         <FileDropZone
           image={draft.image}
           documents={draft.documents}
@@ -671,6 +700,7 @@ export default function ContentCreateModal({
           onAddDocuments={(added) =>
             updateDraft((prev) => ({ ...prev, documents: [...prev.documents, ...added] }))
           }
+          onPreviewDocument={setPreviewDoc}
           onRemoveDocument={(url) =>
             updateDraft((prev) => ({
               ...prev,
@@ -964,7 +994,18 @@ export default function ContentCreateModal({
     </div>
   );
 
-  if (variant === "inline") return form;
+  const withPreview = (
+    <>
+      {form}
+      <DocumentViewer
+        doc={previewDoc}
+        open={previewDoc !== null}
+        onClose={() => setPreviewDoc(null)}
+      />
+    </>
+  );
+
+  if (variant === "inline") return withPreview;
 
   return (
     <div
@@ -975,7 +1016,7 @@ export default function ContentCreateModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {form}
+      {withPreview}
     </div>
   );
 }

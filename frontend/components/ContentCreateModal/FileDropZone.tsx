@@ -94,6 +94,7 @@ export default function FileDropZone({
   onImage,
   onAddDocuments,
   onRemoveDocument,
+  onPreviewDocument,
 }: {
   image: string;
   documents: Attachment[];
@@ -101,6 +102,8 @@ export default function FileDropZone({
   /** Emit what arrived, not the whole list — see the note in TagPicker. */
   onAddDocuments: (added: Attachment[]) => void;
   onRemoveDocument: (url: string) => void;
+  /** Omitted where there is nowhere to show a preview. */
+  onPreviewDocument?: (doc: Attachment) => void;
 }) {
   const { getToken } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -255,7 +258,21 @@ export default function FileDropZone({
           <ul className={styles.chips} aria-labelledby="drop-label">
             {documents.map((doc) => (
               <li key={doc.url} className={styles.chip}>
-                <span className={styles.chipText}>{doc.name}</span>
+                {/* The name opens a preview. A file you uploaded ten minutes
+                    ago is easy to mistake for another, and the only way to
+                    check used to be to save and leave the form. */}
+                {onPreviewDocument ? (
+                  <button
+                    type="button"
+                    className={cn(styles.chipText, styles.chipOpen)}
+                    onClick={() => onPreviewDocument(doc)}
+                    title="Skoða skjalið"
+                  >
+                    {doc.name}
+                  </button>
+                ) : (
+                  <span className={styles.chipText}>{doc.name}</span>
+                )}
                 <button
                   type="button"
                   className={styles.chipBtn}

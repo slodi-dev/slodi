@@ -55,21 +55,28 @@ export type ContentComment = {
   author_name: string;
 };
 
+/**
+ * `null` is accepted as well as absent so one payload can serve create and
+ * edit. They differ only when editing, where an absent key means "leave this
+ * alone" and an emptied field therefore has to be sent as an explicit null.
+ * On create the two are the same thing, and the backend's `ContentCreate`
+ * takes `| None` on every one of these.
+ */
 export type ProgramCreateInput = {
   name: string;
-  description?: string;
-  image?: string;
-  instructions?: string;
-  equipment?: string[];
-  duration_min?: number;
-  duration_max?: number;
-  prep_time_min?: number;
-  prep_time_max?: number;
-  age?: string[];
-  location?: string;
-  count_min?: number;
-  count_max?: number;
-  price?: number;
+  description?: string | null;
+  image?: string | null;
+  instructions?: string | null;
+  equipment?: string[] | null;
+  duration_min?: number | null;
+  duration_max?: number | null;
+  prep_time_min?: number | null;
+  prep_time_max?: number | null;
+  age?: string[] | null;
+  location?: string | null;
+  count_min?: number | null;
+  count_max?: number | null;
+  price?: number | null;
   tagNames?: string[];
   /** Free-form JSONB. `documents` is the shape Yfirferð reads attachments from. */
   media?: Record<string, unknown>;
