@@ -571,6 +571,47 @@
   overflow-wrap: anywhere;
 }
 
+/* The two actions on a comment. Quiet until wanted: a row of buttons under
+   every comment competes with the words above them, so they stay tertiary and
+   step up on hover and focus. */
+.commentActs {
+  grid-column: 2;
+  display: flex;
+  gap: var(--sl-spacing-gap-sm);
+  margin-top: 8px;
+}
+
+.commentAct {
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: hsl(var(--sl-color-text-tertiary));
+  font: inherit;
+  font-size: var(--sl-text-caption);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: color var(--sl-transition-fast);
+}
+
+.commentAct:hover {
+  color: hsl(var(--sl-color-text-primary));
+  text-decoration-color: currentColor;
+}
+
+.commentAct:focus-visible {
+  color: hsl(var(--sl-color-text-primary));
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+  border-radius: var(--sl-radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .commentAct {
+    transition: none;
+  }
+}
+
 .reply {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);

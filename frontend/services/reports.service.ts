@@ -80,3 +80,26 @@ export async function reportContent(
     getToken
   );
 }
+
+/**
+ * Flag a comment.
+ *
+ * A separate target from the item it hangs under: the two are different
+ * complaints, and reporting one must not be mistaken for the other.
+ */
+export async function reportComment(
+  commentId: string,
+  reason: ReportReason,
+  note: string | undefined,
+  getToken: GetToken
+): Promise<ContentReport> {
+  return fetchWithAuth<ContentReport>(
+    buildApiUrl(`/comments/${commentId}/reports`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason, note: note?.trim() || null }),
+    },
+    getToken
+  );
+}

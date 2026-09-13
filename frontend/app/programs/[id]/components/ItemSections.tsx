@@ -89,6 +89,8 @@ export default function ItemSections({
   currentUserName,
   heroSlot,
   onOpenDocument,
+  onReportComment,
+  onRemoveComment,
 }: {
   program: Program;
   images: HeroImage[];
@@ -100,6 +102,8 @@ export default function ItemSections({
   currentUserName: string | null;
   heroSlot: React.ReactNode;
   onOpenDocument: (doc: ViewableDocument) => void;
+  onReportComment: (c: ContentComment) => void;
+  onRemoveComment: (c: ContentComment) => void;
 }) {
   const copy = kindCopy(program.content_type);
 
@@ -217,6 +221,8 @@ export default function ItemSections({
         canComment={canComment}
         onSubmit={onSubmitComment}
         currentUserName={currentUserName}
+        onReportComment={onReportComment}
+        onRemoveComment={onRemoveComment}
       />
     </div>
   );
@@ -227,11 +233,15 @@ function CommentSection({
   canComment,
   onSubmit,
   currentUserName,
+  onReportComment,
+  onRemoveComment,
 }: {
   comments: ContentComment[];
   canComment: boolean;
   onSubmit: (body: string) => Promise<void>;
   currentUserName: string | null;
+  onReportComment: (c: ContentComment) => void;
+  onRemoveComment: (c: ContentComment) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -284,6 +294,28 @@ function CommentSection({
               <span className={styles.commentWhen}>{formatIcelandicDate(c.created_at)}</span>
             </div>
             <p className={styles.commentText}>{c.body}</p>
+            {/*
+              Every comment carries its own two actions. This is the one place
+              a stranger writes free text under someone else's idea, so it needs
+              a way to raise a hand and a way to clear it — the server decides
+              who may remove, and says so with a 403.
+            */}
+            <div className={styles.commentActs}>
+              <button
+                type="button"
+                className={styles.commentAct}
+                onClick={() => onReportComment(c)}
+              >
+                Tilkynna
+              </button>
+              <button
+                type="button"
+                className={styles.commentAct}
+                onClick={() => onRemoveComment(c)}
+              >
+                Fjarlægja
+              </button>
+            </div>
           </article>
         ))}
 

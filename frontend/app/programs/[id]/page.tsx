@@ -17,7 +17,7 @@ import { useProgramActions } from "@/hooks/useProgramActions";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
 import { cn } from "@/lib/util";
-import { createComment } from "@/services/comments.service";
+import { createComment, deleteComment } from "@/services/comments.service";
 import { deleteProgram, type ContentComment } from "@/services/programs.service";
 import ItemFacts from "./components/ItemFacts";
 import ItemHero, { type HeroImage } from "./components/ItemHero";
@@ -50,6 +50,10 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [heroIndex, setHeroIndex] = useState(0);
   const [extraComments, setExtraComments] = useState<ContentComment[]>([]);
   const [openDoc, setOpenDoc] = useState<ViewableDocument | null>(null);
+  const [reportingComment, setReportingComment] = useState<ContentComment | null>(null);
+  /* Comments removed in this session, so the list reflects the removal
+     without a refetch of the whole item. */
+  const [removedComments, setRemovedComments] = useState<string[]>([]);
   const { program, isLoading, error, setProgram } = useProgram(id);
   const { likeCount, isLiked, toggleLike } = useLikes(
     id,
@@ -81,7 +85,21 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const canDelete = canDeleteProgram(user, program, workspaceRole);
   const type = (program.content_type ?? "task") as BadgeContentType;
   const copy = kindCopy(type);
-  const comments = [...(program.comments ?? []), ...extraComments];
+  const comments = [...(program.comments ?? []), ...extraComments].filter(
+    (c) => !removedComments.includes(c.id)
+  );
+  const handleRemoveComment = async (c: ContentComment) => {
+    try {
+      await deleteComment(c.id, getToken);
+      // Functional update: two quick removals must not lose the first.
+      setRemovedComments((prev) => [...prev, c.id]);
+    } catch (err) {
+      // A 403 here is the server saying this reader may not remove that
+      // comment, which is information rather than a failure to hide.
+      console.error("Failed to remove comment:", err);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!canDelete) return;
     try {
@@ -175,6 +193,8 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             currentUserName={user?.name ?? null}
             heroSlot={<ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />}
             onOpenDocument={setOpenDoc}
+            onReportComment={setReportingComment}
+            onRemoveComment={(c) => void handleRemoveComment(c)}
           />
         )}
         {!isEditMode && (
@@ -189,6 +209,15 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         )}
       </div>
       <DocumentViewer doc={openDoc} open={openDoc !== null} onClose={() => setOpenDoc(null)} />
+
+      {/* Same modal as the item's own report, pointed at a comment. */}
+      <ReportContentModal
+        open={reportingComment !== null}
+        onClose={() => setReportingComment(null)}
+        contentId={program.id}
+        contentName={program.name}
+        commentId={reportingComment?.id}
+      />
       <ReportContentModal
         open={showReport}
         onClose={() => setShowReport(false)}

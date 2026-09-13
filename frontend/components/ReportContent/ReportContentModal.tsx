@@ -8,6 +8,7 @@ import {
   REPORT_REASONS,
   REPORT_REASON_LABEL,
   type ReportReason,
+  reportComment,
   reportContent,
 } from "@/services/reports.service";
 import styles from "./ReportContentModal.module.css";
@@ -17,6 +18,11 @@ type Props = {
   onClose: () => void;
   contentId: string;
   contentName: string;
+  /**
+   * Set to flag a comment under the item rather than the item itself. Same
+   * reasons, same confirmation — one component, so the two cannot drift apart.
+   */
+  commentId?: string;
 };
 
 /**
@@ -28,7 +34,13 @@ type Props = {
  * Success is announced rather than silent: someone who flags something and sees
  * nothing happen assumes it failed and does it again.
  */
-export default function ReportContentModal({ open, onClose, contentId, contentName }: Props) {
+export default function ReportContentModal({
+  open,
+  onClose,
+  contentId,
+  contentName,
+  commentId,
+}: Props) {
   const { getToken } = useAuth();
   const groupId = useId();
   const [reason, setReason] = useState<ReportReason | null>(null);
@@ -52,7 +64,9 @@ export default function ReportContentModal({ open, onClose, contentId, contentNa
     if (!reason || state === "sending") return;
     setState("sending");
     try {
-      await reportContent(contentId, reason, note, getToken);
+      await (commentId
+        ? reportComment(commentId, reason, note, getToken)
+        : reportContent(contentId, reason, note, getToken));
       setState("sent");
       // Long enough to read the confirmation, short enough not to trap anyone.
       window.setTimeout(onClose, 1800);

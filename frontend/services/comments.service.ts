@@ -27,3 +27,14 @@ export async function createComment(
     getToken
   );
 }
+
+/**
+ * Remove a comment.
+ *
+ * Allowed for its author, the author of the item it hangs under, a workspace
+ * admin, or a moderator — the server decides, so the UI offers the control
+ * whenever the reader is plausibly one of them and lets a 403 say otherwise.
+ */
+export async function deleteComment(commentId: string, getToken: GetToken): Promise<void> {
+  await fetchWithAuth<void>(buildApiUrl(`/comments/${commentId}`), { method: "DELETE" }, getToken);
+}
