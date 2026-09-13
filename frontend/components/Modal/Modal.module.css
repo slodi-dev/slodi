@@ -40,6 +40,12 @@
   animation: slideUp 0.3s ease-out;
 }
 
+/* Content with its own natural width — a document preview. Capped against the
+   viewport so it never causes a horizontal scroll on a laptop. */
+.wide {
+  max-width: min(1100px, 95vw);
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatIcelandicDate } from "@/lib/format";
 import { cn } from "@/lib/util";
 import type { ContentComment, Program } from "@/services/programs.service";
+import type { ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
 
 import styles from "../efnissida.module.css";
 import { kindCopy } from "../kind";
@@ -87,6 +88,7 @@ export default function ItemSections({
   onSubmitComment,
   currentUserName,
   heroSlot,
+  onOpenDocument,
 }: {
   program: Program;
   images: HeroImage[];
@@ -97,6 +99,7 @@ export default function ItemSections({
   onSubmitComment: (body: string) => Promise<void>;
   currentUserName: string | null;
   heroSlot: React.ReactNode;
+  onOpenDocument: (doc: ViewableDocument) => void;
 }) {
   const copy = kindCopy(program.content_type);
 
@@ -193,16 +196,15 @@ export default function ItemSections({
               <p className={styles.subLabel}>Skjöl</p>
               <div className={styles.docs}>
                 {documents.map((doc) => (
-                  <a
+                  <button
                     key={doc.url}
+                    type="button"
                     className={styles.doc}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={() => onOpenDocument(doc)}
                   >
                     <span className={styles.docKind}>{docKind(doc.name, doc.content_type)}</span>
                     <span className={styles.docName}>{doc.name}</span>
-                  </a>
+                  </button>
                 ))}
               </div>
             </>
@@ -265,7 +267,7 @@ function CommentSection({
   return (
     <section className={styles.sec} id="ef-athugasemdir" aria-labelledby="h-athugasemdir">
       <h2 className={styles.secTitle} id="h-athugasemdir">
-        Athugasemdir
+        Athugasemdir og endurmat
         {comments.length > 0 && <span className={styles.countPill}>{comments.length}</span>}
       </h2>
 

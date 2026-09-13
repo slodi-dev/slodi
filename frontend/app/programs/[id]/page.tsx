@@ -5,6 +5,7 @@ import { notFound, useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useState } from "react";
 
 import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
+import DocumentViewer, { type ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
@@ -61,6 +62,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [showReport, setShowReport] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [extraComments, setExtraComments] = useState<ContentComment[]>([]);
+  const [openDoc, setOpenDoc] = useState<ViewableDocument | null>(null);
 
   const { program, isLoading, error, setProgram } = useProgram(id);
   const { likeCount, isLiked, toggleLike } = useLikes(
@@ -192,6 +194,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             onSubmitComment={handleSubmitComment}
             currentUserName={user?.name ?? null}
             heroSlot={<ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />}
+            onOpenDocument={setOpenDoc}
           />
         )}
 
@@ -204,6 +207,8 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           />
         </aside>
       </div>
+
+      <DocumentViewer doc={openDoc} open={openDoc !== null} onClose={() => setOpenDoc(null)} />
 
       <ReportContentModal
         open={showReport}

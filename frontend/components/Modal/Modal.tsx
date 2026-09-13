@@ -8,9 +8,14 @@ type Props = {
   onClose: () => void;
   title?: string;
   children?: React.ReactNode;
+  /**
+   * `wide` for content that has its own natural width — a document preview
+   * cannot usefully be squeezed into a 800px column.
+   */
+  size?: "default" | "wide";
 };
 
-export default function Modal({ open, onClose, title, children }: Props) {
+export default function Modal({ open, onClose, title, children, size = "default" }: Props) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -33,7 +38,7 @@ export default function Modal({ open, onClose, title, children }: Props) {
       }}
     >
       <div
-        className={styles.dialog}
+        className={size === "wide" ? `${styles.dialog} ${styles.wide}` : styles.dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
