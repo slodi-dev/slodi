@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from "vitest";
-import { getUploadUrl, putToBlob, uploadFile } from "../uploads.service";
+import { getUploadUrl, putToBlob, uploadFile, documentBlobName } from "../uploads.service";
 
 const FAKE_TOKEN = "fake-token";
 const BLOB_URL = "https://acct.blob.core.windows.net/content-images/uploads/images/u1/f1";
@@ -193,5 +193,32 @@ describe("uploads service — uploadFile", () => {
 
     await expect(promise).resolves.toBe(BLOB_URL);
     expect(await promise).not.toContain("sig=");
+  });
+});
+
+describe("documentBlobName", () => {
+  const ID = "dac699a0-06a2-409e-b398-da3aa12064f3";
+  const BLOB = "2665be25-1e67-4686-9aca-57d9a2df6eca";
+  const url = `https://slodiblobstorage.blob.core.windows.net/documents/uploads/documents/${ID}/${BLOB}`;
+
+  it("extracts the path the download endpoint signs", () => {
+    // The container segment is also called `documents`, so a naive split on
+    // that word takes the wrong half.
+    expect(documentBlobName(url)).toBe(`uploads/documents/${ID}/${BLOB}`);
+  });
+
+  it("refuses anything that is not a document blob", () => {
+    // Images live in a public container and never go through the signer.
+    expect(
+      documentBlobName(
+        "https://slodiblobstorage.blob.core.windows.net/content-images/uploads/images/a/b"
+      )
+    ).toBeNull();
+    expect(documentBlobName("https://example.com/evil.pdf")).toBeNull();
+    expect(documentBlobName("")).toBeNull();
+  });
+
+  it("refuses a path with extra segments appended", () => {
+    expect(documentBlobName(`${url}/../../secret`)).toBeNull();
   });
 });

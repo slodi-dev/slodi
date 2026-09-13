@@ -1,0 +1,986 @@
+/*
+ * EFNISSÍÐAN — /programs/[id]
+ *
+ * Translated from `components/efnissida.css` in the Slóði design project.
+ * The preview inlined nothing; every value here is a live `--sl-*` token.
+ *
+ * The shape of the redesign, in one line each:
+ *  - No tabs. Every section is on the page and scrollable, because a tab
+ *    hides how much there is and a dimmed tab looks broken.
+ *  - The hero sits INSIDE the main column, below the title, never above the
+ *    breadcrumb — a 320px band above the title breaks the one acceptance
+ *    criterion this redesign exists for.
+ *  - Provenance (who, when) lives in the rail, not under the title: it is
+ *    reference material, the same class of fact as duration and cost.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-md);
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--sl-spacing-container);
+}
+
+/* Kind accent. Inherited from the TypeBadge card — see TypeBadge.module.css
+   for why Verkefni is neutral. */
+.task {
+  --ef-accent: var(--sl-color-border-strong);
+  --ef-accent-bg: var(--sl-color-background-tertiary);
+  --ef-accent-text: var(--sl-color-text-secondary);
+}
+.event {
+  --ef-accent: var(--sl-color-event);
+  --ef-accent-bg: var(--sl-color-event-subtle);
+  --ef-accent-text: var(--sl-color-event-text);
+}
+.program {
+  --ef-accent: var(--sl-color-primary);
+  --ef-accent-bg: var(--sl-color-primary-subtle);
+  --ef-accent-text: var(--sl-color-primary-text);
+}
+
+/* ── title ─────────────────────────────────────────────────────────────── */
+.titleblock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* Without this the badge, as a column flex item, stretches to the full
+     width and reads as a banner rather than a pill. */
+  align-items: flex-start;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--sl-text-heading-1);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* ── actions ───────────────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px; /* touch floor */
+  padding: 0 16px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+
+.btn:hover:not(:disabled) {
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.btn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Filled buttons ride the -text tier — that is what clears AA in both themes. */
+.btnFilled {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.btnFilled:hover:not(:disabled) {
+  border-color: transparent;
+  background: hsl(var(--sl-color-primary-text) / 0.88);
+}
+
+.btnIcon {
+  padding: 0 12px;
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/*
+ * The heart is pink, not green. The bank's primary is 142° green, which on a
+ * heart reads as "approved" rather than "liked". Fálkaskátar rose (347°) is
+ * the only pink the system owns and is never used for status anywhere else.
+ */
+.liked {
+  border-color: hsl(var(--sl-primitive-falkar-500) / 0.55);
+  background: hsl(var(--sl-primitive-falkar-50));
+  color: hsl(var(--sl-primitive-falkar-700));
+}
+
+.liked:hover:not(:disabled) {
+  border-color: hsl(var(--sl-primitive-falkar-600));
+  background: hsl(var(--sl-primitive-falkar-100));
+}
+
+:global(:root.dark) .liked,
+:global([data-theme="dark"]) .liked {
+  border-color: hsl(var(--sl-primitive-falkar-400) / 0.5);
+  background: hsl(var(--sl-primitive-falkar-900));
+  color: hsl(var(--sl-primitive-falkar-200));
+}
+
+:global(:root.dark) .liked:hover:not(:disabled),
+:global([data-theme="dark"]) .liked:hover:not(:disabled) {
+  background: hsl(var(--sl-primitive-falkar-800));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
+
+/* ── grid ──────────────────────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--sl-spacing-gap-xl);
+  align-items: start;
+}
+
+/* One column while editing — the form owns the page and needs the width. */
+.gridEditing {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.aside {
+  position: sticky;
+  top: 76px;
+}
+
+/* Below `wide` the rail stops being a rail: the facts move above the sections,
+   because they are what the reader came for. At 200% zoom this same rule is
+   what stops a 320px column from being clipped. */
+@media (max-width: 1079px) {
+  .grid {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--sl-spacing-gap-md);
+  }
+
+  .aside {
+    position: static;
+  }
+}
+
+/* ── hero carousel ─────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+}
+
+.media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 320px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface-sunken));
+}
+
+.media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * A bare white arrow over the picture, no disc: semi-opaque at rest, solid on
+ * hover, with a drop-shadow so it survives a light photo. White in both
+ * themes — the arrow sits on the image, not on the page, so no token can
+ * guarantee contrast against it.
+ */
+.navBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: hsl(var(--sl-primitive-neutral-0));
+  opacity: 0.75;
+  filter: drop-shadow(0 1px 2px hsl(var(--sl-primitive-neutral-1000) / 0.55));
+  cursor: pointer;
+  transition: opacity var(--sl-transition-fast);
+}
+
+.navBtn svg {
+  width: 26px;
+  height: 26px;
+}
+
+.navBtn:hover {
+  opacity: 1;
+}
+
+.navBtn:focus-visible {
+  opacity: 1;
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+  border-radius: var(--sl-radius-sm);
+}
+
+.navPrev {
+  left: 4px;
+}
+
+.navNext {
+  right: 4px;
+}
+
+.count {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-background-inverse) / 0.5);
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navBtn {
+    transition: none;
+  }
+}
+
+/* ── flowing sections ──────────────────────────────────────────────────── */
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 38px;
+}
+
+.sec {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 76px;
+}
+
+.secTitle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-heading);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.sec p {
+  margin: 0 0 12px;
+  max-width: 66ch;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.sec p:last-child {
+  margin-bottom: 0;
+}
+
+.subLabel {
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* A lead paragraph that is visibly bigger than body copy. With the tabs gone
+   the page is one long scroll, so it has to earn the scroll. */
+.lead {
+  margin: 0 0 4px;
+  max-width: 62ch;
+  font-size: var(--sl-text-body-lg);
+  line-height: var(--sl-line-height-relaxed);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* Instructions are prose, not a dashboard: an ordinary numbered list with
+   plain numerals. Chips here read as buttons and pulled harder than the text
+   they numbered. */
+.steps {
+  margin: 0;
+  padding-left: 1.55em;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.steps li {
+  max-width: 66ch;
+  padding-left: 2px;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.steps li::marker {
+  color: hsl(var(--sl-color-text-tertiary));
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kit list on its own card, so the page has a second texture. Quantity is the
+   thing being scanned, so it is right-aligned and tabular. */
+.kit {
+  margin: 0;
+  padding: 4px 16px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface-raised));
+}
+
+.kit li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  font-size: var(--sl-text-body-sm);
+}
+
+.kit li:last-child {
+  border-bottom: none;
+}
+
+/* Empty section — an item whose author listed no kit. It states the fact and
+   stays in place; the dimmed tab it replaces hid the same sentence behind a
+   control that looked broken. */
+.empty {
+  padding: 14px 16px;
+  border: 1px dashed hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ── tags ──────────────────────────────────────────────────────────────── */
+.taglist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 3px 10px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+}
+
+/* ── gallery + documents ───────────────────────────────────────────────── */
+.shots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.shot {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-sunken));
+  cursor: zoom-in;
+}
+
+.shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shot:hover {
+  border-color: hsl(var(--sl-color-border-hover));
+}
+
+.shot:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.shot[aria-current="true"] {
+  outline: 2px solid hsl(var(--sl-color-primary));
+  outline-offset: -2px;
+}
+
+.docs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 9px 13px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-raised));
+  color: inherit;
+  text-decoration: none;
+  font-size: var(--sl-text-body-sm);
+}
+
+.doc:hover {
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.doc:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.docKind {
+  flex: none;
+  min-width: 42px;
+  padding: 3px 7px;
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--ef-accent-bg));
+  color: hsl(var(--ef-accent-text));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.docName {
+  font-weight: var(--sl-font-weight-emphasis);
+  overflow-wrap: anywhere;
+}
+
+/* ── comments ──────────────────────────────────────────────────────────── */
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/*
+ * A comment is: who, when, what. A two-column grid — avatar in a 34px gutter
+ * spanning both rows, name and date stacked beside it, body under the name in
+ * the same column. Nothing shares a line with anything it can collide with.
+ */
+.comment {
+  /* Tighter than the sections around it. A comment is a remark, not a
+     document, and at full card weight a handful of them drowned the item. */
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-raised));
+}
+
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-secondary));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  user-select: none;
+}
+
+.comment .avatar {
+  grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+  font-size: var(--sl-text-caption);
+}
+
+/* Your own avatar is the one that is not a stranger. */
+.avatarMe {
+  background: hsl(var(--sl-color-primary-text));
+}
+
+:global(:root.dark) .avatarMe,
+:global([data-theme="dark"]) .avatarMe {
+  background: hsl(var(--sl-color-primary));
+}
+
+.commentHead {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.commentName {
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.commentWhen {
+  font-size: var(--sl-text-caption);
+  font-style: italic;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.commentText {
+  grid-column: 2;
+  margin: 5px 0 0;
+  /* Room for the actions parked in the corner, so a long last line does not
+     run underneath them. */
+  padding-right: 56px;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * The two actions live in the bottom-right corner of the comment, as icons.
+ * Quiet until wanted: a labelled row under every comment competed with the
+ * words above it, which is the opposite of what a comment section is for.
+ * They stay in the tab order and appear on focus, so they are not
+ * mouse-only.
+ */
+.commentActs {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--sl-transition-fast);
+}
+
+.comment:hover .commentActs,
+.comment:focus-within .commentActs {
+  opacity: 1;
+}
+
+.commentAct {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: var(--sl-radius-xs);
+  background: none;
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+}
+
+.commentAct svg {
+  width: 15px;
+  height: 15px;
+}
+
+.commentAct:hover {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.commentAct:focus-visible {
+  opacity: 1;
+  color: hsl(var(--sl-color-text-primary));
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.commentAct:hover {
+  color: hsl(var(--sl-color-text-primary));
+  text-decoration-color: currentColor;
+}
+
+.commentAct:focus-visible {
+  color: hsl(var(--sl-color-text-primary));
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+  border-radius: var(--sl-radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .commentActs {
+    transition: none;
+  }
+}
+
+.reply {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: start;
+}
+
+.reply .avatar {
+  margin-top: 6px;
+}
+
+.replyField {
+  position: relative;
+}
+
+/*
+ * Starts as one slender line. An 88px well invites an essay and most replies
+ * are a sentence, so it grows with the text instead.
+ */
+.replyField textarea {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  max-height: 320px;
+  padding: 12px 56px 12px 13px;
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-body);
+  resize: none;
+  overflow-y: hidden;
+}
+
+.replyField textarea::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.replyField textarea:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+  border-color: hsl(var(--sl-color-border-focus));
+}
+
+/*
+ * Bare glyph, no disc. Rest ink is text-tertiary rather than the border token
+ * — border-strong is under 3:1 against the field, which a meaningful icon has
+ * to clear. Pinned to the top so it stays in the corner as the field grows.
+ */
+.send {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--sl-radius-sm);
+  background: none;
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+  transition:
+    color var(--sl-transition-fast),
+    background var(--sl-transition-fast);
+}
+
+.send svg {
+  width: 20px;
+  height: 20px;
+}
+
+.send:hover:not(:disabled) {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.send:focus-visible {
+  color: hsl(var(--sl-color-text-primary));
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+
+.send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .send {
+    transition: none;
+  }
+}
+
+.countPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface-sunken));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: 11px;
+  font-weight: var(--sl-font-weight-normal);
+}
+
+/* ── facts rail ────────────────────────────────────────────────────────── */
+.facts {
+  padding: 20px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface-raised));
+}
+
+/* The rail is what a leader reads before deciding to read anything else, so
+   it steps up one size across the board. */
+.factsTitle {
+  margin: 0 0 16px;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.facts dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Icon centres against the whole label+value block rather than hanging off
+   the first line — every fact is two lines tall, so centred reads deliberate. */
+.fact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fact svg {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  color: hsl(var(--ef-accent));
+}
+
+.fact dt {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.fact dd {
+  margin: 0;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.divider {
+  height: 1px;
+  margin: 16px 0;
+  background: hsl(var(--sl-color-border-subtle));
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.meta strong {
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+/* The author's own view of how their submission fared. Sits under the
+   provenance because it is the same class of fact: reference, not action. */
+.review {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-left: 3px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-sunken));
+}
+
+/* Only the rejection is coloured. Waiting is not a warning. */
+.reviewRejected {
+  border-left-color: hsl(var(--sl-color-error));
+}
+
+.reviewState {
+  display: block;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.reviewNote {
+  margin: 6px 0 0;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.asideActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+/* Print is the same weight of action as Tilkynna — a utility on the item, not
+   a decision about it — so it sits in the same group rather than competing
+   with Breyta in the action bar. */
+.asideBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: hsl(var(--sl-color-text-secondary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.asideBtn:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.asideBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.asideBtn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.printBtn {
+  text-decoration: none;
+}
+
+.printBtn:hover {
+  text-decoration: underline;
+}
+
+/* ── age bands ─────────────────────────────────────────────────────────── */
+.ages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.age {
+  padding: 3px 11px;
+  border: 1px solid hsl(var(--ef-patrol));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--ef-patrol) / 0.16);
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-normal);
+  white-space: nowrap;
+}
+
+/* ── breadcrumb ────────────────────────────────────────────────────────── */
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.crumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  text-decoration: underline;
+}
+
+.crumbs a:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+  border-radius: var(--sl-radius-xs);
+}
+
+.crumbHere {
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.crumbSep {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ── screen-reader only ────────────────────────────────────────────────── */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 619px) {
+  .page {
+    padding: var(--sl-spacing-gap-md);
+  }
+
+  .title {
+    font-size: var(--sl-text-heading-2);
+  }
+}

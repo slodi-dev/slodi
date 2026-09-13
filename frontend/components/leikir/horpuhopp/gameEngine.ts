@@ -1,3 +1,5 @@
+/* token-check-ignore-file: every colour here is a canvas fill, and a 2D
+   context cannot read CSS custom properties. */
 /**
  * Hörpuhopp game engine.
  *

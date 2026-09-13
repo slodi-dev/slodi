@@ -1,22 +1,22 @@
 .pagination {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-4);
+  gap: var(--sl-primitive-space-4);
   align-items: center;
-  padding: var(--sl-spacing-6) 0;
-  margin-top: var(--sl-spacing-6);
+  padding: var(--sl-primitive-space-6) 0;
+  margin-top: var(--sl-primitive-space-6);
 }
 
 .info {
-  font-size: var(--sl-font-size-sm);
-  color: var(--sl-color-text-secondary);
+  font-size: var(--sl-primitive-font-size-sm);
+  color: hsl(var(--sl-color-text-secondary));
   text-align: center;
 }
 
 .controls {
   display: flex;
   align-items: center;
-  gap: var(--sl-spacing-2);
+  gap: var(--sl-primitive-space-2);
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -24,25 +24,25 @@
 .navButton {
   display: flex;
   align-items: center;
-  gap: var(--sl-spacing-2);
-  padding: var(--sl-spacing-2) var(--sl-spacing-3);
-  font-size: var(--sl-font-size-sm);
+  gap: var(--sl-primitive-space-2);
+  padding: var(--sl-primitive-space-2) var(--sl-primitive-space-3);
+  font-size: var(--sl-primitive-font-size-sm);
   font-weight: 500;
-  color: var(--sl-color-text-primary);
-  background: var(--sl-color-surface-elevated);
-  border: 1px solid var(--sl-color-border);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-raised));
+  border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-md);
   cursor: pointer;
   transition: var(--sl-transition-fast);
 }
 
 .navButton:hover:not(:disabled) {
-  background: var(--sl-color-surface-hover);
-  border-color: var(--sl-color-border-hover);
+  background: hsl(var(--sl-color-surface-hover));
+  border-color: hsl(var(--sl-color-border-hover));
 }
 
 .navButton:focus-visible {
-  outline: 2px solid var(--sl-color-primary);
+  outline: 2px solid hsl(var(--sl-color-primary));
   outline-offset: 2px;
 }
 
@@ -59,42 +59,42 @@
 .pages {
   display: flex;
   align-items: center;
-  gap: var(--sl-spacing-1);
+  gap: var(--sl-primitive-space-1);
 }
 
 .pageButton {
   min-width: 40px;
   height: 40px;
-  padding: var(--sl-spacing-2);
-  font-size: var(--sl-font-size-sm);
+  padding: var(--sl-primitive-space-2);
+  font-size: var(--sl-primitive-font-size-sm);
   font-weight: 500;
-  color: var(--sl-color-text-primary);
-  background: var(--sl-color-surface-elevated);
-  border: 1px solid var(--sl-color-border);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-raised));
+  border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-md);
   cursor: pointer;
   transition: var(--sl-transition-fast);
 }
 
 .pageButton:hover {
-  background: var(--sl-color-surface-hover);
-  border-color: var(--sl-color-border-hover);
+  background: hsl(var(--sl-color-surface-hover));
+  border-color: hsl(var(--sl-color-border-hover));
 }
 
 .pageButton:focus-visible {
-  outline: 2px solid var(--sl-color-primary);
+  outline: 2px solid hsl(var(--sl-color-primary));
   outline-offset: 2px;
 }
 
 .pageButton.active {
-  color: var(--sl-color-on-primary);
-  background: var(--sl-color-primary);
-  border-color: var(--sl-color-primary);
+  color: hsl(var(--sl-color-text-inverse));
+  background: hsl(var(--sl-color-primary));
+  border-color: hsl(var(--sl-color-primary));
 }
 
 .pageButton.active:hover {
-  background: var(--sl-color-primary-hover);
-  border-color: var(--sl-color-primary-hover);
+  background: hsl(var(--sl-color-primary-hover));
+  border-color: hsl(var(--sl-color-primary-hover));
 }
 
 .ellipsis {
@@ -103,22 +103,22 @@
   justify-content: center;
   min-width: 40px;
   height: 40px;
-  color: var(--sl-color-text-secondary);
-  font-size: var(--sl-font-size-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-primitive-font-size-sm);
 }
 
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .pagination {
-    gap: var(--sl-spacing-3);
+    gap: var(--sl-primitive-space-3);
   }
 
   .controls {
-    gap: var(--sl-spacing-1);
+    gap: var(--sl-primitive-space-1);
   }
 
   .navButton {
-    padding: var(--sl-spacing-2);
+    padding: var(--sl-primitive-space-2);
   }
 
   .navButton span {
@@ -132,7 +132,7 @@
   .pageButton {
     min-width: 36px;
     height: 36px;
-    padding: var(--sl-spacing-1);
+    padding: var(--sl-primitive-space-1);
   }
 
   .ellipsis {

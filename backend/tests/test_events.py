@@ -19,6 +19,7 @@ _NOW = dt(2025, 6, 1, 10, 0, tzinfo=timezone.utc)
 def _make_event(workspace_id, program_id=None):
     author_id = uuid4()
     return EventOut(
+        content_type="event",
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Event",
@@ -35,6 +36,7 @@ def _make_event(workspace_id, program_id=None):
 
 def _make_event_list_out(workspace_id, program_id=None):
     return EventListOut(
+        content_type="event",
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Event",
@@ -167,6 +169,7 @@ def test_create_program_event(client):
     from app.schemas.workspace import WorkspaceNested
 
     program = ProgramOut(
+        content_type="program",
         id=program_id,
         workspace_id=workspace_id,
         name="Test Program",

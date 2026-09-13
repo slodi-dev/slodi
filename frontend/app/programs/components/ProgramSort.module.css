@@ -11,7 +11,7 @@
 }
 
 .sortLabel {
-  font-size: var(--sl-font-size-sm);
+  font-size: var(--sl-primitive-font-size-sm);
   font-weight: var(--sl-font-weight-medium);
   color: hsl(var(--sl-color-text-secondary));
   white-space: nowrap;
@@ -31,7 +31,7 @@
   appearance: none;
   min-width: 180px;
   padding: 10px 40px 10px 16px;
-  font-size: var(--sl-font-size-sm);
+  font-size: var(--sl-primitive-font-size-sm);
   font-weight: var(--sl-font-weight-medium);
   font-family: inherit;
   color: hsl(var(--sl-color-text-primary));

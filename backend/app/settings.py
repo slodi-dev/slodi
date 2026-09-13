@@ -28,6 +28,12 @@ class Settings(BaseSettings):
 
     # Seed: emails that are always promoted to admin on `make seed`
     admin_emails: str = Field("", alias="ADMIN_EMAILS")
+    # Where an `unsafe` report is escalated to. Falls back to ADMIN_EMAILS when
+    # unset, because a safeguarding report with nowhere to go is the one failure
+    # mode this must not have.
+    moderation_emails: str = Field("", alias="MODERATION_EMAILS")
+    # Seed: emails promoted to `moderator` on `make seed` — Dagskrárstjórnarteymið.
+    moderator_emails: str = Field("", alias="MODERATOR_EMAILS")
 
     # HMAC key for signed game run tokens. REQUIRED outside development —
     # run_tokens._secret() raises when it is unset and ENV is not a dev value.
@@ -75,6 +81,20 @@ class Settings(BaseSettings):
     @property
     def admin_email_list(self) -> list[str]:
         return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
+
+    @property
+    def moderator_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.moderator_emails.split(",") if e.strip()]
+
+    @property
+    def moderation_email_list(self) -> list[str]:
+        """Who hears about an `unsafe` report, within the day.
+
+        Falls back to the admins rather than to nothing: an escalation that
+        silently goes nowhere is worse than one that reaches the wrong inbox.
+        """
+        addresses = [e.strip().lower() for e in self.moderation_emails.split(",") if e.strip()]
+        return addresses or self.admin_email_list
 
     def model_post_init(self, __context: object) -> None:
         # Production database URL

@@ -12,7 +12,7 @@ export default function BuilderPage() {
   // Use the hook that will fetch from the backend. The hook uses
   // either an array response or `{ programs: Program[] }`.
   const workspaceId = "defaultWorkspace"; // Replace with the actual workspace ID
-  const { programs, tags, loading, error } = usePrograms(workspaceId);
+  const { programs, facets, loading, error } = usePrograms(workspaceId);
 
   const filtered = useMemo(() => {
     if (!programs) return [] as ProgramType[];
@@ -51,7 +51,7 @@ export default function BuilderPage() {
               {loading ? (
                 <option disabled>Hleður…</option>
               ) : (
-                (tags || []).map((t) => (
+                facets.tags.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
@@ -61,7 +61,7 @@ export default function BuilderPage() {
           </label>
 
           {error ? (
-            <div style={{ color: "var(--sl-error, #b00020)" }}>
+            <div style={{ color: "hsl(var(--sl-color-error))" }}>
               Villa við að sækja gögn: {String(error.message || error)}
             </div>
           ) : null}

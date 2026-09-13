@@ -42,3 +42,4 @@ class CommentOut(CommentBase):
 
     id: UUID
     created_at: dt.datetime
+    author_name: str

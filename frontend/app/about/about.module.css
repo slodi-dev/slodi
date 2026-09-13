@@ -7,7 +7,7 @@
 
 /* ===== PAGE CONTAINER ===== */
 .page {
-  font-family: var(--font-roboto-condensed), var(--font-geist-sans), sans-serif;
+  font-family: var(--sl-font-family-body);
   padding: var(--sl-spacing-section) var(--sl-spacing-component);
   max-width: var(--sl-primitive-width-5xl); /* ~1024px for better readability */
   margin: 0 auto;
@@ -23,7 +23,7 @@
 
 .title {
   font-size: var(--sl-text-heading-1);
-  font-weight: var(--sl-font-weight-black);
+  font-weight: var(--sl-primitive-font-weight-extrabold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-element) 0;
   color: hsl(var(--sl-color-text-primary));
@@ -74,7 +74,7 @@
 
 .sectionTitle {
   font-size: var(--sl-text-heading-2);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-component) 0;
   color: hsl(var(--sl-color-text-primary));
@@ -154,7 +154,7 @@
 
 .featureTitle {
   font-size: var(--sl-text-heading-4);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-gap-md) 0;
   color: hsl(var(--sl-color-text-primary));
@@ -250,7 +250,7 @@
 
 .timelineTitle {
   font-size: var(--sl-text-heading-4);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-gap-sm) 0;
   color: hsl(var(--sl-color-text-primary));
@@ -300,7 +300,7 @@
 
 .ctaTitle {
   font-size: var(--sl-text-heading-2);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: var(--sl-line-height-tight);
   margin: 0 0 var(--sl-spacing-element) 0;
   color: hsl(var(--sl-color-text-primary));
@@ -339,19 +339,19 @@
   background: hsl(var(--sl-button-background-primary));
   color: hsl(var(--sl-button-text-primary));
   border: 1px solid hsl(var(--sl-button-border-primary));
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
 }
 
 .ctaButtonPrimary:hover {
   background: hsl(var(--sl-button-background-primary-hover));
-  border-color: hsl(var(--sl-button-border-primary-hover));
-  box-shadow: var(--sl-shadow-button-hover);
+  border-color: hsl(var(--sl-button-border-primary));
+  box-shadow: var(--sl-shadow-card-hover);
   transform: translateY(-2px);
 }
 
 .ctaButtonPrimary:active {
   transform: translateY(0);
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
 }
 
 .ctaButtonSecondary {
@@ -362,7 +362,7 @@
 
 .ctaButtonSecondary:hover {
   background: hsl(var(--sl-button-background-secondary-hover));
-  border-color: hsl(var(--sl-button-border-secondary-hover));
+  border-color: hsl(var(--sl-button-border-secondary));
   transform: translateY(-2px);
 }
 

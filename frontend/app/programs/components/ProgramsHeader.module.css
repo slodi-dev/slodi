@@ -1,109 +1,19 @@
-/* ═══════════════════════════════════════════════════════════
-   PROGRAMS HEADER
-   Top section with title and floating action button
-   ═══════════════════════════════════════════════════════════ */
-
-.headerRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-  padding: var(--space-4) var(--space-6) 0;
-}
-
-.headerRow h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: hsl(var(--color-text-primary));
-  margin: 0;
-  line-height: var(--line-height-tight);
-}
-
-.headerRow p {
-  font-size: var(--font-size-sm);
-  color: hsl(var(--color-text-secondary));
-  margin: var(--space-1) 0 0;
-  line-height: var(--line-height-normal);
-}
-
-/* ═══════════════════════════════════════════════════════════
-   FLOATING ACTION BUTTON (FAB)
-   ═══════════════════════════════════════════════════════════ */
-
-.fab {
+/* The launcher places itself; this only decides where on the page it sits.
+   The old `.fab` painted white on `--sl-color-primary`, a mid-tone that does
+   not carry white at AA — ContentTypeChooser rides the `-text` tier instead. */
+.fabAnchor {
   position: fixed;
   bottom: 32px;
   right: 32px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px;
-  background: hsl(var(--sl-color-primary));
-  color: #ffffff;
-  border: none;
-  border-radius: 32px;
-  box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.15),
-    0 4px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  z-index: 1000;
-  transition:
-    transform var(--sl-transition-base),
-    box-shadow var(--sl-transition-base),
-    padding var(--sl-transition-base),
-    border-radius var(--sl-transition-base);
-  overflow: hidden;
-  font-size: var(--sl-font-size-base);
+  z-index: var(--sl-z-fixed);
 }
 
-.fabIcon {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  transition: transform var(--sl-transition-base);
-}
-
-.fabLabel {
-  font-size: var(--sl-font-size-lg);
-  font-weight: var(--sl-font-weight-bold);
-  white-space: nowrap;
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition:
-    max-width var(--sl-transition-base),
-    opacity var(--sl-transition-base),
-    margin-left var(--sl-transition-base);
-}
-
-.fab:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.2),
-    0 6px 12px rgba(0, 0, 0, 0.15);
-  padding: 18px 28px;
-  border-radius: 36px;
-}
-
-.fab:hover .fabIcon {
-  transform: rotate(90deg);
-}
-
-.fab:hover .fabLabel {
-  max-width: 200px;
-  opacity: 1;
-  margin-left: 8px;
-}
-
-.fab:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.fab:focus-visible {
-  outline: 3px solid hsl(var(--sl-color-primary));
-  outline-offset: 4px;
+@media (max-width: 640px) {
+  .fabAnchor {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
 }
 
 /* Mobile adjustments */

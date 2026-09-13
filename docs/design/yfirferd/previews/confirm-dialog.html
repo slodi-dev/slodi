@@ -1,0 +1,155 @@
+<!-- @dsCard group="Yfirferð" -->
+<!doctype html>
+<html lang="is">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Confirm dialog — Slóði</title>
+    <style>
+      :root {
+        /* Copied from frontend/app/slodi-tokens.css — HSL triplets, used as hsl(var(--…)). */
+        --sl-color-background: 150 20% 99%;
+        --sl-color-surface: 0 0% 100%;
+        --sl-color-surface-sunken: 150 16% 95%;
+        --sl-color-text-primary: 150 20% 12%;
+        --sl-color-text-secondary: 150 12% 31%;
+        --sl-color-text-tertiary: 150 12% 45%;
+        --sl-color-text-inverse: 0 0% 100%;
+        --sl-color-border: 150 12% 85%;
+        --sl-color-border-subtle: 150 14% 90%;
+        --sl-color-focus-ring: 142 50% 42%;
+        --sl-color-primary: 142 50% 42%;
+        --sl-color-primary-hover: 142 50% 35%;
+        --sl-color-primary-subtle: 142 50% 96%;
+        --sl-color-error: 4 72% 58%;
+        --sl-color-error-subtle: 6 78% 95%;
+        --sl-color-error-text: 4 70% 34%;
+        --sl-color-error-muted: 6 72% 90%;
+        --sl-color-warning: 36 85% 55%;
+        --sl-color-warning-subtle: 40 85% 94%;
+        --sl-color-warning-text: 32 90% 25%;
+        --sl-color-info: 190 72% 45%;
+        --sl-color-info-subtle: 188 55% 94%;
+        --sl-radius-card: 12px;
+        --sl-radius-button: 8px;
+        --sl-radius-chip: 999px;
+        --sl-radius-input: 8px;
+        --sl-radius-sm: 6px;
+        --sl-spacing-xs: 0.25rem;
+        --sl-spacing-sm: 0.5rem;
+        --sl-spacing-md: 1rem;
+        --sl-spacing-lg: 1.5rem;
+      }
+      @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { 
+        --sl-color-background: 150 12% 9%;
+        --sl-color-surface: 150 12% 11%;
+        --sl-color-surface-sunken: 150 10% 16%;
+        --sl-color-text-primary: 150 8% 95%;
+        --sl-color-text-secondary: 150 7% 78%;
+        --sl-color-text-tertiary: 150 6% 65%;
+        --sl-color-border: 150 8% 25%;
+        --sl-color-border-subtle: 150 8% 20%;
+        --sl-color-primary: 142 50% 55%;
+        --sl-color-primary-subtle: 142 40% 16%;
+        --sl-color-error-subtle: 6 50% 16%;
+        --sl-color-error-text: 6 85% 78%;
+        --sl-color-error-muted: 6 40% 24%;
+        --sl-color-warning-subtle: 36 55% 14%;
+        --sl-color-warning-text: 38 90% 70%;
+        --sl-color-info-subtle: 190 45% 15%;
+ } }
+      :root[data-theme="dark"] { 
+        --sl-color-background: 150 12% 9%;
+        --sl-color-surface: 150 12% 11%;
+        --sl-color-surface-sunken: 150 10% 16%;
+        --sl-color-text-primary: 150 8% 95%;
+        --sl-color-text-secondary: 150 7% 78%;
+        --sl-color-text-tertiary: 150 6% 65%;
+        --sl-color-border: 150 8% 25%;
+        --sl-color-border-subtle: 150 8% 20%;
+        --sl-color-primary: 142 50% 55%;
+        --sl-color-primary-subtle: 142 40% 16%;
+        --sl-color-error-subtle: 6 50% 16%;
+        --sl-color-error-text: 6 85% 78%;
+        --sl-color-error-muted: 6 40% 24%;
+        --sl-color-warning-subtle: 36 55% 14%;
+        --sl-color-warning-text: 38 90% 70%;
+        --sl-color-info-subtle: 190 45% 15%;
+ }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: var(--sl-spacing-lg);
+        background: hsl(var(--sl-color-background));
+        color: hsl(var(--sl-color-text-primary));
+        font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 { font-size: 1rem; margin: 0 0 var(--sl-spacing-lg); color: hsl(var(--sl-color-text-secondary)); font-weight: 600; }
+      .caseLabel {
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+        color: hsl(var(--sl-color-text-tertiary)); margin: var(--sl-spacing-lg) 0 var(--sl-spacing-sm);
+        font-weight: 700;
+      }
+      .note { font-size: 0.8rem; color: hsl(var(--sl-color-text-tertiary)); margin: var(--sl-spacing-xs) 0 0; }
+      .chip {
+        display: inline-block; padding: 0.1em 0.55em; border-radius: var(--sl-radius-chip);
+        font-size: 0.75rem; font-weight: 600;
+        background: hsl(var(--sl-color-surface-sunken)); color: hsl(var(--sl-color-text-secondary));
+      }
+      .chip--error { background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); }
+      .chip--warning { background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); }
+      .chip--info { background: hsl(var(--sl-color-info)); color: hsl(var(--sl-color-text-inverse)); }
+      .btn {
+        min-height: 44px; padding: 0 var(--sl-spacing-md); border-radius: var(--sl-radius-button);
+        font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
+        border: 1px solid hsl(var(--sl-color-border)); background: transparent;
+        color: hsl(var(--sl-color-text-primary));
+      }
+      .btn--primary { background: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); border-color: transparent; }
+      .btn--destructive { color: hsl(var(--sl-color-error-text)); border-color: hsl(var(--sl-color-error-muted)); }
+      .btn--send { background: hsl(var(--sl-color-info)); color: hsl(var(--sl-color-text-inverse)); border-color: transparent; }
+      .btn--danger { background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); border-color: hsl(var(--sl-color-error)); }
+      .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+      .btn:focus-visible { outline: 2px solid hsl(var(--sl-color-focus-ring)); outline-offset: 2px; }
+      .row { display: flex; flex-wrap: wrap; gap: var(--sl-spacing-sm); align-items: center; }
+      .scrim { background: hsl(var(--sl-color-text-primary) / 0.35); padding: var(--sl-spacing-lg); border-radius: var(--sl-radius-card); margin-bottom: var(--sl-spacing-md); }
+      .dlg { max-width: 30rem; margin: 0 auto; background: hsl(var(--sl-color-surface)); border-radius: var(--sl-radius-card); padding: var(--sl-spacing-lg); box-shadow: 0 10px 30px hsl(var(--sl-color-text-primary) / 0.18); }
+      .dlg h2 { margin: 0 0 var(--sl-spacing-sm); font-size: 1.05rem; }
+      .dlg p { margin: 0 0 var(--sl-spacing-sm); color: hsl(var(--sl-color-text-secondary)); }
+      .quote { margin: 0 0 var(--sl-spacing-md); padding: var(--sl-spacing-sm); border-left: 4px solid hsl(var(--sl-color-info)); background: hsl(var(--sl-color-info-subtle)); border-radius: var(--sl-radius-sm); color: hsl(var(--sl-color-text-primary)); }
+      .field { width: 100%; padding: var(--sl-spacing-sm); border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-color-background)); color: hsl(var(--sl-color-text-primary)); font: inherit; font-size: 16px; margin-bottom: var(--sl-spacing-md); }
+      .req { color: hsl(var(--sl-color-error-text)); font-size: 0.8rem; margin: -0.6rem 0 var(--sl-spacing-md); }
+      .actions { display: flex; justify-content: flex-end; gap: var(--sl-spacing-sm); }
+    </style>
+  </head>
+  <body>
+    <h1>Confirm dialog</h1>
+    <p class="caseLabel">Senda höfundi — the only act here that cannot be undone</p>
+    <div class="scrim"><div class="dlg">
+      <h2>Senda ábendingu til höfundar?</h2>
+      <p>Signý Kristín fær tölvupóst með þessari athugasemd. Ekki er hægt að afturkalla hana.</p>
+      <blockquote class="quote">Væri gott að taka fram hvað marga þarf að lágmarki.</blockquote>
+      <div class="actions"><button class="btn">Hætta við</button><button class="btn btn--send">Já, senda höfundi</button></div>
+    </div></div>
+
+    <p class="caseLabel">Hafna — the reason is required, because the author reads it</p>
+    <div class="scrim"><div class="dlg">
+      <h2>Hafna „Kötturinn og músin“?</h2>
+      <p>Höfundur sér ástæðuna og getur lagað efnið.</p>
+      <input class="field" placeholder="Af hverju er efninu hafnað?" />
+      <p class="req">Ástæða er nauðsynleg.</p>
+      <div class="actions"><button class="btn">Hætta við</button><button class="btn btn--primary" disabled>Hafna</button></div>
+    </div></div>
+
+    <p class="caseLabel">Ótímabundinn skammarkrókur — reversible, and it must say so</p>
+    <div class="scrim"><div class="dlg">
+      <h2>Setja Jón Ásgeir ótímabundið í skammarkrók?</h2>
+      <p>Jón Ásgeir getur ekki sent inn efni fyrr en því er aflétt. Hægt er að aflétta hvenær sem er.</p>
+      <input class="field" placeholder="Af hverju? Jón Ásgeir sér þessa ástæðu." />
+      <div class="actions"><button class="btn">Hætta við</button><button class="btn btn--danger">Setja í skammarkrók</button></div>
+    </div></div>
+    <p class="note">Replaces three <code>window.prompt()</code> calls and a <code>window.confirm()</code>. A browser prompt cannot show which item it is about, cannot quote the text being sent, and cannot be made accessible. Cancel is always first in DOM order.</p>
+
+  </body>
+</html>

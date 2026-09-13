@@ -17,10 +17,14 @@ import {
 } from "@/services/workspaces.service";
 import styles from "./UserManagement.module.css";
 
-const PERMISSIONS: UserPermissions[] = ["viewer", "member", "admin"];
+// Ranked order, lowest first — the same order the picker offers them in.
+const PERMISSIONS: UserPermissions[] = ["viewer", "member", "moderator", "admin"];
 const PERMISSION_LABELS: Record<UserPermissions, string> = {
   viewer: "Skoðandi",
   member: "Meðlimur",
+  // Dagskrárstjórnarteymið. Named for the job rather than the rank, because
+  // "Umsjónarmaður" is what the role is called in the movement.
+  moderator: "Umsjónarmaður dagskrár",
   admin: "Stjórnandi",
 };
 

@@ -22,7 +22,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.domain.enums import AgeGroup
+from app.domain.enums import AgeGroup, ContentType, ReviewState
 from app.repositories.content import ContentStats
 from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut
@@ -68,7 +68,6 @@ class ContentBase(BaseModel):
     image: ImageStr | None = None
     media: dict[str, Any] | None = None
     tag_names: list[str] | None = None
-    author_id: UUID | None = None
 
     @field_validator(
         "count_min",
@@ -87,13 +86,36 @@ class ContentBase(BaseModel):
 
 
 class ContentCreate(ContentBase):
+    """Fields accepted when creating content.
+
+    `author_id` and `created_at` are **server-owned**: every create route
+    overwrites whatever the body carried. The default_factory below is for
+    internal callers (seeding, copies), not a promise that a client may set it.
+
+    `created_at` matters now that anyone with an account can submit to the bank.
+    The review queue is ordered oldest-first, so a backdated item would jump
+    ahead of everything a moderator has not yet looked at.
+    """
+
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr
+    author_id: UUID | None = None
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
 
 class ContentUpdate(ContentBase):
+    """Fields a PATCH may change.
+
+    Deliberately carries **no `author_id`**. `ContentUpdate` used to inherit it
+    from `ContentBase`, and the update services apply the patch with `setattr`
+    over `model_dump(exclude_unset=True)` — so a body could hand an item's
+    authorship to any other user. That was reachable only by an editor while the
+    bank was closed; now that anyone with an account can create and edit their
+    own submissions, it would let someone launder a submission, and its strikes,
+    onto another leader.
+    """
+
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
     name: NameStr | None = None
@@ -106,6 +128,9 @@ class ContentListOut(BaseModel):
 
     id: UUID
     name: NameStr
+    # Which kind it is. The bank lists all three now, so a card cannot tell a
+    # Verkefni from a Viðburður without being told.
+    content_type: ContentType
     author_id: UUID
     author_name: str
     created_at: dt.datetime
@@ -137,6 +162,17 @@ class ContentOut(ContentListOut):
     """Full content details, including author info and comments."""
 
     author: UserOutLimited
+    #: Only ever filled in for the item's own author and for moderators. A
+    #: leader needs to know whether their submission was looked at; nobody else
+    #: needs to know how the team judged somebody else's idea. The route strips
+    #: these rather than the schema, because the schema cannot see who is asking.
+    review_state: ReviewState | None = None
+    review_note: str | None = None
+    #: Set when a moderator has unlisted the item. Carried on the same terms as
+    #: the review fields: the author is told their item was hidden, so the item
+    #: has to be able to say so, and a stranger is not shown the timestamp of a
+    #: decision about somebody else.
+    hidden_at: dt.datetime | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
     media: dict[str, Any] | None = None

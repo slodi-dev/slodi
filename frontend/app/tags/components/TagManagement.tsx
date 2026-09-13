@@ -5,7 +5,8 @@ import { useTags } from "@/hooks/useTags";
 import { updateTag, deleteTag } from "@/services/tags.service";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
-import { hasWorkspaceRole } from "@/services/workspaces.service";
+import { hasPermission } from "@/services/users.service";
+import { useAuth } from "@/contexts/AuthContext";
 import usePrograms from "@/hooks/usePrograms";
 import TagCreateInput from "./TagCreateInput";
 import TagRow from "./TagRow";
@@ -15,7 +16,8 @@ const PAGE_SIZE = 20;
 
 export default function TagManagement() {
   const defaultWorkspaceId = useDefaultWorkspaceId();
-  const { role, isLoading: roleLoading } = useWorkspaceRole(defaultWorkspaceId);
+  const { user, isLoading: authLoading } = useAuth();
+  const { isLoading: roleLoading } = useWorkspaceRole(defaultWorkspaceId);
   const { tags, loading, error, refetch } = useTags();
   const { programs } = usePrograms(defaultWorkspaceId);
 
@@ -86,8 +88,12 @@ export default function TagManagement() {
     [refetch]
   );
 
-  // Access control
-  if (roleLoading) {
+  // Access control. Platform permission rather than workspace role: the tag
+  // vocabulary is shared by the whole bank, so a rename reaches every entry in
+  // it. That belongs to Dagskrárstjórnarteymið, not to an editor of one
+  // workspace — and with open submission every new account is a viewer of the
+  // bank anyway, so the workspace check was never the line it looked like.
+  if (authLoading) {
     return (
       <section className={styles.section}>
         <p className={styles.loading}>Hleð...</p>
@@ -95,12 +101,20 @@ export default function TagManagement() {
     );
   }
 
-  if (!hasWorkspaceRole(role, "editor")) {
+  if (!hasPermission(user?.permissions, "moderator")) {
     return (
       <section className={styles.section}>
         <div className={styles.accessDenied}>
-          <p>Þú hefur ekki aðgang að þessari síðu.</p>
+          <p>Merkimiðar eru í umsjón Dagskrárstjórnarteymisins.</p>
         </div>
+      </section>
+    );
+  }
+
+  if (roleLoading) {
+    return (
+      <section className={styles.section}>
+        <p className={styles.loading}>Hleð...</p>
       </section>
     );
   }

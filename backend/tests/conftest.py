@@ -23,8 +23,16 @@ from app.schemas.workspace import WorkspaceOut
 
 @pytest.fixture
 def mock_db_session():
-    """Create a mock database session."""
+    """A mock database session that finds nothing unless a test says otherwise.
+
+    `scalar` defaults to None rather than to a Mock. An AsyncMock's children are
+    themselves AsyncMocks, so an unstubbed lookup returns something truthy whose
+    attributes are coroutines — which reads to the code under test as "yes, a
+    row exists" and fails somewhere far from the cause. "Found nothing" is both
+    the safer default and what almost every test means.
+    """
     session = AsyncMock()
+    session.scalar.return_value = None
     return session
 
 
@@ -52,6 +60,27 @@ def viewer_user():
         name="Viewer User",
         pronouns=None,
         permissions=Permissions.viewer,
+        preferences=None,
+    )
+
+
+@pytest.fixture
+def moderator_user():
+    """Dagskrárstjórnarteymið — the rank directly below admin.
+
+    The interesting one for privilege-escalation tests: a moderator can hide
+    content and suspend an author, so if the rank check on user updates were
+    ever loosened by one step, they could also deputise themselves more
+    moderators. Every test that asserts "only an admin" should use this rather
+    than a viewer, because a viewer failing proves almost nothing.
+    """
+    return UserOut(
+        id=uuid4(),
+        auth0_id="auth0|moderator_test",
+        email="moderator@test.com",
+        name="Moderator User",
+        pronouns=None,
+        permissions=Permissions.moderator,
         preferences=None,
     )
 
