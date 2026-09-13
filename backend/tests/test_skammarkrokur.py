@@ -164,10 +164,20 @@ def test_the_guard_is_on_writes_and_not_on_reads():
         )
     }
     methods = {m for ms, _ in guarded for m in ms}
-    assert methods <= {"POST", "PATCH"}, f"a read path is guarded: {guarded}"
-    # Deleting is deliberately not guarded: withdrawing your own submission
-    # while suspended is exactly what should happen.
-    assert "DELETE" not in methods
+    assert methods <= {"POST", "PATCH", "PUT", "DELETE"}, f"a read path is guarded: {guarded}"
+
+    # Withdrawing your own submission while suspended is exactly what should
+    # happen, so the endpoints that remove content are deliberately open.
+    withdrawals = {"/programs/{program_id}", "/events/{event_id}", "/tasks/{task_id}"}
+    assert not [p for ms, p in guarded if "DELETE" in ms and p in withdrawals]
+
+    # The verb is not the principle, though. Detaching a tag is editing an item,
+    # not withdrawing it, so it is guarded like every other edit — and guarding
+    # only the attach half would let a suspended leader strip an item bare and
+    # be unable to put it back.
+    assert (("DELETE",), "/content/{content_id}/tags/{tag_id}") in guarded
+    assert (("PUT",), "/content/{content_id}/tags/{tag_id}") in guarded
+
     assert len(guarded) >= 10
 
 
