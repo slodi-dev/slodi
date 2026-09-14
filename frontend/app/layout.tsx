@@ -80,7 +80,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="is" suppressHydrationWarning>
+    // spellCheck is inherited by every input/textarea. Browsers rarely ship an
+    // Icelandic dictionary and Chrome ignores lang="is" for spellcheck, so
+    // correct Icelandic text would otherwise be underlined everywhere.
+    <html lang="is" spellCheck={false} suppressHydrationWarning>
       <body
         className={cn(
           // Slóði utility classes
