@@ -188,3 +188,15 @@ def downgrade() -> None:
     op.drop_table('groups')
     op.drop_table('emaillist')
     # ### end Alembic commands ###
+    # drop_table leaves behind the enum types create_table made, and a second
+    # upgrade then fails with "type ... already exists".
+    bind = op.get_bind()
+    for enum_name in (
+        'workspace_role_enum',
+        'workspace_event_interval_enum',
+        'workspace_weekday_enum',
+        'group_role_enum',
+        'content_type_enum',
+        'pronouns_enum',
+    ):
+        sa.Enum(name=enum_name).drop(bind, checkfirst=True)
