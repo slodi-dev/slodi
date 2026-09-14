@@ -1,0 +1,1194 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   YFIRFERÐ — the review board for Dagskrárstjórnarteymið
+   Translated from the reviewed `yfirferd.css` on claude.ai/design. Consumes
+   the live tokens in app/slodi-tokens.css: nothing here inlines a colour.
+
+   The brief behind the layout: a moderator opens this with thousands of items
+   waiting. Every decision is judged against two questions — does it cost a
+   keystroke or a click, and can you see the pile going down.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.page {
+  --yf-touch: 48px;
+  --yf-ease: cubic-bezier(0.16, 0.84, 0.44, 1);
+  --yf-exit: cubic-bezier(0.4, 0, 1, 1);
+  --yf-press: cubic-bezier(0.2, 0, 0, 1);
+  --yf-hover: 160ms;
+  --yf-tap: 90ms;
+  --yf-move: 240ms;
+
+  max-width: 84rem;
+  margin: 0 auto;
+  padding: var(--sl-spacing-lg) var(--sl-spacing-md) var(--sl-spacing-xl);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    --yf-hover: 1ms;
+    --yf-tap: 1ms;
+    --yf-move: 1ms;
+  }
+}
+
+/* Content types, shared with the Dagskrárbankinn kit so a Verkefni looks the
+   same wherever a leader meets it. */
+.typeTask {
+  --yf-accent: var(--sl-color-border-strong);
+  --yf-accent-bg: var(--sl-color-background-tertiary);
+  --yf-accent-text: var(--sl-color-text-secondary);
+}
+.typeEvent {
+  --yf-accent: var(--sl-color-event);
+  --yf-accent-bg: var(--sl-color-event-subtle);
+  --yf-accent-text: var(--sl-color-event-text);
+}
+.typeProgram {
+  --yf-accent: var(--sl-color-primary);
+  --yf-accent-bg: var(--sl-color-primary-subtle);
+  --yf-accent-text: var(--sl-color-primary-text);
+}
+/* No local dark override: `--sl-color-event` carries its own theming in
+   slodi-tokens.css now. The override this replaces matched `[data-theme="dark"]`
+   only, which never fires for the ordinary dark toggle — that uses a class. */
+
+/* ══ Page shell ═══════════════════════════════════════════════════════════ */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sl-spacing-md);
+  margin-bottom: var(--sl-spacing-md);
+}
+.title {
+  margin: 0;
+  font-size: var(--sl-text-heading-3);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+  color: hsl(var(--sl-color-text-primary));
+}
+.state,
+.error {
+  padding: var(--sl-spacing-lg) 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+.error {
+  color: hsl(var(--sl-color-error-text));
+}
+.live {
+  margin: 0 0 var(--sl-spacing-sm);
+  min-height: 1.4rem;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-body-sm);
+}
+.split {
+  display: grid;
+  /* The rail is the design's 380px; the pane takes whatever is left. */
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: var(--sl-spacing-md);
+  align-items: start;
+}
+@media (max-width: 60rem) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.listPane {
+  /* dvh, not vh: on mobile the browser chrome makes vh taller than the
+     viewport, which hides the last row behind it. */
+  max-height: calc(100dvh - 20rem);
+  overflow-y: auto;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface));
+}
+.detailPane {
+  min-height: 24rem;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface));
+  padding: var(--sl-spacing-lg);
+}
+
+/* ══ Keys ═════════════════════════════════════════════════════════════════
+   The shortcut is printed on the control, not hidden in a help modal. A
+   moderator who never reads help still learns the keyboard by using the
+   mouse. */
+.key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-bottom-width: 2px;
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  font-family: var(--sl-primitive-font-family-mono);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  line-height: 1;
+}
+.btn .key {
+  background: hsl(var(--sl-color-text-inverse) / 0.18);
+  border-color: hsl(var(--sl-color-text-inverse) / 0.34);
+  color: inherit;
+}
+.btnSecondary .key,
+.btnGhost .key {
+  background: hsl(var(--sl-color-background-tertiary));
+  border-color: hsl(var(--sl-color-border));
+  color: hsl(var(--sl-color-text-secondary));
+}
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-background-secondary));
+}
+.shortcutsItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ══ Buttons ══════════════════════════════════════════════════════════════
+   Local rather than the shared components/Button: that one is still on the
+   legacy shadcn tokens (`hsl(var(--foreground))`) and sits well under the
+   48px floor this surface holds to everywhere. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--yf-touch);
+  padding: 0 var(--sl-spacing-inset-md);
+  border-radius: var(--sl-radius-button);
+  border: 1px solid transparent;
+  background: none;
+  font-family: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--yf-hover) var(--yf-ease),
+    border-color var(--yf-hover) var(--yf-ease),
+    transform var(--yf-tap) var(--yf-press);
+}
+.btn svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+.btn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+/* Filled buttons ride the -text tier, which flips with the theme, so one
+   pairing with text-inverse clears AA in both. */
+.btnPrimary {
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  border-color: hsl(var(--sl-color-primary-text));
+}
+.btnPrimary:hover {
+  background: hsl(var(--sl-color-primary-text) / 0.88);
+}
+.btnSecondary {
+  border-color: hsl(var(--sl-color-border-strong));
+}
+.btnSecondary:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.btnGhost {
+  color: hsl(var(--sl-color-text-secondary));
+}
+.btnGhost:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+.btnDanger {
+  background: hsl(var(--sl-color-error-text));
+  color: hsl(var(--sl-color-text-inverse));
+  border-color: hsl(var(--sl-color-error-text));
+}
+.btnDanger:hover {
+  background: hsl(var(--sl-color-error-text) / 0.88);
+}
+.btnQuietDanger {
+  color: hsl(var(--sl-color-error-text));
+  border-color: hsl(var(--sl-color-error) / 0.5);
+}
+.btnQuietDanger:hover {
+  background: hsl(var(--sl-color-error-subtle));
+}
+.btnSend {
+  background: hsl(var(--sl-color-info-text));
+  color: hsl(var(--sl-color-text-inverse));
+  border-color: hsl(var(--sl-color-info-text));
+}
+.btnSend:hover {
+  background: hsl(var(--sl-color-info-text) / 0.88);
+}
+.btn[aria-disabled="true"],
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* --sm is narrower, never shorter: the 48px floor holds everywhere. */
+.btnSm {
+  padding: 0 12px;
+}
+
+/* ══ Chips ════════════════════════════════════════════════════════════════ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  border: 1px solid hsl(var(--sl-color-border));
+  white-space: nowrap;
+}
+.chipError {
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+  border-color: hsl(var(--sl-color-error) / 0.45);
+}
+.chipWarning {
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+  border-color: hsl(var(--sl-color-warning) / 0.45);
+}
+.chipInfo {
+  background: hsl(var(--sl-color-info-subtle));
+  color: hsl(var(--sl-color-info-text));
+  border-color: hsl(var(--sl-color-info) / 0.45);
+}
+.chipType {
+  background: hsl(var(--yf-accent-bg));
+  color: hsl(var(--yf-accent-text));
+  border-color: hsl(var(--yf-accent) / 0.45);
+}
+
+/* ══ Toolbar ══════════════════════════════════════════════════════════════ */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: var(--sl-spacing-sm);
+  padding: 14px 16px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface));
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  margin: -2px -4px 0;
+  padding: 0 4px;
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--yf-touch);
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  transition:
+    color var(--yf-hover) var(--yf-ease),
+    border-color var(--yf-hover) var(--yf-ease);
+}
+.tab:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+.tab[aria-selected="true"] {
+  color: hsl(var(--sl-color-text-primary));
+  border-bottom-color: hsl(var(--sl-color-primary-text));
+}
+.tab:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.countUrgent {
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+}
+.segmented {
+  display: inline-flex;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  overflow: hidden;
+}
+.segment {
+  min-height: var(--yf-touch);
+  padding: 0 14px;
+  border: 0;
+  border-right: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  font-family: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  transition:
+    background-color var(--yf-hover) var(--yf-ease),
+    color var(--yf-hover) var(--yf-ease);
+}
+.segment:last-child {
+  border-right: 0;
+}
+.segment:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.segment[aria-pressed="true"] {
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+.segment:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+.search,
+.date,
+.numInput {
+  min-height: var(--yf-touch);
+  padding: 0 12px;
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+.search::placeholder,
+.numInput::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.search:focus-visible,
+.date:focus-visible,
+.numInput:focus-visible {
+  outline: 0;
+  border-color: hsl(var(--sl-input-border-focus));
+  box-shadow: var(--sl-shadow-focus);
+}
+.numInput {
+  width: 92px;
+}
+.searchLabel,
+.dateLabel,
+.checkLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.checkLabel input {
+  width: 20px;
+  height: 20px;
+  accent-color: hsl(var(--sl-color-primary-text));
+}
+
+/* ══ Progress — the pile going down ═══════════════════════════════════════
+   Two numbers, deliberately: what is left (the job) and what you cleared
+   today (the achievement). Neither alone tells a moderator how the shift is
+   going. The bar measures the session, not the whole queue — a fraction of
+   five thousand never visibly moves, and a bar that never moves is worse
+   than no bar at all. */
+.prog {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: var(--sl-spacing-sm);
+  padding: 12px 16px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-background-secondary));
+}
+.progNum {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.progBig {
+  font-size: var(--sl-text-heading-5);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+.progLab {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.progDone .progBig {
+  color: hsl(var(--sl-color-primary-text));
+}
+.progSep {
+  width: 1px;
+  align-self: stretch;
+  background: hsl(var(--sl-color-border));
+}
+.progBar {
+  flex: 1;
+  min-width: 120px;
+  height: 8px;
+  border-radius: 999px;
+  background: hsl(var(--sl-color-background-tertiary));
+  overflow: hidden;
+}
+.progFill {
+  height: 100%;
+  border-radius: 999px;
+  background: hsl(var(--sl-color-primary-text));
+  transition: width var(--yf-move) var(--yf-ease);
+}
+
+/* ══ Rail ═════════════════════════════════════════════════════════════════ */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px 10px 13px;
+  border: 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  border-left: 3px solid transparent;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+  transition: background-color var(--yf-hover) var(--yf-ease);
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.row:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.rowFocused {
+  background: hsl(var(--sl-color-primary-subtle));
+  border-left-color: hsl(var(--sl-color-primary-text));
+}
+.rowUrgent {
+  border-left-color: hsl(var(--sl-color-error));
+}
+.rowFocused.rowUrgent {
+  border-left-color: hsl(var(--sl-color-error));
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-error));
+}
+.row:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+.rowTop {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.rowTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rowStamp {
+  flex: none;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+  font-variant-numeric: tabular-nums;
+}
+.rowLine {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.rowFlags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 3px 0 0;
+}
+
+/* ══ Undo — what replaces most confirm dialogs ════════════════════════════ */
+.undo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--sl-spacing-sm);
+  padding: 10px 10px 10px 16px;
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-background-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+  box-shadow: var(--sl-shadow-modal);
+  max-width: 520px;
+}
+.undoText {
+  flex: 1;
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+}
+.undoText strong {
+  font-weight: var(--sl-primitive-font-weight-bold);
+}
+.undoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--yf-touch);
+  padding: 0 14px;
+  border: 1px solid hsl(var(--sl-color-text-inverse) / 0.4);
+  border-radius: var(--sl-radius-button);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--sl-primitive-font-weight-bold);
+  cursor: pointer;
+}
+.undoBtn:hover {
+  background: hsl(var(--sl-color-text-inverse) / 0.14);
+}
+.undoBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-text-inverse));
+  outline-offset: 2px;
+}
+
+/* ══ Empty state — the reward ═════════════════════════════════════════════ */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 24px;
+  text-align: center;
+}
+.emptyMark {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: hsl(var(--sl-color-success-subtle));
+  color: hsl(var(--sl-color-success-text));
+}
+.emptyMark svg {
+  width: 28px;
+  height: 28px;
+}
+.emptyTitle {
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+}
+.emptyTitle:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 4px;
+}
+.emptySub {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  max-width: 42ch;
+  text-wrap: pretty;
+}
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* ══ Detail pane ══════════════════════════════════════════════════════════ */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-md);
+}
+.detailHead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.detailTitle {
+  margin: 0;
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.detailBody {
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  text-wrap: pretty;
+}
+.bodyMuted {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.sectionTitle {
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.image {
+  max-width: 100%;
+  max-height: 18rem;
+  border-radius: var(--sl-radius-card);
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  object-fit: cover;
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 0;
+}
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.factLabel {
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.factValue {
+  margin: 0;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+.documents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.docType {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-tertiary));
+  text-transform: uppercase;
+}
+.openLink,
+.shareBtn,
+.linkBtn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: hsl(var(--sl-color-text-link));
+  text-decoration: underline;
+  cursor: pointer;
+}
+.openLink:focus-visible,
+.shareBtn:focus-visible,
+.linkBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+.reportsBox {
+  padding: 12px 14px;
+  border: 1px solid hsl(var(--sl-color-warning) / 0.45);
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+}
+.reportsList {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+  font-size: var(--sl-text-body-sm);
+}
+.reason {
+  font-weight: var(--sl-font-weight-emphasis);
+}
+.reasonUrgent {
+  color: hsl(var(--sl-color-error-text));
+}
+.reviewNote {
+  margin: 0;
+  padding: 10px 13px;
+  border-left: 3px solid hsl(var(--sl-color-border-strong));
+  border-radius: 0 var(--sl-radius-sm) var(--sl-radius-sm) 0;
+  background: hsl(var(--sl-color-background-secondary));
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ══ Decision bar — the four acts, always in the same place ═══════════════ */
+.detailActions,
+.reportActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.actionsLabel {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ══ Notes ════════════════════════════════════════════════════════════════ */
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.noteList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.note {
+  padding: 11px 13px;
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-left: 3px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-background-secondary));
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.noteSent {
+  border-left-color: hsl(var(--sl-color-info));
+  background: hsl(var(--sl-color-info-subtle));
+}
+.noteMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.noteBody {
+  margin: 0;
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
+}
+.internalBadge,
+.sentBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+}
+.internalBadge {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  border: 1px solid hsl(var(--sl-color-border));
+}
+.sentBadge {
+  background: hsl(var(--sl-color-info-subtle));
+  color: hsl(var(--sl-color-info-text));
+  border: 1px solid hsl(var(--sl-color-info) / 0.45);
+}
+.noteComposer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.noteInput {
+  width: 100%;
+  min-height: 76px;
+  padding: 11px 13px;
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  resize: vertical;
+}
+.noteInput::placeholder {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.noteInput:focus-visible {
+  outline: 0;
+  border-color: hsl(var(--sl-input-border-focus));
+  box-shadow: var(--sl-shadow-focus);
+}
+/* Canned openers. Most moderator notes start with one of a handful of
+   sentences; typing them out forty times a shift is the single biggest time
+   sink in the job. */
+.canned {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cannedBtn {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px dashed hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-chip);
+  background: none;
+  font-family: inherit;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  transition:
+    background-color var(--yf-hover) var(--yf-ease),
+    border-color var(--yf-hover) var(--yf-ease);
+}
+.cannedBtn:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  border-style: solid;
+  color: hsl(var(--sl-color-text-primary));
+}
+.cannedBtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .cannedBtn {
+    min-height: var(--yf-touch);
+  }
+}
+.noteActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ══ Dialog ═══════════════════════════════════════════════════════════════ */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sl-z-modal);
+  padding: 20px;
+  background: hsl(var(--sl-color-background-inverse) / 0.28);
+  display: grid;
+  place-items: center;
+}
+.dlg {
+  width: 440px;
+  max-width: 100%;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-modal);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-modal);
+  display: flex;
+  flex-direction: column;
+}
+.confirmBody {
+  padding: var(--sl-spacing-inset-md);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dlgHead {
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+}
+.dlgText {
+  margin: 0;
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-secondary));
+  line-height: var(--sl-line-height-body);
+  text-wrap: pretty;
+}
+.dlgText strong {
+  color: hsl(var(--sl-color-text-primary));
+}
+.confirmQuote {
+  margin: 0;
+  padding: 10px 13px;
+  border-left: 3px solid hsl(var(--sl-color-info));
+  border-radius: 0 var(--sl-radius-sm) var(--sl-radius-sm) 0;
+  background: hsl(var(--sl-color-info-subtle));
+  color: hsl(var(--sl-color-info-text));
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
+}
+.dlgFoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px var(--sl-spacing-inset-md);
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+/* ══ Author panel ═════════════════════════════════════════════════════════
+   Reads top to bottom as three questions: who is this, what has happened,
+   what can I do. The first version was one flat row of numbers followed by
+   one flat row of buttons, with no answer to "whose history is this". */
+.standing {
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  background: hsl(var(--sl-color-surface));
+  overflow: hidden;
+}
+.auHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.auMono {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+.auName {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+}
+
+/* Counts as tiles. A number needs its own space and its own baseline to be
+   read as a number; four dt/dd pairs in a flex row read as a sentence. */
+.auStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: hsl(var(--sl-color-border-subtle));
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.stat {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 3px;
+  padding: 12px 16px;
+  background: hsl(var(--sl-color-surface));
+}
+.statNum {
+  margin: 0;
+  font-size: var(--sl-text-heading-5);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+.statLabel {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  line-height: var(--sl-primitive-line-height-snug);
+}
+.statZero .statNum {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.statFlag .statNum {
+  color: hsl(var(--sl-color-warning-text));
+}
+.auSec {
+  padding: 14px 16px;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auSec:last-child {
+  border-bottom: 0;
+}
+.auHeading {
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+/* The readable form of a history: dated events, not a count. "3 áminningar"
+   says nothing you can judge on; three dated lines say everything. */
+.hist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.hist li {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  font-size: var(--sl-text-body-sm);
+}
+.hist li:last-child {
+  border-bottom: 0;
+}
+.histDate {
+  color: hsl(var(--sl-color-text-tertiary));
+  font-variant-numeric: tabular-nums;
+}
+.histWhat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  color: hsl(var(--sl-color-text-secondary));
+}
+.histWhat strong {
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+/* Actions: one labelled line per kind of decision, not one long row. */
+.durs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dursOr {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+  padding: 0 2px;
+}
+.customDays {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Open-ended is a different kind of act, not the longest one — so it gets its
+   own frame and its own sentence rather than a seat in the row of durations. */
+.auGrave {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid hsl(var(--sl-color-error) / 0.4);
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-error-subtle));
+}
+.auGrave p {
+  flex: 1;
+  min-width: 22ch;
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-error-text));
+}
+.activeSuspension {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+  border: 1px solid hsl(var(--sl-color-warning) / 0.45);
+}
+.activeSuspension p {
+  margin: 0;
+  flex: 1;
+  min-width: 22ch;
+  font-size: var(--sl-text-body-sm);
+}
+
+/* ══ Load more ════════════════════════════════════════════════════════════ */
+.loadMore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.loadMoreCount {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+  font-variant-numeric: tabular-nums;
+}

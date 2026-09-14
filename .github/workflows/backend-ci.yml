@@ -24,9 +24,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-caching: true
-          cache-dependency-glob: "backend/pyproject.toml"
+          cache-dependency-glob: "backend/uv.lock"
 
-      - run: uv sync --group dev
+      - run: uv sync --locked --group dev
 
       - name: Ruff lint
         run: uv run ruff check .
@@ -46,6 +46,10 @@ jobs:
           DB_PORT: "5432"
           AUTH0_DOMAIN: ci.auth0.com
           AUTH0_AUDIENCE: ci
+          AZURE_STORAGE_ACCOUNT: ci
+          AZURE_STORAGE_KEY: Y2k=
+          AZURE_STORAGE_CONTAINER_IMAGES: images
+          AZURE_STORAGE_CONTAINER_DOCUMENTS: documents
       - name: Notify Discord
         if: always()
         uses: sarisia/actions-status-discord@v1
@@ -64,9 +68,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-caching: true
-          cache-dependency-glob: "backend/pyproject.toml"
+          cache-dependency-glob: "backend/uv.lock"
 
-      - run: uv sync --group dev
+      - run: uv sync --locked --group dev
 
       - name: Run unit tests
         run: PYTHONPATH=. uv run pytest -q -m "not integration"
@@ -80,6 +84,10 @@ jobs:
           DB_PORT: "5432"
           AUTH0_DOMAIN: ci.auth0.com
           AUTH0_AUDIENCE: ci
+          AZURE_STORAGE_ACCOUNT: ci
+          AZURE_STORAGE_KEY: Y2k=
+          AZURE_STORAGE_CONTAINER_IMAGES: images
+          AZURE_STORAGE_CONTAINER_DOCUMENTS: documents
 
       - name: Notify Discord
         if: always()

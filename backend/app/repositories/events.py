@@ -8,6 +8,7 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.comment import Comment
 from app.models.content import Content
 from app.models.event import Event
 from app.models.tag import ContentTag
@@ -18,6 +19,7 @@ from app.repositories.content import (
     comment_count_subq,
     like_count_subq,
     liked_by_me_subq,
+    listable,
 )
 
 
@@ -26,7 +28,11 @@ class EventRepository(Repository):
         super().__init__(session)
 
     async def get(
-        self, event_id: UUID, current_user_id: UUID | None = None
+        self,
+        event_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
     ) -> tuple[Event, ContentStats] | None:
         stmt = (
             select(
@@ -40,11 +46,15 @@ class EventRepository(Repository):
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments),
+                selectinload(Event.comments).selectinload(Comment.user),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(Event.id == event_id, Event.deleted_at.is_(None))
         )
+        if not include_hidden:
+            # See TaskRepository.get — a hidden item must disappear from the
+            # link as well as from the listing.
+            stmt = stmt.where(Event.hidden_at.is_(None))
         row = (await self.session.execute(stmt)).first()
         if row is None:
             return None
@@ -70,14 +80,14 @@ class EventRepository(Repository):
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments),
+                selectinload(Event.comments).selectinload(Comment.user),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(
                 Event.id == event_id,
                 Event.program_id == program_id,
                 Event.workspace_id == workspace_id,
-                Event.deleted_at.is_(None),
+                listable(Event),
             )
         )
         row = (await self.session.execute(stmt)).first()
@@ -93,7 +103,7 @@ class EventRepository(Repository):
         date_from: dt.datetime | None = None,
         date_to: dt.datetime | None = None,
     ) -> int:
-        conds = [Event.workspace_id == workspace_id, Event.deleted_at.is_(None)]
+        conds = [Event.workspace_id == workspace_id, listable(Event)]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
         if date_to is not None:
@@ -114,7 +124,7 @@ class EventRepository(Repository):
         limit: int = 50,
         offset: int = 0,
     ) -> list[tuple[Event, ContentStats]]:
-        conds = [Event.workspace_id == workspace_id, Event.deleted_at.is_(None)]
+        conds = [Event.workspace_id == workspace_id, listable(Event)]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
         if date_to is not None:
@@ -151,7 +161,7 @@ class EventRepository(Repository):
         conds = [
             Event.workspace_id == workspace_id,
             Event.program_id == program_id,
-            Event.deleted_at.is_(None),
+            listable(Event),
         ]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)
@@ -177,7 +187,7 @@ class EventRepository(Repository):
         conds = [
             Event.workspace_id == workspace_id,
             Event.program_id == program_id,
-            Event.deleted_at.is_(None),
+            listable(Event),
         ]
         if date_from is not None:
             conds.append(Event.start_dt >= date_from)

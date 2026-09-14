@@ -1,0 +1,115 @@
+/*
+ * Sized from content, not from the viewport. This page renders inside two
+ * different frames — the marketing header/footer for an unknown top-level
+ * path, and the dashboard sidebar for something like `/programs/nope` — so a
+ * `100dvh` block would overflow one of them. `min-height` with generous
+ * padding centres it in whichever frame it lands in.
+ */
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  min-height: 60dvh;
+  padding: var(--sl-spacing-container);
+}
+
+.content {
+  max-width: 34rem;
+  text-align: center;
+}
+
+.code {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  /* Large enough to read as an illustration rather than as body copy, but it
+     scales down on a phone so it never pushes the actions below the fold. */
+  font-size: clamp(3.5rem, 14vw, 6rem);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+  /* The tertiary tier, deliberately: this is decoration sitting behind the
+     real heading, and at this size it still clears AA comfortably. */
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.title {
+  margin: var(--sl-spacing-gap-md) 0 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-2);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.message {
+  margin: var(--sl-spacing-gap-sm) auto 0;
+  font-size: var(--sl-text-body-lg);
+  line-height: var(--sl-line-height-relaxed);
+  color: hsl(var(--sl-color-text-secondary));
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-sm);
+  justify-content: center;
+  margin-top: var(--sl-spacing-gap-xl);
+}
+
+/* Both actions share the 48px touch floor and the same focus treatment. */
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--sl-spacing-inset-lg);
+  border-radius: var(--sl-radius-button);
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-medium);
+  text-decoration: none;
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
+}
+
+.primaryAction:focus-visible,
+.secondaryAction:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+/*
+ * The filled button rides `--sl-color-primary-text`, not `--sl-color-primary`.
+ * The `-text` tier is the darker green in light mode and the paler one in
+ * dark, which is what keeps white-on-green above AA in both themes.
+ */
+.primaryAction {
+  border: 1px solid hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.primaryAction:hover {
+  background: hsl(var(--sl-color-primary-text) / 0.88);
+}
+
+.secondaryAction {
+  border: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.secondaryAction:hover {
+  border-color: hsl(var(--sl-color-border-hover));
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction,
+  .secondaryAction {
+    transition: none;
+  }
+}

@@ -130,12 +130,12 @@
     background-color var(--sl-transition-fast),
     transform var(--sl-transition-fast),
     box-shadow var(--sl-transition-fast);
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
 }
 
 .submitButton:hover:not(:disabled) {
   background: hsl(var(--sl-color-error-hover));
-  box-shadow: var(--sl-shadow-button-hover);
+  box-shadow: var(--sl-shadow-card-hover);
   transform: translateY(-1px);
 }
 
@@ -183,10 +183,10 @@
   gap: var(--sl-spacing-gap-sm);
   padding: var(--sl-spacing-inset-md);
   font-size: var(--sl-text-body-sm);
-  border-radius: var(--sl-radius-base);
+  border-radius: var(--sl-radius-md);
   color: hsl(var(--sl-color-error-text));
-  background: hsl(var(--sl-color-error-bg));
-  border: 1px solid hsl(var(--sl-color-error-border));
+  background: hsl(var(--sl-color-error-subtle));
+  border: 1px solid hsl(var(--sl-color-error));
 }
 
 .messageIcon {
@@ -257,12 +257,12 @@
   color: hsl(var(--sl-color-text-inverse));
   background: hsl(var(--sl-color-primary));
   border: 2px solid transparent;
-  box-shadow: var(--sl-shadow-button);
+  box-shadow: var(--sl-shadow-card);
 }
 
 .primaryButton:hover {
   background: hsl(var(--sl-color-primary-hover));
-  box-shadow: var(--sl-shadow-button-hover);
+  box-shadow: var(--sl-shadow-card-hover);
   transform: translateY(-1px);
 }
 

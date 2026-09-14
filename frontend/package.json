@@ -10,6 +10,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint && prettier --check .",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "deploy-prod": "vercel --prod",

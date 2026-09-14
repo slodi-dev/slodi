@@ -4,10 +4,15 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_permission
+from app.core.auth import (
+    check_content_edit_access,
+    get_current_user,
+    require_not_suspended,
+    require_permission,
+)
 from app.core.cache import tags_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
@@ -171,6 +176,28 @@ async def list_tagged_content(
     return items
 
 
+async def _assert_may_retag(content_id: UUID, current_user: UserOut, session: AsyncSession) -> None:
+    """
+    Changing an item's tags is changing the item, so it uses the item's rule.
+
+    This used to be `author or platform admin`, spelled out here and nowhere
+    else. It disagreed with `check_content_edit_access` in both directions that
+    mattered: a **moderator** was refused, because the check compared
+    `permissions != Permissions.admin` and a moderator is a rank below — so
+    Dagskrárstjórnarteymið could hide an item and suspend its author but not fix
+    a mis-tag, which is the curation the rank exists for — and a **workspace
+    admin** was refused on content in their own workspace.
+    """
+    svc = ContentService(session)
+    await check_content_edit_access(
+        await svc.get_workspace_id(content_id),
+        await svc.get_author_id(content_id),
+        current_user,
+        session,
+        hide_from_non_members=True,
+    )
+
+
 @router.put(
     "/content/{content_id}/tags/{tag_id}",
     response_model=ContentTagOut,
@@ -182,13 +209,9 @@ async def add_content_tag(
     tag_id: UUID,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
 ) -> ContentTagOut:
-    author_id = await ContentService(session).get_author_id(content_id)
-    if author_id != current_user.id and current_user.permissions != Permissions.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the content author can add tags.",
-        )
+    await _assert_may_retag(content_id, current_user, session)
 
     svc = TagService(session)
     created, tag = await svc.add_content_tag(content_id, tag_id)
@@ -204,13 +227,9 @@ async def remove_content_tag(
     content_id: UUID,
     tag_id: UUID,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
 ) -> None:
-    author_id = await ContentService(session).get_author_id(content_id)
-    if author_id != current_user.id and current_user.permissions != Permissions.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the content author can remove tags.",
-        )
+    await _assert_may_retag(content_id, current_user, session)
 
     svc = TagService(session)
     await svc.remove_content_tag(content_id, tag_id)

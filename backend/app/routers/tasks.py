@@ -7,14 +7,24 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import check_workspace_access, get_current_user
+from app.core.auth import (
+    apply_review_visibility,
+    assert_hidden_item_readable,
+    check_content_create_access,
+    check_content_edit_access,
+    check_workspace_access,
+    get_current_user,
+    require_not_suspended,
+)
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
+from app.core.rate_limiter import user_rate_limit
 from app.schemas.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
 from app.services.events import EventService
 from app.services.tasks import TaskService
+from app.utils import get_current_datetime
 
 router = APIRouter(tags=["tasks"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -64,16 +74,17 @@ async def create_workspace_task(
     body: TaskCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
+    _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
     svc = TaskService(session)
-    await check_workspace_access(
-        workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.editor,
-        hide_from_non_members=True,
+    await check_content_create_access(
+        workspace_id, current_user, session, hide_from_non_members=True
     )
-    task_data = body.model_copy(update={"author_id": current_user.id})
+    # author_id and created_at are server-owned — see ContentCreate.
+    task_data = body.model_copy(
+        update={"author_id": current_user.id, "created_at": get_current_datetime()}
+    )
     task = await svc.create_under_workspace(workspace_id, task_data)
     response.headers["Location"] = f"/tasks/{task.id}"
     return task
@@ -125,6 +136,8 @@ async def create_event_task(
     body: TaskCreate,
     response: Response,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
+    _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
     svc = TaskService(session)
     event_svc = EventService(session)
@@ -136,7 +149,10 @@ async def create_event_task(
         minimum_role=WorkspaceRole.editor,
         hide_from_non_members=True,
     )
-    task_data = body.model_copy(update={"author_id": current_user.id})
+    # author_id and created_at are server-owned — see ContentCreate.
+    task_data = body.model_copy(
+        update={"author_id": current_user.id, "created_at": get_current_datetime()}
+    )
     task = await svc.create_under_event(event_id, task_data)
     response.headers["Location"] = f"/tasks/{task.id}"
     return task
@@ -150,7 +166,7 @@ async def get_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> TaskOut:
     svc = TaskService(session)
-    task = await svc.get(task_id, current_user.id)
+    task = await svc.get(task_id, current_user.id, include_hidden=True)
     await check_workspace_access(
         task.workspace_id,
         current_user,
@@ -158,7 +174,8 @@ async def get_task(
         minimum_role=WorkspaceRole.viewer,
         hide_from_non_members=True,
     )
-    return task
+    assert_hidden_item_readable(task, current_user)
+    return apply_review_visibility(task, current_user)
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskOut)
@@ -167,17 +184,18 @@ async def update_task(
     task_id: UUID,
     body: TaskUpdate,
     current_user: UserOut = Depends(get_current_user),
+    _suspension: UserOut = Depends(require_not_suspended),
 ) -> TaskOut:
     svc = TaskService(session)
     task = await svc.get(task_id, current_user.id)
-    await check_workspace_access(
+    await check_content_edit_access(
         task.workspace_id,
+        task.author_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.editor,
         hide_from_non_members=True,
     )
-    return await svc.update(task_id, body, current_user.id)
+    return apply_review_visibility(await svc.update(task_id, body, current_user.id), current_user)
 
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -186,11 +204,11 @@ async def delete_task(
 ) -> None:
     svc = TaskService(session)
     task = await svc.get(task_id, current_user.id)
-    await check_workspace_access(
+    await check_content_edit_access(
         task.workspace_id,
+        task.author_id,
         current_user,
         session,
-        minimum_role=WorkspaceRole.admin,
         hide_from_non_members=True,
     )
     await svc.delete(task_id)

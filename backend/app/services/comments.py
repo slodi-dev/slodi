@@ -33,14 +33,35 @@ class CommentService:
         )
         await self.repo.create(comment)
         await self.session.commit()
-        await self.session.refresh(comment)
-        return CommentOut.model_validate(comment)
+        # Re-read through the repository rather than `refresh`: `CommentOut`
+        # carries `author_name`, which reads `comment.user.name`, and a plain
+        # refresh does not populate relationships — serialising the bare object
+        # would lazy-load under async and raise MissingGreenlet.
+        row = await self.repo.get(comment.id)
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Comment vanished after commit",
+            )
+        return CommentOut.model_validate(row)
 
     async def get(self, comment_id: UUID) -> CommentOut:
         row = await self.repo.get(comment_id)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
         return CommentOut.model_validate(row)
+
+    async def get_model(self, comment_id: UUID) -> Comment:
+        """The row itself, for callers that need to authorise against it.
+
+        Deciding who may remove a comment needs two facts the serialised form
+        does not carry: who wrote it, and which workspace the content it hangs
+        under belongs to. The repository eager-loads both.
+        """
+        row = await self.repo.get(comment_id)
+        if not row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        return row
 
     async def update(self, comment_id: UUID, data: CommentUpdate) -> CommentOut:
         row = await self.repo.get(comment_id)

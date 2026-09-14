@@ -1180,6 +1180,10 @@
   .game {
     flex-direction: column;
     height: auto;
+    /* The desktop layout is a fixed-height two-column frame. Stacked on a
+       phone the page itself is the scroller, so the frame must not impose a
+       viewport-sized floor. */
+    min-height: 0;
   }
   .play {
     min-height: 500px;
@@ -1188,6 +1192,26 @@
     width: auto;
     border-left: none;
     border-top: 3px solid hsl(var(--ink));
+  }
+  /* The scroll trap: on desktop these lists own their own scrolling inside a
+     fixed-height panel, and `overscroll-behavior: contain` deliberately stops
+     that scroll chaining to the page behind them. Stacked on a phone the page
+     is what scrolls, so an inner scroller just swallows the gesture — put a
+     finger over the fundarsköp list and you scroll the list, hit its end, and
+     the page never takes over. You end up stranded, unable to get back up.
+     Let the lists take their natural height and hand scrolling to the page. */
+  .cards,
+  .thing {
+    overflow: visible;
+    overscroll-behavior: auto;
+    flex: none;
+  }
+  /* Keep the tab strip reachable while a long list scrolls past it, so you can
+     switch tabs without hunting back up the page. */
+  .ptabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
   }
   .arnor img {
     height: 215px;

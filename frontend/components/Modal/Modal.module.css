@@ -33,11 +33,17 @@
   max-height: 90vh;
   background: hsl(var(--sl-color-surface));
   border-radius: var(--sl-radius-card);
-  box-shadow: var(--sl-shadow-2xl);
+  box-shadow: var(--sl-shadow-modal);
   padding: var(--sl-spacing-inset-xl);
   outline: none;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
+}
+
+/* Content with its own natural width — a document preview. Capped against the
+   viewport so it never causes a horizontal scroll on a laptop. */
+.wide {
+  max-width: min(1100px, 95vw);
 }
 
 @keyframes slideUp {
@@ -62,8 +68,8 @@
 
 .title {
   margin: 0;
-  font-size: var(--sl-font-size-2xl);
-  font-weight: var(--sl-font-weight-bold);
+  font-size: var(--sl-primitive-font-size-2xl);
+  font-weight: var(--sl-primitive-font-weight-bold);
   color: hsl(var(--sl-color-text-primary));
   line-height: var(--sl-line-height-tight);
 }
@@ -77,8 +83,8 @@
   padding: 0;
   background: transparent;
   border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-20));
-  border-radius: var(--sl-radius-circle);
-  font-size: var(--sl-font-size-xl);
+  border-radius: var(--sl-radius-pill);
+  font-size: var(--sl-primitive-font-size-xl);
   color: hsl(var(--sl-color-text-secondary));
   cursor: pointer;
   transition:
@@ -119,7 +125,7 @@
   }
 
   .title {
-    font-size: var(--sl-font-size-xl);
+    font-size: var(--sl-primitive-font-size-xl);
   }
 }
 

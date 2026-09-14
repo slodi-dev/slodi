@@ -22,6 +22,7 @@ _NOW = dt(2025, 6, 1, 10, 0, tzinfo=timezone.utc)
 def _make_program(workspace_id, name="Test Program"):
     author_id = uuid4()
     return ProgramOut(
+        content_type="program",
         id=uuid4(),
         workspace_id=workspace_id,
         name=name,
@@ -154,6 +155,7 @@ def test_update_comment_admin(client):
         user_id=uuid4(),
         content_id=uuid4(),
         created_at=_NOW,
+        author_name="Test User",
     )
     updated = comment.model_copy(update={"body": "Updated body"})
 

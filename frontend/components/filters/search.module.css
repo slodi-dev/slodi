@@ -39,7 +39,7 @@
 .searchInput {
   width: 100%;
   padding: 10px 40px 10px 44px;
-  font-size: var(--sl-font-size-base, 1rem);
+  font-size: var(--sl-primitive-font-size-base, 1rem);
   font-family: inherit;
   line-height: var(--sl-line-height-normal, 1.5);
   color: hsl(var(--sl-color-text-primary, 0 0% 10%));
@@ -54,7 +54,7 @@
 }
 
 .searchInput::placeholder {
-  color: hsl(var(--sl-color-text-placeholder, 0 0% 60%));
+  color: hsl(var(--sl-color-text-tertiary, 0 0% 60%));
   opacity: 1;
 }
 
@@ -93,7 +93,7 @@
   color: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
   background: transparent;
   border: none;
-  border-radius: var(--sl-radius-base, 6px);
+  border-radius: var(--sl-radius-md, 6px);
   cursor: pointer;
   transition:
     color var(--sl-transition-base, 150ms ease),
@@ -126,7 +126,7 @@
 
 @media (max-width: 640px) {
   .searchInput {
-    font-size: var(--sl-font-size-sm, 0.875rem);
+    font-size: var(--sl-primitive-font-size-sm, 0.875rem);
     padding: 10px 36px 10px 40px;
   }
 

@@ -1,0 +1,74 @@
+<!-- @dsCard group="Dagskrárbankinn" title="ContentTypeChooser" -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ContentTypeChooser — Dagskrárbankinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="dagskrarbankinn.css">
+<style>
+  /* NEW — not yet in dagskrarbankinn.css. Three of the four kinds cannot be
+     created in September, and they are shown disabled rather than hidden. */
+  .db-opt[aria-disabled="true"] { cursor: not-allowed; }
+  .db-opt[aria-disabled="true"] .db-opt__name,
+  .db-opt[aria-disabled="true"] .db-opt__hint { color: hsl(var(--sl-color-text-tertiary)); }
+  .db-opt[aria-disabled="true"] .db-opt__icon { background: hsl(var(--sl-color-background-tertiary)); color: hsl(var(--sl-color-text-tertiary)); }
+  .db-opt[aria-disabled="true"]:hover { background: none; }
+  .db-opt[aria-disabled="true"]:hover::before, .db-opt[aria-disabled="true"]::before { transform: scaleY(0); }
+  .db-soon { flex-shrink: 0; align-self: center; margin-left: auto; padding: 2px 8px; border-radius: var(--sl-radius-chip); background: hsl(var(--sl-color-background-tertiary)); color: hsl(var(--sl-color-text-secondary)); border: 1px solid hsl(var(--sl-color-border)); font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-semibold); letter-spacing: var(--sl-primitive-letter-spacing-wide); white-space: nowrap; }
+  .db-t-fundur { --db-accent: var(--sl-color-secondary, var(--sl-color-border-strong)); --db-accent-bg: var(--sl-color-background-tertiary); --db-accent-text: var(--sl-color-text-secondary); }
+  .db-t-hringur { --db-accent: var(--sl-color-primary); --db-accent-bg: var(--sl-color-primary-subtle); --db-accent-text: var(--sl-color-primary-text); }
+  .db-four { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">ContentTypeChooser</h1>
+  <p class="ds-sub">The bank's create launcher. Four kinds of thing now, not three — and for the September release only <strong>Verkefni</strong> can be created. Source: <code>docs/content-model.md</code>.</p>
+</header>
+
+<p class="db-note"><strong>The model changed, so the menu has to.</strong> The bank holds four kinds of thing, and the difference between them is what they <em>contain</em>: a <strong>Verkefni</strong> is one dagskrárliður and contains nothing; a <strong>Fundur</strong> is a collection of verkefni; a <strong>Dagskrárhringur</strong> is a selection of fundir; a <strong>Viðburður</strong> is also a collection of verkefni, but spread over several days rather than one evening. Two of them are collections of the same thing and only time separates them, which is precisely why the hint lines cannot be dropped.</p>
+
+<p class="db-note"><strong>Three are shown and disabled, not hidden.</strong> <span class="db-fix">A chooser with one option says the bank only ever does one thing.</span> A leader needs to see that it will hold their fundur eventually. The reason all three are off is the same: they are collections, and nothing can be put into a collection yet — no screen fills one — so creating one today makes an empty container its author cannot fill and a reviewer cannot judge.</p>
+
+<div class="ds-group">
+  <p class="ds-section">1 · Open — September 2026</p>
+  <div class="db-themes">
+    <div class="db-pane"><span class="db-pane__label">Light</span>
+      <div class="db-launcher is-open" style="width:308px">
+        <div class="db-sheetwrap">
+          <div class="db-sheet" role="menu" aria-label="Hvað viltu búa til?">
+            <p class="db-sheet__title" aria-hidden="true">Hvað viltu búa til?</p>
+            <button class="db-opt db-t-task db-opt--focus" type="button" role="menuitem"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="18" height="6" rx="2"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Verkefni</span><span class="db-opt__hint">Einn dagskrárliður — leikur, setning, eitt verkefni</span></span></button>
+            <button class="db-opt db-t-fundur" type="button" role="menuitem" aria-disabled="true"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="4" rx="1"/><rect x="3" y="11" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="3" rx="1"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Fundur</span><span class="db-opt__hint">Safn af verkefnum — einn skátafundur</span></span><span class="db-soon">Kemur síðar</span></button>
+            <button class="db-opt db-t-hringur" type="button" role="menuitem" aria-disabled="true"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7v6H4z"/><path d="M13 13h7v6h-7z"/><path d="M11 8h4a2 2 0 0 1 2 2v3"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Dagskrárhringur</span><span class="db-opt__hint">Röð af fundum — dagskrá yfir heilt tímabil</span></span><span class="db-soon">Kemur síðar</span></button>
+            <button class="db-opt db-t-event" type="button" role="menuitem" aria-disabled="true"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><path d="M7 4.5h10l-2.6 4 2.6 4H7z"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Viðburður</span><span class="db-opt__hint">Safn af verkefnum yfir nokkra daga — útilega, mót, dagsferð</span></span><span class="db-soon">Kemur síðar</span></button>
+          </div>
+        </div>
+        <div class="db-sheet__seam" aria-hidden="true"></div>
+        <button class="db-btn db-btn--primary db-fab" type="button" aria-haspopup="menu" aria-expanded="true" tabindex="-1"><svg class="db-fab__plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="db-fab__label">Bæta við í bankann</span></button>
+      </div>
+    </div>
+    <div class="db-pane" data-theme="dark"><span class="db-pane__label">Dark</span>
+      <div class="db-launcher is-open" style="width:308px">
+        <div class="db-sheetwrap">
+          <div class="db-sheet" role="menu" aria-label="Hvað viltu búa til?">
+            <p class="db-sheet__title" aria-hidden="true">Hvað viltu búa til?</p>
+            <button class="db-opt db-t-task db-opt--focus" type="button" role="menuitem"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="18" height="6" rx="2"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Verkefni</span><span class="db-opt__hint">Einn dagskrárliður — leikur, setning, eitt verkefni</span></span></button>
+            <button class="db-opt db-t-fundur" type="button" role="menuitem" aria-disabled="true"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="4" rx="1"/><rect x="3" y="11" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="3" rx="1"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Fundur</span><span class="db-opt__hint">Safn af verkefnum — einn skátafundur</span></span><span class="db-soon">Kemur síðar</span></button>
+            <button class="db-opt db-t-hringur" type="button" role="menuitem" aria-disabled="true"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7v6H4z"/><path d="M13 13h7v6h-7z"/><path d="M11 8h4a2 2 0 0 1 2 2v3"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Dagskrárhringur</span><span class="db-opt__hint">Röð af fundum — dagskrá yfir heilt tímabil</span></span><span class="db-soon">Kemur síðar</span></button>
+            <button class="db-opt db-t-event" type="button" role="menuitem" aria-disabled="true"><span class="db-opt__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><path d="M7 4.5h10l-2.6 4 2.6 4H7z"/></svg></span><span class="db-opt__body"><span class="db-opt__name">Viðburður</span><span class="db-opt__hint">Safn af verkefnum yfir nokkra daga — útilega, mót, dagsferð</span></span><span class="db-soon">Kemur síðar</span></button>
+          </div>
+        </div>
+        <div class="db-sheet__seam" aria-hidden="true"></div>
+        <button class="db-btn db-btn--primary db-fab" type="button" aria-haspopup="menu" aria-expanded="true" tabindex="-1"><svg class="db-fab__plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="db-fab__label">Bæta við í bankann</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group"><p class="ds-section">Three decisions to sanity-check</p>
+<div class="db-ba">
+  <div class="db-bacol"><span class="db-bacol__h">The seam reads as a stray line</span><p>The hairline between sheet and button is <code>--sl-color-primary-text</code>, matching the button. In dark mode that token is pale green, so on a dark card it shows as a near-white rule across the component. Either drop it in dark or take it from <code>--sl-color-border</code>.</p></div>
+  <div class="db-bacol"><span class="db-bacol__h">Disabled items stay focusable</span><p><code>aria-disabled</code> rather than <code>disabled</code>, so a screen-reader user still meets all four and learns the bank will hold them. A removed option teaches nothing; a skipped one teaches nothing either.</p></div>
+  <div class="db-bacol"><span class="db-bacol__h">Four options is a taller sheet</span><p>At 4 × ~84px plus the title the sheet is ~370px. On a short phone in landscape that plus the 56px button is most of the viewport — it may need to cap its height and scroll, or drop to a full-height sheet on mobile.</p></div>
+</div></div>
+
+<div class="ds-group"><p class="ds-section">Order</p>
+<p class="db-note">Fixed, and it is the model read out loud: <strong>Verkefni</strong> (one thing) → <strong>Fundur</strong> (a collection of them) → <strong>Dagskrárhringur</strong> (a collection of those) → <strong>Viðburður</strong> (a collection of verkefni again, but across days). The one thing that can be created sits first, where the focus lands. Viðburður last because it breaks the widening sequence — it belongs beside Fundur logically, but putting it there would push the two disabled collection kinds apart and make the list look arbitrary.</p></div>
+</body></html>

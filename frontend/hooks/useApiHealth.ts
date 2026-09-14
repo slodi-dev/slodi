@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://backend:8000";
+import { API_BASE_URL } from "@/constants/config";
+
+// The base has to be the same one every other client call uses. This hook read
+// `process.env.API_BASE_URL` — no `NEXT_PUBLIC_` prefix, so it is stripped from
+// the browser bundle — and fell back to `http://backend:8000`, the hostname of
+// the Docker service. A browser can never resolve that, so the indicator read
+// "API Disconnected" in every dev session no matter how healthy the API was.
 
 interface ApiHealthStatus {
   isHealthy: boolean | null;

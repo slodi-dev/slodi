@@ -1,0 +1,127 @@
+/* Colour tokens hold bare HSL components — every consumer wraps them in hsl().
+   `var(--sl-color-primary)` on its own is an invalid value, which renders as
+   transparent rather than failing loudly. See DESIGN-TOKEN-STANDARDS.md. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-md);
+}
+
+.fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: var(--sl-spacing-sm);
+  font-weight: 600;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  /* 48px targets: this is reached on a phone, one-handed, in a hall. */
+  min-height: 48px;
+  padding: 0 var(--sl-spacing-sm);
+  border-radius: var(--sl-radius-input);
+  cursor: pointer;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.option:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.option input {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  accent-color: hsl(var(--sl-color-primary));
+}
+
+.noteLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.note {
+  width: 100%;
+  padding: var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-background));
+  color: hsl(var(--sl-color-text-primary));
+  /* 16px or iOS Safari zooms the whole page on focus. */
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.note:focus-visible,
+.option input:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
+}
+
+.status {
+  margin: 0;
+  min-height: 1.25rem;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sl-spacing-sm);
+}
+
+.primary,
+.secondary {
+  min-height: 48px;
+  padding: 0 var(--sl-spacing-lg);
+  border-radius: var(--sl-radius-button);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  border: none;
+}
+
+.primary:hover:not(:disabled) {
+  background: hsl(var(--sl-color-primary-hover));
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.secondary {
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  border: 1px solid hsl(var(--sl-color-border));
+}
+
+.secondary:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 2px;
+}

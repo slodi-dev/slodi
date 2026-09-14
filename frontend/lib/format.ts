@@ -31,6 +31,15 @@ const AGE_GROUP_PATROL: Record<string, string> = {
   Vættaskátar: "adrir",
 };
 
+/**
+ * The age bands, youngest first — the order BÍS lists them in.
+ *
+ * Exported so that a form, a filter and a card cannot disagree about how many
+ * there are. They already had: the create form was offering five of the seven,
+ * quietly making Hrefnuskátar and Vættaskátar unselectable for submitters.
+ */
+export const AGE_GROUPS = Object.keys(AGE_GROUP_DISPLAY);
+
 export function getAgeGroupPatrol(age: string): string | undefined {
   return AGE_GROUP_PATROL[age];
 }
@@ -185,7 +194,7 @@ export function formatParticipantsLabel(min: number | undefined, max: number | u
  */
 export function formatPrice(price: number): string {
   if (price === 0) return "Kostnaðarlaust";
-  return `${price.toLocaleString("is-IS")} kr.`;
+  return `${formatIcelandicNumber(price)} kr.`;
 }
 
 /**
@@ -211,4 +220,85 @@ export function formatAgeGroup(age: string): string {
 export function formatAgeGroups(ages: string[]): string {
   if (ages.length === 0) return "";
   return ages.map(formatAgeGroup).join(", ");
+}
+
+/**
+ * Icelandic month names, **lowercase**.
+ *
+ * Icelandic does not capitalise month names, and a date written "14. September
+ * 2026" reads as an English sentence in Icelandic clothes. Spelled out here
+ * rather than left to `Intl`: the casing is a rule about the language, not a
+ * formatting preference, and it should not change because a runtime shipped
+ * different CLDR data.
+ */
+const MONTHS_IS = [
+  "janúar",
+  "febrúar",
+  "mars",
+  "apríl",
+  "maí",
+  "júní",
+  "júlí",
+  "ágúst",
+  "september",
+  "október",
+  "nóvember",
+  "desember",
+];
+
+const MONTHS_IS_SHORT = [
+  "jan.",
+  "feb.",
+  "mars",
+  "apríl",
+  "maí",
+  "júní",
+  "júlí",
+  "ág.",
+  "sept.",
+  "okt.",
+  "nóv.",
+  "des.",
+];
+
+function toDate(value: string | Date): Date | null {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * A date as Icelandic writes it: `14. september 2026`.
+ *
+ * Returns an empty string for anything unparseable rather than "Invalid Date",
+ * which is not a thing to show a leader.
+ */
+export function formatIcelandicDate(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = toDate(value);
+  if (!date) return "";
+  return `${date.getDate()}. ${MONTHS_IS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** `14. sept.` — for a list rail, where the year is noise and width is scarce. */
+export function formatIcelandicDateShort(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = toDate(value);
+  if (!date) return "";
+  return `${date.getDate()}. ${MONTHS_IS_SHORT[date.getMonth()]}`;
+}
+
+/**
+ * A number as Icelandic writes it: `5.003`, grouped with full stops.
+ *
+ * Spelled out rather than left to `toLocaleString("is-IS")` for the same
+ * reason the month names are: the runtime cannot be relied on to have the
+ * locale data. Chrome in this project resolves `is-IS` to nothing
+ * (`Intl.NumberFormat.supportedLocalesOf(["is-IS"])` is empty) and silently
+ * falls back to the English `5,003` — a separator that means a decimal point
+ * in Icelandic, on a screen whose whole job is counting.
+ */
+export function formatIcelandicNumber(value: number): string {
+  const sign = value < 0 ? "-" : "";
+  const digits = Math.abs(Math.trunc(value)).toString();
+  return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }

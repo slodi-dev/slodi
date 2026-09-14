@@ -13,7 +13,7 @@
 
 .title {
   font-size: var(--sl-text-heading-1);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   color: hsl(var(--sl-color-text-primary));
   margin: 0 0 var(--sl-spacing-element) 0;
 }
@@ -46,7 +46,7 @@
   align-items: center;
   gap: var(--sl-spacing-gap-lg);
   padding: var(--sl-spacing-inset-md);
-  background: hsl(var(--sl-color-surface-subtle));
+  background: hsl(var(--sl-color-surface-sunken));
   border-radius: var(--sl-radius-button);
   margin-bottom: var(--sl-spacing-component);
 }
@@ -111,7 +111,7 @@
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-primary));
   margin: 0;
-  font-family: var(--sl-font-mono, monospace);
+  font-family: var(--sl-primitive-font-family-mono, monospace);
 }
 
 /* Auth0 managed indicator */
@@ -123,7 +123,7 @@
   background: hsl(var(--sl-color-info) / 0.1);
   border: 1px solid hsl(var(--sl-color-info) / 0.3);
   border-radius: var(--sl-radius-badge);
-  font-size: var(--sl-text-body-xs);
+  font-size: var(--sl-text-xs);
   font-weight: var(--sl-font-weight-medium);
   color: hsl(var(--sl-color-info));
 }
@@ -153,7 +153,7 @@
   align-items: center;
   gap: var(--sl-spacing-gap-sm);
   padding: var(--sl-spacing-inset-md);
-  background: hsl(var(--sl-color-surface-subtle));
+  background: hsl(var(--sl-color-surface-sunken));
   border: 2px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-card);
   cursor: pointer;
@@ -204,7 +204,7 @@
 }
 
 .themeOptionDescription {
-  font-size: var(--sl-text-body-xs);
+  font-size: var(--sl-text-xs);
   color: hsl(var(--sl-color-text-secondary));
   line-height: var(--sl-line-height-tight);
 }

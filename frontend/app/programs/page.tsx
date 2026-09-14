@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useRef, Suspense } from "react";
-import Modal from "@/components/Modal/Modal";
-import NewProgramForm from "@/app/programs/components/NewProgramForm";
+import React, { useState, useRef, useEffect, useMemo, Suspense } from "react";
 import ProgramGrid from "./components/ProgramGrid";
 import ProgramSort from "./components/ProgramSort";
 import type { SortOption } from "./components/ProgramSort";
 import Pagination from "./components/Pagination";
 import { ProgramsHeader } from "./components/ProgramsHeader";
+import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
+import ContentCreateModal from "@/components/ContentCreateModal/ContentCreateModal";
 import SearchInput from "@/components/filters/SearchInput";
 import FilterSidebar, { FilterDrawer } from "@/components/filters/FilterSidebar";
 import ActiveFilterBar from "@/components/filters/ActiveFilterBar";
@@ -16,19 +16,14 @@ import usePrograms from "@/hooks/usePrograms";
 import { useUserWorkspace } from "@/hooks/useUserWorkspace";
 import { useProgramFilters } from "@/hooks/useProgramFilters";
 import type { FilterState } from "@/hooks/useProgramFilters";
-import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchMySuspension } from "@/services/suspensions.service";
+import { formatIcelandicDate, formatIcelandicNumber } from "@/lib/format";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
-import { canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import {
-  updateProgram,
-  deleteProgram,
-  type Program,
-  type ProgramUpdateInput,
-} from "@/services/programs.service";
-import ProgramDetailEdit from "@/app/programs/[id]/components/ProgramDetailEdit";
+import { canCreateProgram, canEditProgram, canDeleteProgram } from "@/lib/permissions";
+import { deleteProgram, type ContentQuery, type Program } from "@/services/programs.service";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
 /**
@@ -54,25 +49,83 @@ const LEGACY_TO_SORT: Record<SortOption, FilterState["sortBy"]> = {
  */
 function ProgramsPageInner() {
   const [showNewProgram, setShowNewProgram] = useState(false);
+  const [newType, setNewType] = useState<BankContentType>("task");
+  // Read on arrival: a leader should learn they cannot submit before writing
+  // something, not after the API refuses it.
+  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const filterToggleRef = useRef<HTMLButtonElement>(null);
 
   // Resolve the shared workspace ID
   const defaultWorkspaceId = useDefaultWorkspaceId();
 
-  // Fetch data
+  // ── Filters ────────────────────────────────────────────────────────────
+  // The array argument is now only there for the hook's own unique-value
+  // helpers, which this page no longer uses: the option lists come from the
+  // server's facets, and filtering happens there too.
+  const { filters, setFilters, activeChips, clearAll } = useProgramFilters([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const query: ContentQuery = useMemo(
+    () => ({
+      search: filters.search,
+      ages: filters.ages,
+      tags: filters.tags,
+      equipment: filters.equipment,
+      author: filters.author,
+      location: filters.location,
+      durationMin: filters.durationMin,
+      durationMax: filters.durationMax,
+      prepMin: filters.prepMin,
+      prepMax: filters.prepMax,
+      countMin: filters.countMin,
+      countMax: filters.countMax,
+      freeOnly: filters.freeOnly,
+      priceMax: filters.priceMax,
+      sortBy: filters.sortBy,
+    }),
+    [filters]
+  );
+
+  // Narrowing the bank has to send you back to the front of it. Staying on
+  // page seven of a result set that now holds four items shows an empty grid
+  // and reads as "nothing matched".
+  const queryKey = JSON.stringify(query);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [queryKey]);
+
+  // Fetch one page, filtered and sorted by the server.
   const {
     programs,
+    total,
+    facets,
     loading: programsLoading,
     error: programsError,
     refetch,
-  } = usePrograms(defaultWorkspaceId);
+  } = usePrograms(defaultWorkspaceId, {
+    query,
+    page: currentPage,
+    pageSize: PROGRAMS_PER_PAGE,
+  });
 
   // User's private workspace (retained for future toggle)
   const { workspaceId: userWorkspaceId } = useUserWorkspace();
 
   // ── Auth & workspace role ──────────────────────────────────────────────
   const { user, getToken } = useAuth();
+
+  useEffect(() => {
+    // Best effort: if this fails the button stays enabled and the API refuses
+    // the write instead. A banner is a courtesy, not the enforcement.
+    fetchMySuspension(getToken)
+      .then((active) =>
+        // Open-ended has no date to show; the banner says so in words instead.
+        setSuspendedUntil(active ? (active.expires_at?.slice(0, 10) ?? "open-ended") : null)
+      )
+      .catch(() => setSuspendedUntil(null));
+  }, [getToken]);
   const { role } = useWorkspaceRole(defaultWorkspaceId);
 
   // ── Edit / delete modal state ──────────────────────────────────────────
@@ -85,12 +138,6 @@ function ProgramsPageInner() {
   void userWorkspaceId; // retained for future toggle
 
   // ── Edit / delete handlers ─────────────────────────────────────────────
-  const handleEditSave = async (data: ProgramUpdateInput) => {
-    if (!editingProgram) return;
-    await updateProgram(editingProgram.id, data, getToken);
-    setEditingProgram(null);
-    await refetch();
-  };
 
   const handleDeleteConfirm = async () => {
     if (!pendingDeleteProgram) return;
@@ -106,22 +153,11 @@ function ProgramsPageInner() {
     }
   };
 
-  // ── Filters (new comprehensive hook from 4A) ──────────────────────────
-  const {
-    filters,
-    setFilters,
-    filtered,
-    activeChips,
-    clearAll,
-    uniqueLocations,
-    uniqueAuthors,
-    uniqueTags,
-    uniqueEquipment,
-  } = useProgramFilters(programs || []);
-
   // ── Pagination ─────────────────────────────────────────────────────────
-  const { currentPage, totalPages, paginatedItems, setCurrentPage, totalItems, itemsPerPage } =
-    usePagination(filtered, PROGRAMS_PER_PAGE);
+  // Driven by the server's count, not by the length of what was fetched.
+  const totalItems = total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PROGRAMS_PER_PAGE));
+  const itemsPerPage = PROGRAMS_PER_PAGE;
 
   const handleProgramCreated = async () => {
     setShowNewProgram(false);
@@ -133,17 +169,17 @@ function ProgramsPageInner() {
     selectedAges: filters.ages,
     onAgesChange: (ages: string[]) => setFilters({ ages }),
 
-    availableTags: uniqueTags,
+    availableTags: facets.tags,
     selectedTags: filters.tags,
     onTagsChange: (tags: string[]) => setFilters({ tags }),
 
-    uniqueEquipment,
+    uniqueEquipment: facets.equipment,
     selectedEquipment: filters.equipment,
     onEquipmentChange: (equipment: string[]) => setFilters({ equipment }),
 
     authorValue: filters.author,
     onAuthorChange: (author: string) => setFilters({ author }),
-    uniqueAuthors,
+    uniqueAuthors: facets.authors,
 
     durationMin: filters.durationMin,
     durationMax: filters.durationMax,
@@ -167,22 +203,44 @@ function ProgramsPageInner() {
 
     locationValue: filters.location,
     onLocationChange: (location: string) => setFilters({ location }),
-    uniqueLocations,
+    uniqueLocations: facets.locations,
   };
+
+  // The server counts with the filters applied, so this is the honest total
+  // whether or not anything is narrowed — no more "200 of 10.004" hedging.
+  const countLabel =
+    totalItems === 1 ? "1 eining" : `${formatIcelandicNumber(totalItems)} einingar`;
 
   return (
     <div className={styles.page}>
       {/* Header with FAB button */}
-      <ProgramsHeader onNewProgram={() => setShowNewProgram(true)} />
+      {suspendedUntil && (
+        <p className={styles.suspendedBanner} role="status">
+          {suspendedUntil === "open-ended"
+            ? "Þú getur ekki sent inn efni í bankann. Hafðu samband við Dagskrárstjórnarteymið."
+            : `Þú getur ekki sent inn efni í bankann fram til ${formatIcelandicDate(suspendedUntil)}.`}{" "}
+          Þú getur áfram lesið bankann og notað dagskrár.
+        </p>
+      )}
+      <ProgramsHeader
+        onNewContent={(type) => {
+          setNewType(type);
+          setShowNewProgram(true);
+        }}
+        suspendedUntil={suspendedUntil}
+        canCreate={canCreateProgram(role, postWorkspaceId, defaultWorkspaceId)}
+      />
 
-      {/* New Program Modal */}
-      <Modal
-        open={showNewProgram}
-        onClose={() => setShowNewProgram(false)}
-        title="Bæta hugmynd í bankann"
-      >
-        <NewProgramForm workspaceId={postWorkspaceId} onCreated={handleProgramCreated} />
-      </Modal>
+      {/* The create form owns its whole dialog — fixed header, scrolling body
+          and a pinned footer — so it is not wrapped in `components/Modal`. */}
+      {showNewProgram && (
+        <ContentCreateModal
+          contentType={newType}
+          workspaceId={postWorkspaceId}
+          onCreated={() => void handleProgramCreated()}
+          onClose={() => setShowNewProgram(false)}
+        />
+      )}
 
       {/* Top bar: Search + mobile filter toggle + Sort */}
       <div className={styles.topBar}>
@@ -241,12 +299,17 @@ function ProgramsPageInner() {
 
           {/* Result count */}
           <p className={styles.resultCount} aria-live="polite">
-            {filtered.length === 1 ? "1 dagskrá" : `${filtered.length} dagskrár`}
+            {/* „einingar", not „dagskrár": the bank holds verkefni, viðburðir
+                and dagskrár, and naming it after one of the three was only
+                accurate while everything was filed as that one. And the count
+                has to be the bank's, not the page's — fetching 200 of 10.004
+                and calling it "200" is a plain untruth on the reader's screen. */}
+            {countLabel}
           </p>
 
           {/* Program Grid */}
           <ProgramGrid
-            programs={paginatedItems}
+            programs={programs ?? []}
             isLoading={programsLoading}
             error={programsError ? "Villa kom upp við að sækja dagskrár" : undefined}
             onRetry={refetch}
@@ -257,7 +320,7 @@ function ProgramsPageInner() {
           />
 
           {/* Pagination */}
-          {filtered.length > 0 && (
+          {totalItems > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -278,21 +341,21 @@ function ProgramsPageInner() {
         {...filterSidebarProps}
       />
 
-      {/* Edit modal */}
-      <Modal open={!!editingProgram} onClose={() => setEditingProgram(null)} title="Breyta dagskrá">
-        {editingProgram && (
-          <ProgramDetailEdit
-            program={editingProgram}
-            onSave={handleEditSave}
-            onCancel={() => setEditingProgram(null)}
-            onDeleteRequest={() => {
-              setPendingDeleteProgram(editingProgram);
-              setEditingProgram(null);
-            }}
-            isDeleting={false}
-          />
-        )}
-      </Modal>
+      {/* Editing uses the same form as creating — and the same one the detail
+          page shows inline. The title came from a second, hand-maintained form
+          and always said „dagskrá", whatever kind the item actually was. */}
+      {editingProgram && (
+        <ContentCreateModal
+          contentType={(editingProgram.content_type ?? "task") as BankContentType}
+          workspaceId={editingProgram.workspace_id}
+          initial={editingProgram}
+          onCreated={() => {
+            setEditingProgram(null);
+            void refetch();
+          }}
+          onClose={() => setEditingProgram(null)}
+        />
+      )}
 
       {/* Delete confirmation modal */}
       <DeleteConfirmModal

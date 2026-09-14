@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.program import Program
 from app.repositories.programs import ProgramRepository
 from app.repositories.tags import TagRepository
+from app.schemas.content import ContentListOut
 from app.schemas.program import (
     ProgramCreate,
     ProgramFilters,
@@ -17,6 +18,7 @@ from app.schemas.program import (
     ProgramOut,
     ProgramUpdate,
 )
+from app.services.uploads import AttachmentVerifier
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,29 @@ class ProgramService:
         )
         return [ProgramListOut.from_row(prog, stats) for prog, stats in rows]
 
+    async def facets_for_workspace(self, workspace_id: UUID) -> dict[str, list[str]]:
+        return await self.repo.facets_for_workspace(workspace_id)
+
+    async def count_content_for_workspace(
+        self, workspace_id: UUID, filters: ProgramFilters | None = None
+    ) -> int:
+        return await self.repo.count_content_for_workspace(workspace_id, filters=filters)
+
+    async def list_content_for_workspace(
+        self,
+        workspace_id: UUID,
+        current_user_id: UUID,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        filters: ProgramFilters | None = None,
+    ) -> list[ContentListOut]:
+        """Everything in the bank, whatever kind it is — see the repository."""
+        rows = await self.repo.list_content_by_workspace(
+            workspace_id, current_user_id, limit=limit, offset=offset, filters=filters
+        )
+        return [ContentListOut.from_row(item, stats) for item, stats in rows]
+
     async def get_in_workspace(
         self, program_id: UUID, workspace_id: UUID, current_user_id: UUID | None = None
     ) -> ProgramOut:
@@ -56,6 +81,11 @@ class ProgramService:
         return ProgramOut.from_row(prog, stats)
 
     async def create_under_workspace(self, workspace_id: UUID, data: ProgramCreate) -> ProgramOut:
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
         try:
             tag_names = data.tag_names or []
             program = Program(workspace_id=workspace_id, **data.model_dump(exclude={"tag_names"}))
@@ -94,8 +124,14 @@ class ProgramService:
                 detail="Failed to create program",
             ) from e
 
-    async def get(self, program_id: UUID, current_user_id: UUID | None = None) -> ProgramOut:
-        row = await self.repo.get(program_id, current_user_id)
+    async def get(
+        self,
+        program_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
+    ) -> ProgramOut:
+        row = await self.repo.get(program_id, current_user_id, include_hidden=include_hidden)
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
@@ -105,7 +141,12 @@ class ProgramService:
     async def update(
         self, program_id: UUID, data: ProgramUpdate, current_user_id: UUID | None = None
     ) -> ProgramOut:
-        row = await self.repo.get(program_id)
+        # A SAS cannot cap an upload, so the ceiling is enforced here, before
+        # the row is allowed to reference the blob. See AttachmentVerifier.
+        AttachmentVerifier().check_content(
+            getattr(data, "image", None), getattr(data, "media", None)
+        )
+        row = await self.repo.get(program_id, include_hidden=True)
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")

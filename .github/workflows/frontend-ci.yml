@@ -35,6 +35,12 @@ jobs:
       - name: Prettier
         run: npm run format:check
 
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
       - name: Next.js build
         run: npm run build
         env:

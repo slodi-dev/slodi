@@ -898,6 +898,25 @@
    ALTERNATIVE THEMES
    ══════════════════════════════════════════════════════════════════════════ */
 
+/*
+ * Pine and moss exist only for Forest Night. They were referenced by that
+ * theme but never declared, and `var()` on an undeclared property invalidates
+ * the whole declaration — so every line of the theme below was inert and the
+ * theme rendered as plain dark. Declared here, next to their only consumer.
+ *
+ * Contrast, on the pairs the theme actually forms:
+ *   moss-50 on pine-900   16.2:1   body text
+ *   moss-50 on pine-800   14.4:1   text on a card
+ *   moss-400 on pine-900   8.5:1   primary on the page
+ */
+:root {
+  --sl-primitive-pine-800: 158 28% 11%;
+  --sl-primitive-pine-900: 158 32% 7%;
+  --sl-primitive-moss-50: 95 22% 94%;
+  --sl-primitive-moss-400: 95 40% 58%;
+  --sl-primitive-moss-700: 95 26% 26%;
+}
+
 /* Forest Night Theme */
 [data-theme="forest-night"] {
   --sl-color-background: var(--sl-primitive-pine-900);
@@ -1034,6 +1053,30 @@
    Only colour tokens are overridden; non-colour tokens are theme-agnostic.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════════════
+   CONTENT TYPE — Viðburður
+   A Viðburður needs an identity that is neither the green of a Dagskrá nor the
+   neutral of a Verkefni, so a leader can tell the three apart at a glance
+   wherever they meet them. Violet, borrowed from the aðrir patrol ramp.
+   Both the Dagskrárbankinn and Yfirferð kits were carrying their own private
+   copy of this; it is one idea, so it lives here.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --sl-color-event: var(--sl-primitive-adrir-600);
+  --sl-color-event-subtle: var(--sl-primitive-adrir-50);
+  --sl-color-event-text: var(--sl-primitive-adrir-800);
+
+  /* Dagskrárhringur — rekkar 177°. Four content kinds need four hues far
+     enough apart to tell at a glance: Verkefni neutral, Fundur green 142°,
+     Dagskrárhringur 177°, Viðburður violet 270°. None of them is a caution
+     hue. 177° sits 13° from info 190°, which is tolerable only because info
+     is a status badge and never occupies a type slot. */
+  --sl-color-cycle: var(--sl-primitive-rekkar-700);
+  --sl-color-cycle-subtle: var(--sl-primitive-rekkar-50);
+  --sl-color-cycle-text: var(--sl-primitive-rekkar-900);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     /* Primary border shifts lighter for visibility on dark backgrounds */
@@ -1044,7 +1087,43 @@
     --sl-color-surface-raised: 0 0% 14%;
     /* Sunken surface on dark is a slightly darker shade */
     --sl-color-surface-sunken: 0 0% 8%;
+    /* Viðburður lightens so it reads on a dark surface */
+    --sl-color-event: var(--sl-primitive-adrir-400);
+    --sl-color-event-subtle: 270 38% 19%;
+    --sl-color-event-text: var(--sl-primitive-adrir-200);
+    --sl-color-cycle: var(--sl-primitive-rekkar-400);
+    --sl-color-cycle-subtle: 177 40% 16%;
+    --sl-color-cycle-text: var(--sl-primitive-rekkar-200);
   }
+}
+
+/* The same tokens, for the in-app theme toggle.
+   Two things make this block necessary rather than redundant.
+
+   The dark block far above cannot carry them: a later `:root` redeclares them,
+   and `:root` and the dark selector have identical specificity, so source
+   order decides and the light values win. Hence repeating them *after* that
+   `:root`.
+
+   And the selector has to be the same pair the rest of the file uses.
+   `ThemeProvider` adds `class="dark"` for plain dark mode and only sets
+   `data-theme` for the *named* themes (forest-night, campfire,
+   northern-lights) — so a block matching `[data-theme="dark"]` alone never
+   fires for the ordinary toggle. That left `--sl-color-primary-text` at
+   green-800 in dark mode, which is what painted a dark-green ring on a dark
+   surface in the create chooser. */
+:root.dark,
+[data-theme="dark"] {
+  --sl-color-primary-border: var(--sl-primitive-green-600);
+  --sl-color-primary-text: var(--sl-primitive-green-200);
+  --sl-color-surface-raised: 0 0% 14%;
+  --sl-color-surface-sunken: 0 0% 8%;
+  --sl-color-event: var(--sl-primitive-adrir-400);
+  --sl-color-event-subtle: 270 38% 19%;
+  --sl-color-event-text: var(--sl-primitive-adrir-200);
+  --sl-color-cycle: var(--sl-primitive-rekkar-400);
+  --sl-color-cycle-subtle: 177 40% 16%;
+  --sl-color-cycle-text: var(--sl-primitive-rekkar-200);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

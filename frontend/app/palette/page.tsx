@@ -173,6 +173,7 @@ export default function PalettePage() {
                 <span className={styles.k}>Þrep 3 · Íhlutir</span>
                 <h3>Components</h3>
                 <p>Íhlutatengd tákn sem vísa í merkingu.</p>
+                {/* token-check-ignore: printed as documentation, not used as a value. */}
                 <code>--sl-button-background-primary: var(--sl-color-primary)</code>
               </div>
             </div>

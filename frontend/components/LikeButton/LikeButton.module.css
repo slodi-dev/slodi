@@ -38,15 +38,20 @@
    LIKED STATE
    ══════════════════════════════════════════════════════════════════════════ */
 
+/*
+ * Fálkaskátar rose, the one pink the system owns — the same colour the item
+ * page's heart uses. The green primary on a heart reads as "approved" rather
+ * than "liked", and an off-palette magenta belonged to neither.
+ */
 .likeButton.liked {
-  color: #ec4899;
-  border-color: #ec4899;
-  background: hsl(330 81% 60% / 0.1);
+  color: hsl(var(--sl-primitive-falkar-700));
+  border-color: hsl(var(--sl-primitive-falkar-500) / 0.55);
+  background: hsl(var(--sl-primitive-falkar-50));
 }
 
 .likeButton.liked:hover {
-  background: hsl(330 81% 60% / 0.15);
-  border-color: #db2777;
+  background: hsl(var(--sl-primitive-falkar-100));
+  border-color: hsl(var(--sl-primitive-falkar-600));
 }
 
 .likeButton.liked .icon {

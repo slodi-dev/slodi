@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@auth0/nextjs-auth0/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "@/components/DashboardSidebar/DashboardSidebar";
 import { MobileMenuButton } from "@/components/MobileMenuButton/MobileMenuButton";
 import { useSidebarState } from "@/hooks/useSidebarState";
@@ -32,6 +33,9 @@ export default function DashboardLayout({
   badgeCount = 0,
 }: DashboardLayoutProps) {
   const { user } = useUser();
+  // The Auth0 profile has no platform permission on it — that lives on our
+  // own user record, and it is what gates the Yfirferð entry.
+  const { user: slodiUser } = useAuth();
   const { sidebarCollapsed, mobileMenuOpen, toggleSidebar, toggleMobileMenu, closeMobileMenu } =
     useSidebarState();
 
@@ -57,6 +61,7 @@ export default function DashboardLayout({
           userName={resolvedUserName}
           userAvatar={resolvedUserAvatar}
           badgeCount={resolvedBadgeCount}
+          userPermissions={slodiUser?.permissions}
           collapsed={sidebarCollapsed}
           onCollapsedChange={toggleSidebar}
           showUserSection={false}

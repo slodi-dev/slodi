@@ -1,0 +1,147 @@
+<!-- @dsCard group="Yfirferð" -->
+<!doctype html>
+<html lang="is">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Note thread — Slóði</title>
+    <style>
+      :root {
+        /* Copied from frontend/app/slodi-tokens.css — HSL triplets, used as hsl(var(--…)). */
+        --sl-color-background: 150 20% 99%;
+        --sl-color-surface: 0 0% 100%;
+        --sl-color-surface-sunken: 150 16% 95%;
+        --sl-color-text-primary: 150 20% 12%;
+        --sl-color-text-secondary: 150 12% 31%;
+        --sl-color-text-tertiary: 150 12% 45%;
+        --sl-color-text-inverse: 0 0% 100%;
+        --sl-color-border: 150 12% 85%;
+        --sl-color-border-subtle: 150 14% 90%;
+        --sl-color-focus-ring: 142 50% 42%;
+        --sl-color-primary: 142 50% 42%;
+        --sl-color-primary-hover: 142 50% 35%;
+        --sl-color-primary-subtle: 142 50% 96%;
+        --sl-color-error: 4 72% 58%;
+        --sl-color-error-subtle: 6 78% 95%;
+        --sl-color-error-text: 4 70% 34%;
+        --sl-color-error-muted: 6 72% 90%;
+        --sl-color-warning: 36 85% 55%;
+        --sl-color-warning-subtle: 40 85% 94%;
+        --sl-color-warning-text: 32 90% 25%;
+        --sl-color-info: 190 72% 45%;
+        --sl-color-info-subtle: 188 55% 94%;
+        --sl-radius-card: 12px;
+        --sl-radius-button: 8px;
+        --sl-radius-chip: 999px;
+        --sl-radius-input: 8px;
+        --sl-radius-sm: 6px;
+        --sl-spacing-xs: 0.25rem;
+        --sl-spacing-sm: 0.5rem;
+        --sl-spacing-md: 1rem;
+        --sl-spacing-lg: 1.5rem;
+      }
+      @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { 
+        --sl-color-background: 150 12% 9%;
+        --sl-color-surface: 150 12% 11%;
+        --sl-color-surface-sunken: 150 10% 16%;
+        --sl-color-text-primary: 150 8% 95%;
+        --sl-color-text-secondary: 150 7% 78%;
+        --sl-color-text-tertiary: 150 6% 65%;
+        --sl-color-border: 150 8% 25%;
+        --sl-color-border-subtle: 150 8% 20%;
+        --sl-color-primary: 142 50% 55%;
+        --sl-color-primary-subtle: 142 40% 16%;
+        --sl-color-error-subtle: 6 50% 16%;
+        --sl-color-error-text: 6 85% 78%;
+        --sl-color-error-muted: 6 40% 24%;
+        --sl-color-warning-subtle: 36 55% 14%;
+        --sl-color-warning-text: 38 90% 70%;
+        --sl-color-info-subtle: 190 45% 15%;
+ } }
+      :root[data-theme="dark"] { 
+        --sl-color-background: 150 12% 9%;
+        --sl-color-surface: 150 12% 11%;
+        --sl-color-surface-sunken: 150 10% 16%;
+        --sl-color-text-primary: 150 8% 95%;
+        --sl-color-text-secondary: 150 7% 78%;
+        --sl-color-text-tertiary: 150 6% 65%;
+        --sl-color-border: 150 8% 25%;
+        --sl-color-border-subtle: 150 8% 20%;
+        --sl-color-primary: 142 50% 55%;
+        --sl-color-primary-subtle: 142 40% 16%;
+        --sl-color-error-subtle: 6 50% 16%;
+        --sl-color-error-text: 6 85% 78%;
+        --sl-color-error-muted: 6 40% 24%;
+        --sl-color-warning-subtle: 36 55% 14%;
+        --sl-color-warning-text: 38 90% 70%;
+        --sl-color-info-subtle: 190 45% 15%;
+ }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: var(--sl-spacing-lg);
+        background: hsl(var(--sl-color-background));
+        color: hsl(var(--sl-color-text-primary));
+        font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 { font-size: 1rem; margin: 0 0 var(--sl-spacing-lg); color: hsl(var(--sl-color-text-secondary)); font-weight: 600; }
+      .caseLabel {
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+        color: hsl(var(--sl-color-text-tertiary)); margin: var(--sl-spacing-lg) 0 var(--sl-spacing-sm);
+        font-weight: 700;
+      }
+      .note { font-size: 0.8rem; color: hsl(var(--sl-color-text-tertiary)); margin: var(--sl-spacing-xs) 0 0; }
+      .chip {
+        display: inline-block; padding: 0.1em 0.55em; border-radius: var(--sl-radius-chip);
+        font-size: 0.75rem; font-weight: 600;
+        background: hsl(var(--sl-color-surface-sunken)); color: hsl(var(--sl-color-text-secondary));
+      }
+      .chip--error { background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); }
+      .chip--warning { background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); }
+      .chip--info { background: hsl(var(--sl-color-info)); color: hsl(var(--sl-color-text-inverse)); }
+      .btn {
+        min-height: 44px; padding: 0 var(--sl-spacing-md); border-radius: var(--sl-radius-button);
+        font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
+        border: 1px solid hsl(var(--sl-color-border)); background: transparent;
+        color: hsl(var(--sl-color-text-primary));
+      }
+      .btn--primary { background: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); border-color: transparent; }
+      .btn--destructive { color: hsl(var(--sl-color-error-text)); border-color: hsl(var(--sl-color-error-muted)); }
+      .btn--send { background: hsl(var(--sl-color-info)); color: hsl(var(--sl-color-text-inverse)); border-color: transparent; }
+      .btn--danger { background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); border-color: hsl(var(--sl-color-error)); }
+      .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+      .btn:focus-visible { outline: 2px solid hsl(var(--sl-color-focus-ring)); outline-offset: 2px; }
+      .row { display: flex; flex-wrap: wrap; gap: var(--sl-spacing-sm); align-items: center; }
+      .thread { max-width: 34rem; display: flex; flex-direction: column; gap: var(--sl-spacing-sm); }
+      .note-item { padding: var(--sl-spacing-sm); border-radius: var(--sl-radius-sm); background: hsl(var(--sl-color-surface-sunken)); border-left: 4px solid hsl(var(--sl-color-border)); }
+      .note-item--sent { background: hsl(var(--sl-color-info-subtle)); border-left-color: hsl(var(--sl-color-info)); }
+      .note-meta { display: flex; gap: var(--sl-spacing-xs); align-items: center; font-size: 0.8rem; color: hsl(var(--sl-color-text-secondary)); margin: 0 0 0.25rem; }
+      .note-body { margin: 0; }
+      .composer { width: 100%; max-width: 34rem; padding: var(--sl-spacing-sm); border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-color-background)); color: hsl(var(--sl-color-text-primary)); font: inherit; font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>Note thread</h1>
+    <p class="caseLabel">Thread — the badge answers "did the author see this?"</p>
+    <div class="thread">
+      <div class="note-item">
+        <p class="note-meta"><span class="chip">Innanhúss</span><span>Halldór Valberg</span><span>7. september 2026</span></p>
+        <p class="note-body">Sami höfundur og sá sem við földum í síðustu viku. Vert að fylgjast með.</p>
+      </div>
+      <div class="note-item note-item--sent">
+        <p class="note-meta"><span class="chip chip--info">Sent höfundi</span><span>Signý Kristín</span><span>7. september 2026</span></p>
+        <p class="note-body">Væri gott að taka fram hvað marga þarf að lágmarki.</p>
+      </div>
+    </div>
+
+    <p class="caseLabel">Composer — the audience is the thing you click, not a setting on it</p>
+    <textarea class="composer" rows="2" placeholder="Athugasemd eða ábending…"></textarea>
+    <div class="row" style="margin-top:0.5rem">
+      <button class="btn">Vista innanhúss</button>
+      <button class="btn btn--send">Senda höfundi</button>
+    </div>
+    <p class="note">Two buttons rather than a dropdown and one. Whether a note reaches the author is the decision, so it is the action — and there is no default, because a default eventually sends an internal aside to the person it was about. Sent is <em>info</em>, never the green accent: sending a suggestion is not an approval.</p>
+
+  </body>
+</html>

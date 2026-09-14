@@ -1,11 +1,14 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from "vitest";
 import { submitGuess } from "../heidursordla.service";
 
 const FAKE_TOKEN = "fake-token";
 const PUZZLE_ID = "11111111-2222-3333-4444-555555555555";
 
 describe("heidursordla service — submitGuess", () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  // Typed against fetch itself. The bare `ReturnType<typeof vi.spyOn>` resolves
+  // to a generic MockInstance that fetch's overloaded signature is not
+  // assignable to, which fails `npm run typecheck`.
+  let fetchSpy: MockInstance<typeof fetch>;
   const getToken = async () => FAKE_TOKEN;
 
   beforeEach(() => {

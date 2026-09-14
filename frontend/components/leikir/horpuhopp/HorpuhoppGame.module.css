@@ -25,3 +25,8 @@
     box-shadow: none;
   }
 }
+
+.canvas:focus-visible {
+  outline: 3px solid hsl(var(--sl-color-primary));
+  outline-offset: 3px;
+}

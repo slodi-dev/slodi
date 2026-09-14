@@ -14,7 +14,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./DashboardSidebar.module.css";
@@ -32,10 +32,14 @@ import {
   User, // Prófíll (Profile)
   Settings, // Stillingar (Settings)
   Award, // Merkin mín (Badges)
+  ShieldCheck, // Yfirferð (review board)
   PanelLeftClose, // Collapse sidebar icon
   PanelLeftOpen, // Expand sidebar icon
 } from "lucide-react";
-import Image from "next/image";
+import {
+  type UserPermissions,
+  hasPermission as hasPlatformPermission,
+} from "@/services/users.service";
 
 /**
  * Navigation item configuration
@@ -45,7 +49,13 @@ interface NavItem {
   path: string; // Route path
   icon: React.ComponentType<{ className?: string }>; // Lucide icon component
   badge?: number; // Optional notification count
-  roleRequired?: "admin" | "editor"; // Minimum role required (omit for all users)
+  roleRequired?: "admin" | "editor"; // Minimum workspace role (omit for all users)
+  /**
+   * Minimum *platform* permission. Distinct from roleRequired, which is a
+   * workspace role — Yfirferð is open to Dagskrárstjórnarteymið regardless of
+   * which workspaces they happen to belong to.
+   */
+  permissionRequired?: UserPermissions;
   group?: "home" | "dashboard" | "primary" | "secondary" | "personal"; // Navigation section
   disabled?: boolean; // Whether item is disabled (not yet implemented)
 }
@@ -58,6 +68,7 @@ interface DashboardSidebarProps {
   userName?: string; // Display name for user section
   userAvatar?: string; // Avatar URL for user section
   badgeCount?: number; // Unread badge count
+  userPermissions?: UserPermissions; // Platform permission, for moderator-only items
   collapsed?: boolean; // Initial collapsed state
   onCollapsedChange?: (collapsed: boolean) => void; // Callback for state changes
   showUserSection?: boolean; // Whether to display user avatar section
@@ -125,19 +136,38 @@ const NAV_ITEMS: NavItem[] = [
     disabled: true, // Not yet implemented
   },
   {
-    label: "Flokkar",
+    // Merkimiðar, not "Flokkar" — the page manages tags, and "flokkar" is
+    // already the word for the patrol filter in the bank sidebar.
+    label: "Merkimiðar",
     path: "/tags",
     icon: Tags,
     group: "secondary",
-    roleRequired: "editor",
+    // Platform permission, not workspace role: the tag vocabulary is shared by
+    // the whole bank, so it belongs to Dagskrárstjórnarteymið rather than to
+    // whoever happens to be an editor of one workspace. Must stay in step with
+    // the guard inside TagManagement.
+    permissionRequired: "moderator",
+  },
+  {
+    label: "Yfirferð",
+    path: "/yfirferd",
+    icon: ShieldCheck,
+    group: "secondary",
+    permissionRequired: "moderator",
   },
   {
     label: "Stjórnun",
     path: "/admin",
     icon: Shield,
     group: "secondary",
-    roleRequired: "admin", // Admin-only access
-    disabled: true, // Not yet implemented
+    /*
+     * Platform permission, not workspace role. `UserManagement` guards itself
+     * on `permissions !== "admin"`, so gating the link on `roleRequired` meant
+     * the two disagreed in both directions: a workspace admin saw a link that
+     * then refused them, and a platform admin who happened not to be an admin
+     * of any workspace never saw the screen that appoints moderators.
+     */
+    permissionRequired: "admin",
   },
   // Personal navigation - user-specific items
   {
@@ -164,6 +194,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function DashboardSidebar({
   userRole = "leader",
+  userPermissions,
   userName = "Notandi",
   userAvatar,
   badgeCount = 0,
@@ -175,11 +206,29 @@ export default function DashboardSidebar({
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
 
+  /*
+   * Permissions arrive from an async fetch, so the server renders the sidebar
+   * without them and the client may render it with them — different markup for
+   * the same tree, which React reports as a hydration mismatch and then throws
+   * the server's HTML away.
+   *
+   * Holding the gated items back until after mount makes the first client paint
+   * identical to the server's by construction. They appear a moment later,
+   * which is the honest behaviour anyway: until the fetch lands nobody knows
+   * whether this person is a moderator.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   /**
    * Check if user has permission to see a navigation item
    * Implements hierarchical role system: admin > editor > leader
    */
   const hasPermission = (item: NavItem): boolean => {
+    if (item.permissionRequired) {
+      if (!mounted) return false;
+      if (!hasPlatformPermission(userPermissions, item.permissionRequired)) return false;
+    }
     if (!item.roleRequired) return true;
     if (item.roleRequired === "admin") return userRole === "admin";
     if (item.roleRequired === "editor") return userRole === "editor" || userRole === "admin";
@@ -314,7 +363,24 @@ export default function DashboardSidebar({
               title={isCollapsed ? userName : undefined}
             >
               {userAvatar ? (
-                <Image src={userAvatar} alt="" className={styles.userAvatar} aria-hidden="true" />
+                /* Same reasoning as the settings avatar: an identity-provider
+                   URL cannot be allowlisted for next/image without either an
+                   unbounded host list or the wildcard #135 removed. This one
+                   was also missing the width/height next/image requires, so it
+                   would have thrown for every signed-in user on every
+                   dashboard page. */
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={userAvatar}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className={styles.userAvatar}
+                  aria-hidden="true"
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <div className={styles.userAvatarPlaceholder} aria-hidden="true">
                   {userName.charAt(0).toUpperCase()}

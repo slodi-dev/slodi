@@ -13,8 +13,9 @@
 # testing
 /coverage
 
-# next.js
-/.next/
+# next.js build output, including any alternate distDir (next build --distDir).
+# Its generated route types use @ts-ignore, which would fail `npm run lint`.
+/.next*/
 /out/
 
 # production

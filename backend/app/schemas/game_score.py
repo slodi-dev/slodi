@@ -19,6 +19,12 @@ class GameScoreCreate(BaseModel):
     # kept in step with SCORE_CAP in the frontend's arnor-clicker gameData.ts.
     score: int = Field(ge=0, le=999_999_999)
 
+    # Signed proof of when this run started, for games that require one. The
+    # bound above is only a hard ceiling on the integer column; the per-game
+    # plausibility limit and the elapsed-time check are applied in the router,
+    # where the game slug is known.
+    run_token: str | None = Field(default=None, max_length=256)
+
 
 class GameScoreOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

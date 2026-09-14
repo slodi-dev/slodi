@@ -1,0 +1,62 @@
+<!-- @dsCard group="Efnissíðan" title="EfnissidaError" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>EfnissidaError — Efnissíðan</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="dagskrarbankinn.css"><link rel="stylesheet" href="efnissida.css">
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">EfnissidaError</h1>
+  <p class="ds-sub">Not-found and general error, in the house voice.</p>
+</header>
+<p class="db-note">Keeps the house voice and now matches the new site-wide <code>app/not-found.tsx</code>, which did not exist before — every unknown URL fell through to the unstyled English Next.js default. The display number is decorative and <code>aria-hidden</code>; the sentence is the <code>h1</code>. The raw error message stays but small, monospaced and tertiary, under the actions — it is for us, not for the leader.</p>
+<div class="ds-group">
+  <div class="db-themes">
+    <div class="db-pane"><span class="db-pane__label">Light</span>
+<div class="ds-row" style="align-items:stretch">
+      <div class="ef ef-error" data-kind="task" style="flex:1 1 340px">
+        <div class="ef-error__num" aria-hidden="true">404</div>
+        <h1>Úps! Fórstu út fyrir slóðann?</h1>
+        <p class="ds-sub" style="margin:10px auto 0">Þetta efni finnst ekki. Það gæti hafa verið fjarlægt, eða hlekkurinn er úreltur.</p>
+        <div class="ef-actions" style="justify-content:center;margin-top:22px">
+          <button class="ef-btn ef-btn--filled">Í dagskrárbankann</button>
+          <button class="ef-btn">Heim á svæðið</button>
+        </div>
+      </div>
+      <div class="ef ef-error" data-kind="task" style="flex:1 1 340px">
+        <div class="ef-error__num" aria-hidden="true">!</div>
+        <h1>Úps! Eitthvað fór úrskeiðis</h1>
+        <p class="ds-sub" style="margin:10px auto 0">Þetta tjald hefur greinilega fokið í burtu?! Við erum að laga málið.</p>
+        <div class="ef-actions" style="justify-content:center;margin-top:22px">
+          <button class="ef-btn ef-btn--filled">Í dagskrárbankann</button>
+          <button class="ef-btn">Heim á svæðið</button>
+        </div>
+        <p class="ef-error__detail">Failed to fetch</p>
+      </div>
+    </div>
+    </div>
+    <div class="db-pane" data-theme="dark"><span class="db-pane__label">Dark</span>
+<div class="ds-row" style="align-items:stretch">
+      <div class="ef ef-error" data-kind="task" style="flex:1 1 340px">
+        <div class="ef-error__num" aria-hidden="true">404</div>
+        <h1>Úps! Fórstu út fyrir slóðann?</h1>
+        <p class="ds-sub" style="margin:10px auto 0">Þetta efni finnst ekki. Það gæti hafa verið fjarlægt, eða hlekkurinn er úreltur.</p>
+        <div class="ef-actions" style="justify-content:center;margin-top:22px">
+          <button class="ef-btn ef-btn--filled">Í dagskrárbankann</button>
+          <button class="ef-btn">Heim á svæðið</button>
+        </div>
+      </div>
+      <div class="ef ef-error" data-kind="task" style="flex:1 1 340px">
+        <div class="ef-error__num" aria-hidden="true">!</div>
+        <h1>Úps! Eitthvað fór úrskeiðis</h1>
+        <p class="ds-sub" style="margin:10px auto 0">Þetta tjald hefur greinilega fokið í burtu?! Við erum að laga málið.</p>
+        <div class="ef-actions" style="justify-content:center;margin-top:22px">
+          <button class="ef-btn ef-btn--filled">Í dagskrárbankann</button>
+          <button class="ef-btn">Heim á svæðið</button>
+        </div>
+        <p class="ef-error__detail">Failed to fetch</p>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+</body></html>

@@ -13,6 +13,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
 from threading import Lock
+from typing import TypeVar
 from uuid import UUID
 
 import httpx
@@ -27,11 +28,18 @@ from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
 from app.domain.enums import GroupRole, Permissions, WorkspaceRole
+from app.domain.icelandic_dates import format_date
+from app.repositories.content import ContentRepository
+from app.repositories.posting_suspensions import PostingSuspensionRepository
+from app.schemas.content import ContentOut
 from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
 from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
 from app.settings import settings
+from app.utils import get_current_datetime
+
+ContentOutT = TypeVar("ContentOutT", bound=ContentOut)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +50,8 @@ security = HTTPBearer()
 _PERMISSION_RANK: dict[Permissions, int] = {
     Permissions.viewer: 0,
     Permissions.member: 1,
-    Permissions.admin: 2,
+    Permissions.moderator: 2,
+    Permissions.admin: 3,
 }
 
 _WORKSPACE_ROLE_RANK: dict[WorkspaceRole, int] = {
@@ -282,6 +291,56 @@ def verify_auth0_token(token: str) -> TokenPayload:
 _DEFAULT_WORKSPACE_ID: UUID | None = get_default_workspace_id()
 
 
+async def _ensure_default_workspace_membership(session: AsyncSession, user: UserOut) -> None:
+    """Make sure this account can reach the dagskrárbanki.
+
+    Opening the bank to public submissions rests on one assumption: that every
+    account is a member of the default workspace. That was only ever arranged at
+    *account creation*, which quietly excluded two whole populations — everyone
+    who signed up before `DEFAULT_WORKSPACE_ID` was configured, and everyone
+    created during any window where the setting was missing or wrong. For them
+    the bank 403s on read and 404s on submit, which reads as the feature being
+    broken rather than as a membership they never got.
+
+    So it is checked on every login rather than once. It is idempotent, costs a
+    cached lookup for the overwhelming majority of calls, and means a
+    misconfiguration heals itself the next time people sign in instead of
+    needing somebody to remember a backfill script.
+
+    Never downgrades: an existing role of any kind is left exactly as it is.
+    Failure is logged and swallowed — not being able to add someone to a
+    workspace is not a reason to refuse them a login.
+    """
+    if _DEFAULT_WORKSPACE_ID is None:
+        return
+
+    role = await _get_workspace_role(_DEFAULT_WORKSPACE_ID, user.id, session)
+    if role is not None:
+        return
+
+    try:
+        await WorkspaceService(session).set_member_role(
+            _DEFAULT_WORKSPACE_ID, user.id, WorkspaceRole.viewer
+        )
+    except Exception:
+        # A workspace that does not exist, a race with a parallel first request,
+        # a transient failure — none of them should cost the user their session.
+        logger.warning(
+            "Could not add user %s to default workspace %s",
+            user.id,
+            _DEFAULT_WORKSPACE_ID,
+            exc_info=True,
+        )
+        return
+
+    # `_get_workspace_role` has just cached "not a member" for this pair, and
+    # that entry would outlive the membership we only now created — leaving the
+    # user locked out for the length of the TTL, by the very code meant to let
+    # them in.
+    await membership_cache.set(user.id, _DEFAULT_WORKSPACE_ID, WorkspaceRole.viewer)
+    logger.info("Added user %s to default workspace %s", user.id, _DEFAULT_WORKSPACE_ID)
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),  # noqa: B008
     session: AsyncSession = Depends(get_session),  # noqa: B008
@@ -336,6 +395,10 @@ async def get_current_user(
         name_from_token: str | None = payload.name
         if name_from_token and name_from_token != user.name:
             user = await user_service.update(user.id, UserUpdateAdmin(name=name_from_token))
+        # Not just on create. Every account that predates the default workspace
+        # being configured has no membership, and without this they can neither
+        # read the bank nor submit to it — see the docstring below.
+        await _ensure_default_workspace_membership(session, user)
         await user_cache.set(auth0_id, user)
         return user
 
@@ -398,18 +461,7 @@ async def get_current_user(
             user.id,
         )
 
-    if _DEFAULT_WORKSPACE_ID:
-        try:
-            ws_service = WorkspaceService(session)
-            await ws_service.set_member_role(_DEFAULT_WORKSPACE_ID, user.id, WorkspaceRole.viewer)
-            logger.info("Added new user %s to default workspace %s", user.id, _DEFAULT_WORKSPACE_ID)
-        except Exception:
-            logger.warning(
-                "Failed to add new user %s to default workspace %s",
-                user.id,
-                _DEFAULT_WORKSPACE_ID,
-                exc_info=True,
-            )
+    await _ensure_default_workspace_membership(session, user)
 
     await user_cache.set(auth0_id, user)
     return user
@@ -491,7 +543,72 @@ async def check_workspace_access(
         )
 
 
-async def check_program_edit_access(
+async def require_not_suspended(
+    current_user: UserOut = Depends(get_current_user),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
+) -> UserOut:
+    """Refuse a write from someone currently in skammarkrókur.
+
+    **Not cached.** Writes are rare and this is one indexed lookup, whereas a
+    cached suspension either expires late or lifts late — and someone told they
+    can post again, who then cannot, will report it as broken. Correctness here
+    is worth more than the round trip.
+
+    Reading, filtering, favourites, likes and **reporting** are all untouched.
+    Taking away someone's ability to flag genuinely unsafe content because they
+    are themselves under review helps nobody.
+    """
+    suspension = await PostingSuspensionRepository(session).active_for(
+        current_user.id, get_current_datetime()
+    )
+    if suspension is None:
+        return current_user
+
+    # An open-ended suspension has no date to name, and inventing one would be
+    # a lie. Saying so plainly is better than a vague refusal.
+    if suspension.expires_at is None:
+        detail = "Þú getur ekki sent inn efni í bankann. Hafðu samband við Dagskrárstjórnarteymið."
+        headers = {"X-Suspended-Until": "open-ended"}
+    else:
+        detail = (
+            f"Þú getur ekki sent inn efni í bankann fram til {format_date(suspension.expires_at)}."
+        )
+        # ISO in the header, Icelandic in the message: one is for a machine and
+        # one is for a person, and neither should have to parse the other's.
+        headers = {"X-Suspended-Until": suspension.expires_at.date().isoformat()}
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail, headers=headers)
+
+
+async def check_content_create_access(
+    workspace_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    hide_from_non_members: bool = False,
+) -> None:
+    """
+    Raise 403 unless the user may add content to this workspace.
+
+    **The open bank is the exception, not the new rule.** It takes submissions
+    from anyone with an account, so membership alone is enough *there*. Anywhere
+    else `editor` still means what it always did and `viewer` still means
+    read-only: a sveit that adds a co-leader, a parent or an outside helper as a
+    viewer so they can read the plan has not agreed to let them write to it.
+
+    Lowering this globally would have deleted the read-only role from the
+    product — after it, `editor` would grant nothing that `viewer` did not.
+    """
+    open_to_any_member = _DEFAULT_WORKSPACE_ID is not None and workspace_id == _DEFAULT_WORKSPACE_ID
+    await check_workspace_access(
+        workspace_id,
+        current_user,
+        session,
+        minimum_role=WorkspaceRole.viewer if open_to_any_member else WorkspaceRole.editor,
+        hide_from_non_members=hide_from_non_members,
+    )
+
+
+async def check_content_edit_access(
     workspace_id: UUID,
     author_id: UUID | None,
     current_user: UserOut,
@@ -499,19 +616,36 @@ async def check_program_edit_access(
     hide_from_non_members: bool = False,
 ) -> None:
     """
-    Raise 403 unless the user is permitted to edit the program.
+    Raise 403 unless the user is permitted to change this content.
 
     Allowed when the user is:
     - a platform admin, OR
     - a workspace admin (or above), OR
-    - the program's author with at least editor workspace role
+    - the content's own author, at any workspace role
+
+    Governs both editing and deleting, and applies to Programs, Events and Tasks
+    alike: authorship and workspace role are Content-level facts, identical for
+    all three.
+
+    **The author rule deliberately does not require `editor`.** The bank is open
+    to submissions from anyone with an account, so its authors are plain
+    `viewer`s — requiring `editor` would mean a leader could file an idea and
+    then be unable to fix a typo in it, or withdraw it.
+
+    Conversely, `editor` alone is no longer enough to change *someone else's*
+    content. It used to be, which meant opening submissions would have let any
+    member edit any item in the bank.
+
+    A content moderator is the fourth clause: Dagskrárstjórnarteymið can change
+    anything in the bank, which is what makes the Yfirferð board's hide and
+    reject actions work on other people's submissions.
 
     Args:
         hide_from_non_members: When True, raise 404 instead of 403 for users
             with no membership at all. Use on resource-level endpoints where
             returning 403 would reveal that the resource exists.
     """
-    if current_user.permissions == Permissions.admin:
+    if _PERMISSION_RANK[current_user.permissions] >= _PERMISSION_RANK[Permissions.moderator]:
         return
 
     role = await _get_workspace_role(workspace_id, current_user.id, session)
@@ -521,18 +655,68 @@ async def check_program_edit_access(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a workspace member")
 
-    role_rank = _WORKSPACE_ROLE_RANK[role]
     is_author = author_id is not None and current_user.id == author_id
-    has_admin = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
-    has_editor = role_rank >= _WORKSPACE_ROLE_RANK[WorkspaceRole.editor]
+    is_workspace_admin = _WORKSPACE_ROLE_RANK[role] >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
 
-    if has_admin or (is_author and has_editor):
+    if is_author or is_workspace_admin:
         return
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Requires admin role, or editor role as the program's author",
+        detail="Only the author or a workspace admin can change this content",
     )
+
+
+async def check_content_workspace_access(
+    content_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    minimum_role: WorkspaceRole = WorkspaceRole.viewer,
+) -> UUID:
+    """
+    Raise 404 unless the user may reach this content at all.
+
+    Comments, likes and reports address content by id and never name a
+    workspace, so without this a member of one workspace can write to content in
+    another that they cannot even read. Returns the workspace id so the caller
+    need not look it up a second time.
+
+    **A hidden item is not reachable here either.** `hidden_at` used to be
+    consulted by the content read paths and nowhere else, so after a moderator
+    hid something any member could still read its comment thread, add to it, and
+    like it — the discussion carried on underneath content the team had removed.
+    Hiding is the safeguarding lever and comments are the bank's only public
+    free-text surface, which makes that combination the case hiding exists for.
+
+    The item's own author still gets through, on the same terms as sc-482: they
+    can open a hidden item, so its thread should not 404 underneath them.
+    Writing to it is left open for them too rather than introducing a second
+    axis here — a leader adding a comment to their own unlisted item reaches
+    nobody, and the alternative is a read/write split in a function whose whole
+    value is being the one funnel.
+    """
+    access = await ContentRepository(session).get_access(content_id)
+    if access is None:
+        # The service would say "Content not found" and check_workspace_access
+        # says "Not found". Two different bodies behind the same status tell a
+        # caller whether an id they hold still exists in a workspace they were
+        # removed from — the one thing hide_from_non_members exists to withhold.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    await check_workspace_access(
+        access.workspace_id,
+        current_user,
+        session,
+        minimum_role=minimum_role,
+        hide_from_non_members=True,
+    )
+
+    if access.hidden_at is not None and not (
+        is_content_moderator(current_user) or access.author_id == current_user.id
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    return access.workspace_id
 
 
 async def check_group_access(
@@ -560,3 +744,61 @@ async def check_group_access(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Requires {minimum_role.value} role or higher",
         )
+
+
+def is_content_moderator(current_user: UserOut) -> bool:
+    """
+    Is this user a member of Dagskrárstjórnarteymið, or above it?
+
+    Ranked, not a membership test against `(moderator, admin)`. That tuple was
+    written in three places and happens to agree with the rank today; it would
+    stop agreeing the moment a permission is added between the two, and the
+    disagreement would show up as a moderator quietly losing a capability rather
+    than as an error.
+    """
+    return _PERMISSION_RANK[current_user.permissions] >= _PERMISSION_RANK[Permissions.moderator]
+
+
+def may_see_review_state(item: ContentOut, current_user: UserOut) -> bool:
+    """The item's own author, and the team. Nobody else."""
+    return is_content_moderator(current_user) or item.author_id == current_user.id
+
+
+def assert_hidden_item_readable(item: ContentOut, current_user: UserOut) -> None:
+    """
+    A hidden item is unlisted, not unreachable by the person who wrote it.
+
+    Hiding removes an item from every listing. Making it 404 for its author too
+    meant the mail saying „efnið þitt er ekki lengur sýnilegt" pointed at a dead
+    link, and the review state on the item page — added precisely so a leader
+    could find out what happened — was unreadable in the one case where the item
+    actually disappeared.
+
+    Raises 404 rather than 403 for everyone else: a 403 would confirm that an
+    item exists at that id, which is the thing hiding is trying to stop.
+    """
+    if item.hidden_at is None:
+        return
+    if may_see_review_state(item, current_user):
+        return
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
+def apply_review_visibility(item: ContentOutT, current_user: UserOut) -> ContentOutT:
+    """
+    Blank the review fields unless this reader is entitled to them.
+
+    `review_note` is where a moderator writes *why* they turned something down,
+    written in the belief that it reaches the author and the team and nobody
+    else. `ProgramOut`, `EventOut` and `TaskOut` all inherit `ContentOut`, so
+    every one of them carries these fields and every read path has to answer
+    this question.
+
+    **This exists as one function because the first version of it did not.** The
+    rule was written inline in `GET /content/{id}` and the three type-specific
+    detail endpoints were left returning the note to any member of the workspace.
+    Route the response through here rather than repeating the condition.
+    """
+    if may_see_review_state(item, current_user):
+        return item
+    return item.model_copy(update={"review_state": None, "review_note": None, "hidden_at": None})

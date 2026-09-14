@@ -25,6 +25,7 @@ from app.domain.enums import EventInterval, Permissions, Weekday, WorkspaceRole
 from app.models.tag import Tag
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMembership
+from app.repositories.workspaces import WorkspaceRepository
 from app.schemas.workspace import get_first_monday_of_september
 from app.settings import settings
 
@@ -145,6 +146,26 @@ async def promote_admin_emails(session: AsyncSession) -> None:
             log.info("User '%s' already admin", u.email)
 
 
+async def promote_moderator_emails(session: AsyncSession) -> None:
+    """Grant `moderator` to Dagskrárstjórnarteymið, from MODERATOR_EMAILS.
+
+    Never demotes: an admin listed here keeps admin, because moderator is the
+    lower rank and stepping someone down would be a surprise from a seed script.
+    """
+    emails = settings.moderator_email_list
+    if not emails:
+        return
+    result = await session.execute(select(User).where(User.email.in_(emails)))
+    for u in result.scalars().all():
+        if u.permissions == Permissions.admin:
+            log.info("User '%s' is admin, which already outranks moderator", u.email)
+        elif u.permissions != Permissions.moderator:
+            u.permissions = Permissions.moderator
+            log.info("Promoted '%s' to moderator", u.email)
+        else:
+            log.info("User '%s' already moderator", u.email)
+
+
 async def main() -> None:
     session_maker = get_session_maker()
 
@@ -153,6 +174,13 @@ async def main() -> None:
         ws = await get_or_create_workspace(session, user)
         tags = await get_or_create_tags(session)
         await promote_admin_emails(session)
+        await promote_moderator_emails(session)
+        # Everyone can reach the bank. The same guarantee is kept per-account at
+        # login, but doing it here means a deploy does not wait for each person
+        # to sign in before the bank works for them.
+        enrolled = await WorkspaceRepository(session).enroll_all_users_as_viewers(ws.id)
+        if enrolled:
+            log.info("Enrolled %d existing user(s) in '%s' as viewers", enrolled, WORKSPACE_NAME)
         # transaction committed by context-manager exit
 
     output = {

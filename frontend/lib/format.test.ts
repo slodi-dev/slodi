@@ -8,10 +8,13 @@ import {
   formatPrepTimeLabel,
   formatParticipants,
   formatParticipantsLabel,
+  formatIcelandicNumber,
   formatPrice,
   formatPriceLabel,
   formatAgeGroup,
   formatAgeGroups,
+  formatIcelandicDate,
+  formatIcelandicDateShort,
 } from "./format";
 
 // ── formatMinutes ───────────────────────────────────────────────────────────────
@@ -289,5 +292,66 @@ describe("formatAgeGroups", () => {
     expect(formatAgeGroups(all)).toBe(
       "Hrefnuskátar, Drekaskátar, Fálkaskátar, Dróttskátar, Rekkaskátar, Róverskátar, Vættaskátar"
     );
+  });
+});
+
+describe("formatIcelandicDate", () => {
+  it("writes a date the way Icelandic writes one", () => {
+    expect(formatIcelandicDate("2026-09-14T10:00:00Z")).toBe("14. september 2026");
+  });
+
+  it("keeps the month lowercase, which is the rule in Icelandic", () => {
+    // "14. September 2026" reads as an English sentence in Icelandic clothes.
+    for (const iso of ["2026-01-01", "2026-08-31", "2026-12-24"]) {
+      expect(formatIcelandicDate(iso)).toMatch(/^\d+\. [a-záðéíóúýþæö.]+ \d{4}$/);
+    }
+  });
+
+  it("does not pad the day", () => {
+    expect(formatIcelandicDate("2026-09-01T12:00:00Z")).toBe("1. september 2026");
+  });
+
+  it("shortens for a rail, where the year is noise", () => {
+    expect(formatIcelandicDateShort("2026-09-14T10:00:00Z")).toBe("14. sept.");
+  });
+
+  it("shows nothing rather than 'Invalid Date'", () => {
+    // Which is not a thing to put in front of a leader.
+    expect(formatIcelandicDate(null)).toBe("");
+    expect(formatIcelandicDate("ekki dagsetning")).toBe("");
+    expect(formatIcelandicDateShort(undefined)).toBe("");
+  });
+});
+
+// ── formatIcelandicNumber ───────────────────────────────────────────────────────
+
+describe("formatIcelandicNumber", () => {
+  it("groups thousands with a full stop, the way Icelandic writes them", () => {
+    expect(formatIcelandicNumber(5003)).toBe("5.003");
+    expect(formatIcelandicNumber(1000000)).toBe("1.000.000");
+  });
+
+  it("leaves anything under a thousand alone", () => {
+    expect(formatIcelandicNumber(0)).toBe("0");
+    expect(formatIcelandicNumber(999)).toBe("999");
+  });
+
+  it("does not depend on the runtime having Icelandic locale data", () => {
+    // Chrome in this project resolves `is-IS` to nothing and falls back to the
+    // English "5,003" — a comma, which reads as a decimal point in Icelandic.
+    // This is the whole reason the function exists, so assert the difference.
+    expect(formatIcelandicNumber(5003)).not.toBe((5003).toLocaleString("en-US"));
+  });
+
+  it("keeps the sign on a negative", () => {
+    expect(formatIcelandicNumber(-12345)).toBe("-12.345");
+  });
+});
+
+// ── formatPrice, on the same grouping ───────────────────────────────────────────
+
+describe("formatPrice grouping", () => {
+  it("writes a four-figure price the Icelandic way", () => {
+    expect(formatPrice(1500)).toBe("1.500 kr.");
   });
 });

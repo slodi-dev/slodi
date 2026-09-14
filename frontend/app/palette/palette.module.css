@@ -246,7 +246,7 @@
 }
 .sSuccess .band {
   background: hsl(var(--sl-color-success));
-  color: #fff;
+  color: hsl(var(--sl-primitive-neutral-0));
 }
 .sSuccess .demo {
   background: hsl(var(--sl-alert-background-success));
@@ -264,7 +264,7 @@
 }
 .sError .band {
   background: hsl(var(--sl-color-error));
-  color: #fff;
+  color: hsl(var(--sl-primitive-neutral-0));
 }
 .sError .demo {
   background: hsl(var(--sl-alert-background-error));
@@ -273,7 +273,7 @@
 }
 .sInfo .band {
   background: hsl(var(--sl-color-info));
-  color: #fff;
+  color: hsl(var(--sl-primitive-neutral-0));
 }
 .sInfo .demo {
   background: hsl(var(--sl-alert-background-info));
@@ -602,7 +602,7 @@
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  color: #fff;
+  color: hsl(var(--sl-primitive-neutral-0));
   background: hsl(var(--sl-color-primary));
   border-radius: var(--sl-radius-pill);
 }
