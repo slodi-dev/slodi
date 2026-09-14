@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_permission
+from app.core.auth import check_content_workspace_access, get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.schemas.like import LikeOut
@@ -29,6 +29,7 @@ async def list_content_likes(
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[LikeOut]:
+    await check_content_workspace_access(content_id, current_user, session)
     svc = LikeService(session)
     total = await svc.count_content_likes(content_id)
     items = await svc.list_for_content(content_id, limit=limit, offset=offset)
@@ -52,6 +53,7 @@ async def like_content(
     content_id: UUID,
     current_user: UserOut = Depends(get_current_user),
 ) -> LikeOut:
+    await check_content_workspace_access(content_id, current_user, session)
     svc = LikeService(session)
     return await svc.like_content(user_id=current_user.id, content_id=content_id)
 
@@ -62,6 +64,7 @@ async def unlike_content(
     content_id: UUID,
     current_user: UserOut = Depends(get_current_user),
 ) -> None:
+    await check_content_workspace_access(content_id, current_user, session)
     svc = LikeService(session)
     await svc.delete(user_id=current_user.id, content_id=content_id)
     return None

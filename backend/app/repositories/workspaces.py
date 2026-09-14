@@ -4,7 +4,8 @@ import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import Select, func, insert, literal, select, update
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,6 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.domain.enums import WorkspaceRole
 from app.models.content import Content
 from app.models.troop import Troop
+from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMembership
 
 from .base import Repository
@@ -122,3 +124,64 @@ class WorkspaceRepository(Repository):
             membership = WorkspaceMembership(workspace_id=workspace_id, user_id=user_id, role=role)
             await self.add(membership)
         return membership
+
+    def _users_missing_from(self, workspace_id: UUID) -> Select[tuple[UUID]]:
+        """Accounts with no membership of this workspace at all."""
+        return select(User.id).where(
+            User.deleted_at.is_(None),
+            ~select(WorkspaceMembership.user_id)
+            .where(
+                WorkspaceMembership.workspace_id == workspace_id,
+                WorkspaceMembership.user_id == User.id,
+            )
+            .exists(),
+        )
+
+    async def count_users_missing_from(self, workspace_id: UUID) -> int:
+        return int(
+            await self.session.scalar(
+                select(func.count()).select_from(self._users_missing_from(workspace_id).subquery())
+            )
+            or 0
+        )
+
+    async def enroll_all_users_as_viewers(self, workspace_id: UUID) -> int:
+        """Give every account a viewer membership of this workspace.
+
+        Only ever *adds*: the `NOT EXISTS` clause means an existing admin or the
+        workspace owner keeps the role they have. Written as one statement
+        rather than a row-per-user loop because it runs over the whole user
+        table on a deploy.
+
+        Used to open the dagskrárbanki to everyone who already had an account
+        when it opened — see `scripts/backfill_default_workspace.py` and the
+        seed. Day-to-day the same guarantee is kept by
+        `app.core.auth._ensure_default_workspace_membership` at login.
+
+        Returns the number added, counted rather than read from `rowcount` —
+        an INSERT ... FROM SELECT reports -1 through this driver, and a log line
+        saying "added -1 users" is worse than no log line.
+        """
+        missing = await self.count_users_missing_from(workspace_id)
+        if not missing:
+            return 0
+
+        await self.session.execute(
+            insert(WorkspaceMembership).from_select(
+                ["workspace_id", "user_id", "role"],
+                select(
+                    literal(workspace_id, type_=PGUUID(as_uuid=True)),
+                    User.id,
+                    literal(WorkspaceRole.viewer, type_=WorkspaceMembership.role.type),
+                ).where(
+                    User.deleted_at.is_(None),
+                    ~select(WorkspaceMembership.user_id)
+                    .where(
+                        WorkspaceMembership.workspace_id == workspace_id,
+                        WorkspaceMembership.user_id == User.id,
+                    )
+                    .exists(),
+                ),
+            )
+        )
+        return missing

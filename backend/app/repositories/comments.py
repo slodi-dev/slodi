@@ -46,6 +46,9 @@ class CommentRepository(Repository):
     ) -> Sequence[Comment]:
         stmt = (
             select(Comment)
+            # `CommentOut.author_name` reads `comment.user.name`; without this
+            # the serialiser triggers a lazy load and raises under async.
+            .options(selectinload(Comment.user))
             .where(Comment.content_id == content_id, Comment.deleted_at.is_(None))
             .order_by(desc(Comment.created_at), Comment.id)
             .limit(limit)

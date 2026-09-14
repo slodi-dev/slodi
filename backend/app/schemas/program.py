@@ -23,7 +23,9 @@ class ProgramFilters(BaseModel):
     price_max: int | None = None
     location: str | None = None
     equipment: list[str] | None = None
+    tags: list[str] | None = None
     author_id: UUID | None = None
+    author_name: str | None = None
     sort_by: ProgramSortBy | None = None
 
 

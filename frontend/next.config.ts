@@ -20,15 +20,15 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    // TODO: Wildcard allows any HTTPS image URL, which exposes the Next.js image
-    // endpoint to SSRF and bandwidth abuse. This is acceptable short-term given
-    // the small authenticated audience, but should be replaced once we have a
-    // dedicated image hosting solution (e.g. S3/Cloudinary) — at which point this
-    // can be locked down to a single known hostname.
+    // Only the public blob container. Content images are uploaded straight to
+    // Azure and stored as blob URLs, so nothing else needs optimizing — and a
+    // wildcard here would expose the Next.js image endpoint to SSRF and
+    // bandwidth abuse.
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**",
+        hostname: "slodiblobstorage.blob.core.windows.net",
+        pathname: "/content-images/**",
       },
     ],
     // Limit cached variants to common screen widths — reduces cache storage per image.

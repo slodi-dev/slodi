@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
@@ -54,6 +54,18 @@ class GameScoreRepository(Repository):
                 where=GameScore.__table__.c.score < text("EXCLUDED.score"),
             )
         await self.session.execute(stmt)
+
+    async def delete_for_user(self, game_slug: str, user_id: UUID) -> int:
+        """Remove one player's score for a game. Returns how many rows went."""
+        stmt = delete(GameScore).where(
+            GameScore.game_slug == game_slug, GameScore.user_id == user_id
+        )
+        result = await self.session.execute(stmt)
+        # CursorResult carries rowcount; the generic Result protocol does not.
+        # A DBAPI may report -1 for "unknown"; treat that as "assume it went",
+        # since reporting 0 would 404 a delete that actually removed the row.
+        rowcount = int(getattr(result, "rowcount", 0) or 0)
+        return 1 if rowcount < 0 else rowcount
 
     async def get_top_scores(self, game_slug: str, limit: int = 10) -> Sequence[GameScore]:
         stmt = (

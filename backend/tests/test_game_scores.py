@@ -3,7 +3,14 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from app.domain.game_score_policy import REPLACE_SCORE_GAMES, score_replaces
+from app.core.run_tokens import TOKEN_TTL_SECONDS, RunTokenError, _sign, issue, verify
+from app.domain.game_score_policy import (
+    REPLACE_SCORE_GAMES,
+    max_score,
+    min_seconds_per_point,
+    requires_run_token,
+    score_replaces,
+)
 from app.models.user import User
 from app.schemas.game_score import GameScoreCreate
 from app.services.game_scores import GameScoreService
@@ -172,3 +179,153 @@ def test_the_cap_matches_the_frontend_and_fits_the_column():
     with pytest.raises(ValidationError):
         GameScoreCreate(score=cap + 1)
     assert cap < 2_147_483_647
+
+
+# ── run tokens and plausibility ───────────────────────────────────────────────
+#
+# A score is computed on the player's machine, so it can never be trusted
+# outright. These pin the two things that bound a forgery: it has to be a score
+# the game can produce, and it has to have taken as long as it would to play.
+
+FLAPPY = "laddi-bird"
+
+
+@pytest.fixture(autouse=True)
+def _signing_key(monkeypatch):
+    """
+    Pin a signing key for every test in this module.
+
+    Without it these depend on the ambient .env: a checkout with ENV=Production
+    and no GAME_TOKEN_SECRET makes token minting raise, which is correct
+    behaviour but nothing to do with what is under test here.
+    """
+    import app.core.run_tokens as rt
+
+    monkeypatch.setattr(rt.settings, "game_token_secret", "test-signing-key", raising=False)
+
+
+def _retimed(token: str, seconds_ago: int) -> str:
+    """Re-stamp a token as if issued in the past, signed correctly."""
+    game, issued, nonce, _ = token.split(".")
+    payload = f"{game}.{int(issued) - seconds_ago}.{nonce}"
+    return f"{payload}.{_sign(payload)}"
+
+
+def test_a_freshly_issued_token_verifies_for_its_own_user_and_game():
+    elapsed, nonce = verify(issue(FLAPPY), FLAPPY)
+    assert elapsed < 5
+    assert nonce
+
+
+def test_a_token_is_not_bound_to_a_user_so_a_signed_out_run_can_be_saved():
+    # Binding to a user would break the whole point: a player who finishes a run
+    # while signed out has to obtain a token, park the run, log in, and submit
+    # it. Identity comes from the session at submission time, not the token.
+    elapsed, nonce = verify(issue(FLAPPY), FLAPPY)
+    assert elapsed < 5 and nonce
+
+
+def test_a_token_cannot_be_used_for_another_game():
+    with pytest.raises(RunTokenError):
+        verify(issue(FLAPPY), ARCADE)
+
+
+def test_a_tampered_timestamp_is_rejected():
+    # Back-dating the stamp is exactly how a cheat would claim a long run, so
+    # the signature has to cover it.
+    game, issued, nonce, signature = issue(FLAPPY).split(".")
+    forged = f"{game}.{int(issued) - 100_000}.{nonce}.{signature}"
+    with pytest.raises(RunTokenError):
+        verify(forged, FLAPPY)
+
+
+def test_a_tampered_signature_is_rejected():
+    token = issue(FLAPPY)
+    flipped = token[:-1] + ("A" if token[-1] != "A" else "B")
+    with pytest.raises(RunTokenError):
+        verify(flipped, FLAPPY)
+
+
+@pytest.mark.parametrize("bad", ["", "nonsense", "a.b", "a.b.c.d.e"])
+def test_malformed_tokens_are_rejected(bad):
+    with pytest.raises(RunTokenError):
+        verify(bad, FLAPPY)
+
+
+def test_an_expired_token_is_rejected():
+    with pytest.raises(RunTokenError):
+        verify(_retimed(issue(FLAPPY), TOKEN_TTL_SECONDS + 60), FLAPPY)
+
+
+def test_a_token_still_inside_its_window_reports_the_elapsed_time():
+    # The elapsed figure is what the router divides by to decide whether the
+    # claimed score was physically playable.
+    elapsed, _ = verify(_retimed(issue(FLAPPY), 600), FLAPPY)
+    assert 595 < elapsed < 615
+
+
+# ── policy numbers ────────────────────────────────────────────────────────────
+def test_laddi_bird_requires_a_run_token_and_others_do_not():
+    assert requires_run_token(FLAPPY) is True
+    assert requires_run_token(HOLDINGS) is False
+    assert requires_run_token("") is False
+
+
+def test_the_plausibility_ceiling_is_reachable_but_bounded():
+    # One pipe per 100 frames at 60fps = 1.67s a point, so 2000 points is over
+    # 55 minutes of flawless play — high enough never to bite an honest run,
+    # low enough that the old 999,999,999 (about 53 years) is gone.
+    assert max_score(FLAPPY) == 2_000
+    # Hörpuhopp keeps the default: a ceiling has not been measured against its
+    # live board, and one set too low would reject an existing player's runs.
+    assert max_score(ARCADE) == 999_999_999
+    assert max_score("unknown-game") == 999_999_999
+    assert 45 * 60 < max_score(FLAPPY) * 1.67 < 70 * 60
+
+
+def test_the_pace_limit_sits_under_the_real_rate():
+    # Must be below 1.67s or latency and frame timing would reject honest runs;
+    # must be well above zero or it bounds nothing.
+    assert 0 < min_seconds_per_point(FLAPPY) < 100 / 60
+    assert min_seconds_per_point("unknown-game") == 0.0
+
+
+def test_the_console_one_liner_is_now_impossible():
+    # The whole point: pasting a fetch with a huge score and no token.
+    assert requires_run_token(FLAPPY)
+    assert max_score(FLAPPY) < 999_999_999
+    # And even holding a token, the score is paced.
+    _, _ = verify(issue(FLAPPY), FLAPPY)
+    assert max_score(FLAPPY) * min_seconds_per_point(FLAPPY) > 45 * 60
+
+
+def test_the_signing_key_is_not_derived_from_the_database_password(monkeypatch):
+    # /runs is unauthenticated and the derivation is public, so anyone could
+    # collect HMACs over a known payload. Deriving from DB_PASSWORD turned every
+    # token into a free offline oracle for the database credential.
+    import app.core.run_tokens as rt
+
+    monkeypatch.setattr(rt.settings, "game_token_secret", "", raising=False)
+    monkeypatch.setattr(rt.settings, "env", "dev", raising=False)
+    monkeypatch.setattr(rt.settings, "db_password", "hunter2", raising=False)
+    before = rt._secret()
+
+    monkeypatch.setattr(rt.settings, "db_password", "totally-different", raising=False)
+    assert rt._secret() == before, "signing key must not depend on DB_PASSWORD"
+
+
+def test_production_refuses_to_sign_with_a_guessable_key(monkeypatch):
+    import app.core.run_tokens as rt
+
+    monkeypatch.setattr(rt.settings, "game_token_secret", "", raising=False)
+    monkeypatch.setattr(rt.settings, "env", "production", raising=False)
+    with pytest.raises(RuntimeError, match="GAME_TOKEN_SECRET"):
+        rt._secret()
+
+
+def test_a_configured_key_is_used_verbatim(monkeypatch):
+    import app.core.run_tokens as rt
+
+    monkeypatch.setattr(rt.settings, "game_token_secret", "a-real-secret", raising=False)
+    monkeypatch.setattr(rt.settings, "env", "production", raising=False)
+    assert rt._secret() == b"a-real-secret"

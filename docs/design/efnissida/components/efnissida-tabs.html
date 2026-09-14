@@ -1,0 +1,94 @@
+<!-- @dsCard group="Efnissíðan" title="EfnissidaTabs" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>EfnissidaTabs — Efnissíðan</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="dagskrarbankinn.css"><link rel="stylesheet" href="efnissida.css">
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">EfnissidaTabs</h1>
+  <p class="ds-sub">Yfirlit · Leiðbeiningar · Búnaður · Athugasemdir. Reshaped from ProgramDetailTabs.</p>
+</header>
+<p class="db-note">A real ARIA tablist: one tab stop for the strip, arrow keys between tabs, <code>Home</code>/<code>End</code>, <code>aria-selected</code> and <code>aria-controls</code>. Panel headings are <strong>kind-aware</strong> — „Um verkefnið", never „Um dagskrána" on a Verkefni. An empty tab is dimmed and states why rather than vanishing, because a tab set that changes length between items is harder to learn than a disabled tab.</p>
+<div class="ds-group">
+  <div class="db-themes">
+    <div class="db-pane"><span class="db-pane__label">Light</span>
+<div class="ef" data-kind="task" style="gap:22px">
+      <div>
+        <p class="ds-section">Yfirlit selected</p>
+        <div class="ef-tabs" role="tablist" aria-label="Efnisflipar">
+        <button class="ef-tab" role="tab" aria-selected="true">Yfirlit</button>
+        <button class="ef-tab" role="tab" aria-selected="false">Leiðbeiningar</button>
+        <button class="ef-tab" role="tab" aria-selected="false">Búnaður</button>
+        <button class="ef-tab" role="tab" aria-selected="false">Athugasemdir <span class="ef-count">2</span></button>
+      </div>
+      <div class="ef-panel" role="tabpanel">
+        <h3>Um verkefnið</h3>
+        <p>Flokkarnir leggja kaðalbraut milli tveggja trjáa og koma öllum yfir án þess að nokkur snerti jörðina. Byrjið á að velja tré sem stendur vel og prófa spennuna áður en fyrsti skáti fer yfir.</p>
+        <p class="ds-section" style="margin-bottom:8px">Merkimiðar</p>
+        <div class="ef-taglist"><span class="ef-tag">Útivist</span><span class="ef-tag">Klifur</span></div>
+      </div>
+      </div>
+      <div>
+        <p class="ds-section">hover · focus-visible · disabled-empty · zero count</p>
+        <div class="ef-tabs" role="tablist" aria-label="Efnisflipar">
+          <button class="ef-tab" role="tab" aria-selected="true">Yfirlit</button>
+          <button class="ef-tab" role="tab" aria-selected="false" style="color:hsl(var(--sl-color-text-primary))">Leiðbeiningar</button>
+          <button class="ef-tab is-focus" role="tab" aria-selected="false">Búnaður</button>
+          <button class="ef-tab" role="tab" aria-selected="false" aria-disabled="true" title="Engar athugasemdir enn">Athugasemdir <span class="ef-count">0</span></button>
+        </div>
+      </div>
+      <div>
+        <p class="ds-section">phone — scrolls with snap, one row only</p>
+        <div style="max-width:350px">
+          <div class="ef-tabs ef-tabs--scroll" role="tablist" aria-label="Efnisflipar">
+            <button class="ef-tab" role="tab" aria-selected="true">Yfirlit</button>
+            <button class="ef-tab" role="tab" aria-selected="false">Leiðbeiningar</button>
+            <button class="ef-tab" role="tab" aria-selected="false">Búnaður</button>
+            <button class="ef-tab" role="tab" aria-selected="false">Athugasemdir <span class="ef-count">2</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="db-pane" data-theme="dark"><span class="db-pane__label">Dark</span>
+<div class="ef" data-kind="task" style="gap:22px">
+      <div>
+        <p class="ds-section">Yfirlit selected</p>
+        <div class="ef-tabs" role="tablist" aria-label="Efnisflipar">
+        <button class="ef-tab" role="tab" aria-selected="true">Yfirlit</button>
+        <button class="ef-tab" role="tab" aria-selected="false">Leiðbeiningar</button>
+        <button class="ef-tab" role="tab" aria-selected="false">Búnaður</button>
+        <button class="ef-tab" role="tab" aria-selected="false">Athugasemdir <span class="ef-count">2</span></button>
+      </div>
+      <div class="ef-panel" role="tabpanel">
+        <h3>Um verkefnið</h3>
+        <p>Flokkarnir leggja kaðalbraut milli tveggja trjáa og koma öllum yfir án þess að nokkur snerti jörðina. Byrjið á að velja tré sem stendur vel og prófa spennuna áður en fyrsti skáti fer yfir.</p>
+        <p class="ds-section" style="margin-bottom:8px">Merkimiðar</p>
+        <div class="ef-taglist"><span class="ef-tag">Útivist</span><span class="ef-tag">Klifur</span></div>
+      </div>
+      </div>
+      <div>
+        <p class="ds-section">hover · focus-visible · disabled-empty · zero count</p>
+        <div class="ef-tabs" role="tablist" aria-label="Efnisflipar">
+          <button class="ef-tab" role="tab" aria-selected="true">Yfirlit</button>
+          <button class="ef-tab" role="tab" aria-selected="false" style="color:hsl(var(--sl-color-text-primary))">Leiðbeiningar</button>
+          <button class="ef-tab is-focus" role="tab" aria-selected="false">Búnaður</button>
+          <button class="ef-tab" role="tab" aria-selected="false" aria-disabled="true" title="Engar athugasemdir enn">Athugasemdir <span class="ef-count">0</span></button>
+        </div>
+      </div>
+      <div>
+        <p class="ds-section">phone — scrolls with snap, one row only</p>
+        <div style="max-width:350px">
+          <div class="ef-tabs ef-tabs--scroll" role="tablist" aria-label="Efnisflipar">
+            <button class="ef-tab" role="tab" aria-selected="true">Yfirlit</button>
+            <button class="ef-tab" role="tab" aria-selected="false">Leiðbeiningar</button>
+            <button class="ef-tab" role="tab" aria-selected="false">Búnaður</button>
+            <button class="ef-tab" role="tab" aria-selected="false">Athugasemdir <span class="ef-count">2</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+</body></html>

@@ -37,9 +37,9 @@
   padding: var(--sl-spacing-inset-xl);
   text-align: center;
   transition:
-    transform 200ms var(--sl-primitive-animation-easing),
-    border-color 200ms var(--sl-primitive-animation-easing),
-    box-shadow 200ms var(--sl-primitive-animation-easing);
+    transform 200ms var(--sl-primitive-ease-in-out),
+    border-color 200ms var(--sl-primitive-ease-in-out),
+    box-shadow 200ms var(--sl-primitive-ease-in-out);
 }
 
 .visionCard:hover {
@@ -71,7 +71,7 @@
 }
 
 .cardDescription {
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
   line-height: var(--sl-line-height-body);
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
@@ -86,17 +86,17 @@
 /* Tablet landscape (768px - 1023px) */
 @media (max-width: 1023px) {
   .visionMission {
-    padding: var(--sl-spacing-section-sm) var(--sl-spacing-component);
+    padding: var(--sl-spacing-xl) var(--sl-spacing-component);
   }
 
   .heading {
     font-size: var(--sl-primitive-font-size-3xl);
-    margin-bottom: var(--sl-spacing-section-sm);
+    margin-bottom: var(--sl-spacing-xl);
   }
 
   .cardsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--sl-spacing-inline-md);
+    gap: var(--sl-spacing-gap-md);
   }
 
   .cardIcon {
@@ -116,17 +116,17 @@
 /* Tablet portrait (641px - 767px) */
 @media (max-width: 767px) {
   .visionMission {
-    padding: var(--sl-spacing-section-sm) var(--sl-spacing-component-sm);
+    padding: var(--sl-spacing-xl) var(--sl-spacing-md);
   }
 
   .heading {
     font-size: var(--sl-primitive-font-size-2xl);
-    margin-bottom: var(--sl-spacing-section-sm);
+    margin-bottom: var(--sl-spacing-xl);
   }
 
   .cardsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--sl-spacing-inline-sm);
+    gap: var(--sl-spacing-gap-sm);
   }
 
   .visionCard {
@@ -143,17 +143,17 @@
 /* Mobile (640px and below) */
 @media (max-width: 640px) {
   .visionMission {
-    padding: var(--sl-spacing-section-sm) var(--sl-spacing-component-sm);
+    padding: var(--sl-spacing-xl) var(--sl-spacing-md);
   }
 
   .heading {
     font-size: var(--sl-primitive-font-size-xl);
-    margin-bottom: var(--sl-spacing-section-sm);
+    margin-bottom: var(--sl-spacing-xl);
   }
 
   .cardsGrid {
     grid-template-columns: 1fr;
-    gap: var(--sl-spacing-inline-sm);
+    gap: var(--sl-spacing-gap-sm);
   }
 
   .visionCard {

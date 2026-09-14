@@ -14,6 +14,7 @@ import {
   formatPriceLabel,
   formatAgeGroup,
   getAgeGroupPatrol,
+  formatIcelandicDate,
 } from "@/lib/format";
 import styles from "./ProgramCard.module.css";
 
@@ -179,14 +180,8 @@ export default function ProgramCard({
   const overflowTagCount = tags.length - MAX_VISIBLE_TAGS;
   const hasMetadata = durationStr || participantsStr || priceStr || locationStr;
 
-  // Format created_at date
-  const dateFormatted = created_at
-    ? new Date(created_at).toLocaleDateString("is-IS", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : null;
+  // Icelandic writes "14. september 2026", month lowercase.
+  const dateFormatted = created_at ? formatIcelandicDate(created_at) : null;
 
   return (
     <article className={`${styles.card} ${className || ""}`} aria-label={name} data-program-id={id}>

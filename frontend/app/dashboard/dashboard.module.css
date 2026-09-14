@@ -13,7 +13,7 @@
 
 .title {
   font-size: var(--sl-text-heading-1);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   color: hsl(var(--sl-color-text-primary));
   margin-bottom: var(--sl-spacing-element);
 }
@@ -271,7 +271,7 @@
   color: hsl(var(--sl-color-text-inverse));
   border-radius: var(--sl-radius-badge);
   font-size: var(--sl-primitive-font-size-2xs);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   line-height: 1;
 }
 
@@ -335,7 +335,7 @@
   align-items: center;
   justify-content: center;
   font-size: var(--sl-text-body-lg);
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
   flex-shrink: 0;
 }
 

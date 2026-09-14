@@ -50,7 +50,8 @@ import {
   GOLDEN_EVERY_MIN_S,
   GOLDEN_EVERY_MAX_S,
   GOLDEN_ON_SCREEN_MS,
-  PRESTIGE_MULT_PER_POINT,
+  prestigeBonusPct,
+  prestigeBonusGainPct,
   type Buff,
   type Chair,
   type GoldenVariant,
@@ -76,9 +77,12 @@ const ARNOR = chairByKey(DEFAULT_CHAIR);
 
 const QTYS = [1, 5, 10, 25, 100];
 const TABS = [
-  { id: "fundarskop", label: "Fundarsköp", accent: "var(--sl-color-primary)" },
-  { id: "uppfaerslur", label: "Uppfærslur", accent: "var(--sl-color-patrol-rekkar)" },
-  { id: "thing", label: "Þing", accent: "var(--sl-color-patrol-drekar)" },
+  /* Each accent is an alias, not a colour: it is assigned to `--panel-accent`
+     and consumed as `hsl(var(--panel-accent))`, so it has to stay a bare
+     triplet — wrapping it here would yield `hsl(hsl(...))`. */
+  { id: "fundarskop", label: "Fundarsköp", accent: "var(--sl-color-primary)" }, // token-check-ignore: alias
+  { id: "uppfaerslur", label: "Uppfærslur", accent: "var(--sl-color-patrol-rekkar)" }, // token-check-ignore: alias
+  { id: "thing", label: "Þing", accent: "var(--sl-color-patrol-drekar)" }, // token-check-ignore: alias
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -984,7 +988,7 @@ export default function ArnorClickerGame() {
                   </li>
                   <li>
                     <span>Varanleg uppörvun</span>
-                    <span>+{Math.round(PRESTIGE_MULT_PER_POINT * tsCur * 100)}%</span>
+                    <span>+{Math.round(prestigeBonusPct(tsCur)).toLocaleString("is-IS")}%</span>
                   </li>
                 </ol>
               </div>
@@ -1137,7 +1141,7 @@ export default function ArnorClickerGame() {
             </button>
             <div className={styles.sub}>
               {canPrestige
-                ? `Þú færð ${prestigeGain} Þingstig · +${Math.round(PRESTIGE_MULT_PER_POINT * prestigeGain * 100)}% varanlega`
+                ? `Þú færð ${prestigeGain} Þingstig · +${Math.round(prestigeBonusGainPct(tsCur, prestigeGain)).toLocaleString("is-IS")}% varanlega`
                 : "Safnaðu fleiri fundarstig til að fresta þinginu"}
             </div>
           </div>

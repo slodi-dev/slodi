@@ -10,7 +10,7 @@
  * import { tokens, getTokenValue } from "@/lib/sl-tokens";
  *
  * // In a style object or chart config:
- * const color = tokens.colorPrimary; // "var(--sl-color-primary)"
+ * const color = tokens.colorPrimary; // "hsl(var(--sl-color-primary))"
  *
  * // To read the computed value at runtime:
  * const hex = getTokenValue("--sl-color-primary"); // e.g. "142 50% 42%"
@@ -23,77 +23,77 @@
 
 export const tokens = {
   // --- Color: brand ---
-  colorPrimary: "var(--sl-color-primary)",
-  colorPrimaryHover: "var(--sl-color-primary-hover)",
-  colorPrimaryActive: "var(--sl-color-primary-active)",
-  colorPrimarySubtle: "var(--sl-color-primary-subtle)",
-  colorPrimaryMuted: "var(--sl-color-primary-muted)",
-  colorPrimaryBorder: "var(--sl-color-primary-border)",
-  colorPrimaryText: "var(--sl-color-primary-text)",
+  colorPrimary: "hsl(var(--sl-color-primary))",
+  colorPrimaryHover: "hsl(var(--sl-color-primary-hover))",
+  colorPrimaryActive: "hsl(var(--sl-color-primary-active))",
+  colorPrimarySubtle: "hsl(var(--sl-color-primary-subtle))",
+  colorPrimaryMuted: "hsl(var(--sl-color-primary-muted))",
+  colorPrimaryBorder: "hsl(var(--sl-color-primary-border))",
+  colorPrimaryText: "hsl(var(--sl-color-primary-text))",
 
-  colorSecondary: "var(--sl-color-secondary)",
-  colorSecondaryHover: "var(--sl-color-secondary-hover)",
-  colorSecondaryActive: "var(--sl-color-secondary-active)",
-  colorSecondarySubtle: "var(--sl-color-secondary-subtle)",
+  colorSecondary: "hsl(var(--sl-color-secondary))",
+  colorSecondaryHover: "hsl(var(--sl-color-secondary-hover))",
+  colorSecondaryActive: "hsl(var(--sl-color-secondary-active))",
+  colorSecondarySubtle: "hsl(var(--sl-color-secondary-subtle))",
 
-  colorAccent: "var(--sl-color-accent)",
-  colorAccentHover: "var(--sl-color-accent-hover)",
-  colorAccentActive: "var(--sl-color-accent-active)",
-  colorAccentSubtle: "var(--sl-color-accent-subtle)",
+  colorAccent: "hsl(var(--sl-color-accent))",
+  colorAccentHover: "hsl(var(--sl-color-accent-hover))",
+  colorAccentActive: "hsl(var(--sl-color-accent-active))",
+  colorAccentSubtle: "hsl(var(--sl-color-accent-subtle))",
 
   // --- Color: surface ---
-  colorBackground: "var(--sl-color-background)",
-  colorBackgroundSecondary: "var(--sl-color-background-secondary)",
-  colorBackgroundTertiary: "var(--sl-color-background-tertiary)",
+  colorBackground: "hsl(var(--sl-color-background))",
+  colorBackgroundSecondary: "hsl(var(--sl-color-background-secondary))",
+  colorBackgroundTertiary: "hsl(var(--sl-color-background-tertiary))",
 
-  colorSurface: "var(--sl-color-surface)",
-  colorSurfaceHover: "var(--sl-color-surface-hover)",
-  colorSurfaceActive: "var(--sl-color-surface-active)",
-  colorSurfaceSecondary: "var(--sl-color-surface-secondary)",
-  colorSurfaceTertiary: "var(--sl-color-surface-tertiary)",
-  colorSurfaceRaised: "var(--sl-color-surface-raised)",
-  colorSurfaceSunken: "var(--sl-color-surface-sunken)",
+  colorSurface: "hsl(var(--sl-color-surface))",
+  colorSurfaceHover: "hsl(var(--sl-color-surface-hover))",
+  colorSurfaceActive: "hsl(var(--sl-color-surface-active))",
+  colorSurfaceSecondary: "hsl(var(--sl-color-surface-secondary))",
+  colorSurfaceTertiary: "hsl(var(--sl-color-surface-tertiary))",
+  colorSurfaceRaised: "hsl(var(--sl-color-surface-raised))",
+  colorSurfaceSunken: "hsl(var(--sl-color-surface-sunken))",
 
   // --- Color: border ---
-  colorBorder: "var(--sl-color-border)",
-  colorBorderHover: "var(--sl-color-border-hover)",
-  colorBorderFocus: "var(--sl-color-border-focus)",
-  colorBorderSubtle: "var(--sl-color-border-subtle)",
-  colorBorderStrong: "var(--sl-color-border-strong)",
+  colorBorder: "hsl(var(--sl-color-border))",
+  colorBorderHover: "hsl(var(--sl-color-border-hover))",
+  colorBorderFocus: "hsl(var(--sl-color-border-focus))",
+  colorBorderSubtle: "hsl(var(--sl-color-border-subtle))",
+  colorBorderStrong: "hsl(var(--sl-color-border-strong))",
 
   // --- Color: text ---
-  colorTextPrimary: "var(--sl-color-text-primary)",
-  colorTextSecondary: "var(--sl-color-text-secondary)",
-  colorTextTertiary: "var(--sl-color-text-tertiary)",
-  colorTextDisabled: "var(--sl-color-text-disabled)",
-  colorTextInverse: "var(--sl-color-text-inverse)",
-  colorTextLink: "var(--sl-color-text-link)",
-  colorTextLinkHover: "var(--sl-color-text-link-hover)",
+  colorTextPrimary: "hsl(var(--sl-color-text-primary))",
+  colorTextSecondary: "hsl(var(--sl-color-text-secondary))",
+  colorTextTertiary: "hsl(var(--sl-color-text-tertiary))",
+  colorTextDisabled: "hsl(var(--sl-color-text-disabled))",
+  colorTextInverse: "hsl(var(--sl-color-text-inverse))",
+  colorTextLink: "hsl(var(--sl-color-text-link))",
+  colorTextLinkHover: "hsl(var(--sl-color-text-link-hover))",
 
   // --- Color: semantic ---
-  colorSuccess: "var(--sl-color-success)",
-  colorSuccessSubtle: "var(--sl-color-success-subtle)",
-  colorSuccessText: "var(--sl-color-success-text)",
+  colorSuccess: "hsl(var(--sl-color-success))",
+  colorSuccessSubtle: "hsl(var(--sl-color-success-subtle))",
+  colorSuccessText: "hsl(var(--sl-color-success-text))",
 
-  colorWarning: "var(--sl-color-warning)",
-  colorWarningSubtle: "var(--sl-color-warning-subtle)",
-  colorWarningText: "var(--sl-color-warning-text)",
+  colorWarning: "hsl(var(--sl-color-warning))",
+  colorWarningSubtle: "hsl(var(--sl-color-warning-subtle))",
+  colorWarningText: "hsl(var(--sl-color-warning-text))",
 
-  colorError: "var(--sl-color-error)",
-  colorErrorSubtle: "var(--sl-color-error-subtle)",
-  colorErrorText: "var(--sl-color-error-text)",
+  colorError: "hsl(var(--sl-color-error))",
+  colorErrorSubtle: "hsl(var(--sl-color-error-subtle))",
+  colorErrorText: "hsl(var(--sl-color-error-text))",
 
-  colorInfo: "var(--sl-color-info)",
-  colorInfoSubtle: "var(--sl-color-info-subtle)",
-  colorInfoText: "var(--sl-color-info-text)",
+  colorInfo: "hsl(var(--sl-color-info))",
+  colorInfoSubtle: "hsl(var(--sl-color-info-subtle))",
+  colorInfoText: "hsl(var(--sl-color-info-text))",
 
   // --- Color: Heiðursorðla tile states ---
-  colorHeidursordlaCorrect: "var(--sl-color-heidursordla-correct)",
-  colorHeidursordlaCorrectForeground: "var(--sl-color-heidursordla-correct-foreground)",
-  colorHeidursordlaPresent: "var(--sl-color-heidursordla-present)",
-  colorHeidursordlaPresentForeground: "var(--sl-color-heidursordla-present-foreground)",
-  colorHeidursordlaAbsent: "var(--sl-color-heidursordla-absent)",
-  colorHeidursordlaAbsentForeground: "var(--sl-color-heidursordla-absent-foreground)",
+  colorHeidursordlaCorrect: "hsl(var(--sl-color-heidursordla-correct))",
+  colorHeidursordlaCorrectForeground: "hsl(var(--sl-color-heidursordla-correct-foreground))",
+  colorHeidursordlaPresent: "hsl(var(--sl-color-heidursordla-present))",
+  colorHeidursordlaPresentForeground: "hsl(var(--sl-color-heidursordla-present-foreground))",
+  colorHeidursordlaAbsent: "hsl(var(--sl-color-heidursordla-absent))",
+  colorHeidursordlaAbsentForeground: "hsl(var(--sl-color-heidursordla-absent-foreground))",
 
   // --- Spacing ---
   spacingXs: "var(--sl-spacing-xs)",

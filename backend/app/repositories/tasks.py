@@ -8,6 +8,7 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.comment import Comment
 from app.models.content import Content
 from app.models.tag import ContentTag
 from app.models.task import Task
@@ -17,6 +18,7 @@ from app.repositories.content import (
     comment_count_subq,
     like_count_subq,
     liked_by_me_subq,
+    listable,
 )
 
 
@@ -25,18 +27,28 @@ class TaskRepository(Repository):
         super().__init__(session)
 
     async def get(
-        self, task_id: UUID, current_user_id: UUID | None = None
+        self,
+        task_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
     ) -> tuple[Task, ContentStats] | None:
         stmt = (
             select(Task, like_count_subq(), comment_count_subq(), liked_by_me_subq(current_user_id))
             .options(
                 selectinload(Task.author),
                 selectinload(Task.workspace),
-                selectinload(Task.comments),
+                selectinload(Task.comments).selectinload(Comment.user),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
             .where(Task.id == task_id, Task.deleted_at.is_(None))
         )
+        if not include_hidden:
+            # Same rule as ProgramRepository.get: hiding an item has to remove
+            # it from the queue *and* from the link. Without this a moderator
+            # who hides a Verkefni only takes it out of the listing, and anyone
+            # still holding the URL reads it in full.
+            stmt = stmt.where(Task.hidden_at.is_(None))
         row = (await self.session.execute(stmt)).first()
         if row is None:
             return None
@@ -51,10 +63,10 @@ class TaskRepository(Repository):
             .options(
                 selectinload(Task.author),
                 selectinload(Task.workspace),
-                selectinload(Task.comments),
+                selectinload(Task.comments).selectinload(Comment.user),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Task.id == task_id, Task.event_id == event_id, Task.deleted_at.is_(None))
+            .where(Task.id == task_id, Task.event_id == event_id, listable(Task))
         )
         row = (await self.session.execute(stmt)).first()
         if row is None:
@@ -64,9 +76,7 @@ class TaskRepository(Repository):
 
     async def count_tasks_for_event(self, event_id: UUID) -> int:
         result = await self.session.scalar(
-            select(func.count())
-            .select_from(Task)
-            .where(Task.event_id == event_id, Task.deleted_at.is_(None))
+            select(func.count()).select_from(Task).where(Task.event_id == event_id, listable(Task))
         )
         return result or 0
 
@@ -85,7 +95,7 @@ class TaskRepository(Repository):
                 selectinload(Task.workspace),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Task.event_id == event_id, Task.deleted_at.is_(None))
+            .where(Task.event_id == event_id, listable(Task))
             .order_by(Task.name)
             .limit(limit)
             .offset(offset)
@@ -100,7 +110,7 @@ class TaskRepository(Repository):
         result = await self.session.scalar(
             select(func.count())
             .select_from(Task)
-            .where(Task.workspace_id == workspace_id, Task.deleted_at.is_(None))
+            .where(Task.workspace_id == workspace_id, listable(Task))
         )
         return result or 0
 
@@ -119,7 +129,7 @@ class TaskRepository(Repository):
                 selectinload(Task.workspace),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Task.workspace_id == workspace_id, Task.deleted_at.is_(None))
+            .where(Task.workspace_id == workspace_id, listable(Task))
             .order_by(Task.name)
             .limit(limit)
             .offset(offset)

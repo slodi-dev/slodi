@@ -1,7 +1,7 @@
 """add game_saves table
 
 Revision ID: 505edb93669c
-Revises: ab250ef64e42
+Revises: b7c2e4a91d38
 Create Date: 2026-07-27 14:58:33.238238
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '505edb93669c'
-down_revision: Union[str, Sequence[str], None] = 'ab250ef64e42'
+down_revision: Union[str, Sequence[str], None] = 'b7c2e4a91d38'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

@@ -48,19 +48,27 @@ class RateLimiter:
 rate_limiter = RateLimiter()
 
 
+async def enforce_rate_limit(key: str, limit: int, window_seconds: int) -> None:
+    """Count one hit against `key` and raise 429 once it exceeds `limit`.
+
+    Exposed so endpoints whose limit depends on the request (a per-game cap, say)
+    can apply it without restating the 429 response.
+    """
+    allowed, retry_after = await rate_limiter.check(key, limit, window_seconds)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many requests",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
 def ip_rate_limit(limit: int, window_seconds: int) -> Callable:
     """FastAPI dependency factory for IP-based rate limiting (public endpoints)."""
 
     async def dependency(request: Request) -> None:
         client_host = request.client.host if request.client else "unknown"
-        key = f"{request.url.path}:{client_host}"
-        allowed, retry_after = await rate_limiter.check(key, limit, window_seconds)
-        if not allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many requests",
-                headers={"Retry-After": str(retry_after)},
-            )
+        await enforce_rate_limit(f"{request.url.path}:{client_host}", limit, window_seconds)
 
     return dependency
 
@@ -73,12 +81,6 @@ def user_rate_limit(limit: int, window_seconds: int) -> Callable:
         current_user: UserOut = Depends(get_current_user),  # noqa: B008
     ) -> None:
         key = f"{request.url.path}:user:{current_user.id}"
-        allowed, retry_after = await rate_limiter.check(key, limit, window_seconds)
-        if not allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many requests",
-                headers={"Retry-After": str(retry_after)},
-            )
+        await enforce_rate_limit(key, limit, window_seconds)
 
     return dependency

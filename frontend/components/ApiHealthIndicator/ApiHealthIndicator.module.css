@@ -22,27 +22,27 @@
 }
 
 .indicator[data-status="healthy"] .dot {
-  background: #22c55e;
+  background: hsl(var(--sl-color-success));
 }
 
 .indicator[data-status="unhealthy"] .dot {
-  background: #ef4444;
+  background: hsl(var(--sl-color-error));
 }
 
 .indicator[data-status="checking"] .dot {
-  background: #f59e0b;
+  background: hsl(var(--sl-color-warning));
 }
 
 .indicator[data-status="healthy"] .text {
-  color: #22c55e;
+  color: hsl(var(--sl-color-success-text));
 }
 
 .indicator[data-status="unhealthy"] .text {
-  color: #ef4444;
+  color: hsl(var(--sl-color-error-text));
 }
 
 .indicator[data-status="checking"] .text {
-  color: #f59e0b;
+  color: hsl(var(--sl-color-warning-text));
 }
 
 @keyframes pulse {

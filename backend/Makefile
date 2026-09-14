@@ -3,7 +3,7 @@
 HOST ?= 127.0.0.1
 PORT ?= 8000
 ARGS ?=
-.PHONY: test test-unit test-integration lint fmt typecheck migrate makemigration downgrade run seed docker-build docker-run docker-stop docker-clean docker-logs docker-shell docker-db-shell
+.PHONY: test test-unit test-integration lint fmt typecheck migrate makemigration downgrade run seed migrate-images migrate-images-dry docker-build docker-run docker-stop docker-clean docker-logs docker-shell docker-db-shell
 
 
 test-unit:
@@ -23,7 +23,7 @@ fmt:
 	uv run ruff format .
 
 typecheck:
-	uv run mypy app
+	uv run mypy app scripts
 
 makemigration:
 	uv run alembic revision --autogenerate -m "$(m)"
@@ -39,6 +39,14 @@ run:
 
 seed:
 	PYTHONPATH=. uv run python scripts/seed.py
+
+# One-off: re-host external content images on Azure Blob Storage.
+# Run the dry variant first to see what would move and what would fail.
+migrate-images-dry:
+	PYTHONPATH=. uv run python scripts/migrate_images_to_azure.py --dry-run $(ARGS)
+
+migrate-images:
+	PYTHONPATH=. uv run python scripts/migrate_images_to_azure.py $(ARGS)
 
 # Docker commands
 docker-build:

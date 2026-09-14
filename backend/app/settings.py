@@ -28,6 +28,30 @@ class Settings(BaseSettings):
 
     # Seed: emails that are always promoted to admin on `make seed`
     admin_emails: str = Field("", alias="ADMIN_EMAILS")
+    # Where an `unsafe` report is escalated to. Falls back to ADMIN_EMAILS when
+    # unset, because a safeguarding report with nowhere to go is the one failure
+    # mode this must not have.
+    moderation_emails: str = Field("", alias="MODERATION_EMAILS")
+    # Seed: emails promoted to `moderator` on `make seed` — Dagskrárstjórnarteymið.
+    moderator_emails: str = Field("", alias="MODERATOR_EMAILS")
+
+    # HMAC key for signed game run tokens. REQUIRED outside development —
+    # run_tokens._secret() raises when it is unset and ENV is not a dev value.
+    #
+    # It is deliberately NOT derived from another credential. An earlier version
+    # derived it from DB_PASSWORD, which made every token handed out by the
+    # unauthenticated /games/{slug}/runs endpoint a free offline oracle for
+    # brute-forcing the database password. See run_tokens._secret().
+    #
+    # Production sets itself: deploy-backend.yml generates a value into
+    # backend/.env.docker when that file has none, and never overwrites one.
+    #
+    # Changing it invalidates every run token still parked in a player's
+    # sessionStorage, up to the 12h TTL. Those runs come back as a rejected
+    # signature and are retried rather than lost, but the players affected will
+    # see an error. The same applies mid-rolling-deploy if one worker has the
+    # variable and another does not, so set it everywhere in the same release.
+    game_token_secret: str = Field("", alias="GAME_TOKEN_SECRET")
 
     # CORS configuration
     cors_origins: list[str] = Field(["http://localhost:3000"], alias="CORS_ORIGINS")
@@ -46,9 +70,31 @@ class Settings(BaseSettings):
     cache_tags_ttl_seconds: int = Field(600, alias="CACHE_TAGS_TTL_SECONDS")
     rate_limit_max_window_seconds: int = Field(3600, alias="RATE_LIMIT_MAX_WINDOW_SECONDS")
 
+    # Blob storage (one account, two containers)
+    azure_storage_account: str = Field(..., alias="AZURE_STORAGE_ACCOUNT")
+    azure_storage_key: str = Field(..., alias="AZURE_STORAGE_KEY")
+    # Public container: images served directly via <img> (anonymous blob read).
+    azure_storage_container_images: str = Field(..., alias="AZURE_STORAGE_CONTAINER_IMAGES")
+    # Private container: documents are only reachable via a download SAS.
+    azure_storage_container_documents: str = Field(..., alias="AZURE_STORAGE_CONTAINER_DOCUMENTS")
+
     @property
     def admin_email_list(self) -> list[str]:
         return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
+
+    @property
+    def moderator_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.moderator_emails.split(",") if e.strip()]
+
+    @property
+    def moderation_email_list(self) -> list[str]:
+        """Who hears about an `unsafe` report, within the day.
+
+        Falls back to the admins rather than to nothing: an escalation that
+        silently goes nowhere is worse than one that reaches the wrong inbox.
+        """
+        addresses = [e.strip().lower() for e in self.moderation_emails.split(",") if e.strip()]
+        return addresses or self.admin_email_list
 
     def model_post_init(self, __context: object) -> None:
         # Production database URL

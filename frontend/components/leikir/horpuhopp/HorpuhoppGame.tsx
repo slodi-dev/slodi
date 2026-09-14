@@ -28,5 +28,16 @@ export default function HorpuhoppGame({ onGameOver, onRestart }: Props) {
     });
   }, []); // engine starts once; callbacks are kept fresh via refs
 
-  return <canvas ref={canvasRef} className={styles.canvas} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className={styles.canvas}
+      // Focusable so a keyboard player can Tab back to the game. The engine
+      // ignores keys aimed at real controls, so without this there would be no
+      // route back once focus moved into the leaderboard or the header nav.
+      tabIndex={0}
+      role="application"
+      aria-label="Hörpuhopp — notaðu ör-takkana eða A og D til að hreyfa þig"
+    />
+  );
 }

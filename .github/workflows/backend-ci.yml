@@ -46,6 +46,10 @@ jobs:
           DB_PORT: "5432"
           AUTH0_DOMAIN: ci.auth0.com
           AUTH0_AUDIENCE: ci
+          AZURE_STORAGE_ACCOUNT: ci
+          AZURE_STORAGE_KEY: Y2k=
+          AZURE_STORAGE_CONTAINER_IMAGES: images
+          AZURE_STORAGE_CONTAINER_DOCUMENTS: documents
       - name: Notify Discord
         if: always()
         uses: sarisia/actions-status-discord@v1
@@ -80,6 +84,10 @@ jobs:
           DB_PORT: "5432"
           AUTH0_DOMAIN: ci.auth0.com
           AUTH0_AUDIENCE: ci
+          AZURE_STORAGE_ACCOUNT: ci
+          AZURE_STORAGE_KEY: Y2k=
+          AZURE_STORAGE_CONTAINER_IMAGES: images
+          AZURE_STORAGE_CONTAINER_DOCUMENTS: documents
 
       - name: Notify Discord
         if: always()

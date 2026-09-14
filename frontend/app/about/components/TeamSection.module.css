@@ -59,7 +59,7 @@
 }
 
 .leader {
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
   line-height: var(--sl-line-height-body);
   color: hsl(var(--sl-color-text-secondary));
 }
@@ -84,7 +84,7 @@
   gap: var(--sl-spacing-stack-md);
   padding: var(--sl-spacing-inset-xl);
   color: hsl(var(--sl-color-text-secondary));
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
 }
 
 .spinner {
@@ -108,7 +108,7 @@
   border: 1px solid hsl(var(--sl-color-error) / 0.3);
   border-radius: var(--sl-radius-card);
   color: hsl(var(--sl-color-error));
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
   text-align: center;
 }
 
@@ -128,9 +128,9 @@
   border-radius: var(--sl-radius-card);
   text-decoration: none;
   transition:
-    transform 200ms var(--sl-primitive-animation-easing),
-    border-color 200ms var(--sl-primitive-animation-easing),
-    box-shadow 200ms var(--sl-primitive-animation-easing);
+    transform 200ms var(--sl-primitive-ease-in-out),
+    border-color 200ms var(--sl-primitive-ease-in-out),
+    box-shadow 200ms var(--sl-primitive-ease-in-out);
 }
 
 .contributorCard:hover {
@@ -161,7 +161,7 @@
 }
 
 .contributorName {
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
   font-weight: var(--sl-font-weight-emphasis);
   color: hsl(var(--sl-color-text-primary));
   overflow: hidden;
@@ -199,7 +199,7 @@
 }
 
 .ctaText {
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
   line-height: var(--sl-line-height-body);
   color: hsl(var(--sl-color-text-secondary));
   margin: 0;
@@ -222,7 +222,7 @@
   }
 
   .introduction {
-    font-size: var(--sl-text-body-md);
+    font-size: var(--sl-text-body);
     margin-bottom: var(--sl-spacing-container);
   }
 

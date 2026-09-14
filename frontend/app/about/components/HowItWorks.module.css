@@ -39,9 +39,9 @@
   flex-direction: column;
   align-items: center;
   transition:
-    transform 200ms var(--sl-primitive-animation-easing),
-    border-color 200ms var(--sl-primitive-animation-easing),
-    box-shadow 200ms var(--sl-primitive-animation-easing);
+    transform 200ms var(--sl-primitive-ease-in-out),
+    border-color 200ms var(--sl-primitive-ease-in-out),
+    box-shadow 200ms var(--sl-primitive-ease-in-out);
 }
 
 .featureCard:hover {
@@ -93,7 +93,7 @@
 }
 
 .featureItem {
-  font-size: var(--sl-text-body-md);
+  font-size: var(--sl-text-body);
   line-height: var(--sl-line-height-body);
   color: hsl(var(--sl-color-text-secondary));
   padding-left: var(--sl-spacing-inset-lg);
@@ -105,7 +105,7 @@
   position: absolute;
   left: 0;
   color: hsl(var(--sl-color-success));
-  font-weight: var(--sl-font-weight-bold);
+  font-weight: var(--sl-primitive-font-weight-bold);
 }
 
 /* ═══════════════════════════════════════════════════════════

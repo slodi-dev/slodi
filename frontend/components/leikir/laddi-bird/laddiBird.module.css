@@ -1,0 +1,38 @@
+/* Page shell — mirrors horpuhopp.module.css: canvas + sidebar side-by-side on
+   desktop, canvas full-bleed with the leaderboard as a bottom sheet on mobile. */
+
+.root {
+  background: hsl(var(--sl-color-background));
+  /* Fill exactly the space below the header, no scrolling */
+  height: calc(100dvh - 60px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.gameArea {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-lg);
+  padding: var(--sl-spacing-lg);
+  height: 100%;
+  width: 100%;
+  max-width: 700px;
+}
+
+@media (max-width: 639px) {
+  .root {
+    padding: 0;
+    align-items: flex-start;
+    height: calc(100dvh - 56px);
+  }
+
+  .gameArea {
+    padding: 0;
+    gap: 0;
+    max-width: 100%;
+  }
+}

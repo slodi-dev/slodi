@@ -20,6 +20,7 @@ _NOW = dt(2025, 6, 1, 10, 0, tzinfo=timezone.utc)
 def _make_task(workspace_id, event_id=None):
     author_id = uuid4()
     return TaskOut(
+        content_type="task",
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Task",
@@ -34,6 +35,7 @@ def _make_task(workspace_id, event_id=None):
 
 def _make_task_list_out(workspace_id, event_id=None):
     return TaskListOut(
+        content_type="task",
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Task",
@@ -48,6 +50,7 @@ def _make_task_list_out(workspace_id, event_id=None):
 def _make_event(workspace_id):
     author_id = uuid4()
     return EventOut(
+        content_type="event",
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Event",

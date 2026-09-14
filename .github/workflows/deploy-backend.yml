@@ -22,8 +22,42 @@ jobs:
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
+            set -eu
             cd ~/slodi
             git pull origin main
+
+            # ── GAME_TOKEN_SECRET: generate once, never rotate silently ──
+            #
+            # backend/.env.docker is gitignored, so `git pull` never creates or
+            # updates it and a new required variable would otherwise have to be
+            # added by hand on the box. This closes that gap.
+            #
+            # The value is generated *here* rather than kept as a GitHub secret
+            # because nothing off this VM ever reads it: it signs game run
+            # tokens and verifies them in the same process. A secret no human
+            # has to handle is one that cannot be leaked by handling.
+            #
+            # Only ever generated when missing. Rotating it invalidates every
+            # run token parked in a player's sessionStorage for up to the 12h
+            # TTL, so a deploy must not do it as a side effect.
+            ENV_FILE=backend/.env.docker
+            touch "$ENV_FILE"
+            chmod 600 "$ENV_FILE"
+
+            # Treat the .env.example placeholder as absent, not as a value.
+            CURRENT=$(sed -n 's/^[[:space:]]*GAME_TOKEN_SECRET[[:space:]]*=[[:space:]]*//p' "$ENV_FILE" | tail -n1 | tr -d '"\r ')
+            if [ -z "$CURRENT" ] || [ "$CURRENT" = "change-me" ]; then
+              cp "$ENV_FILE" "$ENV_FILE.bak"
+              sed -i '/^[[:space:]]*GAME_TOKEN_SECRET[[:space:]]*=/d' "$ENV_FILE"
+              # Append on a line of its own even if the file lacks a final newline.
+              if [ -s "$ENV_FILE" ] && [ -n "$(tail -c1 "$ENV_FILE")" ]; then echo "" >> "$ENV_FILE"; fi
+              GENERATED=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))' 2>/dev/null || openssl rand -hex 32)
+              echo "GAME_TOKEN_SECRET=$GENERATED" >> "$ENV_FILE"
+              echo "GAME_TOKEN_SECRET was absent — generated a new one."
+            else
+              echo "GAME_TOKEN_SECRET already set — left untouched."
+            fi
+
             docker compose -f docker-compose.yml up -d --build migrations backend
             docker image prune -f
       - name: Notify Discord

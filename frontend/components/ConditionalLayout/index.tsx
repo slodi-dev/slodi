@@ -53,6 +53,7 @@ const DASHBOARD_ROUTES = [
   "/analytics",
   "/tags",
   "/admin",
+  "/yfirferd",
   "/profile",
   "/settings",
   "/badges",

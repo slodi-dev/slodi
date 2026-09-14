@@ -1,10 +1,11 @@
 import { buildApiUrl } from "@/lib/api-utils";
-import { fetchWithAuth } from "@/lib/api";
-import { User } from "@/services/users.service";
+import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
+import { fetchWithAuth, fetchPageWithAuth } from "@/lib/api";
 
 export type Program = {
   id: string;
-  content_type: "program";
+  /** The bank lists all three kinds now, so this is no longer always "program". */
+  content_type: "program" | "event" | "task";
   name: string;
   description: string | null;
   public: boolean;
@@ -38,24 +39,67 @@ export type Program = {
   count_min?: number | null;
   count_max?: number | null;
   price?: number | null;
+  /**
+   * Attachments. `images` is ordered and its first entry is the hero, which is
+   * mirrored into `image` so cards, listings and Yfirferð keep reading a single
+   * URL. Items created before the list carry only `image`.
+   */
+  media?: {
+    images?: Array<{ name: string; url: string; content_type?: string | null }>;
+    documents?: Array<{ name: string; url: string; content_type?: string | null }>;
+  } | null;
+  comments?: ContentComment[];
+  /**
+   * Only ever present for the item's own author and for moderators — the
+   * server strips it for everyone else. A leader needs to know whether their
+   * submission was looked at; nobody else needs to know how the team judged
+   * somebody else's idea.
+   */
+  review_state?: "unreviewed" | "approved" | "rejected" | null;
+  review_note?: string | null;
+  /**
+   * Set when a moderator has unlisted the item. Carried on the same terms as
+   * the review fields, and the reason the author can still open it at all: the
+   * item is absent from every listing, including their own.
+   */
+  hidden_at?: string | null;
 };
 
+/** A leader's public comment on a bank item — not a reviewer's note. */
+export type ContentComment = {
+  id: string;
+  body: string;
+  created_at: string;
+  user_id: string;
+  content_id: string;
+  author_name: string;
+};
+
+/**
+ * `null` is accepted as well as absent so one payload can serve create and
+ * edit. They differ only when editing, where an absent key means "leave this
+ * alone" and an emptied field therefore has to be sent as an explicit null.
+ * On create the two are the same thing, and the backend's `ContentCreate`
+ * takes `| None` on every one of these.
+ */
 export type ProgramCreateInput = {
   name: string;
-  description?: string;
-  image?: string;
-  instructions?: string;
-  equipment?: string[];
-  duration_min?: number;
-  duration_max?: number;
-  prep_time_min?: number;
-  prep_time_max?: number;
-  age?: string[];
-  location?: string;
-  count_min?: number;
-  count_max?: number;
-  price?: number;
+  description?: string | null;
+  image?: string | null;
+  instructions?: string | null;
+  equipment?: string[] | null;
+  duration_min?: number | null;
+  duration_max?: number | null;
+  prep_time_min?: number | null;
+  prep_time_max?: number | null;
+  age?: string[] | null;
+  location?: string | null;
+  count_min?: number | null;
+  count_max?: number | null;
+  price?: number | null;
   tagNames?: string[];
+  /** Free-form JSONB. `documents` is the shape Yfirferð reads attachments from. */
+  media?: Record<string, unknown>;
   workspaceId: string; // Required - workspace to create program in
 };
 
@@ -75,38 +119,106 @@ export type ProgramUpdateInput = {
   count_min?: number | null;
   count_max?: number | null;
   price?: number | null;
-  tagNames?: string[]; // omit to leave tags unchanged; pass [] to clear all tags
+  tagNames?: string[];
+  /** Free-form JSONB. `documents` is the shape Yfirferð reads attachments from. */
+  media?: Record<string, unknown>; // omit to leave tags unchanged; pass [] to clear all tags
 };
 
 export type ProgramsResponse = Program[] | { programs: Program[] };
 
-/**
- * Check if a user can edit a program.
- * @deprecated Use `canEditProgram` from `@/lib/permissions` with workspace role for accurate checks.
- */
-export function canEditProgram(user: User | null, program: Program): boolean {
-  if (!user || !program) return false;
-  return user.id === program.author_id;
+/** What the bank can be narrowed by. Mirrors the query params on `/content`. */
+export type ContentQuery = {
+  search?: string;
+  ages?: string[];
+  tags?: string[];
+  equipment?: string[];
+  author?: string;
+  location?: string;
+  durationMin?: number;
+  durationMax?: number;
+  prepMin?: number;
+  prepMax?: number;
+  countMin?: number;
+  countMax?: number;
+  freeOnly?: boolean;
+  priceMax?: number;
+  sortBy?: string;
+};
+
+/** The option lists the filter sidebar offers, across the whole bank. */
+export type ContentFacets = {
+  locations: string[];
+  equipment: string[];
+  authors: string[];
+  tags: string[];
+};
+
+function buildContentParams(query: ContentQuery, limit: number, offset: number): URLSearchParams {
+  const p = new URLSearchParams();
+  p.set("limit", String(limit));
+  p.set("offset", String(offset));
+
+  if (query.search?.trim()) p.set("search", query.search.trim());
+  for (const age of query.ages ?? []) p.append("age", age);
+  for (const tag of query.tags ?? []) p.append("tags", tag);
+  for (const item of query.equipment ?? []) p.append("equipment", item);
+  if (query.author?.trim()) p.set("author", query.author.trim());
+  if (query.location?.trim()) p.set("location", query.location.trim());
+  if (query.durationMin !== undefined) p.set("duration_min", String(query.durationMin));
+  if (query.durationMax !== undefined) p.set("duration_max", String(query.durationMax));
+  if (query.prepMin !== undefined) p.set("prep_time_min", String(query.prepMin));
+  if (query.prepMax !== undefined) p.set("prep_time_max", String(query.prepMax));
+  if (query.countMin !== undefined) p.set("count_min", String(query.countMin));
+  if (query.countMax !== undefined) p.set("count_max", String(query.countMax));
+  // `freeOnly` is price_max=0, which the backend reads as "free or unpriced".
+  if (query.freeOnly) p.set("price_max", "0");
+  else if (query.priceMax !== undefined) p.set("price_max", String(query.priceMax));
+  if (query.sortBy) p.set("sort_by", query.sortBy);
+
+  return p;
 }
 
 /**
- * Fetch all programs for a workspace
- * Requires authentication
+ * One page of the bank, filtered and sorted by the server.
+ *
+ * Both halves of that sentence matter. This used to fetch a flat `limit=200`
+ * and let the browser filter and slice it, which meant the bank showed 200 of
+ * 10.004 items and called the result "everything" — a filter that matched
+ * nothing on the first 200 rows reported an empty bank.
+ *
+ * `/content`, not `/programs`: the latter returns only rows whose content_type
+ * is "program", which was indistinguishable from "everything" while the create
+ * form filed every submission as one.
  */
 export async function fetchPrograms(
   workspaceId: string,
-  getToken: () => Promise<string | null>
-): Promise<Program[]> {
-  const url = buildApiUrl(`/workspaces/${workspaceId}/programs?limit=200`);
-  const data = await fetchWithAuth<ProgramsResponse>(
-    url,
-    {
-      method: "GET",
-    },
-    getToken
-  );
+  getToken: () => Promise<string | null>,
+  options: { query?: ContentQuery; limit?: number; offset?: number } = {}
+): Promise<{ items: Program[]; total: number | null }> {
+  const { query = {}, limit = 24, offset = 0 } = options;
+  const params = buildContentParams(query, limit, offset);
+  const url = buildApiUrl(`/workspaces/${workspaceId}/content?${params.toString()}`);
+  return fetchPageWithAuth<Program>(url, { method: "GET" }, getToken);
+}
 
-  return Array.isArray(data) ? data : data.programs || [];
+/**
+ * The filter sidebar's option lists.
+ *
+ * Derived in the browser before, from whatever rows had been fetched — which
+ * offered one page's worth of equipment once the grid started paging.
+ */
+export async function fetchContentFacets(
+  workspaceId: string,
+  getToken: () => Promise<string | null>
+): Promise<ContentFacets> {
+  const url = buildApiUrl(`/workspaces/${workspaceId}/content/facets`);
+  const raw = await fetchWithAuth<Partial<ContentFacets>>(url, { method: "GET" }, getToken);
+  return {
+    locations: raw.locations ?? [],
+    equipment: raw.equipment ?? [],
+    authors: raw.authors ?? [],
+    tags: raw.tags ?? [],
+  };
 }
 
 /**
@@ -117,7 +229,11 @@ export async function fetchProgramById(
   id: string,
   getToken: () => Promise<string | null>
 ): Promise<Program> {
-  const url = buildApiUrl(`/programs/${id}`);
+  // `/content/{id}`, not `/programs/{id}`, for the same reason the listing
+  // moved: the latter selects `Program`, which under joined-table inheritance
+  // matches only rows whose content_type is "program". Every Verkefni a leader
+  // submitted 404'd on the page the bank had just linked them to.
+  const url = buildApiUrl(`/content/${id}`);
   return fetchWithAuth<Program>(
     url,
     {
@@ -131,7 +247,33 @@ export async function fetchProgramById(
  * Create a new program
  * Requires authentication - backend will set author_id from authenticated user
  */
-export async function createProgram(
+/**
+ * Where each content type is created, and what it calls itself on the wire.
+ *
+ * The three share every field a bank submission carries — a Verkefni and a
+ * Viðburður differ in what they *are*, not in what you write about them — so
+ * one payload serves all three and only the route and the discriminator change.
+ */
+const CREATE_ROUTE: Record<BankContentType, string> = {
+  task: "tasks",
+  event: "events",
+  program: "programs",
+};
+
+/**
+ * Put something in the bank.
+ *
+ * Everything used to go through `createProgram`, which hardcoded
+ * `content_type: "program"` — so a leikur submitted by a leader was stored as a
+ * Dagskrá, a *collection*, and arrived in the review queue as an empty one.
+ * The type is now the caller's to state, and `ContentTypeChooser` is what asks.
+ *
+ * **No date is sent for an event.** A bank Viðburður is a template somebody may
+ * run in March or September; `start_dt` is nullable precisely so it can stay
+ * unanswered rather than defaulting to the moment of submission.
+ */
+export async function createBankContent(
+  type: BankContentType,
   input: ProgramCreateInput,
   getToken: () => Promise<string | null>
 ): Promise<Program> {
@@ -151,10 +293,11 @@ export async function createProgram(
     count_max: input.count_max ?? null,
     price: input.price ?? null,
     tag_names: input.tagNames && input.tagNames.length > 0 ? input.tagNames : null,
-    content_type: "program" as const,
+    media: input.media ?? null,
+    content_type: type,
   };
 
-  const url = buildApiUrl(`/workspaces/${input.workspaceId}/programs`);
+  const url = buildApiUrl(`/workspaces/${input.workspaceId}/${CREATE_ROUTE[type]}`);
 
   const data = await fetchWithAuth<Program | Program[]>(
     url,
@@ -171,10 +314,47 @@ export async function createProgram(
   return Array.isArray(data) ? data[0] : data;
 }
 
+/** Back-compat shim for callers that only ever make a Dagskrá. */
+export async function createProgram(
+  input: ProgramCreateInput,
+  getToken: () => Promise<string | null>
+): Promise<Program> {
+  return createBankContent("program", input, getToken);
+}
+
 /**
  * Update an existing program
  * Requires authentication
  */
+/**
+ * Save an edit to a bank item of any kind.
+ *
+ * Each subtype has its own PATCH route, and `/programs/{id}` matches only rows
+ * whose content_type is "program" — the same joined-table trap that made every
+ * Verkefni 404 on the detail page. Editing one failed the same way, silently,
+ * because the type was assumed rather than passed.
+ */
+export async function updateBankContent(
+  type: BankContentType,
+  id: string,
+  input: ProgramUpdateInput,
+  getToken: () => Promise<string | null>
+): Promise<Program> {
+  const { tagNames, ...rest } = input;
+  const body = tagNames !== undefined ? { ...rest, tag_names: tagNames } : rest;
+  const url = buildApiUrl(`/${CREATE_ROUTE[type]}/${id}`);
+  return fetchWithAuth<Program>(
+    url,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    getToken
+  );
+}
+
+/** @deprecated Pass the content type — use `updateBankContent`. */
 export async function updateProgram(
   id: string,
   input: ProgramUpdateInput,
@@ -234,14 +414,6 @@ export async function unlikeProgram(
 ): Promise<void> {
   const url = buildApiUrl(`/content/${programId}/likes`);
   await fetchWithAuth<void>(url, { method: "DELETE" }, getToken);
-}
-
-/**
- * Extract unique tags from programs list
- */
-export function extractTags(programs: Program[]): string[] {
-  const tagNames = programs.flatMap((p) => (p.tags || []).map((t) => t.name));
-  return Array.from(new Set(tagNames));
 }
 
 /**

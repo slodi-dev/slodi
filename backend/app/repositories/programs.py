@@ -4,15 +4,17 @@ import datetime as dt
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, func, or_, select, update
+from sqlalchemy import ColumnElement, Select, func, or_, select, true, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.comment import Comment
 from app.models.content import Content
 from app.models.event import Event
 from app.models.program import Program
-from app.models.tag import ContentTag
+from app.models.tag import ContentTag, Tag
+from app.models.user import User
 from app.repositories.base import Repository
 from app.repositories.content import (
     ContentStats,
@@ -28,7 +30,11 @@ class ProgramRepository(Repository):
         super().__init__(session)
 
     async def get(
-        self, program_id: UUID, current_user_id: UUID | None = None
+        self,
+        program_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden: bool = False,
     ) -> tuple[Program, ContentStats] | None:
         stmt = (
             select(
@@ -42,11 +48,15 @@ class ProgramRepository(Repository):
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Program.comments),
+                selectinload(Program.comments).selectinload(Comment.user),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(Program.id == program_id, Program.deleted_at.is_(None))
         )
+        if not include_hidden:
+            # Otherwise hiding something only removes it from the list, and
+            # anyone holding the link still reads it.
+            stmt = stmt.where(Program.hidden_at.is_(None))
         row = (await self.session.execute(stmt)).first()
         if row is None:
             return None
@@ -68,7 +78,7 @@ class ProgramRepository(Repository):
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Program.comments),
+                selectinload(Program.comments).selectinload(Comment.user),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(
@@ -90,40 +100,64 @@ class ProgramRepository(Repository):
             pattern = f"%{escaped}%"
             stmt = stmt.where(
                 or_(
-                    Program.name.ilike(pattern),
-                    Program.description.ilike(pattern),
+                    Content.name.ilike(pattern),
+                    Content.description.ilike(pattern),
                 )
             )
         if filters.age:
             # PostgreSQL ARRAY overlap operator: content.age && ARRAY[...]
-            stmt = stmt.where(Program.age.overlap(filters.age))
+            stmt = stmt.where(Content.age.overlap(filters.age))
         if filters.duration_min is not None:
-            stmt = stmt.where(Program.duration_max >= filters.duration_min)
+            stmt = stmt.where(Content.duration_max >= filters.duration_min)
         if filters.duration_max is not None:
-            stmt = stmt.where(Program.duration_min <= filters.duration_max)
+            stmt = stmt.where(Content.duration_min <= filters.duration_max)
         if filters.prep_time_min is not None:
-            stmt = stmt.where(Program.prep_time_max >= filters.prep_time_min)
+            stmt = stmt.where(Content.prep_time_max >= filters.prep_time_min)
         if filters.prep_time_max is not None:
-            stmt = stmt.where(Program.prep_time_min <= filters.prep_time_max)
+            stmt = stmt.where(Content.prep_time_min <= filters.prep_time_max)
         if filters.count_min is not None:
-            stmt = stmt.where(Program.count_max >= filters.count_min)
+            stmt = stmt.where(Content.count_max >= filters.count_min)
         if filters.count_max is not None:
-            stmt = stmt.where(Program.count_min <= filters.count_max)
+            stmt = stmt.where(Content.count_min <= filters.count_max)
         if filters.price_max is not None:
             if filters.price_max == 0:
-                stmt = stmt.where(or_(Program.price == 0, Program.price.is_(None)))
+                stmt = stmt.where(or_(Content.price == 0, Content.price.is_(None)))
             else:
-                stmt = stmt.where(Program.price <= filters.price_max)
+                stmt = stmt.where(Content.price <= filters.price_max)
         if filters.location:
             escaped_location = filters.location.replace("%", r"\%").replace("_", r"\_")
-            stmt = stmt.where(Program.location.ilike(f"%{escaped_location}%"))
+            stmt = stmt.where(Content.location.ilike(f"%{escaped_location}%"))
         if filters.equipment:
             # JSONB array: check if equipment contains any of the given items (OR logic)
             stmt = stmt.where(
-                or_(*(Program.equipment.contains([item]) for item in filters.equipment))
+                or_(*(Content.equipment.contains([item]) for item in filters.equipment))
             )
+        if filters.tags:
+            # Case-insensitive, OR logic. A subquery rather than a join: joining
+            # content_tags multiplies rows per matching tag, which is invisible
+            # in a listing but silently inflates `count()`.
+            #
+            # Lowercased on both sides because the bank's own vocabulary is
+            # capitalised („Útivist") while a URL or a hand-typed filter is not
+            # — an exact match is how a tag that plainly exists comes back empty.
+            wanted = [t.strip().lower() for t in filters.tags if t.strip()]
+            if wanted:
+                stmt = stmt.where(
+                    Content.id.in_(
+                        select(ContentTag.content_id)
+                        .join(Tag, Tag.id == ContentTag.tag_id)
+                        .where(func.lower(Tag.name).in_(wanted))
+                    )
+                )
         if filters.author_id is not None:
-            stmt = stmt.where(Program.author_id == filters.author_id)
+            stmt = stmt.where(Content.author_id == filters.author_id)
+        if filters.author_name:
+            # The sidebar filters by name, not id — a leader looking for their
+            # own submissions knows what they are called, not their UUID.
+            escaped = filters.author_name.replace("%", r"\%").replace("_", r"\_")
+            stmt = stmt.where(
+                Content.author_id.in_(select(User.id).where(User.name.ilike(f"%{escaped}%")))
+            )
         return stmt
 
     def _apply_sort(
@@ -134,15 +168,15 @@ class ProgramRepository(Repository):
     ) -> Select:
         """Apply sorting to a SELECT statement."""
         if filters.sort_by == "oldest":
-            stmt = stmt.order_by(Program.created_at.asc())
+            stmt = stmt.order_by(Content.created_at.asc())
         elif filters.sort_by == "newest":
-            stmt = stmt.order_by(Program.created_at.desc())
+            stmt = stmt.order_by(Content.created_at.desc())
         elif filters.sort_by == "liked" and like_count_col is not None:
-            stmt = stmt.order_by(like_count_col.desc(), Program.created_at.desc())
+            stmt = stmt.order_by(like_count_col.desc(), Content.created_at.desc())
         elif filters.sort_by == "alpha":
-            stmt = stmt.order_by(Program.name.asc())
+            stmt = stmt.order_by(Content.name.asc())
         else:
-            stmt = stmt.order_by(Program.name)
+            stmt = stmt.order_by(Content.name)
         return stmt
 
     async def count_programs_for_workspace(
@@ -151,7 +185,103 @@ class ProgramRepository(Repository):
         stmt = (
             select(func.count())
             .select_from(Program)
-            .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
+            .where(
+                Content.workspace_id == workspace_id,
+                Content.deleted_at.is_(None),
+                # Hidden means the same as deleted to a listing: not listed, not
+                # gone. A moderator reaches it through the Yfirferð board.
+                Content.hidden_at.is_(None),
+            )
+        )
+        stmt = self._apply_filters(stmt, filters or ProgramFilters())
+        result = await self.session.scalar(stmt)
+        return result or 0
+
+    async def facets_for_workspace(self, workspace_id: UUID) -> dict[str, list[str]]:
+        """The distinct values the filter sidebar offers, across the whole bank.
+
+        These used to be derived in the browser from whatever had been fetched.
+        That was already only a slice of the bank, and it became plainly wrong
+        once the grid started fetching one page at a time: a checkbox list
+        built from twelve rows offers twelve rows' worth of equipment and
+        silently hides the rest.
+
+        One round trip, four cheap DISTINCTs over an indexed workspace column.
+        """
+        base = [
+            Content.workspace_id == workspace_id,
+            Content.deleted_at.is_(None),
+            Content.hidden_at.is_(None),
+        ]
+
+        locations = await self.session.scalars(
+            select(Content.location)
+            .where(*base, Content.location.is_not(None), Content.location != "")
+            .distinct()
+            .order_by(Content.location)
+        )
+
+        # `equipment` is a JSONB array, so the distinct values live one level
+        # down — unnest before collecting them.
+        item = func.jsonb_array_elements_text(Content.equipment).table_valued("value")
+        equipment = await self.session.scalars(
+            select(item.c.value)
+            .select_from(Content)
+            .join(item, true())
+            .where(*base, Content.equipment.is_not(None))
+            .distinct()
+            .order_by(item.c.value)
+        )
+
+        authors = await self.session.scalars(
+            select(User.name)
+            .join(Content, Content.author_id == User.id)
+            .where(*base)
+            .distinct()
+            .order_by(User.name)
+        )
+
+        tags = await self.session.scalars(
+            select(Tag.name)
+            .join(ContentTag, ContentTag.tag_id == Tag.id)
+            .join(Content, Content.id == ContentTag.content_id)
+            .where(*base)
+            .distinct()
+            .order_by(Tag.name)
+        )
+
+        return {
+            "locations": [v for v in locations if v],
+            "equipment": [v for v in equipment if v],
+            "authors": [v for v in authors if v],
+            "tags": [v for v in tags if v],
+        }
+
+    async def get_content_type(self, content_id: UUID) -> str | None:
+        """The discriminator for one row, without loading the row itself.
+
+        `GET /content/{id}` has to know which subtype it is holding before it
+        can pick a loader, and every subtype loader eager-loads relationships
+        that only exist on that subtype. Selecting the discriminator alone
+        keeps that decision to a single cheap scalar.
+        """
+        stmt = select(Content.content_type).where(
+            Content.id == content_id, Content.deleted_at.is_(None)
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def count_content_for_workspace(
+        self, workspace_id: UUID, filters: ProgramFilters | None = None
+    ) -> int:
+        """Counts every kind, to match `list_content_by_workspace`."""
+        stmt = (
+            select(func.count())
+            .select_from(Content)
+            .where(
+                Content.workspace_id == workspace_id,
+                Content.deleted_at.is_(None),
+                Content.hidden_at.is_(None),
+            )
         )
         stmt = self._apply_filters(stmt, filters or ProgramFilters())
         result = await self.session.scalar(stmt)
@@ -175,7 +305,13 @@ class ProgramRepository(Repository):
                 selectinload(Program.workspace),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
-            .where(Program.workspace_id == workspace_id, Program.deleted_at.is_(None))
+            .where(
+                Program.workspace_id == workspace_id,
+                Program.deleted_at.is_(None),
+                # Hidden means the same as deleted to a listing: not listed, not
+                # gone. A moderator reaches it through the Yfirferð board.
+                Program.hidden_at.is_(None),
+            )
         )
         stmt = self._apply_filters(stmt, resolved_filters)
         stmt = self._apply_sort(stmt, resolved_filters, like_count_col=lc_subq)
@@ -184,6 +320,55 @@ class ProgramRepository(Repository):
         return [
             (prog, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm)))
             for prog, lc, cc, lm in rows
+        ]
+
+    async def list_content_by_workspace(
+        self,
+        workspace_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        filters: ProgramFilters | None = None,
+    ) -> list[tuple[Content, ContentStats]]:
+        """Everything in the bank, whatever kind it is.
+
+        The bank list used to read `/programs`, which returns only rows whose
+        `content_type` is `program`. That was invisible while *everything* was
+        filed as a program — and the moment the create chooser started filing a
+        Verkefni as a task, every correctly-typed submission vanished from the
+        bank it had just been added to.
+
+        Selects the polymorphic base rather than a subtype, so one query covers
+        all three. The filters are shared with `list_by_workspace` and name
+        `Content.*` columns for exactly this reason: naming `Program.*` while
+        selecting `Content` makes SQLAlchemy alias the base table and match
+        nothing, with an SAWarning as the only sign.
+        """
+        resolved_filters = filters or ProgramFilters()
+        lc_subq = like_count_subq()
+        stmt = (
+            select(Content, lc_subq, comment_count_subq(), liked_by_me_subq(current_user_id))
+            .options(
+                selectinload(Content.author),
+                selectinload(Content.workspace),
+                selectinload(Content.content_tags).selectinload(ContentTag.tag),
+            )
+            .where(
+                Content.workspace_id == workspace_id,
+                Content.deleted_at.is_(None),
+                # Hidden means "not listed, not gone" — a moderator took it out
+                # of the bank, so the bank must not show it.
+                Content.hidden_at.is_(None),
+            )
+        )
+        stmt = self._apply_filters(stmt, resolved_filters)
+        stmt = self._apply_sort(stmt, resolved_filters, like_count_col=lc_subq)
+        stmt = stmt.limit(limit).offset(offset)
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            (row[0], ContentStats(like_count=row[1], comment_count=row[2], liked_by_me=row[3]))
+            for row in rows
         ]
 
     async def create(self, program: Program) -> Program:

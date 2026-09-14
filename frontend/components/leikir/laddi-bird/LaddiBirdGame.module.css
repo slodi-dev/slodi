@@ -1,0 +1,37 @@
+/* The canvas fills the available height while keeping its intrinsic ratio
+   (276×500 game pixels — the resolution the sprite set was drawn for). */
+
+.canvas {
+  display: block;
+  aspect-ratio: 276 / 500;
+  height: 100%;
+  max-height: calc(100dvh - 60px - 2 * var(--sl-spacing-lg, 24px));
+  max-width: 100%;
+  width: auto;
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+  /* Pixel art: keep the sprites crisp when the canvas is scaled up by CSS. */
+  image-rendering: pixelated;
+  /* Stop the browser treating a tap as a scroll or double-tap zoom. */
+  touch-action: manipulation;
+}
+
+.canvas:focus-visible {
+  outline: 3px solid hsl(var(--sl-color-primary));
+  outline-offset: 3px;
+}
+
+@media (max-width: 639px) {
+  .canvas {
+    /* Fit to height, not width. At 276:500 this canvas is markedly taller than
+       Hörpuhopp's 400:600, so filling the width overflows the viewport — on a
+       360x640 phone it would want 652px of the ~584px available, and the root's
+       overflow:hidden would silently crop the ground strip off the bottom. */
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    max-height: calc(100dvh - 56px);
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

@@ -75,8 +75,8 @@ export const GAMES: GameDef[] = [
     emblem: "🐦",
     emblemKind: "glyph",
     accent: "drekar",
-    status: "soon",
-    hasLeaderboard: false,
+    status: "live",
+    hasLeaderboard: true,
   },
 ];
 
