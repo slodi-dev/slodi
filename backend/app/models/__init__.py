@@ -6,6 +6,7 @@ from .content_report import ContentReport
 from .email_draft import EmailDraft
 from .email_list import EmailList
 from .event import Event
+from .game_save import GameSave
 from .game_score import GameScore
 from .group import Group, GroupMembership, GroupRole
 from .heidursordla import HeidursordlaAttempt, HeidursordlaPuzzle
