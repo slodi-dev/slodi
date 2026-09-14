@@ -33,7 +33,6 @@ describe("middleware, signed out", () => {
     ["/leikir/heidursordla", 200],
     ["/api/leikir/arnor-clicker/scores", 200],
     ["/auth/login", 200],
-    ["/does-not-exist", 200], // falls through to the 404 page
     ["/admin", 307],
     ["/yfirferd", 307],
     ["/programs", 307],
@@ -50,6 +49,9 @@ describe("middleware, signed out", () => {
     ["/api/emails", 401],
     ["/api/config", 401],
     ["/api/devlogs", 401],
+    // Not on the allowlist, so private even though no page serves it
+    ["/does-not-exist", 307],
+    ["/api/does-not-exist", 401],
   ])("%s → %i", async (route, expected) => {
     expect((await statusFor(route)).status).toBe(expected);
   });

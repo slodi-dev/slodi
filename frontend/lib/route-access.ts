@@ -1,60 +1,43 @@
 /**
  * Who may open which route. Read by `middleware.ts`.
  *
- * Every page and route handler under `app/` must be covered by an entry here —
- * `lib/__tests__/route-access.test.ts` walks the directory and fails if one is
- * not. That test is what keeps new routes private: nobody has to remember the
- * middleware, only to answer the question the failing test asks.
+ * This is an allowlist: a route is public only if it is listed here, and
+ * everything else — including paths no page serves — requires a session. A new
+ * route is therefore private until someone deliberately adds it below.
  *
- * A path is matched against its longest listed prefix, on segment boundaries,
- * so a nested route can override its parent, and `/api/emails/unsubscribe` is
- * public under a private `/api/emails`. A path no
- * entry covers is not an app route at all and falls through to the 404 page,
- * which anyone may see.
+ * An entry covers its own path and everything beneath it, on segment
+ * boundaries, so `/leikir` opens `/leikir/laddi-bird` but not `/leikirnir`.
+ * `/` is the one exception and matches only the front page.
+ * `lib/__tests__/route-access.test.ts` fails if an entry no longer matches any
+ * route under `app/`, so the list cannot quietly go stale.
  */
 
-export type RouteAccess = "public" | "private" | "unknown";
+export type RouteAccess = "public" | "private";
 
-const ROUTES: Record<string, Exclude<RouteAccess, "unknown">> = {
+export const PUBLIC_ROUTES: readonly string[] = [
   // Front door
-  "/": "public",
-  "/about": "public",
+  "/",
+  "/about",
   // Reached from a link in an email, by someone who may never have logged in
-  "/unsubscribe": "public",
-  "/api/emails/unsubscribe": "public",
+  "/unsubscribe",
+  "/api/emails/unsubscribe",
   // Guests may play, and are nudged to log in to keep their score
-  "/leikir": "public",
-  "/api/leikir": "public",
+  "/leikir",
+  "/api/leikir",
   // Auth0 handlers; they answer for a missing session themselves
-  "/api/auth": "public",
+  "/api/auth",
   // The about page's team section
-  "/api/contributors": "public",
+  "/api/contributors",
+];
 
-  "/admin": "private",
-  "/analytics": "private",
-  "/badges": "private",
-  "/builder": "private",
-  "/dashboard": "private",
-  "/dev": "private",
-  "/palette": "private",
-  "/profile": "private",
-  "/programs": "private",
-  "/settings": "private",
-  "/social": "private",
-  "/tags": "private",
-  "/yfirferd": "private",
-  "/api/config": "private",
-  "/api/devlogs": "private",
-  "/api/emails": "private",
-};
+const PUBLIC = new Set(PUBLIC_ROUTES);
 
 export function routeAccess(pathname: string): RouteAccess {
-  if (pathname === "/") return ROUTES["/"];
-
   const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 0) return PUBLIC.has("/") ? "public" : "private";
+
   for (let i = segments.length; i > 0; i--) {
-    const access = ROUTES[`/${segments.slice(0, i).join("/")}`];
-    if (access) return access;
+    if (PUBLIC.has(`/${segments.slice(0, i).join("/")}`)) return "public";
   }
-  return "unknown";
+  return "private";
 }

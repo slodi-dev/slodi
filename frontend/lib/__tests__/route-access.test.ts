@@ -2,7 +2,7 @@
 import { readdirSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { routeAccess } from "@/lib/route-access";
+import { PUBLIC_ROUTES, routeAccess } from "@/lib/route-access";
 
 const APP_DIR = path.resolve(__dirname, "../../app");
 
@@ -34,10 +34,16 @@ describe("routeAccess", () => {
     expect(routes).toContain("/api/leikir/sample-game/scores");
   });
 
-  it.each(appRoutes())("classifies %s as public or private", (route) => {
-    // A failure here means a new route was added without deciding who may see
-    // it. Add it to lib/route-access.ts — as private unless it must be public.
-    expect(routeAccess(route)).not.toBe("unknown");
+  it.each(PUBLIC_ROUTES)("allowlist entry %s still matches a route in app/", (entry) => {
+    // A failure here means a route was renamed or removed. Update or delete
+    // the entry in lib/route-access.ts so the allowlist does not open a path
+    // nobody meant to publish.
+    const routes = appRoutes();
+    const covered =
+      entry === "/"
+        ? routes.includes("/")
+        : routes.some((route) => route === entry || route.startsWith(`${entry}/`));
+    expect(covered).toBe(true);
   });
 
   it.each([
@@ -59,9 +65,10 @@ describe("routeAccess", () => {
     ["/palette", "private"],
     ["/api/emails", "private"],
     ["/api/config", "private"],
-    ["/does-not-exist", "unknown"],
-    ["/aboutx", "unknown"],
-    ["/leikirnir", "unknown"],
+    ["/does-not-exist", "private"],
+    ["/aboutx", "private"],
+    ["/leikirnir", "private"],
+    ["/api/emails/unsubscribe-all", "private"],
   ])("%s is %s", (route, expected) => {
     expect(routeAccess(route)).toBe(expected);
   });
