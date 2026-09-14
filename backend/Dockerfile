@@ -11,10 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 COPY alembic.ini ./
 
-RUN uv sync --no-dev
+# --locked installs exactly what uv.lock pins, and fails if it has drifted
+# from pyproject.toml instead of resolving something newer
+RUN uv sync --locked --no-dev
 
 COPY alembic ./alembic
 COPY app ./app
@@ -24,7 +26,7 @@ COPY scripts ./scripts
 # Includes dev/test dependencies, runs pytest
 FROM base AS test
 
-RUN uv sync
+RUN uv sync --locked
 # ^ installs ALL dependencies including dev/test
 
 COPY tests ./tests

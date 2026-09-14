@@ -13,7 +13,6 @@
 **/.DS_Store
 **/coverage
 **/*.log
-uv.lock
 seed_output.json
 tests/
 .next
