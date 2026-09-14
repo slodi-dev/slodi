@@ -29,7 +29,8 @@
   width: var(--db-ball);
   display: flex;
   flex-direction: column;
-  border: 1px solid hsl(var(--sl-color-primary-text));
+  /* Matches the button it frames, so the ring reads as one component. */
+  border: 1px solid hsl(var(--sl-color-primary));
   border-radius: 999px;
   background: hsl(var(--sl-color-surface));
   box-shadow: var(--sl-shadow-card);
@@ -97,13 +98,16 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  background: hsl(var(--sl-color-primary-text));
+  /* The brand green, not the darkened text tier. The `-text` tier was chosen
+     for contrast, but in dark mode it resolves to green-200 — a pale wash that
+     does not read as the primary action on the page. */
+  background: hsl(var(--sl-color-primary));
   color: hsl(var(--sl-color-text-inverse));
   font-family: inherit;
   cursor: pointer;
 }
 .fab:hover {
-  background: hsl(var(--sl-color-primary-text) / 0.88);
+  background: hsl(var(--sl-color-primary) / 0.88);
 }
 .fab:focus-visible {
   outline: 2px solid hsl(var(--sl-color-border-focus));
