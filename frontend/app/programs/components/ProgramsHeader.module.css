@@ -1,6 +1,7 @@
 /* The launcher places itself; this only decides where on the page it sits.
-   The old `.fab` painted white on `--sl-color-primary`, a mid-tone that does
-   not carry white at AA — ContentTypeChooser rides the `-text` tier instead. */
+   The FAB paints on `--sl-color-primary`. It rode the `-text` tier for a while
+   for contrast, but that tier inverts in dark mode to green-200 and the button
+   read as a pale wash rather than the primary action. */
 .fabAnchor {
   position: fixed;
   bottom: 32px;
