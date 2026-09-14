@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   type AuthorStanding,
@@ -54,21 +54,30 @@ export default function AuthorStandingPanel({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
+  // The author this panel is showing, or null once it has unmounted. A fetch
+  // that settles after the reviewer has moved on belongs to somebody else.
+  const shownAuthor = useRef<string | null>(null);
+
   const load = useCallback(async () => {
     try {
-      setStanding(await fetchAuthorStanding(authorId, getToken));
+      const next = await fetchAuthorStanding(authorId, getToken);
+      if (shownAuthor.current === authorId) setStanding(next);
     } catch {
-      setMessage("Ekki tókst að sækja sögu höfundar.");
+      if (shownAuthor.current === authorId) setMessage("Ekki tókst að sækja sögu höfundar.");
     }
   }, [authorId, getToken]);
 
   // A new item means a new person: drop the previous one's history rather than
   // showing it under a new name while the fetch is in flight.
   useEffect(() => {
+    shownAuthor.current = authorId;
     setStanding(null);
     setMessage("");
     setCustomDays("");
     void load();
+    return () => {
+      shownAuthor.current = null;
+    };
   }, [authorId, load]);
 
   async function suspend(days: number | null) {
