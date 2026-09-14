@@ -4,7 +4,7 @@ import datetime as dt
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator, model_validator
 from typing_extensions import Self
 
 from app.domain.content_constraints import REVIEW_NOTE_MAX
@@ -170,6 +170,23 @@ class ReviewDetail(ReviewQueueItem):
     image: str | None = None
     tags: list[str] = []
     workspace_id: UUID
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _tag_names(cls, value: object) -> object:
+        """Accept the ORM's `Content.tags`, which is a list of `Tag`, not of str.
+
+        `ReviewDetail.model_validate(content)` reads every field straight off
+        the model, and `Content.tags` is a property returning `Tag` objects. The
+        service used to correct them in a `model_copy(update=...)` on the very
+        next line — but validation runs first and raised before it, so **every
+        item that had a tag returned 500 and only untagged ones opened**. The
+        conversion has to live here, where the values arrive.
+        """
+        if isinstance(value, list):
+            return [getattr(v, "name", v) for v in value]
+        return value
+
     reports: list[ReportSummary] = []
     """The objections themselves, so judging a flagged item does not mean
     holding two screens open at once."""
