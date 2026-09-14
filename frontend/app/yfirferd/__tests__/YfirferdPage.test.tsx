@@ -25,6 +25,13 @@ vi.mock("@/services/moderation.service", async (importOriginal) => ({
   fetchAuthorStrikes: vi.fn(),
 }));
 
+// The author panel fetches its own history. Left unmocked it made a real
+// request that failed after a test had finished, and failed the run.
+vi.mock("@/services/suspensions.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/services/suspensions.service")>()),
+  fetchAuthorStanding: vi.fn(() => new Promise(() => {})),
+}));
+
 let permissions = "moderator";
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
