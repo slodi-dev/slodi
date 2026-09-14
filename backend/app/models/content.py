@@ -8,7 +8,9 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
+    Index,
     String,
+    text,
 )
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -69,6 +71,23 @@ class Content(SoftDeleteMixin, Base):
         ),
         CheckConstraint("price >= 0", name="ck_content_price_nonneg"),
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_content_name_min"),
+        # Declared here, not only in their migrations, so autogenerate does not
+        # propose dropping them and create_all builds them for tests.
+        # The review board's query: the unreviewed queue, oldest first.
+        Index("ix_content_review_state_created_at", "review_state", "created_at"),
+        # Every bank listing filters hidden rows out, the same way it filters deleted.
+        Index("ix_content_hidden_at", "hidden_at"),
+        # Counting an author's strikes reads these two together.
+        Index("ix_content_author_id_review_state", "author_id", "review_state"),
+        # Only content somebody acted against; serves the board's per-row
+        # strike count, which the index above cannot (see b52f8c1a94d7).
+        Index(
+            "ix_content_author_strikes",
+            "author_id",
+            postgresql_where=text(
+                "deleted_at IS NULL AND (hidden_at IS NOT NULL OR review_state = 'rejected')"
+            ),
+        ),
     )
 
     # Columns
