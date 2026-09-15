@@ -37,7 +37,11 @@ function offlineContextCtor(): typeof OfflineAudioContext | undefined {
 export interface Sfx<Name extends string> {
   /** Start downloading every file. Safe to call more than once. */
   preload(): void;
-  /** Create or resume the audio context. Call from inside a user gesture. */
+  /**
+   * Create or resume the audio context. Call from inside a user gesture — and
+   * from the *end* of a tap too: browsers do not count touchstart or a touch
+   * pointerdown as permission to play, only the release.
+   */
   unlock(): void;
   /** Play an effect if it is ready; silently skip it otherwise. */
   play(name: Name): void;
@@ -48,7 +52,9 @@ export interface Sfx<Name extends string> {
 export function createSfx<Name extends string>(files: Record<Name, string>): Sfx<Name> {
   const buffers = new Map<Name, AudioBuffer>();
   const abort = new AbortController();
-  let ctx: AudioContext | null = null;
+  let audioCtx: AudioContext | null = null;
+  /** A gesture asked the context to resume and it has not yet started. */
+  let resuming = false;
   let requested = false;
   let disposed = false;
 
@@ -80,23 +86,32 @@ export function createSfx<Name extends string>(files: Record<Name, string>): Sfx
       const Ctor = audioContextCtor();
       if (!Ctor) return;
       try {
-        ctx ??= new Ctor();
+        audioCtx ??= new Ctor();
         // "suspended" before the first gesture; iOS also reports "interrupted"
         // after a call or a trip to the home screen.
-        if (ctx.state !== "running") ctx.resume().catch(() => {});
+        if (audioCtx.state !== "running" && !resuming) {
+          resuming = true;
+          audioCtx.resume().then(
+            () => (resuming = false),
+            () => (resuming = false)
+          );
+        }
       } catch {
-        ctx = null; // no audio on this device
+        audioCtx = null; // no audio on this device
       }
     },
 
     play(name) {
       const buffer = buffers.get(name);
-      // A context still resuming from this same gesture is fine: the source is
-      // scheduled now and heard as soon as it starts running.
-      if (!ctx || !buffer || ctx.state === "closed") return;
-      const source = ctx.createBufferSource();
+      // A context still resuming from a gesture is fine: the source is scheduled
+      // now and heard the moment it runs. One that is suspended for any other
+      // reason — iOS interrupts audio for a call — must not queue, or every
+      // sound since would play at once on the next tap.
+      if (!audioCtx || !buffer) return;
+      if (audioCtx.state !== "running" && !resuming) return;
+      const source = audioCtx.createBufferSource();
       source.buffer = buffer;
-      source.connect(ctx.destination);
+      source.connect(audioCtx.destination);
       source.start();
     },
 
@@ -104,8 +119,8 @@ export function createSfx<Name extends string>(files: Record<Name, string>): Sfx
       disposed = true;
       abort.abort();
       buffers.clear();
-      ctx?.close().catch(() => {});
-      ctx = null;
+      audioCtx?.close().catch(() => {});
+      audioCtx = null;
     },
   };
 }

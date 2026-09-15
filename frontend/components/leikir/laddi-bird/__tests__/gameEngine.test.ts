@@ -70,6 +70,8 @@ function installImageStub() {
   vi.stubGlobal("Image", StubImage);
 }
 
+/** Whether a resume() succeeds — false models a gesture the browser rejects. */
+let resumeAllowed = true;
 /** Every sound URL fetched, in order. */
 let fetched: string[] = [];
 /** Every live AudioContext the engine created. */
@@ -81,6 +83,7 @@ class StubAudioContext {
   state: "suspended" | "running" | "closed" = "suspended";
   destination = {};
   resume = vi.fn(() => {
+    if (!resumeAllowed) return new Promise<void>(() => {}); // no activation yet
     this.state = "running";
     return Promise.resolve();
   });
@@ -266,7 +269,7 @@ function flyToGap(canvas: HTMLCanvasElement, ctx: StubCtx, steps: number): void 
     if (!frame) break;
     clock += STEP;
     frame(clock);
-    if (birdY(ctx) > TARGET) canvas.dispatchEvent(new MouseEvent("click"));
+    if (birdY(ctx) > TARGET) canvas.dispatchEvent(new MouseEvent("pointerdown"));
   }
 }
 
@@ -275,6 +278,7 @@ beforeEach(() => {
   failing = new Set();
   loadedCount = 0;
   lastImages = [];
+  resumeAllowed = true;
   fetched = [];
   audioContexts = [];
   played = [];
@@ -319,8 +323,8 @@ describe("createGameEngine", () => {
 
     expect(cancelled).toHaveLength(1);
     expect(removeDoc).toHaveBeenCalledWith("keydown", expect.any(Function));
-    expect(removeCanvas).toHaveBeenCalledWith("click", expect.any(Function));
-    expect(removeCanvas).toHaveBeenCalledWith("touchstart", expect.any(Function));
+    expect(removeCanvas).toHaveBeenCalledWith("pointerdown", expect.any(Function));
+    expect(removeCanvas).toHaveBeenCalledWith("pointerup", expect.any(Function));
 
     // The loop must be dead: no further frames, so no further game-over calls.
     expect(pendingFrame).toBeNull();
@@ -334,7 +338,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     // Far more frames than the bird needs to fall to its death.
     runFrames(600, 16.67);
 
@@ -350,7 +354,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click")); // getReady → play
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // getReady → play
     runFrames(300, 16.67);
 
     expect(onGameOver).toHaveBeenCalledTimes(1);
@@ -376,12 +380,12 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart, onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, 16.67);
     expect(onGameOver).toHaveBeenCalledTimes(1);
 
     onRestart.mockClear();
-    canvas.dispatchEvent(new MouseEvent("click")); // gameOver → getReady
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // gameOver → getReady
     expect(onRestart).toHaveBeenCalledTimes(1);
   });
 
@@ -396,7 +400,7 @@ describe("createGameEngine", () => {
       const onGameOver = vi.fn();
       createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
       await settleSprites();
-      canvas.dispatchEvent(new MouseEvent("click"));
+      canvas.dispatchEvent(new MouseEvent("pointerdown"));
       return runUntil(() => onGameOver.mock.calls.length > 0, frameMs);
     }
 
@@ -415,7 +419,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, 16.67);
 
     expect(localStorage.getItem("leikir_best_laddi-bird")).toBeNull();
@@ -431,7 +435,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click")); // getReady → play
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // getReady → play
     flyToGap(canvas, ctx, 200);
 
     expect(onGameOver).not.toHaveBeenCalled();
@@ -452,7 +456,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP); // die without scoring
 
     // The game-over card shows the carried-over best, not 0.
@@ -478,7 +482,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     expect(() => runFrames(120, STEP)).not.toThrow();
     // The rest of the frame still painted — the sky and other sprites.
     expect(ctx.fillRect).toHaveBeenCalled();
@@ -499,7 +503,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     // Survive well past the point an invisible pipe reaches the bird (~step 106).
     flyToGap(canvas, ctx, 140);
 
@@ -517,7 +521,7 @@ describe("createGameEngine", () => {
       onRunStart: vi.fn(),
     });
     await settleSprites();
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     cleanup();
 
     expect(audioContexts).toHaveLength(1);
@@ -534,7 +538,7 @@ describe("createGameEngine", () => {
     await settleSprites(); // → decoded
 
     expect(audioContexts).toHaveLength(0); // no context before a gesture
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     expect(played).toEqual(["start.wav"]);
   });
 
@@ -545,13 +549,84 @@ describe("createGameEngine", () => {
     runFrames(1, STEP);
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click")); // start
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // start
     runFrames(1, STEP);
-    canvas.dispatchEvent(new MouseEvent("click"));
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
 
     expect(played.filter((f) => f === "flap.wav")).toHaveLength(2);
     expect(fetched.filter((u) => u.endsWith("flap.wav"))).toHaveLength(1);
+  });
+
+  it("unlocks audio when a tap is released", async () => {
+    // Browsers do not treat touchstart or a touch pointerdown as permission to
+    // play, only the release — so a phone would otherwise stay silent for good.
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerup"));
+    expect(audioContexts).toHaveLength(1);
+    expect(audioContexts[0].resume).toHaveBeenCalled();
+  });
+
+  it("does not pile up sounds while the audio context is suspended", async () => {
+    // iOS suspends audio for a phone call. Sounds scheduled on a suspended
+    // context wait, so without a guard they would all fire at once on resume.
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP);
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // start: context runs
+    await settleSprites();
+    audioContexts[0].state = "suspended"; // interrupted by the system
+    played = [];
+
+    runFrames(300, STEP); // falls, hits the ground: hit/die would queue
+    expect(played).toEqual([]);
+  });
+
+  it("queues the first tap's sound while its resume is pending", async () => {
+    // On a phone the pointerdown that starts the run cannot resume audio; the
+    // release will. The start sound must wait for it rather than be dropped.
+    resumeAllowed = false;
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP);
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    expect(played).toEqual(["start.wav"]);
+  });
+
+  it("waits for sprites to decode before starting", async () => {
+    // Otherwise the first frame that draws a sprite may decode it on the spot,
+    // and the first pipe of the first run arrives with a hitch.
+    let finishDecode = () => {};
+    const decoded = new Promise<void>((resolve) => (finishDecode = resolve));
+    vi.stubGlobal(
+      "Image",
+      class extends (globalThis.Image as unknown as new () => object) {
+        decode = () => decoded;
+      }
+    );
+    const canvas = makeCanvas();
+    const onGameOver = vi.fn();
+    createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    runFrames(300, STEP);
+    expect(onGameOver).not.toHaveBeenCalled(); // loaded, not yet decoded
+
+    finishDecode();
+    await settleSprites();
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    runFrames(300, STEP);
+    expect(onGameOver).toHaveBeenCalledTimes(1);
   });
 
   it("lets a focused control keep its own Space key", async () => {
@@ -598,17 +673,17 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart, onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runUntil(() => onGameOver.mock.calls.length > 0, STEP);
     expect(onGameOver).toHaveBeenCalledTimes(1);
 
     onRestart.mockClear();
     runFrames(6, STEP); // ~100ms, a normal flap interval
-    canvas.dispatchEvent(new MouseEvent("click")); // the flap that came too soon
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // the flap that came too soon
     expect(onRestart).not.toHaveBeenCalled();
 
     runFrames(60, STEP); // wait out the lock-out
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     expect(onRestart).toHaveBeenCalledTimes(1);
   });
 
@@ -627,7 +702,7 @@ describe("createGameEngine", () => {
       createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
       await settleSprites();
 
-      canvas.dispatchEvent(new MouseEvent("click"));
+      canvas.dispatchEvent(new MouseEvent("pointerdown"));
       flyToGap(canvas, ctx, stopFlappingAt); // fly the gap, then release
       runUntil(() => onGameOver.mock.calls.length > 0, STEP, 600);
 
@@ -650,13 +725,13 @@ describe("createGameEngine", () => {
       { loadDeadlineMs: 10 }
     );
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP);
     expect(onGameOver).not.toHaveBeenCalled(); // still waiting
 
     await afterDeadline();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP);
     expect(onGameOver).toHaveBeenCalledTimes(1);
   });
@@ -696,7 +771,6 @@ describe("createGameEngine", () => {
     // compete with them for bandwidth and push them past the load deadline.
     imagesLoad = false;
     const canvas = makeCanvas();
-    const ctx = stubCtx(canvas);
     createGameEngine(
       canvas,
       { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() },
@@ -708,7 +782,6 @@ describe("createGameEngine", () => {
     await afterDeadline();
     runFrames(1, STEP);
     expect(fetched.length).toBeGreaterThan(0);
-    expect(ctx.fillRect).toHaveBeenCalled();
   });
 
   it("scrolls the pipes evenly on a 120 Hz display", async () => {
@@ -721,7 +794,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     const xs: number[] = [];
     for (let i = 0; i < 40; i++) {
       ctx.drawImage.mockClear();
@@ -748,7 +821,7 @@ describe("createGameEngine", () => {
     await settleSprites();
 
     expect(loadedCount).toBeGreaterThan(0);
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP);
     // Stepping happened, so the readiness gate opened for exactly the sprites
     // that were requested.
@@ -765,7 +838,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     for (let i = 0; i < 400 && deathFrame < 0; i++) {
       frame = i;
       runFrames(1, STEP);

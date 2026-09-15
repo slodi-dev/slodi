@@ -122,7 +122,17 @@ function loadImage(
   // load that will never come. Failures are recorded rather than merely counted:
   // drawImage throws InvalidStateError on a *broken* image, so a 404'd sprite
   // has to be skipped at draw time, not just tolerated at load time.
-  img.onload = () => onSettled(img, true);
+  //
+  // decode() before settling: a browser may otherwise decode a sprite on the
+  // first frame that draws it, which is a visible hitch when the first pipe
+  // scrolls in mid-run. A decode that fails still leaves a loaded image.
+  img.onload = () => {
+    if (!img.decode) return onSettled(img, true);
+    img.decode().then(
+      () => onSettled(img, true),
+      () => onSettled(img, true)
+    );
+  };
   img.onerror = () => onSettled(img, false);
   img.src = `${ASSETS}/${path}`;
   return img;
@@ -580,13 +590,23 @@ export function createGameEngine(
     onInput();
   }
 
-  function onPointerDown(e: Event): void {
+  /**
+   * pointerdown rather than click: a click only fires when the mouse button
+   * comes back up, ~100ms after the press the player actually timed. It covers
+   * touch and pen too, so there is no touchstart/click pair to de-duplicate.
+   */
+  function onPointerDown(e: PointerEvent): void {
     e.preventDefault();
     onInput();
   }
 
-  canvas.addEventListener("click", onPointerDown);
-  canvas.addEventListener("touchstart", onPointerDown, { passive: false });
+  /** The release is what browsers accept as permission to start audio. */
+  function onPointerUp(): void {
+    sfx.unlock();
+  }
+
+  canvas.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("pointerup", onPointerUp);
   document.addEventListener("keydown", onKeyDown);
 
   rafId = requestAnimationFrame(loop);
@@ -595,8 +615,8 @@ export function createGameEngine(
   return () => {
     cancelAnimationFrame(rafId);
     clearTimeout(loadTimer);
-    canvas.removeEventListener("click", onPointerDown);
-    canvas.removeEventListener("touchstart", onPointerDown);
+    canvas.removeEventListener("pointerdown", onPointerDown);
+    canvas.removeEventListener("pointerup", onPointerUp);
     document.removeEventListener("keydown", onKeyDown);
     // A sound mid-playback would otherwise outlive the page.
     sfx.dispose();
