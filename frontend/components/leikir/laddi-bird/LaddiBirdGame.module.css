@@ -12,8 +12,15 @@
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
   /* Pixel art: keep the sprites crisp when the canvas is scaled up by CSS. */
   image-rendering: pixelated;
-  /* Stop the browser treating a tap as a scroll or double-tap zoom. */
-  touch-action: manipulation;
+  /* Input is pointerdown, which cannot preventDefault a pan or zoom the way
+     touchstart could, so the canvas opts out of every touch gesture itself. */
+  touch-action: none;
+  /* A rapid flap rhythm otherwise selects, pops the iOS long-press callout,
+     and flashes the tap highlight — a full repaint over the canvas each tap. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .canvas:focus-visible {

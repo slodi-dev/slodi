@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createGameEngine } from "../gameEngine";
 
 /**
- * The engine is a canvas/rAF/Audio factory, none of which jsdom implements, so
+ * The engine is a canvas/rAF/Web Audio factory, none of which jsdom implements, so
  * each of those is stubbed here. The tests focus on the behaviours the port was
  * meant to fix — cleanup, the NaN-before-load hazard, and frame-rate
  * independence — rather than on redrawing the game.
@@ -70,32 +70,58 @@ function installImageStub() {
   vi.stubGlobal("Image", StubImage);
 }
 
-interface StubAudioLike {
-  src: string;
-  preload: string;
-  play: ReturnType<typeof vi.fn>;
-  pause: ReturnType<typeof vi.fn>;
-  load: ReturnType<typeof vi.fn>;
-  removeAttribute: ReturnType<typeof vi.fn>;
+/** Whether a resume() succeeds — false models a gesture the browser rejects. */
+let resumeAllowed = true;
+/** Every sound URL fetched, in order. */
+let fetched: string[] = [];
+/** Every live AudioContext the engine created. */
+let audioContexts: StubAudioContext[] = [];
+/** The decoded buffer each played source was given, by file name. */
+let played: string[] = [];
+
+class StubAudioContext {
+  state: "suspended" | "running" | "closed" = "suspended";
+  destination = {};
+  resume = vi.fn(() => {
+    if (!resumeAllowed) return new Promise<void>(() => {}); // no activation yet
+    this.state = "running";
+    return Promise.resolve();
+  });
+  close = vi.fn(() => {
+    this.state = "closed";
+    return Promise.resolve();
+  });
+  constructor() {
+    audioContexts.push(this);
+  }
+  createBufferSource() {
+    const source = {
+      buffer: null as { file: string } | null,
+      connect: vi.fn(),
+      start: vi.fn(() => played.push(source.buffer!.file)),
+    };
+    return source;
+  }
 }
 
-/** Every Audio the engine constructed, so cleanup can be asserted on. */
-let audioInstances: StubAudioLike[] = [];
-
 function installAudioStub() {
-  class StubAudio {
-    src = "";
-    preload = "auto";
-    currentTime = 0;
-    play = vi.fn(() => Promise.resolve());
-    pause = vi.fn();
-    load = vi.fn();
-    removeAttribute = vi.fn();
-    constructor() {
-      audioInstances.push(this as unknown as StubAudioLike);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string) => {
+      fetched.push(url);
+      const file = url.split("/").pop()!;
+      return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve({ file }) });
+    })
+  );
+  vi.stubGlobal("AudioContext", StubAudioContext);
+  vi.stubGlobal(
+    "OfflineAudioContext",
+    class {
+      decodeAudioData(data: { file: string }) {
+        return Promise.resolve({ file: data.file });
+      }
     }
-  }
-  vi.stubGlobal("Audio", StubAudio);
+  );
 }
 
 // ── Manually driven requestAnimationFrame ────────────────────────────────────
@@ -243,7 +269,7 @@ function flyToGap(canvas: HTMLCanvasElement, ctx: StubCtx, steps: number): void 
     if (!frame) break;
     clock += STEP;
     frame(clock);
-    if (birdY(ctx) > TARGET) canvas.dispatchEvent(new MouseEvent("click"));
+    if (birdY(ctx) > TARGET) canvas.dispatchEvent(new MouseEvent("pointerdown"));
   }
 }
 
@@ -252,7 +278,10 @@ beforeEach(() => {
   failing = new Set();
   loadedCount = 0;
   lastImages = [];
-  audioInstances = [];
+  resumeAllowed = true;
+  fetched = [];
+  audioContexts = [];
+  played = [];
   pendingFrame = null;
   cancelled = [];
   clock = 0;
@@ -294,8 +323,8 @@ describe("createGameEngine", () => {
 
     expect(cancelled).toHaveLength(1);
     expect(removeDoc).toHaveBeenCalledWith("keydown", expect.any(Function));
-    expect(removeCanvas).toHaveBeenCalledWith("click", expect.any(Function));
-    expect(removeCanvas).toHaveBeenCalledWith("touchstart", expect.any(Function));
+    expect(removeCanvas).toHaveBeenCalledWith("pointerdown", expect.any(Function));
+    expect(removeCanvas).toHaveBeenCalledWith("pointerup", expect.any(Function));
 
     // The loop must be dead: no further frames, so no further game-over calls.
     expect(pendingFrame).toBeNull();
@@ -309,7 +338,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     // Far more frames than the bird needs to fall to its death.
     runFrames(600, 16.67);
 
@@ -325,7 +354,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click")); // getReady → play
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // getReady → play
     runFrames(300, 16.67);
 
     expect(onGameOver).toHaveBeenCalledTimes(1);
@@ -351,12 +380,12 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart, onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, 16.67);
     expect(onGameOver).toHaveBeenCalledTimes(1);
 
     onRestart.mockClear();
-    canvas.dispatchEvent(new MouseEvent("click")); // gameOver → getReady
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // gameOver → getReady
     expect(onRestart).toHaveBeenCalledTimes(1);
   });
 
@@ -371,7 +400,7 @@ describe("createGameEngine", () => {
       const onGameOver = vi.fn();
       createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
       await settleSprites();
-      canvas.dispatchEvent(new MouseEvent("click"));
+      canvas.dispatchEvent(new MouseEvent("pointerdown"));
       return runUntil(() => onGameOver.mock.calls.length > 0, frameMs);
     }
 
@@ -390,7 +419,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, 16.67);
 
     expect(localStorage.getItem("leikir_best_laddi-bird")).toBeNull();
@@ -406,7 +435,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click")); // getReady → play
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // getReady → play
     flyToGap(canvas, ctx, 200);
 
     expect(onGameOver).not.toHaveBeenCalled();
@@ -427,7 +456,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP); // die without scoring
 
     // The game-over card shows the carried-over best, not 0.
@@ -453,7 +482,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     expect(() => runFrames(120, STEP)).not.toThrow();
     // The rest of the frame still painted — the sky and other sprites.
     expect(ctx.fillRect).toHaveBeenCalled();
@@ -474,7 +503,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     // Survive well past the point an invisible pipe reaches the bird (~step 106).
     flyToGap(canvas, ctx, 140);
 
@@ -484,9 +513,7 @@ describe("createGameEngine", () => {
     expect(onGameOver).toHaveBeenCalledTimes(1);
   });
 
-  it("releases audio without refetching the page as media on cleanup", async () => {
-    // `src = ""` resolves against the document URL, so the browser would fetch
-    // the page HTML as media and log MEDIA_ELEMENT_ERROR on every unmount.
+  it("closes the audio context on cleanup", async () => {
     const canvas = makeCanvas();
     const cleanup = createGameEngine(canvas, {
       onGameOver: vi.fn(),
@@ -494,15 +521,112 @@ describe("createGameEngine", () => {
       onRunStart: vi.fn(),
     });
     await settleSprites();
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     cleanup();
 
-    expect(audioInstances.length).toBeGreaterThan(0);
-    for (const sound of audioInstances) {
-      expect(sound.pause).toHaveBeenCalled();
-      expect(sound.removeAttribute).toHaveBeenCalledWith("src");
-      expect(sound.load).toHaveBeenCalled();
-      expect(sound.src).not.toBe("");
-    }
+    expect(audioContexts).toHaveLength(1);
+    expect(audioContexts[0].close).toHaveBeenCalled();
+  });
+
+  it("plays the start sound on the very first tap", async () => {
+    // Decoding happens ahead of the gesture, so the first run is not silent
+    // while a decode that only just started catches up.
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP); // sprites ready → sounds fetched
+    await settleSprites(); // → decoded
+
+    expect(audioContexts).toHaveLength(0); // no context before a gesture
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    expect(played).toEqual(["start.wav"]);
+  });
+
+  it("plays a flap on every tap without reusing a media element", async () => {
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP);
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // start
+    runFrames(1, STEP);
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+
+    expect(played.filter((f) => f === "flap.wav")).toHaveLength(2);
+    expect(fetched.filter((u) => u.endsWith("flap.wav"))).toHaveLength(1);
+  });
+
+  it("unlocks audio when a tap is released", async () => {
+    // Browsers do not treat touchstart or a touch pointerdown as permission to
+    // play, only the release — so a phone would otherwise stay silent for good.
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerup"));
+    expect(audioContexts).toHaveLength(1);
+    expect(audioContexts[0].resume).toHaveBeenCalled();
+  });
+
+  it("does not pile up sounds while the audio context is suspended", async () => {
+    // iOS suspends audio for a phone call. Sounds scheduled on a suspended
+    // context wait, so without a guard they would all fire at once on resume.
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP);
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // start: context runs
+    await settleSprites();
+    audioContexts[0].state = "suspended"; // interrupted by the system
+    played = [];
+
+    runFrames(300, STEP); // falls, hits the ground: hit/die would queue
+    expect(played).toEqual([]);
+  });
+
+  it("queues the first tap's sound while its resume is pending", async () => {
+    // On a phone the pointerdown that starts the run cannot resume audio; the
+    // release will. The start sound must wait for it rather than be dropped.
+    resumeAllowed = false;
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP);
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    expect(played).toEqual(["start.wav"]);
+  });
+
+  it("waits for sprites to decode before starting", async () => {
+    // Otherwise the first frame that draws a sprite may decode it on the spot,
+    // and the first pipe of the first run arrives with a hitch.
+    let finishDecode = () => {};
+    const decoded = new Promise<void>((resolve) => (finishDecode = resolve));
+    vi.stubGlobal(
+      "Image",
+      class extends (globalThis.Image as unknown as new () => object) {
+        decode = () => decoded;
+      }
+    );
+    const canvas = makeCanvas();
+    const onGameOver = vi.fn();
+    createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    runFrames(300, STEP);
+    expect(onGameOver).not.toHaveBeenCalled(); // loaded, not yet decoded
+
+    finishDecode();
+    await settleSprites();
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    runFrames(300, STEP);
+    expect(onGameOver).toHaveBeenCalledTimes(1);
   });
 
   it("lets a focused control keep its own Space key", async () => {
@@ -549,17 +673,17 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart, onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runUntil(() => onGameOver.mock.calls.length > 0, STEP);
     expect(onGameOver).toHaveBeenCalledTimes(1);
 
     onRestart.mockClear();
     runFrames(6, STEP); // ~100ms, a normal flap interval
-    canvas.dispatchEvent(new MouseEvent("click")); // the flap that came too soon
+    canvas.dispatchEvent(new MouseEvent("pointerdown")); // the flap that came too soon
     expect(onRestart).not.toHaveBeenCalled();
 
     runFrames(60, STEP); // wait out the lock-out
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     expect(onRestart).toHaveBeenCalledTimes(1);
   });
 
@@ -578,7 +702,7 @@ describe("createGameEngine", () => {
       createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
       await settleSprites();
 
-      canvas.dispatchEvent(new MouseEvent("click"));
+      canvas.dispatchEvent(new MouseEvent("pointerdown"));
       flyToGap(canvas, ctx, stopFlappingAt); // fly the gap, then release
       runUntil(() => onGameOver.mock.calls.length > 0, STEP, 600);
 
@@ -601,13 +725,13 @@ describe("createGameEngine", () => {
       { loadDeadlineMs: 10 }
     );
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP);
     expect(onGameOver).not.toHaveBeenCalled(); // still waiting
 
     await afterDeadline();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP);
     expect(onGameOver).toHaveBeenCalledTimes(1);
   });
@@ -642,15 +766,50 @@ describe("createGameEngine", () => {
     expect(drewGround).toBe(true);
   });
 
-  it("does not eagerly download the sound effects", async () => {
-    // ~790KB of uncompressed WAV would otherwise be fetched before the player
-    // touches anything, competing with the sprites for bandwidth.
+  it("does not download the sound effects before the sprites", async () => {
+    // ~200KB of WAV — more than all the sprites together — would otherwise
+    // compete with them for bandwidth and push them past the load deadline.
+    imagesLoad = false;
     const canvas = makeCanvas();
+    createGameEngine(
+      canvas,
+      { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() },
+      { loadDeadlineMs: 10 }
+    );
+    runFrames(5, STEP);
+    expect(fetched).toHaveLength(0);
+
+    await afterDeadline();
+    runFrames(1, STEP);
+    expect(fetched.length).toBeGreaterThan(0);
+  });
+
+  it("scrolls the pipes evenly on a 120 Hz display", async () => {
+    // The simulation steps at 60 Hz, so at 120 Hz every other frame has no step.
+    // Drawing only the last step would hold the pipe still and then jump it 2px
+    // — judder at a healthy frame rate. Each frame should move it about 1px.
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const canvas = makeCanvas();
+    const ctx = stubCtx(canvas);
     createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    expect(audioInstances.length).toBeGreaterThan(0);
-    for (const sound of audioInstances) expect(sound.preload).toBe("none");
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
+    const xs: number[] = [];
+    for (let i = 0; i < 40; i++) {
+      ctx.drawImage.mockClear();
+      runFrames(1, 1000 / 120);
+      const pipe = ctx.drawImage.mock.calls.find((c) =>
+        String((c[0] as { src?: string })?.src ?? "").includes("toppipe")
+      );
+      if (pipe) xs.push(pipe[1] as number);
+    }
+
+    expect(xs.length).toBeGreaterThan(10);
+    for (let i = 1; i < xs.length; i++) {
+      expect(xs[i - 1] - xs[i]).toBeGreaterThan(0.5);
+      expect(xs[i - 1] - xs[i]).toBeLessThan(1.5);
+    }
   });
 
   it("waits for every sprite without a hardcoded count", async () => {
@@ -662,7 +821,7 @@ describe("createGameEngine", () => {
     await settleSprites();
 
     expect(loadedCount).toBeGreaterThan(0);
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     runFrames(300, STEP);
     // Stepping happened, so the readiness gate opened for exactly the sprites
     // that were requested.
@@ -679,7 +838,7 @@ describe("createGameEngine", () => {
     createGameEngine(canvas, { onGameOver, onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("pointerdown"));
     for (let i = 0; i < 400 && deathFrame < 0; i++) {
       frame = i;
       runFrames(1, STEP);

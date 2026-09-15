@@ -126,7 +126,9 @@
     background: hsl(var(--sl-color-surface));
     border: 1px solid hsl(var(--sl-color-border));
     box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.18);
-    backdrop-filter: blur(12px);
+    /* No backdrop-filter: the surface is opaque, so a blur behind it is never
+       seen — but it still re-blurs the game canvas on every animation frame,
+       which is expensive on a phone. */
     overflow-y: auto;
     align-self: unset;
     /* reset desktop width/max-height */
