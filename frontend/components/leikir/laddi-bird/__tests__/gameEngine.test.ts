@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createGameEngine } from "../gameEngine";
 
 /**
- * The engine is a canvas/rAF/Audio factory, none of which jsdom implements, so
+ * The engine is a canvas/rAF/Web Audio factory, none of which jsdom implements, so
  * each of those is stubbed here. The tests focus on the behaviours the port was
  * meant to fix — cleanup, the NaN-before-load hazard, and frame-rate
  * independence — rather than on redrawing the game.
@@ -70,32 +70,55 @@ function installImageStub() {
   vi.stubGlobal("Image", StubImage);
 }
 
-interface StubAudioLike {
-  src: string;
-  preload: string;
-  play: ReturnType<typeof vi.fn>;
-  pause: ReturnType<typeof vi.fn>;
-  load: ReturnType<typeof vi.fn>;
-  removeAttribute: ReturnType<typeof vi.fn>;
+/** Every sound URL fetched, in order. */
+let fetched: string[] = [];
+/** Every live AudioContext the engine created. */
+let audioContexts: StubAudioContext[] = [];
+/** The decoded buffer each played source was given, by file name. */
+let played: string[] = [];
+
+class StubAudioContext {
+  state: "suspended" | "running" | "closed" = "suspended";
+  destination = {};
+  resume = vi.fn(() => {
+    this.state = "running";
+    return Promise.resolve();
+  });
+  close = vi.fn(() => {
+    this.state = "closed";
+    return Promise.resolve();
+  });
+  constructor() {
+    audioContexts.push(this);
+  }
+  createBufferSource() {
+    const source = {
+      buffer: null as { file: string } | null,
+      connect: vi.fn(),
+      start: vi.fn(() => played.push(source.buffer!.file)),
+    };
+    return source;
+  }
 }
 
-/** Every Audio the engine constructed, so cleanup can be asserted on. */
-let audioInstances: StubAudioLike[] = [];
-
 function installAudioStub() {
-  class StubAudio {
-    src = "";
-    preload = "auto";
-    currentTime = 0;
-    play = vi.fn(() => Promise.resolve());
-    pause = vi.fn();
-    load = vi.fn();
-    removeAttribute = vi.fn();
-    constructor() {
-      audioInstances.push(this as unknown as StubAudioLike);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string) => {
+      fetched.push(url);
+      const file = url.split("/").pop()!;
+      return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve({ file }) });
+    })
+  );
+  vi.stubGlobal("AudioContext", StubAudioContext);
+  vi.stubGlobal(
+    "OfflineAudioContext",
+    class {
+      decodeAudioData(data: { file: string }) {
+        return Promise.resolve({ file: data.file });
+      }
     }
-  }
-  vi.stubGlobal("Audio", StubAudio);
+  );
 }
 
 // ── Manually driven requestAnimationFrame ────────────────────────────────────
@@ -252,7 +275,9 @@ beforeEach(() => {
   failing = new Set();
   loadedCount = 0;
   lastImages = [];
-  audioInstances = [];
+  fetched = [];
+  audioContexts = [];
+  played = [];
   pendingFrame = null;
   cancelled = [];
   clock = 0;
@@ -484,9 +509,7 @@ describe("createGameEngine", () => {
     expect(onGameOver).toHaveBeenCalledTimes(1);
   });
 
-  it("releases audio without refetching the page as media on cleanup", async () => {
-    // `src = ""` resolves against the document URL, so the browser would fetch
-    // the page HTML as media and log MEDIA_ELEMENT_ERROR on every unmount.
+  it("closes the audio context on cleanup", async () => {
     const canvas = makeCanvas();
     const cleanup = createGameEngine(canvas, {
       onGameOver: vi.fn(),
@@ -494,15 +517,41 @@ describe("createGameEngine", () => {
       onRunStart: vi.fn(),
     });
     await settleSprites();
+    canvas.dispatchEvent(new MouseEvent("click"));
     cleanup();
 
-    expect(audioInstances.length).toBeGreaterThan(0);
-    for (const sound of audioInstances) {
-      expect(sound.pause).toHaveBeenCalled();
-      expect(sound.removeAttribute).toHaveBeenCalledWith("src");
-      expect(sound.load).toHaveBeenCalled();
-      expect(sound.src).not.toBe("");
-    }
+    expect(audioContexts).toHaveLength(1);
+    expect(audioContexts[0].close).toHaveBeenCalled();
+  });
+
+  it("plays the start sound on the very first tap", async () => {
+    // Decoding happens ahead of the gesture, so the first run is not silent
+    // while a decode that only just started catches up.
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP); // sprites ready → sounds fetched
+    await settleSprites(); // → decoded
+
+    expect(audioContexts).toHaveLength(0); // no context before a gesture
+    canvas.dispatchEvent(new MouseEvent("click"));
+    expect(played).toEqual(["start.wav"]);
+  });
+
+  it("plays a flap on every tap without reusing a media element", async () => {
+    const canvas = makeCanvas();
+    createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
+    await settleSprites();
+    runFrames(1, STEP);
+    await settleSprites();
+
+    canvas.dispatchEvent(new MouseEvent("click")); // start
+    runFrames(1, STEP);
+    canvas.dispatchEvent(new MouseEvent("click"));
+    canvas.dispatchEvent(new MouseEvent("click"));
+
+    expect(played.filter((f) => f === "flap.wav")).toHaveLength(2);
+    expect(fetched.filter((u) => u.endsWith("flap.wav"))).toHaveLength(1);
   });
 
   it("lets a focused control keep its own Space key", async () => {
@@ -642,15 +691,52 @@ describe("createGameEngine", () => {
     expect(drewGround).toBe(true);
   });
 
-  it("does not eagerly download the sound effects", async () => {
-    // ~790KB of uncompressed WAV would otherwise be fetched before the player
-    // touches anything, competing with the sprites for bandwidth.
+  it("does not download the sound effects before the sprites", async () => {
+    // ~200KB of WAV — more than all the sprites together — would otherwise
+    // compete with them for bandwidth and push them past the load deadline.
+    imagesLoad = false;
     const canvas = makeCanvas();
+    const ctx = stubCtx(canvas);
+    createGameEngine(
+      canvas,
+      { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() },
+      { loadDeadlineMs: 10 }
+    );
+    runFrames(5, STEP);
+    expect(fetched).toHaveLength(0);
+
+    await afterDeadline();
+    runFrames(1, STEP);
+    expect(fetched.length).toBeGreaterThan(0);
+    expect(ctx.fillRect).toHaveBeenCalled();
+  });
+
+  it("scrolls the pipes evenly on a 120 Hz display", async () => {
+    // The simulation steps at 60 Hz, so at 120 Hz every other frame has no step.
+    // Drawing only the last step would hold the pipe still and then jump it 2px
+    // — judder at a healthy frame rate. Each frame should move it about 1px.
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const canvas = makeCanvas();
+    const ctx = stubCtx(canvas);
     createGameEngine(canvas, { onGameOver: vi.fn(), onRestart: vi.fn(), onRunStart: vi.fn() });
     await settleSprites();
 
-    expect(audioInstances.length).toBeGreaterThan(0);
-    for (const sound of audioInstances) expect(sound.preload).toBe("none");
+    canvas.dispatchEvent(new MouseEvent("click"));
+    const xs: number[] = [];
+    for (let i = 0; i < 40; i++) {
+      ctx.drawImage.mockClear();
+      runFrames(1, 1000 / 120);
+      const pipe = ctx.drawImage.mock.calls.find((c) =>
+        String((c[0] as { src?: string })?.src ?? "").includes("toppipe")
+      );
+      if (pipe) xs.push(pipe[1] as number);
+    }
+
+    expect(xs.length).toBeGreaterThan(10);
+    for (let i = 1; i < xs.length; i++) {
+      expect(xs[i - 1] - xs[i]).toBeGreaterThan(0.5);
+      expect(xs[i - 1] - xs[i]).toBeLessThan(1.5);
+    }
   });
 
   it("waits for every sprite without a hardcoded count", async () => {

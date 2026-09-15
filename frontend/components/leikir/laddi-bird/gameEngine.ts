@@ -25,6 +25,7 @@
  */
 
 import { safeLocalStorage } from "@/lib/safe-storage";
+import { createSfx } from "./sfx";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,13 @@ const RAD = Math.PI / 180;
 
 /** One simulation step, in ms. The original ran on a 60 Hz interval. */
 const STEP_MS = 1000 / 60;
+/**
+ * A frame this close to one step counts as exactly one step. rAF timestamps on
+ * a 60 Hz phone wander by a millisecond or so, and with the accumulator sitting
+ * right at the boundary that turns "one step per frame" into a run of 0s and 2s
+ * — the playfield visibly stutters even though the frame rate is fine.
+ */
+const STEP_SNAP_MS = 1;
 /** Never simulate more than this per frame, so a backgrounded tab cannot
  *  return and run thousands of catch-up steps in one blocking burst. */
 const MAX_STEPS_PER_FRAME = 5;
@@ -120,28 +128,6 @@ function loadImage(
   return img;
 }
 
-function loadSound(path: string): HTMLAudioElement {
-  const audio = new Audio();
-  // These are uncompressed WAVs totalling ~790KB — several times the sprite
-  // payload, for decoration. Left on the default "auto" they download before
-  // the player touches anything and compete with the sprites for bandwidth,
-  // which is what pushes those past the load deadline on a slow connection.
-  // Nothing can play before the first interaction anyway.
-  audio.preload = "none";
-  audio.src = `${ASSETS}/${path}`;
-  return audio;
-}
-
-/**
- * Browsers reject play() until the user has interacted with the page, and an
- * unhandled rejection surfaces as a console error on every single flap. The
- * sound is decorative, so a refusal is not worth reporting.
- */
-function play(sound: HTMLAudioElement): void {
-  sound.currentTime = 0;
-  sound.play().catch(() => {});
-}
-
 // ── Factory ──────────────────────────────────────────────────────────────────
 
 export interface GameOptions {
@@ -161,7 +147,9 @@ export function createGameEngine(
   callbacks: GameCallbacks,
   options: GameOptions = {}
 ): () => void {
-  const ctx = canvas.getContext("2d")!;
+  // Opaque: the sky fill covers every pixel each frame, and an opaque canvas
+  // spares the compositor blending it against the page on every frame.
+  const ctx = canvas.getContext("2d", { alpha: false })!;
   canvas.width = GAME_W;
   canvas.height = GAME_H;
 
@@ -228,13 +216,13 @@ export function createGameEngine(
     else ctx.drawImage(img, x, y);
   }
 
-  const sfx = {
-    start: loadSound("sfx/start.wav"),
-    flap: loadSound("sfx/flap.wav"),
-    score: loadSound("sfx/score.wav"),
-    hit: loadSound("sfx/hit.wav"),
-    die: loadSound("sfx/die.wav"),
-  };
+  const sfx = createSfx({
+    start: `${ASSETS}/sfx/start.wav`,
+    flap: `${ASSETS}/sfx/flap.wav`,
+    score: `${ASSETS}/sfx/score.wav`,
+    hit: `${ASSETS}/sfx/hit.wav`,
+    die: `${ASSETS}/sfx/die.wav`,
+  });
 
   // ── Mutable game state ────────────────────────────────────────────────────
   let phase: Phase = "getReady";
@@ -284,12 +272,12 @@ export function createGameEngine(
   function start(): void {
     phase = "play";
     callbacks.onRunStart();
-    play(sfx.start);
+    sfx.play("start");
   }
 
   function flap(): void {
     if (birdY <= 0) return;
-    play(sfx.flap);
+    sfx.play("flap");
     birdSpeed = -THRUST;
   }
 
@@ -307,6 +295,8 @@ export function createGameEngine(
 
   /** One input event — click, tap or key. Meaning depends on the phase. */
   function onInput(): void {
+    // Every input is a user gesture, which is the only place audio may start.
+    sfx.unlock();
     if (!ready()) return; // nothing to fly through yet
     switch (phase) {
       case "getReady":
@@ -359,14 +349,14 @@ export function createGameEngine(
 
       const overlapsX = BIRD_X + r >= p.x && BIRD_X - r <= p.x + w;
       if (overlapsX && (birdY - r <= roof || birdY + r >= floor)) {
-        play(sfx.hit);
+        sfx.play("hit");
         return true;
       }
 
       if (!p.passed && BIRD_X - r > p.x + w) {
         p.passed = true;
         score++;
-        play(sfx.score);
+        sfx.play("score");
       }
     }
     return false;
@@ -404,7 +394,7 @@ export function createGameEngine(
           birdY = groundY() - r;
           birdRotation = 90;
           if (!diePlayed) {
-            play(sfx.die);
+            sfx.play("die");
             diePlayed = true;
           }
         }
@@ -442,21 +432,34 @@ export function createGameEngine(
     drawSprite(sprites.bg, 0, GAME_H - BG_H);
   }
 
-  function drawPipes(): void {
+  /** How far the playfield scrolls in `alpha` of a step. */
+  function scrollAhead(alpha: number): number {
+    return phase === "play" ? SCROLL_SPEED * alpha : 0;
+  }
+
+  function drawPipes(alpha: number): void {
+    const ahead = scrollAhead(alpha);
     for (const p of pipes) {
-      drawSprite(sprites.pipeTop, p.x, p.y);
-      drawSprite(sprites.pipeBot, p.x, p.y + PIPE_H + PIPE_GAP);
+      drawSprite(sprites.pipeTop, p.x - ahead, p.y);
+      drawSprite(sprites.pipeBot, p.x - ahead, p.y + PIPE_H + PIPE_GAP);
     }
   }
 
-  function drawGround(): void {
-    // Two tiles so the wrap point is always off-screen.
-    drawSprite(sprites.ground, groundX, groundY());
+  function drawGround(alpha: number): void {
+    // Two tiles so the wrap point is always off-screen. The look-ahead can carry
+    // it just past a tile, so wrap again rather than show a sliver of sky.
+    let x = groundX - scrollAhead(alpha);
+    if (x <= -GROUND_W / 2) x += GROUND_W / 2;
+    drawSprite(sprites.ground, x, groundY());
   }
 
-  function drawBird(): void {
+  function drawBird(alpha: number): void {
+    // birdSpeed is exactly what the next step adds to birdY, so this is where
+    // the bird will be — clamped so it never sinks into the ground art.
+    const y =
+      phase === "getReady" ? birdY : Math.min(birdY + birdSpeed * alpha, groundY() - BIRD_H / 2);
     ctx.save();
-    ctx.translate(BIRD_X, birdY);
+    ctx.translate(BIRD_X, y);
     ctx.rotate(birdRotation * RAD);
     drawSprite(sprites.bird, -BIRD_W / 2, -BIRD_H / 2, BIRD_W, BIRD_H);
     ctx.restore();
@@ -503,11 +506,22 @@ export function createGameEngine(
     }
   }
 
-  function draw(): void {
+  /**
+   * Paint the frame. `alpha` is how far, as a fraction of a step, real time has
+   * run past the last simulated step.
+   *
+   * The simulation is fixed at 60 Hz but a phone may refresh at 90 or 120 Hz,
+   * where some frames get no step at all. Drawing only the last step would hold
+   * the pipes still on those frames and then jump them — steady judder at a
+   * perfectly healthy frame rate. Moving things by their known per-step motion
+   * times alpha keeps the scroll even, and because it looks ahead rather than
+   * interpolating back from the previous step, it adds no input latency.
+   */
+  function draw(alpha: number): void {
     drawBackground();
-    drawPipes();
-    drawBird();
-    drawGround();
+    drawPipes(alpha);
+    drawBird(alpha);
+    drawGround(alpha);
 
     if (phase === "getReady") drawCentred(sprites.getReady, GETREADY_W, GETREADY_H);
     if (phase === "gameOver") drawCentred(sprites.gameOver, GAMEOVER_W, GAMEOVER_H);
@@ -524,10 +538,14 @@ export function createGameEngine(
       ctx.fillRect(0, 0, GAME_W, GAME_H);
       return;
     }
+    // Only once the sprites are in, so the sounds never compete with them.
+    sfx.preload();
 
     if (!lastTime) lastTime = now;
-    accumulator += now - lastTime;
+    let delta = now - lastTime;
     lastTime = now;
+    if (Math.abs(delta - STEP_MS) < STEP_SNAP_MS) delta = STEP_MS;
+    accumulator += delta;
 
     let steps = 0;
     while (accumulator >= STEP_MS && steps < MAX_STEPS_PER_FRAME) {
@@ -538,7 +556,7 @@ export function createGameEngine(
     // Drop the rest of the backlog instead of carrying it into the next frame.
     if (accumulator > STEP_MS) accumulator = 0;
 
-    draw();
+    draw(accumulator / STEP_MS);
   }
 
   // ── Input ─────────────────────────────────────────────────────────────────
@@ -580,14 +598,7 @@ export function createGameEngine(
     canvas.removeEventListener("click", onPointerDown);
     canvas.removeEventListener("touchstart", onPointerDown);
     document.removeEventListener("keydown", onKeyDown);
-    // A sound mid-playback would otherwise outlive the page. Remove the
-    // attribute rather than setting src = "": an empty src resolves against the
-    // document URL, so the browser would fetch the page HTML as media and log a
-    // MEDIA_ELEMENT_ERROR on every unmount.
-    for (const sound of Object.values(sfx)) {
-      sound.pause();
-      sound.removeAttribute("src");
-      sound.load();
-    }
+    // A sound mid-playback would otherwise outlive the page.
+    sfx.dispose();
   };
 }
