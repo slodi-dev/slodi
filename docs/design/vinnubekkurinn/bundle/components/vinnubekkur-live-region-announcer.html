@@ -1,0 +1,78 @@
+<!-- @dsCard group="Vinnubekkurinn" title="LiveRegionAnnouncer" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LiveRegionAnnouncer — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .say {
+    display: flex; align-items: flex-start; gap: 10px;
+    max-width: 520px;
+    padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm);
+    border: 1px solid hsl(var(--sl-color-info) / .4);
+    border-left: 3px solid hsl(var(--sl-color-info));
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-info-subtle));
+    color: hsl(var(--sl-color-info-text));
+    font-size: var(--sl-text-body-sm);
+  }
+  .say svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
+  .say__trigger { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); font-weight: var(--sl-font-weight-emphasis); opacity: .85; }
+  .say__text { display: block; margin-top: 2px; color: hsl(var(--sl-color-text-primary)); }
+  .list { display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .code { max-width: 560px; padding: var(--sl-spacing-inset-sm); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-background-tertiary)); font-family: var(--sl-primitive-font-family-mono); font-size: var(--sl-text-overline); line-height: 1.7; overflow-x: auto; white-space: pre; }
+  .reveal { border: 1px dashed hsl(var(--sl-color-border-strong)); border-radius: var(--sl-radius-md); padding: var(--sl-spacing-inset-sm); max-width: 520px; }
+  .reveal__t { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); font-weight: var(--sl-font-weight-emphasis); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">LiveRegionAnnouncer</h1>
+  <p class="ds-sub">Sjónrænt falið <code>aria-live</code>-svæði sem segir frá gripum, færslum og droppum. Fóðrað af <code>announcements</code>-viðmóti dnd-kit <em>og</em> hnappaaðgerðunum okkar.</p>
+</header>
+
+<p class="vb-note"><strong>sc-158</strong> · Þetta er íhluturinn sem gerir samsetjarann nothæfan með skjálesara. Hann sést aldrei — hér er hann sýndur uppljóstraður svo hægt sé að rýna orðalagið. <strong>Textinn er hluti af hönnuninni.</strong></p>
+
+<div class="ds-group">
+  <p class="ds-section">Hvað er sagt — full lykkja með lyklaborði</p>
+  <div class="list">
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">Grip · Bil</span><span class="say__text">„Hnútar — pelastikk gripin. Staða 2 af 3 í reitnum Dagskrá. Notaðu upp- og niðurörvar til að færa, bil til að sleppa, Esc til að hætta við.“</span></div></div>
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">Færsla · ↑</span><span class="say__text">„Staða 1 af 3.“</span></div></div>
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">Yfir í annan reit · →</span><span class="say__text">„Reiturinn Leikur. Staða 1 af 1.“</span></div></div>
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">Sleppt · Bil</span><span class="say__text">„Hnútar — pelastikk sett í reitinn Leikur, staða 1 af 1.“</span></div></div>
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">Hætt við · Esc</span><span class="say__text">„Hætt við. Hnútar — pelastikk er aftur í reitnum Dagskrá, staða 2 af 3.“</span></div></div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Sömu tilkynningar frá hnappaleiðinni</p>
+  <div class="list">
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">▲ smellt</span><span class="say__text">„Hnútar — pelastikk færð í stöðu 1 af 3.“</span></div></div>
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">„Bæta við“ úr safninu</span><span class="say__text">„Kötturinn og músin sett í reitinn Leikur. Reiturinn er nú fullur.“</span></div></div>
+    <div class="say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><span class="say__trigger">Fjarlægt</span><span class="say__text">„Áttavitaleikur fjarlægður. 2 liðir eftir í reitnum Dagskrá. Ýttu á Ctrl+Z til að afturkalla.“</span></div></div>
+    <div class="say" style="border-color:hsl(var(--sl-color-warning) / .4);border-left-color:hsl(var(--sl-color-warning));background:hsl(var(--sl-color-warning-subtle));color:hsl(var(--sl-color-warning-text))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg><div><span class="say__trigger">Ógilt drop</span><span class="say__text">„Leikur passar ekki í reitinn Setning. Blokkin er óhreyfð.“</span></div></div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Raunveruleg framsetning í DOM</p>
+  <div class="reveal">
+    <span class="reveal__t">Sést ekki — les upp</span>
+    <div class="code">&lt;div class="vb-sr-only" role="status" aria-live="polite" aria-atomic="true"&gt;
+  Hnútar — pelastikk færð í stöðu 1 af 3.
+&lt;/div&gt;
+
+&lt;div class="vb-sr-only" role="alert" aria-live="assertive"&gt;
+  Leikur passar ekki í reitinn Setning.
+&lt;/div&gt;</div>
+    <p class="vb-note" style="margin:12px 0 0">Tvö svæði: <strong>polite</strong> fyrir venjulegar færslur, <strong>assertive</strong> fyrir grip, hætt-við og villur. Skilaboðin eru hreinsuð eftir 1 sek. svo endurtekinn texti lesist aftur.</p>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Orðalagsreglur</p>
+  <ul class="vb-note">
+    <li>Alltaf <em>heiti blokkarinnar</em> fyrst — skjálesarinn segir hvað, ekki bara hvar.</li>
+    <li>Alltaf „staða X af Y“ — hlutfallsleg staða er ónothæf án heildar.</li>
+    <li>Alltaf nefna reitinn þegar farið er milli reita.</li>
+    <li>Leiðbeiningar aðeins við grip, ekki við hverja færslu (annars verður það hávaði).</li>
+  </ul>
+</div>
+</body></html>

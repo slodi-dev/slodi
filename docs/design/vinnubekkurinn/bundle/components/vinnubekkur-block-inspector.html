@@ -1,0 +1,103 @@
+<!-- @dsCard group="Vinnubekkurinn" title="BlockInspector" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BlockInspector — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .insp { width: 320px; border: 1px solid hsl(var(--sl-color-border-subtle)); border-radius: var(--sl-radius-card); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-card); overflow: hidden; }
+  .insp__head { padding: var(--sl-spacing-inset-sm); border-bottom: 1px solid hsl(var(--sl-color-border-subtle)); display: flex; align-items: flex-start; gap: var(--sl-spacing-gap-sm); }
+  .insp__title { flex: 1; font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-heading); }
+  .insp__kind { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); }
+  .insp__body { padding: var(--sl-spacing-inset-sm); display: flex; flex-direction: column; gap: var(--sl-spacing-gap-md); }
+  .fld { display: flex; flex-direction: column; gap: 5px; }
+  .fld > label { font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-secondary)); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); }
+  .box { min-height: 2.25rem; display: flex; align-items: center; gap: 6px; padding: 0 var(--sl-spacing-gap-sm); border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); font-size: var(--sl-text-body-sm); }
+  .box--ph { color: hsl(var(--sl-input-placeholder)); }
+  .box--err { border-color: hsl(var(--sl-input-border-error)); }
+  .err { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-error-text)); }
+  .hint { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .row { display: flex; gap: var(--sl-spacing-gap-sm); }
+  .row > * { flex: 1; }
+  .insp__foot { padding: var(--sl-spacing-inset-sm); border-top: 1px solid hsl(var(--sl-color-border-subtle)); background: hsl(var(--sl-color-background-secondary)); display: flex; justify-content: space-between; align-items: center; }
+  .empty { padding: var(--sl-spacing-inset-lg); text-align: center; color: hsl(var(--sl-color-text-tertiary)); font-size: var(--sl-text-body-sm); }
+  .kindbar { height: 3px; background: hsl(var(--vb-kind, var(--sl-color-primary))); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">BlockInspector</h1>
+  <p class="ds-sub">Samhengisnæmur eiginleikaritill fyrir valda blokk. Reitirnir aðlagast tegund blokkarinnar. <code>react-hook-form</code> + <code>zod</code> (þegar í dependencies).</p>
+</header>
+
+<p class="vb-note"><strong>sc-150</strong> · Enginn „Vista“-hnappur í venjulegu flæði: breytingar renna beint í <code>AssemblyProvider</code> og <code>AutosaveIndicator</code> segir stöðuna. Ritillinn er panell á borðtölvu, botnblað á síma.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Fullur ritill — verkefnisblokk</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Valin blokk</span>
+      <div class="insp vb-kind-dagskra">
+        <div class="kindbar"></div>
+        <div class="insp__head">
+          <div style="flex:1">
+            <span class="insp__kind">Verkefni · reitur: Dagskrá</span>
+            <div class="insp__title">Hnútar — pelastikk</div>
+          </div>
+          <button class="vb-iconbtn" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="insp__body">
+          <div class="fld"><label for="i-name">Heiti</label><div class="box" id="i-name">Hnútar — pelastikk</div></div>
+          <div class="fld"><label>Þema (ThemeParamField)</label><div class="box">Sjómennska <span class="hint">▾</span></div><span class="hint">Endurskinar almenna blokk — ADR-002 §4</span></div>
+          <div class="row">
+            <div class="fld"><label>Lengd</label><div class="box">25 mín</div></div>
+            <div class="fld"><label>Staða</label><div class="box"><span class="vb-chip vb-status--draft">Drög</span> <span class="hint">▾</span></div></div>
+          </div>
+          <div class="fld"><label>Staðsetning</label><div class="box box--ph">Sami staður og fundurinn</div></div>
+          <div class="fld"><label>Endurmat</label><div class="box" style="min-height:3.5rem;align-items:flex-start;padding-top:8px;line-height:1.4">„Of stuttur tími — 25 mín dugðu ekki, taka 35 næst.“ <span class="hint">— Signý, feb. 2025</span></div></div>
+        </div>
+        <div class="insp__foot">
+          <button class="vb-btn vb-btn--ghost vb-btn--danger" type="button">Fjarlægja</button>
+          <span class="hint">Vistað sjálfkrafa</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Reitir aðlagast tegund — leikur</span>
+      <div class="insp vb-kind-leikur">
+        <div class="kindbar"></div>
+        <div class="insp__head"><div style="flex:1"><span class="insp__kind">Leikur · reitur: Leikur</span><div class="insp__title">Kötturinn og músin</div></div></div>
+        <div class="insp__body">
+          <div class="fld"><label>Heiti</label><div class="box">Kötturinn og músin</div></div>
+          <div class="row">
+            <div class="fld"><label>Lengd</label><div class="box">15 mín</div></div>
+            <div class="fld"><label>Fjöldi</label><div class="box">8–24</div></div>
+          </div>
+          <div class="fld"><label>Hvar</label><div class="box">Inni eða úti</div></div>
+          <div class="fld"><label>Búnaður</label><div class="box box--ph">Enginn</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Villa í reit</span>
+      <div class="insp vb-kind-dagskra">
+        <div class="kindbar"></div>
+        <div class="insp__head"><div style="flex:1"><span class="insp__kind">Verkefni</span><div class="insp__title">Útieldun</div></div></div>
+        <div class="insp__body">
+          <div class="fld"><label>Lengd</label><div class="box box--err">0 mín</div><span class="err">Lengd verður að vera meira en 0.</span></div>
+          <div class="fld"><label>Heiti</label><div class="box">Útieldun</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Ekkert valið</span>
+      <div class="insp">
+        <div class="insp__head"><div style="flex:1"><div class="insp__title">Eiginleikar</div></div></div>
+        <div class="empty">Veldu blokk á vinnusvæðinu til að breyta henni.<br><span class="hint">Á lyklaborði: Tab að blokk og ýttu á Enter.</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

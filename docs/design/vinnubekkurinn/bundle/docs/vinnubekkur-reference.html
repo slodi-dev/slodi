@@ -1,0 +1,162 @@
+<!-- @dsCard group="Docs" title="Vinnubekkurinn — hönnunarforsendur" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Vinnubekkurinn — hönnunarforsendur</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="../components/vinnubekkur.css">
+<style>
+  .doc { max-width: 78ch; }
+  .doc p, .doc li { font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-secondary)); line-height: var(--sl-line-height-relaxed, 1.65); }
+  .doc h2 { font-size: var(--sl-text-heading-6); font-weight: var(--sl-font-weight-heading); color: hsl(var(--sl-color-text-primary)); margin: 0 0 var(--sl-spacing-stack-sm); }
+  .doc strong { color: hsl(var(--sl-color-text-primary)); }
+  .lede { font-size: var(--sl-text-body) !important; color: hsl(var(--sl-color-text-primary)) !important; }
+
+  .files { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1px; background: hsl(var(--sl-color-border-subtle)); border: 1px solid hsl(var(--sl-color-border-subtle)); border-radius: var(--sl-radius-card); overflow: hidden; max-width: 720px; }
+  .files li { display: flex; gap: var(--sl-spacing-gap-md); align-items: baseline; padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm); background: hsl(var(--sl-color-surface)); flex-wrap: wrap; }
+  .files code { font-family: var(--sl-primitive-font-family-mono); font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-primary)); background: hsl(var(--sl-color-background-tertiary)); border-radius: var(--sl-radius-xs); padding: 2px 6px; white-space: nowrap; }
+  .files span { font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-secondary)); flex: 1; min-width: 220px; }
+  .files li[data-rank="1"] code { background: hsl(var(--sl-color-primary-subtle)); color: hsl(var(--sl-color-primary-text, var(--sl-color-text-primary))); }
+
+  .rule { display: flex; gap: var(--sl-spacing-gap-md); align-items: flex-start; padding: var(--sl-spacing-inset-sm); border: 1px solid hsl(var(--sl-color-primary) / .45); border-left-width: 3px; border-radius: var(--sl-radius-card); background: hsl(var(--sl-color-primary-subtle)); max-width: 720px; }
+  .rule p { margin: 0; color: hsl(var(--sl-color-text-primary)) !important; }
+
+  .tbl { width: 100%; max-width: 760px; border-collapse: collapse; font-size: var(--sl-text-body-sm); }
+  .tbl th, .tbl td { text-align: left; padding: 7px var(--sl-spacing-gap-sm); border-bottom: 1px solid hsl(var(--sl-color-border-subtle)); vertical-align: top; color: hsl(var(--sl-color-text-secondary)); }
+  .tbl th { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); color: hsl(var(--sl-color-text-tertiary)); }
+  .tbl td:first-child { color: hsl(var(--sl-color-text-primary)); font-weight: var(--sl-font-weight-emphasis); }
+  .tbl code { font-family: var(--sl-primitive-font-family-mono); font-size: .9em; background: hsl(var(--sl-color-background-tertiary)); border-radius: var(--sl-radius-xs); padding: 1px 5px; }
+  .scroll { overflow-x: auto; max-width: 100%; }
+
+  .code { max-width: 720px; padding: var(--sl-spacing-inset-sm); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-background-tertiary)); font-family: var(--sl-primitive-font-family-mono); font-size: var(--sl-text-overline); line-height: 1.75; overflow-x: auto; white-space: pre; color: hsl(var(--sl-color-text-primary)); }
+
+  .checks { list-style: none; padding: 0; margin: 0; max-width: 720px; display: flex; flex-direction: column; gap: 6px; }
+  .checks li { display: flex; gap: 9px; align-items: flex-start; }
+  .checks li::before { content: "□"; color: hsl(var(--sl-color-text-tertiary)); flex-shrink: 0; font-size: 15px; line-height: 1.35; }
+
+  .qs { counter-reset: q; list-style: none; padding: 0; margin: 0; max-width: 720px; display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .qs li { counter-increment: q; display: flex; gap: var(--sl-spacing-gap-sm); align-items: flex-start; padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm); border: 1px solid hsl(var(--sl-color-warning) / .4); background: hsl(var(--sl-color-warning-subtle)); border-radius: var(--sl-radius-md); }
+  .qs li::before { content: counter(q); flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: hsl(var(--sl-color-warning) / .3); color: hsl(var(--sl-color-warning-text)); font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-heading); display: flex; align-items: center; justify-content: center; }
+  .qs p { margin: 0; color: hsl(var(--sl-color-warning-text)) !important; }
+
+  .kinds { display: flex; flex-wrap: wrap; gap: var(--sl-spacing-gap-sm); }
+  .kind { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border: 1px solid hsl(var(--sl-color-border)); border-left: 3px solid hsl(var(--vb-kind)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); font-size: var(--sl-text-body-sm); }
+  .kind small { color: hsl(var(--sl-color-text-tertiary)); font-size: var(--sl-text-overline); }
+
+  .steps { list-style: none; counter-reset: s; padding: 0; margin: 0; max-width: 720px; display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .steps li { counter-increment: s; display: flex; gap: var(--sl-spacing-gap-sm); align-items: flex-start; }
+  .steps li::before { content: counter(s); flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: hsl(var(--sl-color-primary)); color: hsl(var(--sl-button-text-primary)); font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-heading); display: flex; align-items: center; justify-content: center; }
+  .steps li[data-done="yes"]::before { background: hsl(var(--sl-color-success)); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">Vinnubekkurinn — hönnunarforsendur</h1>
+  <p class="ds-sub">Tilvísunarblað fyrir kortin 26 í hópnum <strong>Vinnubekkurinn</strong> og fyrir <strong>Pages → Vinnubekkurinn — hi-fi</strong>. Heimildaskjölin sjálf liggja undir <code>docs/</code> í þessu verkefni.</p>
+</header>
+
+<p class="vb-note lede">Þetta er ekki nýtt skjal — það er lesleiðin. Allt hér er dregið úr <code>docs/frontend/vinnubekkurinn-block-assembly-components.md</code> (hegðun) og <code>docs/design/vinnubekkurinn/SPEC.md</code> (hönnun). Ef eitthvað stangast á: heimildaskjalið ræður, ekki þetta kort.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Skjölin — lesröð</p>
+  <ul class="files">
+    <li data-rank="1"><code>docs/frontend/vinnubekkurinn-block-assembly-components.md</code><span>Hegðunin. Gagnaform, þriggja-glugga uppbygging, íhlutalisti A–E, aðgengisgátlisti, opnar spurningar. <strong>Sannleikurinn um hvað íhlutirnir gera.</strong></span></li>
+    <li data-rank="1"><code>docs/design/vinnubekkurinn/SPEC.md</code><span>Hönnunin. Tákn (tokens), miði→íhlutur→forskoðun, hvaða stöður hvert kort sýnir.</span></li>
+    <li><code>docs/tharfagreining2/adr-002-event-typing-and-grid.md</code><span>Líkanið undir öllu: tegundabundnir viðburðir, reitamengi, breytustýrðar blokkir, „?“ sem fyrsta flokks staða.</span></li>
+    <li><code>docs/features/planner.md</code><span>Skipulagshryggurinn — hvar vinnubekkurinn situr í stærra flæðinu.</span></li>
+    <li><code>docs/frontend/builder.md</code><span>Víðari <code>/builder</code>-forskriftin. Þetta er §5-sneiðin úr henni, dýpkuð.</span></li>
+    <li><code>docs/frontend/DESIGN-TOKEN-STANDARDS.md</code><span>Táknstaðallinn í þremur lögum sem <code>tokens.css</code> byggir á.</span></li>
+  </ul>
+  <p class="vb-note" style="margin-top:14px">Innbyrðis tenglar skjalanna virka — möppuskipanin hér speglar <code>slodi/docs/</code> nákvæmlega.</p>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Reglan sem allir íhlutir erfa</p>
+  <div class="rule">
+    <p><strong>Dráttur er flýtileið, aldrei eina leiðin.</strong> Að bæta við, fjarlægja, endurraða og færa milli reita verður hvert um sig að vera framkvæmanlegt með lyklaborði <em>og</em> með sýnilegum hnappi á skjánum. Tvö viðmót, ein ástandsbreyting. Sé hönnun lögð fram þar sem aðgerð næst aðeins með mús er hún ekki fullnægjandi.</p>
+  </div>
+  <p class="vb-note" style="margin-top:14px">Þetta er ódýrt af því að bæði lögin senda sama áform í <code>AssemblyProvider</code> (sc-161). Ein kóðaleið, ein tilkynning, ein vistun — aðgengið getur ekki rekið hljóðlega frá bendihegðuninni.</p>
+  <div class="code">type AssemblyIntent =
+  | { t: 'insert';    block: BlockTemplate; slotId: string; at: number }
+  | { t: 'move';      blockId: string; toSlotId: string; toIndex: number }
+  | { t: 'remove';    blockId: string }
+  | { t: 'duplicate'; blockId: string }
+  | { t: 'setStatus'; blockId: string; status: BlockInstance['status'] };</div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Tvær leiðir að hverri aðgerð</p>
+  <div class="scroll">
+    <table class="tbl">
+      <thead><tr><th>Aðgerð</th><th>Bending (flýtileið)</th><th>Lyklaborð / hnappur (skylda)</th></tr></thead>
+      <tbody>
+        <tr><td>Bæta blokk úr safni</td><td>draga safnhlut → reit</td><td>fókus á hlut → <span class="vb-kbd">Enter</span> / „Bæta við“</td></tr>
+        <tr><td>Endurraða blokkum</td><td>draga upp/niður</td><td><span class="vb-kbd">Bil</span> grípa → <span class="vb-kbd">↑ ↓</span> → <span class="vb-kbd">Bil</span> sleppa, <em>eða</em> ▲ ▼ hnappar</td></tr>
+        <tr><td>Færa milli reita</td><td>draga þvert yfir reiti</td><td>grípa → <span class="vb-kbd">← →</span> eða „Færa í…“</td></tr>
+        <tr><td>Fjarlægja blokk</td><td>sveima → ✕</td><td>fókus → <span class="vb-kbd">Delete</span> / „Fjarlægja“</td></tr>
+        <tr><td>Skjóta inn á milli</td><td>sleppa í bilið</td><td>„+ Setja hér“ birtist við fókus á bilinu</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Reitategundir og litir — engir nýir litir</p>
+  <div class="kinds">
+    <span class="kind vb-kind-setning">setning <small>drekar</small></span>
+    <span class="kind vb-kind-dagskra">dagskrá <small>primary</small></span>
+    <span class="kind vb-kind-leikur">leikur <small>rekkar</small></span>
+    <span class="kind vb-kind-slit">slit <small>secondary</small></span>
+    <span class="kind vb-kind-endurmat">endurmat <small>fálkar</small></span>
+    <span class="kind vb-kind-custom">sérsniðið <small>border-strong</small></span>
+  </div>
+  <p class="vb-note" style="margin-top:16px">Reitategundirnar úr ADR-002 leggjast ofan á rampana sem kerfið á fyrir. Vinnubekkurinn bætir <strong>engum lit</strong> við kerfið. Litur ber aldrei merkingu einn — WCAG 1.4.1: heiti reitsins stendur alltaf skrifað við hliðina.</p>
+  <div class="kinds" style="margin-top:14px">
+    <span class="vb-chip vb-status--confirmed">Staðfest</span>
+    <span class="vb-chip vb-status--draft">Drög</span>
+    <span class="vb-chip vb-status--tentative">Í skoðun</span>
+    <span class="vb-chip vb-status--undecided">? Óákveðið</span>
+  </div>
+  <p class="vb-note" style="margin-top:14px"><strong>„?“ er staða, ekki villa.</strong> ADR-002 §3 gerir óákveðið fyrsta flokks: foringi má skilja reit eftir opinn og halda áfram. Þess vegna hlutlaus litur og brotin lína — ekki rauður.</p>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Aðgengisgátlisti — samþykktarskilyrði</p>
+  <ul class="checks">
+    <li>Hverja blokk má bæta við, endurraða, færa og fjarlægja <strong>með lyklaborði einu saman</strong>.</li>
+    <li>Hver blokk hefur sýnilega ▲ ▼ hnappa og ⋯ valmynd (snerti- og lyklaborðsleið).</li>
+    <li>Rétt listamerking (<code>role="list"</code> / <code>listitem</code>); tilkynningar dnd-kit, aldrei <code>aria-grabbed</code>.</li>
+    <li>Fókus varðveitist í gegnum færslu — hann fylgir blokkinni á nýja staðinn.</li>
+    <li>Grip · færsla · sleppt · hætt við gefa hvert um sig <code>aria-live</code> tilkynningu.</li>
+    <li>Dráttarhaldið er raunverulegur fókusanlegur stýrihlutur með <code>aria-label</code> sem nefnir blokkina.</li>
+    <li>Auðir og skyldureitir komast til skila án sjónar (heiti + <code>aria-describedby</code>), ekki með brotinni línu einni.</li>
+    <li>Birtuskil og smellflötur um <code>sl-*</code> tákn; 44px flötur undir <code>pointer: coarse</code>.</li>
+    <li><code>prefers-reduced-motion</code> virt í hverri dráttarhreyfingu.</li>
+    <li>Virkar í 200% aðdrætti og í einnar-dálks símaútliti.</li>
+  </ul>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Opnar spurningar — það sem hönnunarrýnin á að útkljá</p>
+  <ol class="qs">
+    <li><p><strong>Ástandssafn.</strong> React context + <code>useReducer</code> fyrir fyrsta áfanga, eða Zustand strax? Forskriftin gerir ráð fyrir context/reducer.</p></li>
+    <li><p><strong>Færslur milli reita.</strong> Takmarkar reitategund hvað má sleppa í hana? Kortin sýna <em>ógilt-sleppt</em> stöðu — svarið breytir <code>SlotFrame</code> og <code>DragOverlay</code>.</p></li>
+    <li><p><strong>Afrit-með-götum.</strong> <code>AssemblyHeader</code> leggur til þriggja kosta glugga (beinagrind með götum / allt / allt með endurmötum). Staðfesta.</p></li>
+    <li><p><strong>Bakendagöt.</strong> <code>is_template</code>, <code>order_index</code>, staða og tímasetning eru ADR-002 byggingaratriði sem íhlutirnir gera ráð fyrir. Raða framenda á eftir þeim færslum.</p></li>
+    <li><p><strong>Innfelling.</strong> Þarf <code>AssemblyCanvas</code> að teiknast inni í töflu/tímalínu (A4, sc-39) strax í v1, eða má hann standa einn fyrst?</p></li>
+  </ol>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Röðun byggingar</p>
+  <ol class="steps">
+    <li><p><code>AssemblyProvider</code> + áform + kyrrstæður <code>AssemblyCanvas</code> — ▲▼ + ✕ + „Bæta við“ í auðum reit. Fullnýtanlegt með lyklaborði, enginn dráttur.</p></li>
+    <li><p><code>BlockPalette</code> + <code>BlockLibraryItem</code>, innsetning með hnappi.</p></li>
+    <li><p>dnd-kit lagt ofan á (bendi- og lyklaborðsskynjari) og notar sömu áformin.</p></li>
+    <li><p><code>BlockInspector</code> — staða, tímasetning, þemabreyta.</p></li>
+    <li><p><code>AssemblyHeader</code> „Afrita sniðmát“ → lokar B4-lykkjunni.</p></li>
+  </ol>
+  <p class="vb-note" style="margin-top:16px">Skref 1–2 skila þegar nothæfum, aðgengilegum vinnubekk. Dráttur í skrefi 3 er hrein hröðun ofan á ástand sem er þegar sannreynt. <strong>Ný keyrsluháð eining:</strong> <code>@dnd-kit/core</code> + <code>/sortable</code> + <code>/accessibility</code> — staðfesta áður en hún er sett inn.</p>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Miðar</p>
+  <p class="vb-note">Epic 33 · <em>Fasi 2 — Vinnubekkurinn</em>. Foreldri: <strong>sc-48 B4</strong> — sniðmát eru fastur rammi með götum til að fylla, afritað-og-breytt, aldrei fryst. Íhlutamiðar <strong>sc-138 … sc-163</strong>, einn á hvert kort í hópnum Vinnubekkurinn. Nágrannar sem hann verður að spila við: sc-44 B1 (beinagrind), sc-46 B2 (tegundabundinn „búa til…“), sc-47 B3 (blokkir bera samhengi), sc-51 B7 (núll-undirbúnings afhending).</p>
+</div>
+</body></html>

@@ -1,0 +1,90 @@
+<!-- @dsCard group="Vinnubekkurinn" title="AssemblyProvider" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AssemblyProvider — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .code { max-width: 620px; padding: var(--sl-spacing-inset-sm); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-background-tertiary)); font-family: var(--sl-primitive-font-family-mono); font-size: var(--sl-text-overline); line-height: 1.75; overflow-x: auto; white-space: pre; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sl-spacing-gap-sm); max-width: 640px; }
+  .node { padding: 8px 12px; border-radius: var(--sl-radius-md); border: 1px solid hsl(var(--sl-color-border)); background: hsl(var(--sl-color-surface)); font-size: var(--sl-text-body-sm); text-align: center; }
+  .node--in { border-color: hsl(var(--sl-color-patrol-rekkar)); background: hsl(var(--sl-color-patrol-rekkar-subtle)); }
+  .node--core { border-color: hsl(var(--sl-color-primary)); background: hsl(var(--sl-color-primary-subtle)); font-weight: var(--sl-font-weight-emphasis); }
+  .node--out { border-color: hsl(var(--sl-color-secondary)); background: hsl(var(--sl-color-secondary-subtle)); }
+  .node small { display: block; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); font-weight: var(--sl-font-weight-normal); }
+  .arr { color: hsl(var(--sl-color-text-tertiary)); font-size: 18px; }
+  .col { display: flex; flex-direction: column; gap: 6px; }
+  .tbl { width: 100%; max-width: 620px; border-collapse: collapse; font-size: var(--sl-text-body-sm); }
+  .tbl th, .tbl td { text-align: left; padding: 7px var(--sl-spacing-gap-sm); border-bottom: 1px solid hsl(var(--sl-color-border-subtle)); vertical-align: top; }
+  .tbl th { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); color: hsl(var(--sl-color-text-tertiary)); }
+  .tbl code { font-family: var(--sl-primitive-font-family-mono); font-size: .9em; background: hsl(var(--sl-color-background-tertiary)); border-radius: var(--sl-radius-xs); padding: 1px 5px; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">AssemblyProvider</h1>
+  <p class="ds-sub">Heldur á ástandi rammans, beitir byggingarbreytingum og býður <code>move / insert / remove / duplicate / setStatus</code>. <strong>Einn reducer sem bæði dráttarlagið og hnapparnir kalla á.</strong></p>
+</header>
+
+<p class="vb-note"><strong>sc-161</strong> · Þetta er íhluturinn sem gerir aðgengið ódýrt. Af því að <code>onDragEnd</code> og ▼-smellur senda nákvæmlega sama áform er aðeins ein kóðaleið til að prófa — og aðgengið getur aldrei rekið hljóðlega í sundur frá bendihegðuninni.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Ein leið inn, ein leið út</p>
+  <div class="flow">
+    <div class="col">
+      <div class="node node--in">Dráttur<small>onDragEnd</small></div>
+      <div class="node node--in">▲ ▼ hnappar<small>MoveControls</small></div>
+      <div class="node node--in">⋯ valmynd<small>BlockActionsMenu</small></div>
+      <div class="node node--in">Lyklaborðsgrip<small>KeyboardSensor</small></div>
+      <div class="node node--in">„Bæta við“<small>BlockLibraryItem</small></div>
+    </div>
+    <span class="arr">→</span>
+    <div class="node node--core">AssemblyIntent<small>eitt lítið mengi áforma</small></div>
+    <span class="arr">→</span>
+    <div class="node node--core">reducer<small>ein hrein aðgerð</small></div>
+    <span class="arr">→</span>
+    <div class="col">
+      <div class="node node--out">AssemblyCanvas<small>ný röðun</small></div>
+      <div class="node node--out">LiveRegionAnnouncer<small>tilkynning</small></div>
+      <div class="node node--out">AutosaveIndicator<small>vistun</small></div>
+      <div class="node node--out">RequiredSlotWarning<small>staðfesting</small></div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Áformin</p>
+  <div class="code">type AssemblyIntent =
+  | { t: 'insert';    block: BlockTemplate; slotId: string; at: number }
+  | { t: 'move';      blockId: string; toSlotId: string; toIndex: number }
+  | { t: 'remove';    blockId: string }
+  | { t: 'duplicate'; blockId: string }
+  | { t: 'setStatus'; blockId: string; status: BlockInstance['status'] };</div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Hver aðgerð → hvaða áform</p>
+  <table class="tbl">
+    <thead><tr><th>Notandinn gerir</th><th>Áform</th><th>Þar með fæst</th></tr></thead>
+    <tbody>
+      <tr><td>Dregur blokk í annan reit</td><td><code>move</code></td><td rowspan="3">sama kóðaleið, sama tilkynning, sama vistun</td></tr>
+      <tr><td>Smellir á ▼</td><td><code>move</code></td></tr>
+      <tr><td>Grípur með bili og ýtir á ↓</td><td><code>move</code></td></tr>
+      <tr><td>Dregur úr safninu í gat</td><td><code>insert</code></td><td rowspan="2">afritunarmerking; sniðmátið helst óhreyft</td></tr>
+      <tr><td>Ýtir á Enter á safnhlut</td><td><code>insert</code></td></tr>
+      <tr><td>Ýtir á Delete / velur „Fjarlægja“</td><td><code>remove</code></td><td>afturkallanlegt (Ctrl+Z)</td></tr>
+      <tr><td>Breytir stöðupillu</td><td><code>setStatus</code></td><td>engin sérleið fyrir smáatriði</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Ástandið sem hann geymir</p>
+  <div class="code">{
+  frame: AssemblyFrame,          // beinagrindin + reitir + blokkir
+  selectedBlockId: string | null,// hvað er opið í BlockInspector
+  grabbedBlockId: string | null, // lyklaborðsgrip í gangi
+  dirty: boolean,                // fóðrar AutosaveIndicator
+  history: AssemblyIntent[],     // afturkalla / endurtaka
+  requiredButEmpty: string[],    // fóðrar RequiredSlotWarning
+}</div>
+  <p class="vb-note" style="margin-top:14px">Fyrir fyrsta áfanga: React context + <code>useReducer</code>. Reglan um einn reducer gerir flutning yfir í Zustand ódýran síðar (builder.md §6) — ástandsformið breytist ekki, aðeins geymslan.</p>
+</div>
+</body></html>

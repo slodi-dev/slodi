@@ -1,0 +1,91 @@
+<!-- @dsCard group="Vinnubekkurinn" title="VenueField" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>VenueField — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .fld { width: 300px; display: flex; flex-direction: column; gap: 5px; }
+  .fld > label { font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-secondary)); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); }
+  .box { min-height: 2.25rem; display: flex; align-items: center; gap: 7px; padding: 0 var(--sl-spacing-gap-sm); border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); font-size: var(--sl-text-body-sm); }
+  .box svg { width: 14px; height: 14px; color: hsl(var(--sl-color-text-tertiary)); flex-shrink: 0; }
+  .box--ph { color: hsl(var(--sl-input-placeholder)); }
+  .box--focus { border-color: hsl(var(--sl-input-border-focus)); box-shadow: var(--sl-input-shadow-focus); }
+  .list { margin-top: 4px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-dropdown); overflow: hidden; }
+  .opt { padding: 7px var(--sl-spacing-gap-sm); font-size: var(--sl-text-body-sm); }
+  .opt--active { background: hsl(var(--sl-color-primary-subtle)); }
+  .opt__d { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .hint { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .toggle { display: flex; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-button); overflow: hidden; }
+  .toggle button { flex: 1; padding: 6px 0; border: 0; background: none; font-family: inherit; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); cursor: pointer; }
+  .toggle button + button { border-left: 1px solid hsl(var(--sl-color-border)); }
+  .toggle button[aria-pressed="true"] { background: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); font-weight: var(--sl-font-weight-emphasis); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">VenueField</h1>
+  <p class="ds-sub">Staðsetning fundarins — og undantekningin þegar einn liður fer annað.</p>
+</header>
+
+<p class="vb-note"><strong>sc-154</strong> · Sjálfgefið erfir blokkin stað fundarins; reiturinn er aðeins fylltur út þegar eitthvað <em>víkur frá</em>. Það heldur kortunum hreinum: staður birtist bara þar sem hann skiptir máli.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Erfir stað fundarins (sjálfgefið)</span>
+      <div class="fld">
+        <label>Staðsetning</label>
+        <div class="box box--ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>Sami staður og fundurinn — Skátaheimilið</div>
+        <span class="hint">Skrifaðu aðeins ef þessi liður fer annað.</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Víkur frá</span>
+      <div class="fld">
+        <label>Staðsetning</label>
+        <div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>Skólalóðin við Álfhólsveg</div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Fókus með tillögum úr sögu sveitarinnar</span>
+      <div class="fld">
+        <label>Staðsetning</label>
+        <div>
+          <div class="box box--focus" role="combobox" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>skó</div>
+          <div class="list" role="listbox">
+            <div class="opt opt--active" role="option" aria-selected="true">Skólalóðin við Álfhólsveg<div class="opt__d">Notað 6 sinnum í vetur</div></div>
+            <div class="opt" role="option">Skátaheimilið — salurinn<div class="opt__d">Sjálfgefinn staður sveitarinnar</div></div>
+            <div class="opt" role="option">Skógræktin í Kópavogsdal<div class="opt__d">Notað 2 sinnum</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Inni/úti-rofi (fylgir með)</span>
+      <div class="fld">
+        <label>Umhverfi</label>
+        <div class="toggle">
+          <button type="button" aria-pressed="false">Inni</button>
+          <button type="button" aria-pressed="true">Úti</button>
+          <button type="button" aria-pressed="false">Hvort sem er</button>
+        </div>
+        <span class="hint">Notað til að vara við þegar allur fundurinn er úti í janúar.</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Á kortinu</span>
+      <div class="vb-block vb-kind-dagskra">
+        <div class="vb-block__body">
+          <span class="vb-block__title">Áttavitaleikur úti</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--draft">Drög</span><span class="vb-chip">30 mín</span><span class="vb-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>Skólalóðin</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

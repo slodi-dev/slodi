@@ -1,0 +1,75 @@
+<!-- @dsCard group="Vinnubekkurinn" title="AutosaveIndicator" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AutosaveIndicator — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .ind { display: inline-flex; align-items: center; gap: 6px; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .ind svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .ind--saving { color: hsl(var(--sl-color-text-secondary)); }
+  .ind--saved { color: hsl(var(--sl-color-success-text)); }
+  .ind--offline { color: hsl(var(--sl-color-warning-text)); }
+  .ind--error { color: hsl(var(--sl-color-error-text)); font-weight: var(--sl-font-weight-emphasis); }
+  .spin { animation: spin 900ms linear infinite; transform-origin: 50% 50%; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+  .retry { border: 0; background: none; padding: 0; font-family: inherit; font-size: inherit; color: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .row { display: flex; align-items: center; gap: var(--sl-spacing-gap-md); flex-wrap: wrap; }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: var(--sl-spacing-gap-md); width: 460px; padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm); border: 1px solid hsl(var(--sl-color-border-subtle)); border-radius: var(--sl-radius-card); background: hsl(var(--sl-color-surface)); }
+  .head__t { font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-heading); }
+  .banner { display: flex; align-items: center; gap: 8px; width: 460px; padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm); border-radius: var(--sl-radius-md); font-size: var(--sl-text-body-sm); }
+  .banner--offline { background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); border: 1px solid hsl(var(--sl-color-warning) / .4); }
+  .banner--error { background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); border: 1px solid hsl(var(--sl-color-error) / .4); }
+  .banner svg { width: 15px; height: 15px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">AutosaveIndicator</h1>
+  <p class="ds-sub">Staða draganna. B4 snýst um afrita-og-breyta drög; A8 um stigvaxandi útfærslu — hvorugt gengur ef foringi veit ekki hvort vinnan hans er komin til skila.</p>
+</header>
+
+<p class="vb-note"><strong>sc-162</strong> · Enginn „Vista“-hnappur í venjulegu flæði. Vísirinn er hljóðlátur þegar allt er í lagi og hávær aðeins þegar eitthvað er að. Hann les <code>dirty</code> úr <code>AssemblyProvider</code>.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="row">
+    <span class="ind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Engar breytingar</span>
+    <span class="ind ind--saving"><svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Vista…</span>
+    <span class="ind ind--saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Vistað kl. 19:42</span>
+    <span class="ind ind--offline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Nettengingarlaust — geymt í tækinu</span>
+    <span class="ind ind--error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Vistun mistókst · <button class="retry" type="button">reyna aftur</button></span>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Í hausnum</p>
+  <div class="head">
+    <div><span class="head__t">Sveitarfundur · 12. feb.</span></div>
+    <span class="ind ind--saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Vistað kl. 19:42</span>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Þegar það þarf að vera hávært</p>
+  <div class="vb-specimen" style="gap:var(--sl-spacing-gap-sm);max-width:none">
+    <div class="banner banner--offline" role="status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+      <span>Ekkert net. Breytingarnar eru geymdar í tækinu og sendast um leið og samband kemst á.</span>
+    </div>
+    <div class="banner banner--error" role="alert">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Ekki tókst að vista síðustu 3 breytingar. <button class="retry" type="button">Reyna aftur</button> — ekki loka glugganum fyrr.</span>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Hegðun</p>
+  <ul class="vb-note">
+    <li>Vistar 800 ms eftir síðustu breytingu (debounce), ekki við hvern áslátt.</li>
+    <li>„Vistað kl. …“ helst — það er ekki tímabundinn toast; foringi á að geta litið upp og séð stöðuna.</li>
+    <li>Kurteisar breytingar í <code>role="status"</code>; aðeins raunveruleg mistök fara í <code>role="alert"</code>.</li>
+    <li>Snúningurinn stöðvast undir <code>prefers-reduced-motion</code> — textinn einn ber stöðuna.</li>
+    <li>Villustaða hindrar aldrei áframhaldandi vinnu; hún hindrar aðeins það að halda að allt sé í lagi.</li>
+  </ul>
+</div>
+</body></html>

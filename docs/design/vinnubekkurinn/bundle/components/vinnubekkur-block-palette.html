@@ -1,0 +1,94 @@
+<!-- @dsCard group="Vinnubekkurinn" title="BlockPalette" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BlockPalette — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .palette {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid hsl(var(--sl-color-border-subtle));
+    border-radius: var(--sl-radius-card);
+    background: hsl(var(--sl-color-surface));
+    box-shadow: var(--sl-shadow-card);
+    overflow: hidden;
+    max-height: 560px;
+  }
+  .palette__head { padding: var(--sl-spacing-inset-sm); border-bottom: 1px solid hsl(var(--sl-color-border-subtle)); display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .palette__title { font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-heading); }
+  .search { display: flex; align-items: center; gap: 6px; border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); padding: 0 var(--sl-spacing-gap-sm); height: 2.25rem; background: hsl(var(--sl-input-background)); color: hsl(var(--sl-input-placeholder)); font-size: var(--sl-text-body-sm); }
+  .search svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+  .tab { flex-shrink: 0; padding: 3px var(--sl-spacing-gap-sm); border-radius: var(--sl-radius-chip); border: 1px solid hsl(var(--sl-color-border)); background: none; font-size: var(--sl-text-overline); font-family: inherit; color: hsl(var(--sl-color-text-secondary)); cursor: pointer; }
+  .tab--on { background: hsl(var(--sl-color-primary)); border-color: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); font-weight: var(--sl-font-weight-emphasis); }
+  .palette__list { overflow-y: auto; padding: var(--sl-spacing-inset-sm); display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .palette__foot { padding: var(--sl-spacing-inset-sm); border-top: 1px solid hsl(var(--sl-color-border-subtle)); background: hsl(var(--sl-color-background-secondary)); }
+  .palette__foot .vb-btn { width: 100%; }
+  .item { display: flex; align-items: flex-start; gap: var(--sl-spacing-gap-sm); padding: var(--sl-spacing-gap-sm); border: 1px solid hsl(var(--sl-color-border)); border-left: 3px solid hsl(var(--vb-kind, var(--sl-color-primary))); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); cursor: grab; }
+  .item__body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .item__title { font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-emphasis); }
+  .item__meta { display: flex; flex-wrap: wrap; gap: 4px; }
+  .groupLabel { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); color: hsl(var(--sl-color-text-tertiary)); font-weight: var(--sl-font-weight-emphasis); margin-top: var(--sl-spacing-gap-xs); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">BlockPalette</h1>
+  <p class="ds-sub">Vinstri rásin: leit, flokkaflipar og skrunanlegur listi yfir blokkir úr safninu. Speglar <code>FilterSidebar</code>/<code>ProgramFilters</code>.</p>
+</header>
+
+<p class="vb-note"><strong>sc-145</strong> · Á síma fellur rásin niður í botnblað (bottom sheet); vinnusvæðið er sjálfgefna sýnin. Neðst situr <code>TypeAwareCreateLauncher</code> alltaf innan seilingar.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Full rás</p>
+  <div class="palette">
+    <div class="palette__head">
+      <span class="palette__title">Blokkasafn</span>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Leita í safninu…</div>
+      <div class="tabs">
+        <button class="tab tab--on" type="button">Allt</button>
+        <button class="tab" type="button">Leikir</button>
+        <button class="tab" type="button">Verkefni</button>
+        <button class="tab" type="button">Færnimerki</button>
+        <button class="tab" type="button">Hróp</button>
+      </div>
+    </div>
+
+    <div class="palette__list">
+      <span class="groupLabel">Nýlega notað</span>
+      <div class="item vb-kind-leikur">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body"><span class="item__title">Kötturinn og músin</span><div class="item__meta"><span class="vb-chip">Leikur</span><span class="vb-chip">15 mín</span></div></div>
+      </div>
+      <div class="item vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body"><span class="item__title">Hnútar — pelastikk</span><div class="item__meta"><span class="vb-chip">Verkefni</span><span class="vb-chip">25 mín</span><span class="vb-chip">Sjómennska</span></div></div>
+      </div>
+
+      <span class="groupLabel">Sniðmát sveitarinnar</span>
+      <div class="item vb-kind-setning">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body"><span class="item__title">Fánahylling</span><div class="item__meta"><span class="vb-chip">Setning</span><span class="vb-chip">10 mín</span></div></div>
+      </div>
+      <div class="item vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body"><span class="item__title">Útieldun — grunnur</span><div class="item__meta"><span class="vb-chip">Verkefni</span><span class="vb-chip">45 mín</span><span class="vb-chip" style="background:hsl(var(--sl-color-patrol-falkar-subtle));color:hsl(var(--sl-color-patrol-falkar))">Endurmat fylgir</span></div></div>
+      </div>
+
+      <span class="groupLabel">Færnimerki</span>
+      <div class="item vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body"><span class="item__title">Hjálp í viðlögum</span><div class="item__meta"><span class="vb-chip">Færnimerki</span><span class="vb-chip">2 fundir</span></div></div>
+      </div>
+    </div>
+
+    <div class="palette__foot">
+      <button class="vb-btn vb-btn--primary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Búa til…</button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Aðgengi</p>
+  <p class="vb-note">Flipar eru <code>role="tablist"</code> með örvatakkaflakki. Listinn er <code>role="list"</code>; hver hlutur er dragbær <em>og</em> hefur „Bæta við“-aðgerð á <span class="vb-kbd">Enter</span> sem setur hann í fókusaðan reit eða næsta gat.</p>
+</div>
+</body></html>

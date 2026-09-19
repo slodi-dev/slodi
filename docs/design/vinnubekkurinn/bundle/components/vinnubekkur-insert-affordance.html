@@ -1,0 +1,102 @@
+<!-- @dsCard group="Vinnubekkurinn" title="InsertAffordance" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>InsertAffordance — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .gap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    position: relative;
+  }
+  .gap__line {
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 2px;
+    background: hsl(var(--sl-color-primary));
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity var(--vb-motion);
+  }
+  .gap__btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px var(--sl-spacing-gap-sm);
+    border: 1px dashed hsl(var(--sl-color-border));
+    border-radius: var(--sl-radius-chip);
+    background: hsl(var(--sl-color-background));
+    color: hsl(var(--sl-color-text-tertiary));
+    font-family: var(--sl-font-family-body);
+    font-size: var(--sl-text-overline);
+    font-weight: var(--sl-font-weight-emphasis);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--vb-motion), color var(--vb-motion), border-color var(--vb-motion);
+  }
+  .gap__btn svg { width: 12px; height: 12px; }
+
+  /* revealed on hover/focus of the gap, or always when the row is active */
+  .gap:hover .gap__btn,
+  .gap--hover .gap__btn,
+  .gap--focus .gap__btn,
+  .gap--drop .gap__btn { opacity: 1; }
+  .gap--hover .gap__btn,
+  .gap:hover .gap__btn { color: hsl(var(--sl-color-primary)); border-color: hsl(var(--sl-color-primary)); }
+  .gap--focus .gap__btn { color: hsl(var(--sl-color-primary)); border-style: solid; border-color: hsl(var(--sl-color-primary)); outline: 2px solid hsl(var(--sl-color-border-focus)); outline-offset: 2px; }
+  .gap--drop .gap__line { opacity: 1; }
+  .gap--drop .gap__btn { color: hsl(var(--sl-color-primary)); border-style: solid; border-color: hsl(var(--sl-color-primary)); }
+
+  .stub {
+    height: 38px;
+    display: flex; align-items: center;
+    padding: 0 var(--sl-spacing-inset-sm);
+    border: 1px solid hsl(var(--sl-color-border));
+    border-left: 3px solid hsl(var(--vb-kind, var(--sl-color-primary)));
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-surface));
+    font-size: var(--sl-text-body-sm);
+    box-shadow: var(--sl-shadow-card);
+  }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">InsertAffordance</h1>
+  <p class="ds-sub">„+ Setja hér“-stýringin sem birtist í <strong>bilinu milli blokka</strong> við yfirsvif eða fókus — hnappaígildi þess að sleppa blokk ofan í bil.</p>
+</header>
+
+<p class="vb-note"><strong>sc-142</strong> · Bilið sjálft er droppable. Sami smellur og sama drop senda nákvæmlega sama <code>insert</code>-áform á <code>AssemblyProvider</code>; það er engin sérleið fyrir mús.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður í samhengi</p>
+  <div class="vb-specimen" style="max-width:440px">
+    <span class="vb-specimen__label">1 · Falið í hvíld</span>
+    <div class="stub vb-kind-dagskra">Fánahylling</div>
+    <div class="gap"><span class="gap__line"></span><button class="gap__btn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Setja hér</button></div>
+    <div class="stub vb-kind-dagskra">Hnútar — pelastikk</div>
+  </div>
+
+  <div class="vb-specimen" style="max-width:440px;margin-top:var(--sl-spacing-stack-lg)">
+    <span class="vb-specimen__label">2 · Yfirsvif á bilinu</span>
+    <div class="stub vb-kind-dagskra">Fánahylling</div>
+    <div class="gap gap--hover"><span class="gap__line"></span><button class="gap__btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Setja hér</button></div>
+    <div class="stub vb-kind-dagskra">Hnútar — pelastikk</div>
+  </div>
+
+  <div class="vb-specimen" style="max-width:440px;margin-top:var(--sl-spacing-stack-lg)">
+    <span class="vb-specimen__label">3 · Lyklaborðsfókus (Tab lendir hér milli blokka)</span>
+    <div class="stub vb-kind-dagskra">Fánahylling</div>
+    <div class="gap gap--focus"><span class="gap__line"></span><button class="gap__btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Setja hér — staða 2</button></div>
+    <div class="stub vb-kind-dagskra">Hnútar — pelastikk</div>
+  </div>
+
+  <div class="vb-specimen" style="max-width:440px;margin-top:var(--sl-spacing-stack-lg)">
+    <span class="vb-specimen__label">4 · Blokk svífur yfir bilinu (innsetningarlína)</span>
+    <div class="stub vb-kind-dagskra">Fánahylling</div>
+    <div class="gap gap--drop"><span class="gap__line"></span><button class="gap__btn" type="button">Setja „Kötturinn og músin“ hér</button></div>
+    <div class="stub vb-kind-dagskra">Hnútar — pelastikk</div>
+  </div>
+</div>
+</body></html>

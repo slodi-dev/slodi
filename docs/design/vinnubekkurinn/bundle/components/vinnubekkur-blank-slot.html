@@ -1,0 +1,101 @@
+<!-- @dsCard group="Vinnubekkurinn" title="BlankSlot" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BlankSlot — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .blank {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sl-spacing-gap-xs);
+    width: 100%;
+    min-height: 84px;
+    padding: var(--sl-spacing-inset-sm);
+    border: 2px dashed hsl(var(--sl-color-border-strong));
+    border-radius: var(--vb-block-radius);
+    background: transparent;
+    color: hsl(var(--sl-color-text-secondary));
+    font-family: var(--sl-font-family-body);
+    font-size: var(--sl-text-body-sm);
+    cursor: pointer;
+    transition: border-color var(--vb-motion), background-color var(--vb-motion), color var(--vb-motion);
+  }
+  .blank__hint { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .blank__cta { font-weight: var(--sl-font-weight-emphasis); display: inline-flex; align-items: center; gap: 6px; }
+  .blank svg { width: 16px; height: 16px; }
+
+  .blank--required { border-color: hsl(var(--sl-color-warning)); background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); }
+  .blank--hover { border-color: hsl(var(--sl-color-primary)); background: hsl(var(--sl-color-primary-subtle)); color: hsl(var(--sl-color-primary)); }
+  .blank--over { border-color: hsl(var(--sl-color-primary)); border-style: solid; background: hsl(var(--sl-color-primary-subtle)); color: hsl(var(--sl-color-primary)); box-shadow: var(--vb-focus); }
+  .blank--focus { outline: 2px solid hsl(var(--sl-color-border-focus)); outline-offset: 2px; }
+  .blank--disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">BlankSlot</h1>
+  <p class="ds-sub">Útfyllingarreiturinn — hjartað í B4. Strikað dragmark sem er um leið <strong>„Bæta við…“-hnappur</strong> og segir hvaða tegund blokkar á heima hér.</p>
+</header>
+
+<p class="vb-note"><strong>sc-141</strong> · Sniðmát = föst umgjörð + útfyllanleg göt. Þetta er gatið. Það verður að vera <em>bæði</em> dragmark og hnappur, því annars er sniðmátsflæðið ófært án músar. Textinn „Leikur vantar“ ber upplýsingarnar — strikaði ramminn einn dugar ekki (WCAG 1.4.1).</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Sjálfgefið (valfrjálst gat)</span>
+      <button class="blank" type="button">
+        <span class="blank__cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bæta við dagskrárlið</span>
+        <span class="blank__hint">eða slepptu blokk hér</span>
+      </button>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Skylda — vantar að fylla út</span>
+      <button class="blank blank--required" type="button" aria-describedby="req-1">
+        <span class="blank__cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Leikur vantar</span>
+        <span class="blank__hint" id="req-1" style="color:inherit">Skyldureitur — fundurinn er ekki tilbúinn án hans</span>
+      </button>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Yfirsvif</span>
+      <button class="blank blank--hover" type="button">
+        <span class="blank__cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bæta við leik</span>
+        <span class="blank__hint" style="color:inherit">Smelltu til að velja úr safninu</span>
+      </button>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Blokk svífur yfir (drop target)</span>
+      <div class="blank blank--over">
+        <span class="blank__cta">Slepptu „Kötturinn og músin“ hér</span>
+        <span class="blank__hint" style="color:inherit">Leikur · 15 mín</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Lyklaborðsfókus</span>
+      <button class="blank blank--focus" type="button">
+        <span class="blank__cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bæta við slitum</span>
+        <span class="blank__hint">Enter opnar safnið · ↓ hoppar í næsta gat</span>
+      </button>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Læst (frosið sniðmát — má ekki gerast)</span>
+      <button class="blank blank--disabled" type="button" disabled>
+        <span class="blank__cta">Læstur reitur</span>
+        <span class="blank__hint">Sniðmát eru aldrei fryst — sýnt hér aðeins sem andstæða</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Eftir „Afrita sniðmát“</p>
+  <p class="vb-note">Öll skyldu-göt eru merkt í einu og fókus lendir á því fyrsta. Það er B4-lykkjan: afrita → göt lýst upp → fylla út → vista sem eigin fund.</p>
+</div>
+</body></html>

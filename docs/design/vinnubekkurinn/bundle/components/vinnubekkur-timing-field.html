@@ -1,0 +1,116 @@
+<!-- @dsCard group="Vinnubekkurinn" title="TimingField" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TimingField — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .fld { width: 300px; display: flex; flex-direction: column; gap: 6px; }
+  .fld > label { font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-secondary)); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); }
+  .stepper { display: flex; align-items: center; gap: var(--sl-spacing-gap-sm); }
+  .num { flex: 1; height: 2.25rem; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); font-size: var(--sl-text-body-sm); font-variant-numeric: tabular-nums; }
+  .num--focus { border-color: hsl(var(--sl-input-border-focus)); box-shadow: var(--sl-input-shadow-focus); }
+  .num--err { border-color: hsl(var(--sl-input-border-error)); }
+  .presets { display: flex; flex-wrap: wrap; gap: 4px; }
+  .preset { padding: 3px 9px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-chip); background: none; font-family: inherit; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); cursor: pointer; }
+  .preset--on { background: hsl(var(--sl-color-primary)); border-color: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); font-weight: var(--sl-font-weight-emphasis); }
+  .range { -webkit-appearance: none; appearance: none; width: 100%; height: 5px; border-radius: 3px; background: hsl(var(--sl-color-background-tertiary)); }
+  .range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: hsl(var(--sl-color-primary)); border: 2px solid hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-card); }
+  .hint { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .err { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-error-text)); }
+  .budget { width: 320px; border: 1px solid hsl(var(--sl-color-border-subtle)); border-radius: var(--sl-radius-card); background: hsl(var(--sl-color-surface)); padding: var(--sl-spacing-inset-sm); display: flex; flex-direction: column; gap: 6px; }
+  .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: hsl(var(--sl-color-background-tertiary)); }
+  .bar > i { display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); }
+  .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; background: var(--c); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">TimingField</h1>
+  <p class="ds-sub">Lengd hvers dagskrárliðar. Byggir á <code>ui/RangeInput</code> — með flýtigildum sem passa raunverulegum fundum.</p>
+</header>
+
+<p class="vb-note"><strong>sc-152</strong> · Tímasetning á einingu er byggingargap í ADR-002. Reiturinn er þrjár leiðir að sömu tölu: flýtigildi, tölureitur, sleði — og hann fæðir tímabókhald fundarins efst á vinnusvæðinu.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Sjálfgefið — flýtigildi</span>
+      <div class="fld">
+        <label>Lengd</label>
+        <div class="presets">
+          <button class="preset" type="button">5</button>
+          <button class="preset" type="button">10</button>
+          <button class="preset" type="button">15</button>
+          <button class="preset preset--on" type="button">25 mín</button>
+          <button class="preset" type="button">30</button>
+          <button class="preset" type="button">45</button>
+          <button class="preset" type="button">60</button>
+        </div>
+        <div class="stepper">
+          <button class="vb-iconbtn" aria-label="Minnka um 5 mínútur">−</button>
+          <div class="num">25 <span class="hint">mín</span></div>
+          <button class="vb-iconbtn" aria-label="Auka um 5 mínútur">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Sleði með fókus</span>
+      <div class="fld">
+        <label>Lengd</label>
+        <input class="range" type="range" min="5" max="120" step="5" value="45" aria-label="Lengd í mínútum">
+        <div class="stepper"><button class="vb-iconbtn" aria-label="Minnka">−</button><div class="num num--focus">45 <span class="hint">mín</span></div><button class="vb-iconbtn" aria-label="Auka">+</button></div>
+        <span class="hint">5–120 mín, í 5 mín þrepum</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Ekki stillt</span>
+      <div class="fld">
+        <label>Lengd</label>
+        <div class="stepper"><button class="vb-iconbtn" aria-label="Minnka" disabled>−</button><div class="num" style="color:hsl(var(--sl-input-placeholder))">Ekki stillt</div><button class="vb-iconbtn" aria-label="Auka">+</button></div>
+        <span class="hint">Blokkin telur ekki með í tímabókhaldi fundarins.</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Villa</span>
+      <div class="fld">
+        <label>Lengd</label>
+        <div class="stepper"><button class="vb-iconbtn" aria-label="Minnka" disabled>−</button><div class="num num--err">0 <span class="hint">mín</span></div><button class="vb-iconbtn" aria-label="Auka">+</button></div>
+        <span class="err">Lengd verður að vera að minnsta kosti 5 mínútur.</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Tímabókhald fundarins (afleiðing)</span>
+      <div class="budget">
+        <div style="display:flex;justify-content:space-between;font-size:var(--sl-text-body-sm)"><strong>85 mín af 90</strong><span class="hint">5 mín eftir</span></div>
+        <div class="bar">
+          <i style="width:11%;background:hsl(var(--sl-color-patrol-drekar))"></i>
+          <i style="width:28%;background:hsl(var(--sl-color-primary))"></i>
+          <i style="width:22%;background:hsl(var(--sl-color-patrol-rekkar))"></i>
+          <i style="width:33%;background:hsl(var(--sl-color-secondary))"></i>
+        </div>
+        <div class="legend">
+          <span style="--c:hsl(var(--sl-color-patrol-drekar))">Setning 10</span>
+          <span style="--c:hsl(var(--sl-color-primary))">Hnútar 25</span>
+          <span style="--c:hsl(var(--sl-color-patrol-rekkar))">Leikur 20</span>
+          <span style="--c:hsl(var(--sl-color-secondary))">Áttaviti 30</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Yfir tímaramma</span>
+      <div class="budget" style="border-color:hsl(var(--sl-color-warning) / .5)">
+        <div style="display:flex;justify-content:space-between;font-size:var(--sl-text-body-sm);color:hsl(var(--sl-color-warning-text))"><strong>110 mín af 90</strong><span>20 mín yfir</span></div>
+        <div class="bar"><i style="width:82%;background:hsl(var(--sl-color-primary))"></i><i style="width:18%;background:hsl(var(--sl-color-warning))"></i></div>
+        <span class="hint">Aðvörun, ekki hindrun — fundir teygjast og það er í lagi.</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

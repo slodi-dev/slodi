@@ -1,0 +1,82 @@
+<!-- @dsCard group="Vinnubekkurinn" title="TypeAwareCreateLauncher" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TypeAwareCreateLauncher — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .wrap { width: 320px; }
+  .menu {
+    margin-top: 6px;
+    border: 1px solid hsl(var(--sl-color-border));
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-surface));
+    box-shadow: var(--sl-shadow-dropdown);
+    overflow: hidden;
+    padding: var(--sl-spacing-gap-xs) 0;
+  }
+  .menu__label { padding: 6px var(--sl-spacing-inset-sm) 4px; font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); color: hsl(var(--sl-color-text-tertiary)); font-weight: var(--sl-font-weight-emphasis); }
+  .opt {
+    display: flex; align-items: flex-start; gap: var(--sl-spacing-gap-sm);
+    width: 100%; padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm);
+    border: 0; background: none; text-align: left; cursor: pointer;
+    font-family: inherit; color: hsl(var(--sl-color-text-primary));
+  }
+  .opt:hover, .opt--active { background: hsl(var(--sl-color-surface-hover)); }
+  .opt--active { background: hsl(var(--sl-color-primary-subtle)); }
+  .opt__dot { width: 8px; height: 8px; border-radius: 50%; background: hsl(var(--vb-kind, var(--sl-color-primary))); margin-top: 6px; flex-shrink: 0; }
+  .opt__t { font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-emphasis); }
+  .opt__d { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .modal { border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-modal); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-modal); padding: var(--sl-spacing-inset-md); width: 340px; display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .modal__t { font-size: var(--sl-text-heading-6); font-weight: var(--sl-font-weight-heading); }
+  .fld { display: flex; flex-direction: column; gap: 4px; }
+  .fld label { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); font-weight: var(--sl-font-weight-emphasis); }
+  .fld .box { height: 2.25rem; border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); display: flex; align-items: center; padding: 0 var(--sl-spacing-gap-sm); font-size: var(--sl-text-body-sm); color: hsl(var(--sl-input-placeholder)); }
+  .modal__acts { display: flex; gap: var(--sl-spacing-gap-sm); justify-content: flex-end; margin-top: var(--sl-spacing-gap-xs); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">TypeAwareCreateLauncher</h1>
+  <p class="ds-sub">„+ Búa til…“ sem býður valkosti eftir efnistegund og opnar rétta stofnunareyðublaðið. Framendi B2 (<strong>sc-46</strong>).</p>
+</header>
+
+<p class="vb-note"><strong>sc-148</strong> · Valkostirnir eru samhengisnæmir: ef fókus er í reitnum „Leikur“ raðast <em>Leikur</em> efst og er forvalinn. Nýstofnuð blokk lendir beint í þeim reit — ekki bara í safninu.</p>
+
+<div class="ds-group">
+  <p class="ds-section">1 · Lokað</p>
+  <div class="wrap"><button class="vb-btn vb-btn--primary" type="button" aria-expanded="false" style="width:100%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Búa til…</button></div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">2 · Opið — samhengið er reiturinn „Leikur“</p>
+  <div class="wrap">
+    <button class="vb-btn vb-btn--primary" type="button" aria-expanded="true" style="width:100%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Búa til…</button>
+    <div class="menu" role="menu">
+      <span class="menu__label">Passar í reitinn</span>
+      <button class="opt opt--active vb-kind-leikur" role="menuitem"><span class="opt__dot"></span><span><span class="opt__t">Leikur</span><br><span class="opt__d">Nafn, tími, fjöldi, hvar</span></span></button>
+      <span class="menu__label">Aðrar tegundir</span>
+      <button class="opt vb-kind-dagskra" role="menuitem"><span class="opt__dot"></span><span><span class="opt__t">Verkefni</span><br><span class="opt__d">Dagskrárliður með undirbúningi og búnaði</span></span></button>
+      <button class="opt vb-kind-setning" role="menuitem"><span class="opt__dot"></span><span><span class="opt__t">Hróp eða söngur</span><br><span class="opt__d">Stutt, endurnýtanlegt, texti fylgir</span></span></button>
+      <button class="opt vb-kind-endurmat" role="menuitem"><span class="opt__dot"></span><span><span class="opt__t">Færnimerki</span><br><span class="opt__d">Sett af liðum sem spannar fleiri fundi</span></span></button>
+      <button class="opt vb-kind-custom" role="menuitem"><span class="opt__dot"></span><span><span class="opt__t">Autt sniðmát</span><br><span class="opt__d">Byrja á beinagrind og fylla út síðar</span></span></button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">3 · Eyðublaðið sem opnast</p>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Nýr leikur">
+    <span class="modal__t">Nýr leikur</span>
+    <div class="fld"><label>Heiti</label><div class="box">t.d. Kötturinn og músin</div></div>
+    <div class="fld"><label>Lengd</label><div class="box">15 mín</div></div>
+    <div class="fld"><label>Hvar</label><div class="box">Inni · úti · hvort sem er</div></div>
+    <div class="modal__acts">
+      <button class="vb-btn vb-btn--ghost" type="button">Hætta við</button>
+      <button class="vb-btn vb-btn--primary" type="button">Búa til og setja í reitinn</button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Aðgengi</p>
+  <p class="vb-note"><code>aria-haspopup="menu"</code> + <code>aria-expanded</code>; örvatakkar fara milli valkosta, <span class="vb-kbd">Esc</span> lokar og skilar fókus á hnappinn. Eyðublaðið er <code>role="dialog"</code> með fókusgildru.</p>
+</div>
+</body></html>

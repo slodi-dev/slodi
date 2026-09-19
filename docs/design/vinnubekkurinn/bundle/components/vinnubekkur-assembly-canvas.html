@@ -1,0 +1,89 @@
+<!-- @dsCard group="Vinnubekkurinn" title="AssemblyCanvas" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AssemblyCanvas — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .canvas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vb-slot-gap);
+    max-width: 460px;
+    padding: var(--sl-spacing-inset-md);
+    border: 1px dashed hsl(var(--sl-color-border));
+    border-radius: var(--sl-radius-modal);
+    background: hsl(var(--sl-color-background));
+  }
+  .canvas__legend {
+    font-size: var(--sl-text-overline);
+    font-family: var(--sl-primitive-font-family-mono);
+    color: hsl(var(--sl-color-text-tertiary));
+  }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">AssemblyCanvas</h1>
+  <p class="ds-sub">Rótin á samsetningarfletinum. Á <code>&lt;DndContext&gt;</code>-ið, birtir raðaða reiti beinagrindarinnar sem <code>SortableContext</code> og tengir bendi- og lyklaborðsskynjara, árekstrargreiningu og skjálesaratilkynningar.</p>
+</header>
+
+<p class="vb-note">
+  <strong>sc-138</strong> · Allt annað í samsetjaranum er hengt inni í honum. Það að
+  miðstýra dragsamhenginu og skynjurunum hér er einmitt það sem lætur bendi- og
+  lyklaborðsleiðirnar deila einni kóðaleið — <em>jafnræðistryggingin</em>.
+  Sendir <code>move</code>/<code>insert</code> á <code>AssemblyProvider</code>.
+</p>
+
+<div class="ds-group">
+  <p class="ds-section">Í hvíld — beinagrind með þremur reitum</p>
+  <div class="canvas">
+    <p class="canvas__legend">&lt;DndContext sensors={[Pointer, Keyboard, Touch]}&gt;</p>
+
+    <div class="vb-slot">
+      <div class="vb-slot__head"><span class="vb-slot__kind">Setning</span><span class="vb-slot__count">1/1</span></div>
+      <div class="vb-block vb-kind-setning">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Fánahylling</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--confirmed">Staðfest</span><span class="vb-chip">10 mín</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-slot">
+      <div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span><span class="vb-slot__count">2/2</span></div>
+      <div class="vb-block vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Hnútar — pelastikk</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--draft">Drög</span><span class="vb-chip">25 mín</span></div>
+        </div>
+      </div>
+      <div class="vb-block vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Áttavitaleikur úti</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--tentative">Til skoðunar</span><span class="vb-chip">20 mín</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-slot vb-slot--required-empty">
+      <div class="vb-slot__head"><span class="vb-slot__kind">Slit</span><span class="vb-slot__count">0/1</span></div>
+      <div class="vb-block" style="border-style:dashed;background:transparent;box-shadow:none;border-left-style:solid;">
+        <div class="vb-block__body"><span class="vb-block__title" style="color:hsl(var(--sl-color-text-tertiary));font-weight:var(--sl-font-weight-normal)">Auður reitur — þarf að fylla út</span></div>
+      </div>
+    </div>
+
+    <p class="canvas__legend">&lt;/DndContext&gt; · DragOverlay + LiveRegionAnnouncer festast hér</p>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Ábyrgð sem hvergi annars staðar má liggja</p>
+  <ul class="vb-note">
+    <li><code>PointerSensor</code> með virkjunarfjarlægð svo snerting velji enn í stað þess að draga.</li>
+    <li><code>KeyboardSensor</code> — <span class="vb-kbd">Bil</span> grípur, <span class="vb-kbd">↑</span><span class="vb-kbd">↓</span> færir, <span class="vb-kbd">Bil</span> sleppir, <span class="vb-kbd">Esc</span> hættir við.</li>
+    <li>Sérsniðnar <code>announcements</code> á íslensku, leiddar í gegnum <code>LiveRegionAnnouncer</code>.</li>
+    <li>Fókus fylgir blokk yfir í nýja stöðu eftir færslu.</li>
+  </ul>
+</div>
+</body></html>

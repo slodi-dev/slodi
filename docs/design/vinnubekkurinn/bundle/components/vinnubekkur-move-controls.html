@@ -1,0 +1,81 @@
+<!-- @dsCard group="Vinnubekkurinn" title="MoveControls" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MoveControls — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .grp { display: inline-flex; align-items: center; }
+  .grp--boxed { border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-button); overflow: hidden; }
+  .grp--boxed .vb-iconbtn { border-radius: 0; }
+  .grp--boxed .vb-iconbtn + .vb-iconbtn { border-left: 1px solid hsl(var(--sl-color-border)); }
+  .pos { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); font-variant-numeric: tabular-nums; padding: 0 6px; }
+  .stack { display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); max-width: 420px; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">MoveControls</h1>
+  <p class="ds-sub">Alltaf sýnilegir <strong>▲ / ▼</strong>-hnappar á hverju <code>BlockCard</code> — ódýrasta og uppgötvanlegasta röðunin fyrir lyklaborð og snertiskjá.</p>
+</header>
+
+<p class="vb-note"><strong>sc-157</strong> · Ekki falið á bak við yfirsvif og ekki inni í ⋯-valmynd. Foringi á síma í skátaheimilinu á að geta ýtt á ▼ án þess að læra dráttarhreyfingu. Á snertiskjá stækka hnapparnir í 44×44 px.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="ds-row">
+    <div class="vb-specimen" style="max-width:none">
+      <span class="vb-specimen__label">Sjálfgefið</span>
+      <div class="grp">
+        <button class="vb-iconbtn" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+    </div>
+    <div class="vb-specimen" style="max-width:none">
+      <span class="vb-specimen__label">Yfirsvif</span>
+      <div class="grp">
+        <button class="vb-iconbtn vb-iconbtn--hover" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+    </div>
+    <div class="vb-specimen" style="max-width:none">
+      <span class="vb-specimen__label">Fókus</span>
+      <div class="grp">
+        <button class="vb-iconbtn vb-iconbtn--focus" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+    </div>
+    <div class="vb-specimen" style="max-width:none">
+      <span class="vb-specimen__label">Efst — ▲ óvirkt</span>
+      <div class="grp">
+        <button class="vb-iconbtn vb-iconbtn--disabled" aria-label="Færa upp — þegar efst" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+    </div>
+    <div class="vb-specimen" style="max-width:none">
+      <span class="vb-specimen__label">Með stöðutölu</span>
+      <div class="grp grp--boxed">
+        <button class="vb-iconbtn" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <span class="pos" aria-hidden="true">2/3</span>
+        <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Í samhengi — ein færsla</p>
+  <div class="stack">
+    <div class="vb-block vb-kind-dagskra">
+      <div class="vb-block__body"><span class="vb-block__title">Fánahylling</span></div>
+      <div class="grp"><button class="vb-iconbtn vb-iconbtn--disabled" aria-label="Færa upp" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button><button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+    </div>
+    <div class="vb-block vb-block--focus vb-kind-dagskra">
+      <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span><span class="vb-block__provenance">▲ smellt · fókus fylgir blokkinni upp í stöðu 1</span></div>
+      <div class="grp"><button class="vb-iconbtn vb-iconbtn--focus" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button><button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+    </div>
+    <div class="vb-block vb-kind-dagskra">
+      <div class="vb-block__body"><span class="vb-block__title">Áttavitaleikur úti</span></div>
+      <div class="grp"><button class="vb-iconbtn" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button><button class="vb-iconbtn vb-iconbtn--disabled" aria-label="Færa niður" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+    </div>
+  </div>
+  <p class="vb-note" style="margin-top:12px">Eftir smell: fókus helst á sama hnappi á sömu blokk (sem er nú ofar), og <code>LiveRegionAnnouncer</code> les „Hnútar færðir í stöðu 1 af 3“.</p>
+</div>
+</body></html>

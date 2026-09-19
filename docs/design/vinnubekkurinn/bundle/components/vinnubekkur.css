@@ -1,0 +1,346 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   VINNUBEKKURINN — block-assembly kit styles
+   Shared by every vinnubekkur-*.html preview card and by pages/vinnubekkur-hifi.html.
+   Token-driven only: every colour, space, radius, shadow and duration comes from
+   tokens.css. No hard-coded hex. Source spec:
+   docs/frontend/vinnubekkurinn-block-assembly-components.md
+   Tickets: sc-138 … sc-163 (epic 33 · Fasi 2 — Vinnubekkurinn)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ---- Kit-local aliases -----------------------------------------------------
+   Named so the components below read as intent, not as raw token paths. */
+:root {
+  --vb-slot-gap: var(--sl-spacing-stack-sm);
+  --vb-block-radius: var(--sl-radius-card);
+  --vb-focus: var(--sl-shadow-focus);
+  --vb-motion: var(--sl-transition-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --vb-motion: 1ms linear;
+  }
+  .vb-ghost,
+  .vb-block {
+    transition: none !important;
+  }
+}
+
+/* ══ Slot ═══════════════════════════════════════════════════════════════════
+   SlotFrame (sc-139) — one beinagrind position. Droppable. */
+.vb-slot {
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--vb-block-radius);
+  background: hsl(var(--sl-color-background-secondary));
+  padding: var(--sl-spacing-inset-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+  transition: border-color var(--vb-motion), background-color var(--vb-motion);
+}
+.vb-slot--over {
+  border-color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  box-shadow: var(--vb-focus);
+}
+.vb-slot--invalid {
+  border-color: hsl(var(--sl-color-error));
+  background: hsl(var(--sl-color-error-subtle));
+}
+.vb-slot--required-empty {
+  border-color: hsl(var(--sl-color-warning));
+}
+
+.vb-slot__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.vb-slot__kind {
+  flex: 1;
+}
+.vb-slot__count {
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ══ Block card ═════════════════════════════════════════════════════════════
+   BlockCard (sc-140) — a placed dagskrárliður. Draggable + sortable. */
+.vb-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-gap-sm);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-left: 3px solid hsl(var(--vb-kind, var(--sl-color-primary)));
+  border-radius: var(--vb-block-radius);
+  padding: var(--sl-spacing-inset-sm);
+  box-shadow: var(--sl-shadow-card);
+  transition: box-shadow var(--vb-motion), transform var(--vb-motion),
+    border-color var(--vb-motion);
+}
+.vb-block--hover {
+  box-shadow: var(--sl-shadow-card-hover);
+  border-color: hsl(var(--sl-color-border-hover));
+}
+.vb-block--selected {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: var(--vb-focus);
+}
+.vb-block--focus {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+/* the source card while its ghost is being dragged */
+.vb-block--dragging {
+  opacity: 0.4;
+}
+/* keyboard grab: the card is "held" */
+.vb-block--grabbed {
+  border-color: hsl(var(--sl-color-info));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-info) / 0.3);
+}
+
+.vb-block__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-xs);
+}
+.vb-block__title {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+  line-height: var(--sl-line-height-tight);
+}
+.vb-block__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-xs);
+  align-items: center;
+}
+.vb-block__provenance {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* Slot-kind accent. Maps ADR-002 slot kinds onto the patrol/semantic ramps. */
+.vb-kind-setning {
+  --vb-kind: var(--sl-color-patrol-drekar);
+}
+.vb-kind-dagskra {
+  --vb-kind: var(--sl-color-primary);
+}
+.vb-kind-leikur {
+  --vb-kind: var(--sl-color-patrol-rekkar);
+}
+.vb-kind-slit {
+  --vb-kind: var(--sl-color-secondary);
+}
+.vb-kind-endurmat {
+  --vb-kind: var(--sl-color-patrol-falkar);
+}
+.vb-kind-custom {
+  --vb-kind: var(--sl-color-border-strong);
+}
+
+/* ══ Chips ══════════════════════════════════════════════════════════════════ */
+.vb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  padding: 2px var(--sl-spacing-gap-sm);
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-medium);
+  line-height: 1.6;
+  white-space: nowrap;
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  border: 1px solid transparent;
+}
+.vb-chip svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* StatusPill (sc-153) — tentative / draft / confirmed / undecided */
+.vb-status--confirmed {
+  background: hsl(var(--sl-color-success-subtle));
+  color: hsl(var(--sl-color-success-text));
+  border-color: hsl(var(--sl-color-success) / 0.4);
+}
+.vb-status--draft {
+  background: hsl(var(--sl-color-info-subtle));
+  color: hsl(var(--sl-color-info-text));
+  border-color: hsl(var(--sl-color-info) / 0.4);
+}
+.vb-status--tentative {
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+  border-color: hsl(var(--sl-color-warning) / 0.4);
+}
+.vb-status--undecided {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  border-color: hsl(var(--sl-color-border));
+  border-style: dashed;
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+/* ══ Buttons (mirrors Button.module.css variants at the sizes this kit uses) ══ */
+.vb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-gap-xs);
+  min-height: 2.25rem;
+  padding: 0 var(--sl-spacing-inset-sm);
+  border-radius: var(--sl-radius-button);
+  border: 1px solid transparent;
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  cursor: pointer;
+  background: none;
+  color: hsl(var(--sl-color-text-primary));
+  transition: background-color var(--vb-motion), border-color var(--vb-motion);
+}
+.vb-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.vb-btn--primary {
+  background: hsl(var(--sl-button-background-primary));
+  color: hsl(var(--sl-button-text-primary));
+  border-color: hsl(var(--sl-button-border-primary));
+}
+.vb-btn--secondary {
+  color: hsl(var(--sl-button-text-secondary));
+  border-color: hsl(var(--sl-button-border-secondary));
+}
+.vb-btn--ghost {
+  color: hsl(var(--sl-color-text-secondary));
+}
+.vb-btn--ghost:hover,
+.vb-btn--hover.vb-btn--ghost {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.vb-btn--danger {
+  color: hsl(var(--sl-color-error-text));
+}
+.vb-btn:disabled,
+.vb-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.vb-btn--focus {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+/* Icon-only control — 44px hit target on touch (a11y checklist). */
+.vb-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: var(--sl-radius-button);
+  background: none;
+  color: hsl(var(--sl-color-text-tertiary));
+  cursor: pointer;
+  transition: background-color var(--vb-motion), color var(--vb-motion);
+}
+.vb-iconbtn svg {
+  width: 16px;
+  height: 16px;
+}
+.vb-iconbtn:hover,
+.vb-iconbtn--hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+.vb-iconbtn--focus {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+.vb-iconbtn--danger:hover,
+.vb-iconbtn--danger.vb-iconbtn--hover {
+  color: hsl(var(--sl-color-error-text));
+  background: hsl(var(--sl-color-error-subtle));
+}
+.vb-iconbtn:disabled,
+.vb-iconbtn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+@media (pointer: coarse) {
+  .vb-iconbtn {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+/* ══ Preview chrome helpers ═════════════════════════════════════════════════ */
+.vb-specimen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+  max-width: 420px;
+}
+.vb-specimen__label {
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  color: hsl(var(--sl-color-text-tertiary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+.vb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--sl-spacing-stack-lg);
+  align-items: start;
+}
+.vb-note {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  max-width: 62ch;
+  margin: 0 0 var(--sl-spacing-stack-md);
+}
+.vb-note code,
+.vb-kbd {
+  font-family: var(--sl-primitive-font-family-mono);
+  font-size: 0.9em;
+  background: hsl(var(--sl-color-background-tertiary));
+  border-radius: var(--sl-radius-xs);
+  padding: 1px 5px;
+}
+.vb-kbd {
+  border: 1px solid hsl(var(--sl-color-border));
+  border-bottom-width: 2px;
+  white-space: nowrap;
+}
+
+/* Visually hidden — the LiveRegionAnnouncer's real appearance. */
+.vb-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

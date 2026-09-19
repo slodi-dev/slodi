@@ -1,0 +1,89 @@
+<!-- @dsCard group="Vinnubekkurinn" title="BlockActionsMenu" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BlockActionsMenu — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .menu { width: 260px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-dropdown); padding: 4px 0; }
+  .row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px var(--sl-spacing-gap-sm); border: 0; background: none; cursor: pointer; font-family: inherit; font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-primary)); text-align: left; }
+  .row svg { width: 15px; height: 15px; color: hsl(var(--sl-color-text-tertiary)); flex-shrink: 0; }
+  .row:hover, .row--active { background: hsl(var(--sl-color-surface-hover)); }
+  .row--active { background: hsl(var(--sl-color-primary-subtle)); }
+  .row--danger { color: hsl(var(--sl-color-error-text)); }
+  .row--danger svg { color: currentColor; }
+  .row[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+  .row .k { margin-left: auto; font-family: var(--sl-primitive-font-family-mono); font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .sep { height: 1px; background: hsl(var(--sl-color-border-subtle)); margin: 4px 0; }
+  .lbl { padding: 6px var(--sl-spacing-gap-sm) 3px; font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); color: hsl(var(--sl-color-text-tertiary)); font-weight: var(--sl-font-weight-emphasis); }
+  .sheet { width: 320px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-dialog) var(--sl-radius-dialog) 0 0; background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-modal); padding: var(--sl-spacing-inset-sm) 0 var(--sl-spacing-inset-md); }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: hsl(var(--sl-color-border-strong)); margin: 0 auto var(--sl-spacing-gap-sm); }
+  .sheet .row { padding: 12px var(--sl-spacing-inset-md); min-height: 44px; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">BlockActionsMenu</h1>
+  <p class="ds-sub">⋯-valmyndin á hverri blokk: færa upp/niður, færa í reit…, afrita, fjarlægja, setja fyrir ofan/neðan. <strong>Full leið að hverri byggingarbreytingu án dráttar.</strong></p>
+</header>
+
+<p class="vb-note"><strong>sc-156</strong> · Þetta er tryggingin: allt sem hægt er að gera með mús er hér sem raðaðir hnappar. Hver færsla sendir sama <code>move</code>/<code>insert</code>/<code>remove</code>-áform og dropið gerir.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Valmyndin — borðtölva</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Opin, miðjublokk</span>
+      <div class="menu" role="menu">
+        <span class="lbl">Færa</span>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>Færa upp<span class="k">Alt ↑</span></button>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>Færa niður<span class="k">Alt ↓</span></button>
+        <button class="row" role="menuitem" aria-haspopup="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><polyline points="12 5 19 12 12 19"/></svg>Færa í reit…<span class="k">›</span></button>
+        <div class="sep"></div>
+        <span class="lbl">Setja inn</span>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Setja nýtt fyrir ofan</button>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Setja nýtt fyrir neðan</button>
+        <div class="sep"></div>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Afrita<span class="k">Ctrl D</span></button>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>Vista í safnið</button>
+        <div class="sep"></div>
+        <button class="row row--danger" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Fjarlægja<span class="k">Delete</span></button>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Efsta blokk — „Færa upp“ óvirkt</span>
+      <div class="menu" role="menu">
+        <button class="row" role="menuitem" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>Færa upp<span class="k">efst</span></button>
+        <button class="row row--active" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>Færa niður<span class="k">Alt ↓</span></button>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Undirvalmynd „Færa í reit…“</span>
+      <div class="menu" role="menu">
+        <span class="lbl">Færa í reit</span>
+        <button class="row" role="menuitem"><span class="vb-chip" style="background:hsl(var(--sl-color-patrol-drekar-subtle))">Setning</span><span class="k">1/1</span></button>
+        <button class="row row--active" role="menuitem"><span class="vb-chip" style="background:hsl(var(--sl-color-primary-subtle))">Dagskrá</span><span class="k">2/3</span></button>
+        <button class="row" role="menuitem"><span class="vb-chip" style="background:hsl(var(--sl-color-patrol-rekkar-subtle))">Leikur</span><span class="k">tómur</span></button>
+        <button class="row" role="menuitem" aria-disabled="true"><span class="vb-chip">Slit</span><span class="k">fullur</span></button>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Sími — botnblað með 44px snertimörkum</span>
+      <div class="sheet">
+        <div class="grab"></div>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>Færa upp</button>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>Færa niður</button>
+        <button class="row" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Afrita</button>
+        <button class="row row--danger" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>Fjarlægja</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Aðgengi</p>
+  <p class="vb-note">Kveikjan er <code>aria-haspopup="menu"</code>; valmyndin er <code>role="menu"</code> með örvatakkaflakki og <code>Home</code>/<code>End</code>. Óvirkir valkostir eru <code>aria-disabled</code> (haldast í flakkinu og útskýra af hverju: „efst“). Eftir aðgerð fer fókus aftur á blokkina — sem er nú á nýja staðnum.</p>
+</div>
+</body></html>

@@ -1,0 +1,97 @@
+<!-- @dsCard group="Vinnubekkurinn" title="EndurmatNote" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>EndurmatNote — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .note {
+    width: 340px;
+    border: 1px solid hsl(var(--sl-color-patrol-falkar) / .45);
+    border-left: 3px solid hsl(var(--sl-color-patrol-falkar));
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-patrol-falkar-subtle));
+    padding: var(--sl-spacing-inset-sm);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .note__head { display: flex; align-items: center; gap: 6px; font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-patrol-falkar)); }
+  .note__head svg { width: 13px; height: 13px; }
+  .note__q { font-size: var(--sl-text-body-sm); line-height: var(--sl-line-height-body); color: hsl(var(--sl-color-text-primary)); }
+  .note__by { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .note__acts { display: flex; gap: 6px; margin-top: 2px; }
+  .mini { padding: 3px 9px; border: 1px solid currentColor; border-radius: var(--sl-radius-chip); background: none; font-family: inherit; font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); cursor: pointer; color: hsl(var(--sl-color-patrol-falkar)); }
+  .compose { width: 340px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); padding: var(--sl-spacing-inset-sm); display: flex; flex-direction: column; gap: 8px; }
+  .ta { min-height: 64px; border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); padding: 8px; font-size: var(--sl-text-body-sm); color: hsl(var(--sl-input-placeholder)); }
+  .thumbs { display: flex; gap: 6px; }
+  .thumb { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-button); background: none; font-family: inherit; font-size: var(--sl-text-overline); cursor: pointer; color: hsl(var(--sl-color-text-secondary)); }
+  .thumb--up[aria-pressed="true"] { border-color: hsl(var(--sl-color-success)); background: hsl(var(--sl-color-success-subtle)); color: hsl(var(--sl-color-success-text)); font-weight: var(--sl-font-weight-emphasis); }
+  .thumb--down[aria-pressed="true"] { border-color: hsl(var(--sl-color-warning)); background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); font-weight: var(--sl-font-weight-emphasis); }
+  .thumb svg { width: 14px; height: 14px; }
+  .hint { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">EndurmatNote</h1>
+  <p class="ds-sub">Endurmatið sem <strong>ferðast með endurnýtingunni</strong>. Þegar blokk er sett aftur inn kemur reynslan frá síðast með henni — ADR-002 §4, D1/D2.</p>
+</header>
+
+<p class="vb-note"><strong>sc-155</strong> · Þetta er svarið við „við gerum sömu mistökin aftur“. Endurmatið hangir á blokkinni, ekki á fundinum, svo það birtist einmitt þegar það gagnast: við næstu skipulagningu.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Að lesa — endurmat frá síðustu keyrslu</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Ábending sem birtist við endurnýtingu</span>
+      <div class="note">
+        <span class="note__head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Endurmat frá síðast</span>
+        <p class="note__q" style="margin:0">„Of stuttur tími — 25 mín dugðu ekki, taka 35 næst. Krakkarnir voru komnir vel af stað þegar við þurftum að hætta.“</p>
+        <span class="note__by">Signý · fundur 12. feb. 2025</span>
+        <div class="note__acts">
+          <button class="mini" type="button">Setja lengd í 35 mín</button>
+          <button class="mini" type="button">Vísa frá</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Jákvætt endurmat</span>
+      <div class="note" style="border-color:hsl(var(--sl-color-success) / .45);border-left-color:hsl(var(--sl-color-success));background:hsl(var(--sl-color-success-subtle))">
+        <span class="note__head" style="color:hsl(var(--sl-color-success-text))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/></svg>Virkaði vel</span>
+        <p class="note__q" style="margin:0">„Sló í gegn hjá drekunum. Hafa tvo bolta næst — biðin var of löng.“</p>
+        <span class="note__by">Halldór · fundur 4. mars 2025</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Fleiri en eitt — samanþjappað</span>
+      <div class="note">
+        <span class="note__head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>3 endurmöt · síðast feb. 2025</span>
+        <p class="note__q" style="margin:0">„Of stuttur tími — taka 35 næst.“</p>
+        <span class="note__by">Signý · feb. 2025</span>
+        <button class="mini" type="button" style="align-self:flex-start">Sjá öll þrjú</button>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Ekkert endurmat enn</span>
+      <div class="note" style="border-color:hsl(var(--sl-color-border));border-left-color:hsl(var(--sl-color-border-strong));background:hsl(var(--sl-color-background-secondary))">
+        <span class="note__head" style="color:hsl(var(--sl-color-text-tertiary))">Ekkert endurmat</span>
+        <span class="hint">Blokkin hefur ekki verið keyrð áður — eða enginn skrifaði niður hvernig gekk.</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Að skrifa — eftir fundinn (D-þyrpingin)</p>
+  <div class="compose">
+    <span style="font-size:var(--sl-text-body-sm);font-weight:var(--sl-font-weight-emphasis)">Hvernig gekk „Hnútar — pelastikk“?</span>
+    <div class="thumbs">
+      <button class="thumb thumb--up" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/></svg>Gekk vel</button>
+      <button class="thumb thumb--down" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z"/></svg>Þarf lagfæringu</button>
+    </div>
+    <div class="ta">Eitt eða tvö atriði sem næsti foringi ætti að vita… (valfrjálst)</div>
+    <span class="hint">Þumall einn og sér dugar. Endurmat á að taka 10 sekúndur, ekki 10 mínútur.</span>
+  </div>
+</div>
+</body></html>

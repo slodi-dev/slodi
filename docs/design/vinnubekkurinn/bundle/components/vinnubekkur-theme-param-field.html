@@ -1,0 +1,84 @@
+<!-- @dsCard group="Vinnubekkurinn" title="ThemeParamField" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ThemeParamField — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .fld { width: 300px; display: flex; flex-direction: column; gap: 5px; }
+  .fld > label { font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-secondary)); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); }
+  .combo { position: relative; }
+  .box { min-height: 2.25rem; display: flex; align-items: center; gap: 6px; padding: 0 var(--sl-spacing-gap-sm); border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); font-size: var(--sl-text-body-sm); cursor: pointer; }
+  .box--ph { color: hsl(var(--sl-input-placeholder)); }
+  .box--focus { border-color: hsl(var(--sl-input-border-focus)); box-shadow: var(--sl-input-shadow-focus); }
+  .box__chev { margin-left: auto; color: hsl(var(--sl-color-text-tertiary)); }
+  .box__chev svg { width: 14px; height: 14px; }
+  .list { position: relative; margin-top: 4px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-dropdown); overflow: hidden; }
+  .opt { padding: 7px var(--sl-spacing-gap-sm); font-size: var(--sl-text-body-sm); display: flex; align-items: center; gap: 8px; }
+  .opt--active { background: hsl(var(--sl-color-primary-subtle)); }
+  .opt--new { color: hsl(var(--sl-color-primary)); font-weight: var(--sl-font-weight-emphasis); border-top: 1px solid hsl(var(--sl-color-border-subtle)); }
+  .opt mark { background: hsl(var(--sl-color-accent) / .4); border-radius: 2px; }
+  .hint { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .preview { display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .arrow { text-align: center; color: hsl(var(--sl-color-text-tertiary)); font-size: var(--sl-text-body-sm); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">ThemeParamField</h1>
+  <p class="ds-sub">Stillir þemabreytuna sem endurskinar almenna blokk — færibreytuvædd sniðmát úr ADR-002 §4.</p>
+</header>
+
+<p class="vb-note"><strong>sc-151</strong> · Ein almenn blokk („Ratleikur með þema“) verður að tíu ólíkum dagskrárliðum með einni breytu. Reiturinn er <em>combobox</em>: velja úr þemum sveitarinnar eða skrifa nýtt.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Autt (almenn blokk, engin þemabreyta)</span>
+      <div class="fld"><label>Þema</label><div class="box box--ph">Ekkert þema — almenn útgáfa<span class="box__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></div><span class="hint">Blokkin virkar ein og sér; þema er valfrjálst.</span></div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Valið þema</span>
+      <div class="fld"><label>Þema</label><div class="box">Sjómennska<span class="box__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></div></div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Opið með leit</span>
+      <div class="fld">
+        <label>Þema</label>
+        <div class="combo">
+          <div class="box box--focus" role="combobox" aria-expanded="true">sjó<span class="box__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></span></div>
+          <div class="list" role="listbox">
+            <div class="opt opt--active" role="option" aria-selected="true"><mark>Sjó</mark>mennska</div>
+            <div class="opt" role="option"><mark>Sjó</mark>ferðir og bátar</div>
+            <div class="opt opt--new" role="option">+ Búa til þemað „sjó“</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Áhrifin — sama blokk, tvö þemu</span>
+      <div class="preview">
+        <div class="vb-block vb-kind-dagskra">
+          <div class="vb-block__body"><span class="vb-block__title">Ratleikur með þema</span><div class="vb-block__meta"><span class="vb-chip">Almenn blokk</span><span class="vb-chip">30 mín</span></div></div>
+        </div>
+        <div class="arrow">↓ þema = „Sjómennska“</div>
+        <div class="vb-block vb-kind-dagskra">
+          <div class="vb-block__body"><span class="vb-block__title">Ratleikur: Sjómennska</span><div class="vb-block__meta"><span class="vb-chip" style="background:hsl(var(--sl-color-patrol-rekkar-subtle));color:hsl(var(--sl-color-patrol-rekkar))">Sjómennska</span><span class="vb-chip">30 mín</span></div><span class="vb-block__provenance">Erfir allt úr almennu blokkinni; aðeins þemað er breytt</span></div>
+        </div>
+        <div class="arrow">↓ þema = „Eldur og öryggi“</div>
+        <div class="vb-block vb-kind-dagskra">
+          <div class="vb-block__body"><span class="vb-block__title">Ratleikur: Eldur og öryggi</span><div class="vb-block__meta"><span class="vb-chip" style="background:hsl(var(--sl-color-patrol-drekar-subtle));color:hsl(var(--sl-color-patrol-drekar-hover))">Eldur og öryggi</span><span class="vb-chip">30 mín</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Óvirkt (blokkin er ekki færibreytuvædd)</span>
+      <div class="fld"><label>Þema</label><div class="box" style="opacity:.5;cursor:not-allowed">Á ekki við<span class="box__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></div><span class="hint">Aðeins blokkir merktar <code>isParametrised</code> taka þemabreytu.</span></div>
+    </div>
+
+  </div>
+</div>
+</body></html>

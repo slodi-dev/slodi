@@ -1,0 +1,128 @@
+<!-- @dsCard group="Vinnubekkurinn" title="AssemblyHeader" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AssemblyHeader — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .head {
+    width: 100%; max-width: 640px;
+    display: flex; align-items: center; gap: var(--sl-spacing-gap-md);
+    padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-md);
+    border: 1px solid hsl(var(--sl-color-border-subtle));
+    border-radius: var(--sl-radius-card);
+    background: hsl(var(--sl-color-surface));
+    box-shadow: var(--sl-shadow-card);
+    flex-wrap: wrap;
+  }
+  .head__id { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 3px; }
+  .head__name { font-size: var(--sl-text-heading-6); font-weight: var(--sl-font-weight-heading); line-height: var(--sl-line-height-tight); }
+  .head__sub { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .head__acts { display: flex; align-items: center; gap: var(--sl-spacing-gap-sm); }
+  .ind { display: inline-flex; align-items: center; gap: 5px; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-success-text)); }
+  .ind svg { width: 12px; height: 12px; }
+  .tmpl { border-color: hsl(var(--sl-color-accent)); background: hsl(var(--sl-color-accent-subtle)); }
+  .modal { width: 380px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-modal); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-modal); padding: var(--sl-spacing-inset-md); display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .modal__t { font-size: var(--sl-text-heading-6); font-weight: var(--sl-font-weight-heading); }
+  .modal__d { font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-secondary)); margin: 0; }
+  .opt { display: flex; align-items: flex-start; gap: 9px; padding: var(--sl-spacing-gap-sm); border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-md); cursor: pointer; }
+  .opt--on { border-color: hsl(var(--sl-color-primary)); background: hsl(var(--sl-color-primary-subtle)); }
+  .opt__t { font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-emphasis); }
+  .opt__d { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .radio { width: 15px; height: 15px; border-radius: 50%; border: 2px solid hsl(var(--sl-color-border-strong)); flex-shrink: 0; margin-top: 2px; }
+  .opt--on .radio { border-color: hsl(var(--sl-color-primary)); border-width: 5px; }
+  .modal__acts { display: flex; justify-content: flex-end; gap: var(--sl-spacing-gap-sm); margin-top: var(--sl-spacing-gap-xs); }
+  .mobile { width: 320px; }
+  .mobile .head__acts .vb-btn span { display: none; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">AssemblyHeader</h1>
+  <p class="ds-sub">Heiti, tegund og umfang rammans, ásamt <strong>„Afrita sniðmát“</strong> — klónun-með-götum sem lokar B4-lykkjunni — og vistun.</p>
+</header>
+
+<p class="vb-note"><strong>sc-163</strong> · „Afrita sniðmát“ kallar á bakendaviðbót við <code>POST /programs/{id}/copy</code>: afritið heldur beinagrindinni en skilar skyldureitunum auðum. Notandinn lendir á afritinu með götin upplýst og fókus í því fyrsta.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Venjulegur fundur</p>
+  <div class="head">
+    <div class="head__id">
+      <span class="head__name">Sveitarfundur · 12. febrúar</span>
+      <div class="head__sub">
+        <span class="vb-chip">Sveitarfundur</span>
+        <span class="vb-chip">Öll sveitin</span>
+        <span class="vb-chip">90 mín</span>
+        <span class="vb-chip vb-status--draft">Drög</span>
+      </div>
+    </div>
+    <div class="head__acts">
+      <span class="ind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Vistað kl. 19:42</span>
+      <button class="vb-btn vb-btn--secondary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Afrita sniðmát</button>
+      <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Sniðmát (ekki fund)</p>
+  <div class="head tmpl">
+    <div class="head__id">
+      <span class="head__name">Sniðmát: Venjulegur sveitarfundur</span>
+      <div class="head__sub">
+        <span class="vb-chip" style="background:hsl(var(--sl-color-accent-muted));color:hsl(var(--sl-color-text-primary))">Sniðmát</span>
+        <span class="vb-chip">5 reitir · 2 skyldugöt</span>
+        <span class="vb-chip">Notað 14 sinnum</span>
+      </div>
+    </div>
+    <div class="head__acts">
+      <button class="vb-btn vb-btn--primary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Nota sniðmátið</button>
+      <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+    </div>
+  </div>
+  <p class="vb-note" style="margin-top:12px">Sniðmát eru <strong>aldrei fryst</strong>. Afritið er venjulegur fundur sem má breyta að vild — líka beinagrindinni sjálfri.</p>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Vantar að fylla út</p>
+  <div class="head" style="border-color:hsl(var(--sl-color-warning) / .5)">
+    <div class="head__id">
+      <span class="head__name">Sveitarfundur · 19. febrúar</span>
+      <div class="head__sub">
+        <span class="vb-chip">Sveitarfundur</span>
+        <span class="vb-chip" style="background:hsl(var(--sl-color-warning-subtle));color:hsl(var(--sl-color-warning-text))">2 skyldugöt eftir</span>
+      </div>
+    </div>
+    <div class="head__acts">
+      <button class="vb-btn vb-btn--secondary" type="button">Fara í fyrsta gatið</button>
+      <button class="vb-btn vb-btn--primary vb-btn--disabled" type="button" disabled>Merkja tilbúinn</button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">„Afrita sniðmát“ — samtalsglugginn</p>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Afrita sniðmát">
+    <span class="modal__t">Afrita „Venjulegur sveitarfundur“</span>
+    <p class="modal__d">Hvað á að fylgja með í afritinu?</p>
+    <label class="opt opt--on"><span class="radio"></span><span><span class="opt__t">Beinagrindin með auðum götum</span><br><span class="opt__d">Reitirnir fylgja, skyldugötin verða tóm og lýst upp. Mælt með.</span></span></label>
+    <label class="opt"><span class="radio"></span><span><span class="opt__t">Allt eins og það er</span><br><span class="opt__d">Blokkirnar fylgja líka — gott þegar þið endurtakið sama fund.</span></span></label>
+    <label class="opt"><span class="radio"></span><span><span class="opt__t">Allt, með endurmötum</span><br><span class="opt__d">Reynslan frá síðast fylgir hverri blokk.</span></span></label>
+    <div class="modal__acts">
+      <button class="vb-btn vb-btn--ghost" type="button">Hætta við</button>
+      <button class="vb-btn vb-btn--primary" type="button">Afrita og opna</button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Sími — hausinn þjappast</p>
+  <div class="head mobile">
+    <div class="head__id">
+      <span class="head__name" style="font-size:var(--sl-text-body)">Sveitarfundur · 12. feb.</span>
+      <div class="head__sub"><span class="vb-chip vb-status--draft">Drög</span><span class="ind" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Vistað</span></div>
+    </div>
+    <div class="head__acts">
+      <button class="vb-iconbtn" aria-label="Afrita sniðmát"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+    </div>
+  </div>
+</div>
+</body></html>

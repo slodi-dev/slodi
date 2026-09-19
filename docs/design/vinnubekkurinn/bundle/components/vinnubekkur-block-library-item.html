@@ -1,0 +1,127 @@
+<!-- @dsCard group="Vinnubekkurinn" title="BlockLibraryItem" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BlockLibraryItem — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .item {
+    display: flex; align-items: flex-start; gap: var(--sl-spacing-gap-sm);
+    width: 300px; padding: var(--sl-spacing-gap-sm);
+    border: 1px solid hsl(var(--sl-color-border));
+    border-left: 3px solid hsl(var(--vb-kind, var(--sl-color-primary)));
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-surface));
+    cursor: grab;
+    transition: box-shadow var(--vb-motion), border-color var(--vb-motion);
+  }
+  .item__body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+  .item__title { font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-emphasis); line-height: var(--sl-line-height-tight); }
+  .item__ctx { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); }
+  .item__meta { display: flex; flex-wrap: wrap; gap: 4px; }
+  .item--hover { box-shadow: var(--sl-shadow-card-hover); border-color: hsl(var(--sl-color-border-hover)); }
+  .item--focus { outline: 2px solid hsl(var(--sl-color-border-focus)); outline-offset: 2px; }
+  .item--dragging { opacity: .4; }
+  .item--used { opacity: .65; }
+  .add {
+    align-self: center;
+    padding: 3px var(--sl-spacing-gap-sm);
+    border-radius: var(--sl-radius-chip);
+    border: 1px solid hsl(var(--sl-color-primary));
+    background: none;
+    color: hsl(var(--sl-color-primary));
+    font-family: inherit; font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis);
+    cursor: pointer; white-space: nowrap;
+  }
+  .add--solid { background: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">BlockLibraryItem</h1>
+  <p class="ds-sub"><strong>Dragupptak</strong> úr safninu; á lyklaborði er hann <strong>„Bæta við“-hnappur</strong> sem setur blokkina í fókusaðan reit eða næsta auða gat. Sýnir samhengið sem blokkin ber með sér (B3).</p>
+</header>
+
+<p class="vb-note"><strong>sc-147</strong> · Þetta er ekki ber virkni heldur legókubbur sem ber þema og lærdóm með sér — þess vegna er þemalínan alltaf sýnileg, ekki falin á bak við smell. <code>ProgramCard</code> er sjónræni forfaðirinn, grennaður niður í eina línu.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Sjálfgefið</span>
+      <div class="item vb-kind-leikur">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body">
+          <span class="item__title">Kötturinn og músin</span>
+          <div class="item__meta"><span class="vb-chip">Leikur</span><span class="vb-chip">15 mín</span><span class="vb-chip">Inni</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Yfirsvif — „Bæta við“ birtist</span>
+      <div class="item item--hover vb-kind-dagskra">
+        <span class="vb-iconbtn vb-iconbtn--hover" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body">
+          <span class="item__title">Hnútar — pelastikk</span>
+          <span class="item__ctx">Þema: Sjómennska · Lærdómur: verkfærni</span>
+        </div>
+        <button class="add" type="button">Bæta við</button>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Lyklaborðsfókus (Enter = bæta við)</span>
+      <div class="item item--focus vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body">
+          <span class="item__title">Útieldun — grunnur</span>
+          <span class="item__ctx">Enter setur í reitinn „Dagskrá“</span>
+        </div>
+        <button class="add add--solid" type="button">Bæta við</button>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Ber samhengi: endurmat + þema (B3)</span>
+      <div class="item vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body">
+          <span class="item__title">Útieldun — grunnur</span>
+          <span class="item__ctx">Þema: Eldur og öryggi</span>
+          <div class="item__meta"><span class="vb-chip">45 mín</span><span class="vb-chip">Úti</span><span class="vb-chip" style="background:hsl(var(--sl-color-patrol-falkar-subtle));color:hsl(var(--sl-color-patrol-falkar))">Endurmat 2025 fylgir</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Færnimerki sem spannar fundi</span>
+      <div class="item vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body">
+          <span class="item__title">Hjálp í viðlögum</span>
+          <span class="item__ctx">Færnimerki · 2 fundir · bætir við tveimur blokkum</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Þegar dregið — upptakið dofnar</span>
+      <div class="item item--dragging vb-kind-leikur">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body"><span class="item__title">Kötturinn og músin</span><span class="item__ctx">afritast — hverfur ekki úr safninu</span></div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Þegar þegar í notkun á fundinum</span>
+      <div class="item item--used vb-kind-setning">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="item__body">
+          <span class="item__title">Fánahylling</span>
+          <div class="item__meta"><span class="vb-chip vb-status--confirmed">Þegar á fundinum</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

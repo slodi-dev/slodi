@@ -1,0 +1,100 @@
+<!-- @dsCard group="Vinnubekkurinn" title="SlotFrame" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SlotFrame — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .req {
+    font-size: var(--sl-text-overline);
+    color: hsl(var(--sl-color-warning-text));
+    background: hsl(var(--sl-color-warning-subtle));
+    border-radius: var(--sl-radius-chip);
+    padding: 1px 6px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .stub {
+    height: 34px;
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-surface));
+    border: 1px solid hsl(var(--sl-color-border));
+    border-left: 3px solid hsl(var(--vb-kind, var(--sl-color-primary)));
+    display: flex;
+    align-items: center;
+    padding: 0 var(--sl-spacing-inset-sm);
+    font-size: var(--sl-text-body-sm);
+  }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">SlotFrame</h1>
+  <p class="ds-sub">Einn reitur í beinagrindinni: haus (tegundarmerki + skyldumerki) og annaðhvort <code>BlockCard</code> eða <code>BlankSlot</code>. Er <strong>droppable</strong>.</p>
+</header>
+
+<p class="vb-note"><strong>sc-139</strong> · Reitategundir koma úr ADR-002 (<code>setning · dagskra · leikur · slit · endurmat · custom</code>) — sjálfgefið stillt af viðburðategund en ritstýranlegt. Vinstri kantlitur ber tegundina; hún er líka í texta hausins svo hún sé aldrei einungis litakóðuð.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Hvíld — fylltur</span>
+      <div class="vb-slot">
+        <div class="vb-slot__head"><span class="vb-slot__kind">Leikur</span><span class="vb-slot__count">1/1</span></div>
+        <div class="stub vb-kind-leikur">Kötturinn og músin</div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Skyldureitur, tómur</span>
+      <div class="vb-slot vb-slot--required-empty">
+        <div class="vb-slot__head"><span class="vb-slot__kind">Slit</span><span class="req">Skylda</span></div>
+        <div class="stub vb-kind-slit" style="border-style:dashed;color:hsl(var(--sl-color-text-tertiary))">Ekkert valið enn</div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Dragmark yfir (drop target)</span>
+      <div class="vb-slot vb-slot--over">
+        <div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span><span class="vb-slot__count">1/2</span></div>
+        <div class="stub vb-kind-dagskra">Hnútar — pelastikk</div>
+        <div class="stub" style="border-style:dashed;border-left-color:hsl(var(--sl-color-primary));color:hsl(var(--sl-color-primary))">Slepptu hér</div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Ógilt drop (tegund passar ekki)</span>
+      <div class="vb-slot vb-slot--invalid">
+        <div class="vb-slot__head"><span class="vb-slot__kind">Setning</span><span class="req" style="color:hsl(var(--sl-color-error-text));background:hsl(var(--sl-color-error-subtle))">Ekki leyft hér</span></div>
+        <div class="stub vb-kind-setning" style="border-style:dashed;color:hsl(var(--sl-color-error-text))">Leikur passar ekki í setningarreit</div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Samanbrotinn (CollapsibleSection-mynstur)</span>
+      <div class="vb-slot">
+        <div class="vb-slot__head">
+          <span class="vb-slot__kind">Endurmat</span>
+          <span class="vb-slot__count">1 liður</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Margar blokkir í einum reit</span>
+      <div class="vb-slot">
+        <div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span><span class="vb-slot__count">3/3</span></div>
+        <div class="stub vb-kind-dagskra">Áttavitaleikur</div>
+        <div class="stub vb-kind-dagskra">Hnútar</div>
+        <div class="stub vb-kind-dagskra">Nesti</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Aðgengi</p>
+  <p class="vb-note">Reiturinn er <code>role="list"</code>, blokkirnar <code>listitem</code>. Skyldu-og-tómur er borinn fram með <code>aria-describedby</code> — aldrei bara með strikaðri umgjörð.</p>
+</div>
+</body></html>

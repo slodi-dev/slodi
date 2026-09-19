@@ -1,0 +1,117 @@
+<!-- @dsCard group="Vinnubekkurinn" title="KeyboardDragHint" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>KeyboardDragHint — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .hintbox {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 10px;
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-surface-inverse) / .92);
+    color: hsl(var(--sl-color-text-inverse));
+    font-size: var(--sl-text-overline);
+    box-shadow: var(--sl-shadow-tooltip);
+    max-width: 320px;
+  }
+  .hintbox .vb-kbd {
+    background: hsl(var(--sl-color-text-inverse) / .18);
+    border-color: hsl(var(--sl-color-text-inverse) / .3);
+    color: inherit;
+  }
+  .anchor { position: relative; display: inline-block; }
+  .anchor .hintbox { position: absolute; top: calc(100% + 8px); left: 0; z-index: 10; }
+  .arrow { position: absolute; top: -4px; left: 18px; width: 8px; height: 8px; transform: rotate(45deg); background: hsl(var(--sl-color-surface-inverse) / .92); }
+  .inline {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px; border-radius: var(--sl-radius-chip);
+    background: hsl(var(--sl-color-info-subtle)); color: hsl(var(--sl-color-info-text));
+    font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-medium);
+  }
+  .inline .vb-kbd { background: hsl(var(--sl-color-surface)); border-color: hsl(var(--sl-color-info) / .4); color: inherit; }
+  .bar {
+    display: flex; align-items: center; gap: var(--sl-spacing-gap-md);
+    padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm);
+    border: 1px solid hsl(var(--sl-color-border-subtle));
+    border-radius: var(--sl-radius-md);
+    background: hsl(var(--sl-color-background-secondary));
+    font-size: var(--sl-text-overline);
+    color: hsl(var(--sl-color-text-secondary));
+    flex-wrap: wrap;
+    max-width: 520px;
+  }
+  .bar b { font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-primary)); }
+  .spacer { height: 62px; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">KeyboardDragHint</h1>
+  <p class="ds-sub">Samhengisvísbending sem birtist þegar blokk fær fókus: „Ýttu á bil til að grípa“. Kennir lyklaborðsleiðina á þeim stað þar sem hún er notuð.</p>
+</header>
+
+<p class="vb-note"><strong>sc-159</strong> · Vísbendingin er ekki tooltip á yfirsvifi — hún kemur við <em>fókus</em>, því það er lyklaborðsnotandinn sem þarf hana. Hún er sjónræn eftirmynd þess sem <code>LiveRegionAnnouncer</code> les upp; sami texti, tvær skynleiðir.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Afbrigði</p>
+  <div class="ds-row" style="align-items:flex-start">
+
+    <div class="vb-specimen" style="max-width:none">
+      <span class="vb-specimen__label">Við fókus á blokk</span>
+      <div class="anchor">
+        <div class="vb-block vb-block--focus vb-kind-dagskra" style="width:300px">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span></div>
+        </div>
+        <span class="hintbox"><span class="arrow"></span>Ýttu á <span class="vb-kbd">Bil</span> til að grípa</span>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="vb-specimen" style="max-width:none">
+      <span class="vb-specimen__label">Á meðan gripið er</span>
+      <div class="anchor">
+        <div class="vb-block vb-block--grabbed vb-kind-dagskra" style="width:300px">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span></div>
+        </div>
+        <span class="hintbox"><span class="arrow"></span><span class="vb-kbd">↑</span><span class="vb-kbd">↓</span> færa · <span class="vb-kbd">←</span><span class="vb-kbd">→</span> milli reita · <span class="vb-kbd">Bil</span> sleppa · <span class="vb-kbd">Esc</span> hætta við</span>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Lágstemmt afbrigði — innfellt á kortinu</p>
+  <div class="vb-specimen">
+    <div class="vb-block vb-block--focus vb-kind-leikur">
+      <div class="vb-block__body">
+        <span class="vb-block__title">Kötturinn og músin</span>
+        <div class="vb-block__meta"><span class="inline"><span class="vb-kbd">Bil</span> grípa</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Alltaf-sýnileg stikan neðst á vinnusvæðinu</p>
+  <div class="bar">
+    <span><span class="vb-kbd">Bil</span> <b>grípa</b></span>
+    <span><span class="vb-kbd">↑</span><span class="vb-kbd">↓</span> <b>færa</b></span>
+    <span><span class="vb-kbd">Enter</span> <b>opna</b></span>
+    <span><span class="vb-kbd">Delete</span> <b>fjarlægja</b></span>
+    <span><span class="vb-kbd">Ctrl</span>+<span class="vb-kbd">Z</span> <b>afturkalla</b></span>
+    <span><span class="vb-kbd">?</span> <b>allir flýtilyklar</b></span>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Hegðun</p>
+  <ul class="vb-note">
+    <li>Birtist við fókus, ekki við yfirsvif — 150 ms töf svo Tab-flakk blikki ekki.</li>
+    <li>Hverfur eftir að notandi hefur gripið blokk þrisvar (geymt í <code>localStorage</code>); stikan neðst helst.</li>
+    <li><code>aria-hidden="true"</code> — skjálesarinn fær sömu upplýsingar úr <code>LiveRegionAnnouncer</code>, ekki tvisvar.</li>
+    <li>Engin hreyfing undir <code>prefers-reduced-motion</code>: hún birtist án innskriðs.</li>
+  </ul>
+</div>
+</body></html>

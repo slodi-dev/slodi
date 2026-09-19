@@ -1,0 +1,126 @@
+<!-- @dsCard group="Vinnubekkurinn" title="BlockCard" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BlockCard — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .acts { display: flex; align-items: center; gap: 2px; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">BlockCard</h1>
+  <p class="ds-sub">Dagskrárliður sem búið er að setja í reit. Sýnir heiti, <code>StatusPill</code>, tíma-/staðarmerki og aðgerðastýringar. Er <strong>draggable + sortable</strong>.</p>
+</header>
+
+<p class="vb-note"><strong>sc-140</strong> · Kortið sjálft er valanlegt (opnar <code>BlockInspector</code>); dragið liggur eingöngu á <code>DragHandle</code> svo dráttur sé alltaf ásetningur. <span class="vb-kbd">▲</span><span class="vb-kbd">▼</span> og <span class="vb-kbd">⋯</span> eru alltaf sýnileg — hnappaleiðin er sannleikurinn, dráttur er hraðleið.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Sjálfgefið</span>
+      <div class="vb-block vb-kind-dagskra">
+        <button class="vb-iconbtn" aria-label="Grípa til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Hnútar — pelastikk og réttur hnútur</span>
+          <div class="vb-block__meta">
+            <span class="vb-chip vb-status--draft">Drög</span>
+            <span class="vb-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>25 mín</span>
+            <span class="vb-chip">Sjómennska</span>
+          </div>
+        </div>
+        <div class="acts">
+          <button class="vb-iconbtn" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Yfirsvif (hover)</span>
+      <div class="vb-block vb-block--hover vb-kind-leikur">
+        <button class="vb-iconbtn vb-iconbtn--hover" aria-label="Grípa til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Kötturinn og músin</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--confirmed">Staðfest</span><span class="vb-chip">15 mín</span></div>
+        </div>
+        <div class="acts">
+          <button class="vb-iconbtn" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Valið (opið í inspector)</span>
+      <div class="vb-block vb-block--selected vb-kind-setning">
+        <button class="vb-iconbtn" aria-label="Grípa til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Fánahylling</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--confirmed">Staðfest</span><span class="vb-chip">10 mín</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Lyklaborðsfókus</span>
+      <div class="vb-block vb-block--focus vb-kind-dagskra">
+        <button class="vb-iconbtn" aria-label="Grípa til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Áttavitaleikur úti</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--tentative">Til skoðunar</span><span class="vb-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>Skólalóð</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Gripið með lyklaborði</span>
+      <div class="vb-block vb-block--grabbed vb-kind-leikur">
+        <button class="vb-iconbtn" aria-label="Sleppa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Kötturinn og músin</span>
+          <div class="vb-block__meta"><span class="vb-chip" style="background:hsl(var(--sl-color-info-subtle));color:hsl(var(--sl-color-info-text))">Gripin · staða 2 af 3 · ↑↓ færir</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Á meðan dregið er (uppruni)</span>
+      <div class="vb-block vb-block--dragging vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span></div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Með endurmati og uppruna (B3)</span>
+      <div class="vb-block vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Eldur og útieldun</span>
+          <div class="vb-block__meta">
+            <span class="vb-chip vb-status--draft">Drög</span>
+            <span class="vb-chip">45 mín</span>
+            <span class="vb-chip" style="background:hsl(var(--sl-color-patrol-falkar-subtle));color:hsl(var(--sl-color-patrol-falkar))">Endurmat frá 2025</span>
+          </div>
+          <span class="vb-block__provenance">Afritað úr sniðmátinu „Útieldun — grunnur“</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Spannar tvo fundi (spanWeeks)</span>
+      <div class="vb-block vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Færnimerki: Hjálp í viðlögum — hluti 1 af 2</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--confirmed">Staðfest</span><span class="vb-chip">2 fundir</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,80 @@
+<!-- @dsCard group="Vinnubekkurinn" title="DragHandle" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>DragHandle — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .h { cursor: grab; }
+  .h--grabbing { cursor: grabbing; color: hsl(var(--sl-color-info)); background: hsl(var(--sl-color-info-subtle)); }
+  .h--focus { outline: 2px solid hsl(var(--sl-color-border-focus)); outline-offset: 2px; }
+  .demo { display: flex; gap: var(--sl-spacing-gap-lg); flex-wrap: wrap; align-items: flex-start; }
+  .swatch { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .swatch span { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .bad { border-color: hsl(var(--sl-color-error) / .5) !important; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); }
+  .tag--no { color: hsl(var(--sl-color-error-text)); }
+  .tag--yes { color: hsl(var(--sl-color-success-text)); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">DragHandle</h1>
+  <p class="ds-sub">Sérstakt grip (<code>GripVertical</code>) svo dráttur sé ásetningur og kortið haldist smellanlegt og valanlegt.</p>
+</header>
+
+<p class="vb-note"><strong>sc-160</strong> · dnd-kit-<code>useSortable</code>-hlustararnir liggja <em>eingöngu</em> á gripinu. Þannig er hægt að smella á kortið til að opna <code>BlockInspector</code> án þess að byrja dráttinn óvart — og gripið er raunverulegur fókusanlegur hnappur með <code>aria-label</code>.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Gripið sjálft</p>
+  <div class="demo">
+    <div class="swatch">
+      <button class="vb-iconbtn h" aria-label="Grípa Hnútar — pelastikk til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+      <span>Hvíld</span>
+    </div>
+    <div class="swatch">
+      <button class="vb-iconbtn vb-iconbtn--hover h" aria-label="Grípa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+      <span>Yfirsvif · cursor: grab</span>
+    </div>
+    <div class="swatch">
+      <button class="vb-iconbtn h h--focus" aria-label="Grípa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+      <span>Fókus</span>
+    </div>
+    <div class="swatch">
+      <button class="vb-iconbtn h h--grabbing" aria-label="Sleppa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+      <span>Gripið · cursor: grabbing</span>
+    </div>
+    <div class="swatch">
+      <button class="vb-iconbtn vb-iconbtn--disabled h" aria-label="Ekki hægt að færa" disabled><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+      <span>Læst (fastur reitur)</span>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Af hverju grip en ekki allt kortið</p>
+  <div class="vb-grid">
+    <div class="vb-specimen">
+      <span class="tag tag--yes">✔ Rétt — dráttur á gripinu</span>
+      <div class="vb-block vb-kind-dagskra">
+        <button class="vb-iconbtn h" aria-label="Grípa til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+        <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span><span class="vb-block__provenance">Smellur á kortinu opnar eiginleika · dráttur aðeins á gripinu</span></div>
+      </div>
+    </div>
+    <div class="vb-specimen">
+      <span class="tag tag--no">✘ Rangt — allt kortið dregst</span>
+      <div class="vb-block bad vb-kind-dagskra">
+        <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span><span class="vb-block__provenance">Textaval, smellur og snerting fara öll í dráttinn — og ekkert fókusanlegt fyrir lyklaborð</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Kröfur</p>
+  <ul class="vb-note">
+    <li>Raunverulegur <code>&lt;button&gt;</code> — fókusanlegur, í Tab-röð, með <code>aria-label</code> sem nefnir blokkina („Grípa Hnútar — pelastikk til að færa“).</li>
+    <li><code>aria-describedby</code> vísar á leiðbeiningatexta sem <code>KeyboardDragHint</code> og skjálesari deila.</li>
+    <li>Snertimark að minnsta kosti 44×44 px (<code>@media (pointer: coarse)</code>).</li>
+    <li>Aldrei <code>aria-grabbed</code> — það er úrelt; dnd-kit-tilkynningar bera stöðuna.</li>
+    <li>Sýnilegt í hvíld á snertiskjá; má dofna á borðtölvu þar til yfirsvif — en aldrei hverfa fyrir fókus.</li>
+  </ul>
+</div>
+</body></html>

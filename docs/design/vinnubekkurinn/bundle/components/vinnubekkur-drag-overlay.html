@@ -1,0 +1,112 @@
+<!-- @dsCard group="Vinnubekkurinn" title="DragOverlay / BlockGhost" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>DragOverlay / BlockGhost — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .vb-ghost {
+    box-shadow: var(--sl-shadow-modal);
+    transform: rotate(-1.5deg) scale(1.02);
+    border-color: hsl(var(--sl-color-primary));
+    cursor: grabbing;
+  }
+  .vb-ghost--invalid { border-color: hsl(var(--sl-color-error)); }
+  .vb-ghost--copy::after {
+    content: "afrit";
+    font-size: var(--sl-text-overline);
+    font-weight: var(--sl-font-weight-emphasis);
+    color: hsl(var(--sl-color-text-inverse));
+    background: hsl(var(--sl-color-primary));
+    border-radius: var(--sl-radius-chip);
+    padding: 1px 7px;
+    align-self: center;
+  }
+  .scene {
+    position: relative;
+    padding: var(--sl-spacing-inset-md);
+    border-radius: var(--sl-radius-modal);
+    background: hsl(var(--sl-color-background-secondary));
+    display: flex;
+    flex-direction: column;
+    gap: var(--sl-spacing-gap-sm);
+    max-width: 420px;
+  }
+  .cursor { color: hsl(var(--sl-color-text-tertiary)); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">DragOverlay / BlockGhost</h1>
+  <p class="ds-sub">Fljótandi forsýn sem eltir bendil eða lyklaborðsgrip. Heldur útlitinu stöðugu meðan dregið er — undirliggjandi kort helst uppsett og dofnar.</p>
+</header>
+
+<p class="vb-note"><strong>sc-143</strong> · dnd-kit-<code>&lt;DragOverlay&gt;</code>. Vofan er í portal svo hún klippist ekki af skrunuðum reitum. Snúningur og stærðaraukning eru slökkt undir <code>prefers-reduced-motion</code>.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Afbrigði</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Vofa — færsla innan beinagrindar</span>
+      <div class="vb-block vb-ghost vb-kind-dagskra">
+        <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+        <div class="vb-block__body">
+          <span class="vb-block__title">Hnútar — pelastikk</span>
+          <div class="vb-block__meta"><span class="vb-chip vb-status--draft">Drög</span><span class="vb-chip">25 mín</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Vofa — dregið úr safninu (afritunarmerking)</span>
+      <div class="vb-block vb-ghost vb-ghost--copy vb-kind-leikur">
+        <div class="vb-block__body">
+          <span class="vb-block__title">Kötturinn og músin</span>
+          <div class="vb-block__meta"><span class="vb-chip">Leikur</span><span class="vb-chip">15 mín</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Vofa yfir ógildu marki</span>
+      <div class="vb-block vb-ghost vb-ghost--invalid vb-kind-leikur">
+        <div class="vb-block__body">
+          <span class="vb-block__title">Kötturinn og músin</span>
+          <div class="vb-block__meta"><span class="vb-chip" style="background:hsl(var(--sl-color-error-subtle));color:hsl(var(--sl-color-error-text))">Passar ekki í setningarreit</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Þétt vofa (mörg kort valin)</span>
+      <div style="position:relative">
+        <div class="vb-block vb-kind-dagskra" style="position:absolute;top:6px;left:6px;right:-6px;opacity:.55"><div class="vb-block__body"><span class="vb-block__title">&nbsp;</span></div></div>
+        <div class="vb-block vb-ghost vb-kind-dagskra" style="position:relative">
+          <div class="vb-block__body">
+            <span class="vb-block__title">2 liðir</span>
+            <div class="vb-block__meta"><span class="vb-chip">Hnútar · Áttavitaleikur</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Heildarmynd meðan dregið er</p>
+  <div class="scene">
+    <div class="vb-slot">
+      <div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span></div>
+      <div class="vb-block vb-block--dragging vb-kind-dagskra">
+        <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span><span class="vb-block__provenance">upprunakortið helst uppsett, við 40% ógagnsæi</span></div>
+      </div>
+    </div>
+    <div class="vb-slot vb-slot--over">
+      <div class="vb-slot__head"><span class="vb-slot__kind">Leikur</span></div>
+      <div class="vb-block vb-ghost vb-kind-dagskra">
+        <div class="vb-block__body"><span class="vb-block__title">Hnútar — pelastikk</span><span class="vb-block__provenance">vofan eltir bendilinn</span></div>
+      </div>
+    </div>
+    <p class="vb-note cursor" style="margin:0">↑ markreiturinn lýsist upp; <code>LiveRegionAnnouncer</code> les „Hnútar færðir yfir í reitinn Leikur, staða 1 af 1“.</p>
+  </div>
+</div>
+</body></html>

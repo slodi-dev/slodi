@@ -1,0 +1,98 @@
+<!-- @dsCard group="Vinnubekkurinn" title="PaletteSearch" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PaletteSearch — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .field { position: relative; width: 300px; }
+  .input {
+    display: flex; align-items: center; gap: 8px;
+    height: 2.5rem; padding: 0 var(--sl-spacing-gap-sm);
+    border: 1px solid hsl(var(--sl-input-border));
+    border-radius: var(--sl-radius-input);
+    background: hsl(var(--sl-input-background));
+    font-size: var(--sl-text-body-sm);
+    color: hsl(var(--sl-input-text));
+  }
+  .input svg { width: 15px; height: 15px; flex-shrink: 0; color: hsl(var(--sl-color-text-tertiary)); }
+  .input__text { flex: 1; }
+  .input__text--placeholder { color: hsl(var(--sl-input-placeholder)); }
+  .input--hover { border-color: hsl(var(--sl-input-border-hover)); }
+  .input--focus { border-color: hsl(var(--sl-input-border-focus)); box-shadow: var(--sl-input-shadow-focus); }
+  .input--disabled { background: hsl(var(--sl-input-background-disabled)); color: hsl(var(--sl-input-text-disabled)); }
+  .clear { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: var(--sl-radius-badge); background: hsl(var(--sl-color-background-tertiary)); border: 0; cursor: pointer; color: hsl(var(--sl-color-text-secondary)); }
+  .clear svg { width: 10px; height: 10px; color: currentColor; }
+  .count { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .results { margin-top: 6px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-dropdown); overflow: hidden; }
+  .res { padding: var(--sl-spacing-gap-sm); font-size: var(--sl-text-body-sm); border-bottom: 1px solid hsl(var(--sl-color-border-subtle)); }
+  .res:last-child { border-bottom: 0; }
+  .res--active { background: hsl(var(--sl-color-primary-subtle)); }
+  .res mark { background: hsl(var(--sl-color-accent) / 0.4); color: inherit; border-radius: 2px; padding: 0 1px; }
+  .res__meta { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .skel { height: 12px; border-radius: 6px; background: hsl(var(--sl-color-background-tertiary)); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">PaletteSearch</h1>
+  <p class="ds-sub">Slægileit yfir blokkabankann. Byggir á <code>filters/SearchInput</code> — sama reitur, minni og með niðurstöðum í fellilista.</p>
+</header>
+
+<p class="vb-note"><strong>sc-146</strong> · Leitin er <em>debounced</em> (250 ms) og leitar í heiti, merkjum og þema. Niðurstöðutalan er lesin upp í kurteisu <code>aria-live</code>-svæði svo skjálesari fái að vita hvað síaðist.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stöður</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Tómt</span>
+      <div class="field"><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="input__text input__text--placeholder">Leita í safninu…</span></div></div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Yfirsvif</span>
+      <div class="field"><div class="input input--hover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="input__text input__text--placeholder">Leita í safninu…</span></div></div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Fókus með texta</span>
+      <div class="field">
+        <div class="input input--focus">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span class="input__text">hnút</span>
+          <span class="count">4</span>
+          <button class="clear" type="button" aria-label="Hreinsa leit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="results">
+          <div class="res res--active"><div><mark>Hnút</mark>ar — pelastikk</div><div class="res__meta">Verkefni · 25 mín · Sjómennska</div></div>
+          <div class="res"><div><mark>Hnút</mark>ar — réttur hnútur</div><div class="res__meta">Verkefni · 15 mín</div></div>
+          <div class="res"><div>Kaðal­vinna og <mark>hnút</mark>abraut</div><div class="res__meta">Leikur · 30 mín</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Að leita (debounce)</span>
+      <div class="field">
+        <div class="input input--focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="input__text">útieldu</span></div>
+        <div class="results">
+          <div class="res"><div class="skel" style="width:70%"></div><div class="skel" style="width:40%;margin-top:6px"></div></div>
+          <div class="res"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;margin-top:6px"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Engar niðurstöður</span>
+      <div class="field">
+        <div class="input input--focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="input__text">brennuboltakeppni</span><button class="clear" type="button" aria-label="Hreinsa leit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+        <div class="results"><div class="res"><div>Ekkert fannst.</div><div class="res__meta">Prófaðu færri orð — eða búðu til nýja blokk.</div></div></div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Óvirkt (safnið er tómt)</span>
+      <div class="field"><div class="input input--disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="input__text">Ekkert til að leita í</span></div></div>
+    </div>
+
+  </div>
+</div>
+</body></html>

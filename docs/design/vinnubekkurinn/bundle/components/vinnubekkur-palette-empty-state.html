@@ -1,0 +1,92 @@
+<!-- @dsCard group="Vinnubekkurinn" title="PaletteEmptyState" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PaletteEmptyState — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .empty {
+    width: 300px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: var(--sl-spacing-gap-sm);
+    padding: var(--sl-spacing-inset-lg) var(--sl-spacing-inset-md);
+    border: 1px dashed hsl(var(--sl-color-border));
+    border-radius: var(--sl-radius-card);
+    background: hsl(var(--sl-color-background-secondary));
+  }
+  .empty__icon { width: 40px; height: 40px; color: hsl(var(--sl-color-text-tertiary)); }
+  .empty__t { font-size: var(--sl-text-body); font-weight: var(--sl-font-weight-heading); }
+  .empty__d { font-size: var(--sl-text-body-sm); color: hsl(var(--sl-color-text-secondary)); }
+  .empty__acts { display: flex; flex-direction: column; gap: var(--sl-spacing-gap-xs); width: 100%; margin-top: var(--sl-spacing-gap-xs); }
+  .empty__acts .vb-btn { width: 100%; }
+  .skel { height: 46px; border-radius: var(--sl-radius-md); background: linear-gradient(90deg, hsl(var(--sl-color-background-tertiary)) 25%, hsl(var(--sl-color-background-secondary)) 50%, hsl(var(--sl-color-background-tertiary)) 75%); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">PaletteEmptyState</h1>
+  <p class="ds-sub">„Ekkert fannst“ + leið áfram. Fylgir tómstöðumynstrinu sem er þegar í <code>/builder/page.tsx</code>.</p>
+</header>
+
+<p class="vb-note"><strong>sc-149</strong> · Tómstaða er aldrei bara skilaboð — hún er alltaf með næstu aðgerð. Þrjár ólíkar tómstöður: <em>ekkert í safninu enn</em>, <em>síur skiluðu engu</em>, <em>leit skilaði engu</em>. Fjórða: villa.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Afbrigði</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Safnið er tómt (fyrsta skipti)</span>
+      <div class="empty">
+        <svg class="empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/></svg>
+        <span class="empty__t">Ekkert í safninu enn</span>
+        <span class="empty__d">Blokkirnar þínar safnast upp eftir því sem þú býrð til dagskrárliði — og allt sem sveitin gerir má endurnýta.</span>
+        <div class="empty__acts">
+          <button class="vb-btn vb-btn--primary" type="button">Búa til fyrstu blokkina</button>
+          <button class="vb-btn vb-btn--ghost" type="button">Skoða sameiginlega bankann</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Leit skilaði engu</span>
+      <div class="empty">
+        <svg class="empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="empty__t">Ekkert fannst fyrir „brennuboltakeppni“</span>
+        <span class="empty__d">Prófaðu færri orð eða annað merki.</span>
+        <div class="empty__acts">
+          <button class="vb-btn vb-btn--secondary" type="button">Hreinsa leit</button>
+          <button class="vb-btn vb-btn--primary" type="button">Búa til „brennuboltakeppni“</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Síur skiluðu engu</span>
+      <div class="empty">
+        <svg class="empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span class="empty__t">Engin blokk passar við síurnar</span>
+        <span class="empty__d">Flokkur: Færnimerki · Lengd: undir 10 mín</span>
+        <div class="empty__acts"><button class="vb-btn vb-btn--secondary" type="button">Hreinsa síur</button></div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Hleðsla</span>
+      <div class="empty" style="border-style:solid;gap:var(--sl-spacing-gap-sm)" aria-busy="true">
+        <div class="skel" style="width:100%"></div>
+        <div class="skel" style="width:100%"></div>
+        <div class="skel" style="width:100%"></div>
+        <span class="empty__d">Sæki blokkir…</span>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Villa</span>
+      <div class="empty" style="border-color:hsl(var(--sl-color-error) / .5);background:hsl(var(--sl-color-error-subtle))">
+        <svg class="empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:hsl(var(--sl-color-error-text))" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span class="empty__t" style="color:hsl(var(--sl-color-error-text))">Náði ekki í safnið</span>
+        <span class="empty__d">Þú getur samt haldið áfram að vinna með fundinn — það sem er komið á vinnusvæðið er vistað.</span>
+        <div class="empty__acts"><button class="vb-btn vb-btn--secondary" type="button">Reyna aftur</button></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,86 @@
+<!-- @dsCard group="Vinnubekkurinn" title="StatusPill / StatusSelect" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>StatusPill / StatusSelect — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .menu { width: 240px; margin-top: 6px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); box-shadow: var(--sl-shadow-dropdown); padding: 4px 0; }
+  .opt { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px var(--sl-spacing-gap-sm); border: 0; background: none; cursor: pointer; font-family: inherit; text-align: left; }
+  .opt--active { background: hsl(var(--sl-color-primary-subtle)); }
+  .opt__d { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .check { margin-left: auto; color: hsl(var(--sl-color-primary)); }
+  .check svg { width: 14px; height: 14px; }
+  .trig { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; cursor: pointer; padding: 0; font-family: inherit; }
+  .trig--focus { outline: 2px solid hsl(var(--sl-color-border-focus)); outline-offset: 3px; border-radius: var(--sl-radius-chip); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">StatusPill / StatusSelect</h1>
+  <p class="ds-sub">Birtir og breytir <code>tentative · draft · confirmed · undecided</code> — þar með talið fyrsta flokks <strong>„?“-merkið</strong> úr ADR-002 §3.</p>
+</header>
+
+<p class="vb-note"><strong>sc-153</strong> · „Óákveðið“ er ekki villuástand heldur raunveruleg staða sem foringjar nota: liðurinn er í plani en enginn hefur ákveðið hvað hann er. Þess vegna er hann strikaður, ekki rauður.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Pillan — allar stöður</p>
+  <div class="ds-row">
+    <span class="vb-chip vb-status--confirmed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Staðfest</span>
+    <span class="vb-chip vb-status--draft">Drög</span>
+    <span class="vb-chip vb-status--tentative">Til skoðunar</span>
+    <span class="vb-chip vb-status--undecided">? Óákveðið</span>
+  </div>
+  <p class="vb-note" style="margin-top:12px">Hver staða hefur eigin lit <em>og</em> eigin texta — litur er aldrei eini burðarinn (WCAG 1.4.1). „?“ fær líka eigið tákn og strikaðan ramma.</p>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Í samhengi á blokk</p>
+  <div class="vb-grid">
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Staðfest</span>
+      <div class="vb-block vb-kind-setning"><div class="vb-block__body"><span class="vb-block__title">Fánahylling</span><div class="vb-block__meta"><span class="vb-chip vb-status--confirmed">Staðfest</span><span class="vb-chip">10 mín</span></div></div></div>
+    </div>
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Óákveðið — plássið er tekið frá</span>
+      <div class="vb-block vb-kind-dagskra"><div class="vb-block__body"><span class="vb-block__title">Eitthvað úti — ákveðum á fimmtudag</span><div class="vb-block__meta"><span class="vb-chip vb-status--undecided">? Óákveðið</span><span class="vb-chip">30 mín</span></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Valmyndin (StatusSelect)</p>
+  <div class="vb-grid">
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Lokuð — pillan er kveikjan</span>
+      <button class="trig" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span class="vb-chip vb-status--draft">Drög <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </button>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Lyklaborðsfókus</span>
+      <button class="trig trig--focus" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span class="vb-chip vb-status--draft">Drög <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </button>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Opin</span>
+      <div>
+        <button class="trig" type="button" aria-haspopup="menu" aria-expanded="true"><span class="vb-chip vb-status--draft">Drög <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><polyline points="18 15 12 9 6 15"/></svg></span></button>
+        <div class="menu" role="menu">
+          <button class="opt" role="menuitemradio" aria-checked="false"><span class="vb-chip vb-status--undecided">?</span><span><span style="font-size:var(--sl-text-body-sm)">Óákveðið</span><br><span class="opt__d">Plássið tekið frá, innihald ókomið</span></span></button>
+          <button class="opt" role="menuitemradio" aria-checked="false"><span class="vb-chip vb-status--tentative">•</span><span><span style="font-size:var(--sl-text-body-sm)">Til skoðunar</span><br><span class="opt__d">Hugmynd sem á eftir að ræða</span></span></button>
+          <button class="opt opt--active" role="menuitemradio" aria-checked="true"><span class="vb-chip vb-status--draft">•</span><span><span style="font-size:var(--sl-text-body-sm)">Drög</span><br><span class="opt__d">Unnið að þessu</span></span><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+          <button class="opt" role="menuitemradio" aria-checked="false"><span class="vb-chip vb-status--confirmed">•</span><span><span style="font-size:var(--sl-text-body-sm)">Staðfest</span><br><span class="opt__d">Tilbúið til að keyra</span></span></button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Aðgengi</p>
+  <p class="vb-note">Kveikjan er <code>aria-haspopup="menu"</code>; valkostirnir <code>menuitemradio</code> með <code>aria-checked</code>. Breyting sendir <code>setStatus</code>-áform á <code>AssemblyProvider</code> — sama leið og allt annað — og er tilkynnt í <code>LiveRegionAnnouncer</code>.</p>
+</div>
+</body></html>

@@ -1,0 +1,76 @@
+<!-- @dsCard group="Vinnubekkurinn" title="RequiredSlotWarning" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>RequiredSlotWarning — Vinnubekkurinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .warn {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sl-spacing-gap-sm);
+    padding: var(--sl-spacing-inset-sm);
+    border-radius: var(--sl-radius-md);
+    border: 1px solid hsl(var(--sl-color-warning) / 0.45);
+    background: hsl(var(--sl-color-warning-subtle));
+    color: hsl(var(--sl-color-warning-text));
+    font-size: var(--sl-text-body-sm);
+    max-width: 420px;
+  }
+  .warn svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+  .warn__body { display: flex; flex-direction: column; gap: var(--sl-spacing-gap-xs); }
+  .warn__title { font-weight: var(--sl-font-weight-emphasis); }
+  .warn__link { color: inherit; text-decoration: underline; text-underline-offset: 2px; font-weight: var(--sl-font-weight-emphasis); background: none; border: 0; padding: 0; cursor: pointer; font-size: inherit; font-family: inherit; align-self: flex-start; }
+  .warn--inline { padding: 2px var(--sl-spacing-gap-sm); border-radius: var(--sl-radius-chip); align-items: center; font-size: var(--sl-text-overline); width: max-content; }
+  .warn--error { border-color: hsl(var(--sl-color-error) / 0.45); background: hsl(var(--sl-color-error-subtle)); color: hsl(var(--sl-color-error-text)); }
+  .warn--resolved { border-color: hsl(var(--sl-color-success) / 0.45); background: hsl(var(--sl-color-success-subtle)); color: hsl(var(--sl-color-success-text)); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">RequiredSlotWarning</h1>
+  <p class="ds-sub">Innfellt merki þegar skyldureitur er enn auður. Fæðir bæði „lýstu upp götin“ úr B4 og útgáfustaðfestinguna.</p>
+</header>
+
+<p class="vb-note"><strong>sc-144</strong> · Þrjú birtingarstig: merki inni í reitnum, samantekt efst á fletinum, og hindrun við útgáfu. Öll þrjú lesa sama <code>requiredButEmpty</code>-listann úr <code>AssemblyProvider</code>.</p>
+
+<div class="ds-group">
+  <p class="ds-section">Stig 1 — merki í reitnum</p>
+  <div class="vb-specimen">
+    <span class="warn warn--inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Vantar að fylla út</span>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Stig 2 — samantekt efst á fletinum</p>
+  <div class="warn" role="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div class="warn__body">
+      <span class="warn__title">2 skyldureitir eru enn auðir</span>
+      <span>Leikur og Slit vantar. Fundurinn má vera í drögum svona, en hann telst ekki tilbúinn.</span>
+      <button class="warn__link" type="button">Fara í fyrsta gatið →</button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Stig 3 — hindrun við útgáfu</p>
+  <div class="warn warn--error" role="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div class="warn__body">
+      <span class="warn__title">Ekki hægt að merkja fundinn tilbúinn</span>
+      <span>Skyldureiturinn <strong>Slit</strong> er auður. Fylltu hann út eða merktu hann sem valfrjálsan í beinagrindinni.</span>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Leyst</p>
+  <div class="warn warn--resolved" role="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+    <div class="warn__body"><span class="warn__title">Allir skyldureitir fylltir — fundurinn er tilbúinn</span></div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">Aðgengi</p>
+  <p class="vb-note">Samantektin er <code>role="status"</code> (kurteis), útgáfuhindrunin <code>role="alert"</code> (áleitin). Merkið í reitnum er tengt við <code>BlankSlot</code> með <code>aria-describedby</code> svo skjálesari heyri það þegar fókus lendir á gatinu.</p>
+</div>
+</body></html>

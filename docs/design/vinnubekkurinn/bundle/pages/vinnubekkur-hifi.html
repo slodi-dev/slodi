@@ -1,0 +1,488 @@
+<!-- @dsCard group="Pages" title="Vinnubekkurinn — hi-fi" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Vinnubekkurinn — hi-fi</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="../components/vinnubekkur.css">
+<style>
+  body { padding: 24px; }
+
+  /* ── App shell ─────────────────────────────────────────────────────────── */
+  .app {
+    border: 1px solid hsl(var(--sl-color-border));
+    border-radius: var(--sl-radius-modal);
+    background: hsl(var(--sl-color-background));
+    overflow: hidden;
+    box-shadow: var(--sl-shadow-modal);
+    max-width: 1180px;
+  }
+
+  /* AssemblyHeader (sc-163) */
+  .hdr {
+    display: flex; align-items: center; gap: var(--sl-spacing-gap-md); flex-wrap: wrap;
+    padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-md);
+    border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+    background: hsl(var(--sl-color-surface));
+  }
+  .hdr__id { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 4px; }
+  .hdr__name { font-size: var(--sl-text-heading-6); font-weight: var(--sl-font-weight-heading); line-height: var(--sl-line-height-tight); }
+  .hdr__sub { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .hdr__acts { display: flex; align-items: center; gap: var(--sl-spacing-gap-sm); }
+  .save { display: inline-flex; align-items: center; gap: 5px; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-success-text)); white-space: nowrap; }
+  .save svg { width: 12px; height: 12px; }
+
+  /* Three panes */
+  .panes { display: grid; grid-template-columns: 268px minmax(0,1fr) 296px; min-height: 620px; }
+  @media (max-width: 1080px) { .panes { grid-template-columns: 236px minmax(0,1fr); } .pane--insp { display: none; } }
+  @media (max-width: 760px)  { .panes { grid-template-columns: minmax(0,1fr); } .pane--pal { display: none; } }
+
+  .pane { display: flex; flex-direction: column; min-width: 0; }
+  .pane--pal  { border-right: 1px solid hsl(var(--sl-color-border-subtle)); background: hsl(var(--sl-color-surface)); }
+  .pane--insp { border-left: 1px solid hsl(var(--sl-color-border-subtle)); background: hsl(var(--sl-color-surface)); }
+  .pane--canvas { background: hsl(var(--sl-color-background-secondary)); }
+
+  .paneHead {
+    padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm);
+    border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+    display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm);
+  }
+  .paneTitle { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-tertiary)); }
+
+  /* PaletteSearch (sc-146) */
+  .search { display: flex; align-items: center; gap: 7px; height: 2.125rem; padding: 0 var(--sl-spacing-gap-sm); border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); font-size: var(--sl-text-body-sm); color: hsl(var(--sl-input-placeholder)); }
+  .search svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .tabs { display: flex; gap: 4px; overflow-x: auto; }
+  .tab { flex-shrink: 0; padding: 3px 9px; border-radius: var(--sl-radius-chip); border: 1px solid hsl(var(--sl-color-border)); background: none; font-size: var(--sl-text-overline); font-family: inherit; color: hsl(var(--sl-color-text-secondary)); cursor: pointer; }
+  .tab--on { background: hsl(var(--sl-color-primary)); border-color: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); font-weight: var(--sl-font-weight-emphasis); }
+
+  /* BlockLibraryItem (sc-147) */
+  .paneBody { flex: 1; overflow-y: auto; padding: var(--sl-spacing-inset-sm); display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .groupLabel { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); color: hsl(var(--sl-color-text-tertiary)); font-weight: var(--sl-font-weight-emphasis); margin-top: 2px; }
+  .lib { display: flex; align-items: flex-start; gap: 7px; padding: 7px; border: 1px solid hsl(var(--sl-color-border)); border-left: 3px solid hsl(var(--vb-kind, var(--sl-color-primary))); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); cursor: grab; }
+  .lib--drag { opacity: .4; }
+  .lib__b { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+  .lib__t { font-size: var(--sl-text-body-sm); font-weight: var(--sl-font-weight-emphasis); line-height: var(--sl-line-height-tight); }
+  .lib__m { display: flex; flex-wrap: wrap; gap: 3px; }
+  .paneFoot { padding: var(--sl-spacing-inset-sm); border-top: 1px solid hsl(var(--sl-color-border-subtle)); background: hsl(var(--sl-color-background-secondary)); }
+  .paneFoot .vb-btn { width: 100%; }
+
+  /* Canvas (sc-138) */
+  .canvas { flex: 1; overflow-y: auto; padding: var(--sl-spacing-inset-md); display: flex; flex-direction: column; gap: var(--sl-spacing-gap-sm); }
+  .budget { display: flex; flex-direction: column; gap: 6px; padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm); border: 1px solid hsl(var(--sl-color-border-subtle)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-surface)); }
+  .budget__row { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--sl-text-body-sm); }
+  .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: hsl(var(--sl-color-background-tertiary)); }
+  .bar > i { display: block; }
+  .muted { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+
+  /* Warning banner (sc-144) */
+  .warn { display: flex; align-items: center; gap: 8px; padding: 7px var(--sl-spacing-inset-sm); border-radius: var(--sl-radius-md); border: 1px solid hsl(var(--sl-color-warning) / .45); background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); font-size: var(--sl-text-body-sm); }
+  .warn svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .warn__link { margin-left: auto; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; text-underline-offset: 2px; font-weight: var(--sl-font-weight-emphasis); cursor: pointer; white-space: nowrap; }
+
+  /* InsertAffordance (sc-142) */
+  .gap { display: flex; align-items: center; justify-content: center; height: 22px; position: relative; }
+  .gap__line { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: hsl(var(--sl-color-primary)); border-radius: 2px; opacity: 0; }
+  .gap__btn { position: relative; display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px; border: 1px dashed hsl(var(--sl-color-border)); border-radius: var(--sl-radius-chip); background: hsl(var(--sl-color-background-secondary)); color: hsl(var(--sl-color-text-tertiary)); font-family: inherit; font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); cursor: pointer; opacity: 0; transition: opacity var(--vb-motion); }
+  .gap__btn svg { width: 10px; height: 10px; }
+  .gap:hover .gap__btn { opacity: 1; color: hsl(var(--sl-color-primary)); border-color: hsl(var(--sl-color-primary)); }
+  .gap--on .gap__btn { opacity: 1; color: hsl(var(--sl-color-primary)); border-style: solid; border-color: hsl(var(--sl-color-primary)); }
+  .gap--on .gap__line { opacity: 1; }
+
+  /* BlankSlot (sc-141) */
+  .blank { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 76px; padding: var(--sl-spacing-gap-sm); border: 2px dashed hsl(var(--sl-color-warning)); border-radius: var(--vb-block-radius); background: hsl(var(--sl-color-warning-subtle)); color: hsl(var(--sl-color-warning-text)); font-family: inherit; font-size: var(--sl-text-body-sm); cursor: pointer; }
+  .blank--plain { border-color: hsl(var(--sl-color-border-strong)); background: transparent; color: hsl(var(--sl-color-text-secondary)); }
+  .blank--over { border-style: solid; border-color: hsl(var(--sl-color-primary)); background: hsl(var(--sl-color-primary-subtle)); color: hsl(var(--sl-color-primary)); box-shadow: var(--vb-focus); }
+  .blank__cta { font-weight: var(--sl-font-weight-emphasis); display: inline-flex; align-items: center; gap: 6px; }
+  .blank__cta svg { width: 15px; height: 15px; }
+  .blank__hint { font-size: var(--sl-text-overline); }
+
+  /* Ghost (sc-143) */
+  .ghost { position: absolute; z-index: 40; width: 250px; box-shadow: var(--sl-shadow-modal); transform: rotate(-1.5deg); border-color: hsl(var(--sl-color-primary)); pointer-events: none; }
+  .cursorDot { position: absolute; z-index: 41; width: 15px; height: 15px; pointer-events: none; color: hsl(var(--sl-color-text-primary)); }
+  .stage { position: relative; }
+
+  /* Inspector (sc-150) */
+  .kindbar { height: 3px; background: hsl(var(--vb-kind, var(--sl-color-primary))); }
+  .fld { display: flex; flex-direction: column; gap: 5px; }
+  .fld > label { font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-secondary)); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); }
+  .box { min-height: 2.125rem; display: flex; align-items: center; gap: 6px; padding: 0 var(--sl-spacing-gap-sm); border: 1px solid hsl(var(--sl-input-border)); border-radius: var(--sl-radius-input); background: hsl(var(--sl-input-background)); font-size: var(--sl-text-body-sm); }
+  .box--ph { color: hsl(var(--sl-input-placeholder)); }
+  .box svg { width: 13px; height: 13px; color: hsl(var(--sl-color-text-tertiary)); }
+  .chev { margin-left: auto; color: hsl(var(--sl-color-text-tertiary)); }
+  .two { display: flex; gap: var(--sl-spacing-gap-sm); }
+  .two > * { flex: 1; }
+  .presets { display: flex; flex-wrap: wrap; gap: 4px; }
+  .preset { padding: 2px 8px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-chip); background: none; font-family: inherit; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); cursor: pointer; }
+  .preset--on { background: hsl(var(--sl-color-primary)); border-color: hsl(var(--sl-color-primary)); color: hsl(var(--sl-color-text-inverse)); font-weight: var(--sl-font-weight-emphasis); }
+  .endur { border: 1px solid hsl(var(--sl-color-patrol-falkar) / .45); border-left: 3px solid hsl(var(--sl-color-patrol-falkar)); border-radius: var(--sl-radius-md); background: hsl(var(--sl-color-patrol-falkar-subtle)); padding: var(--sl-spacing-gap-sm); display: flex; flex-direction: column; gap: 5px; }
+  .endur__h { font-size: var(--sl-text-overline); text-transform: uppercase; letter-spacing: var(--sl-primitive-letter-spacing-wider); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-patrol-falkar)); }
+  .endur__q { font-size: var(--sl-text-body-sm); line-height: var(--sl-line-height-body); margin: 0; }
+  .endur__by { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); }
+  .mini { align-self: flex-start; padding: 2px 8px; border: 1px solid hsl(var(--sl-color-patrol-falkar)); border-radius: var(--sl-radius-chip); background: none; font-family: inherit; font-size: var(--sl-text-overline); font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-patrol-falkar)); cursor: pointer; }
+  .inspFoot { padding: var(--sl-spacing-inset-sm); border-top: 1px solid hsl(var(--sl-color-border-subtle)); background: hsl(var(--sl-color-background-secondary)); display: flex; justify-content: space-between; align-items: center; }
+
+  /* Keyboard bar */
+  .kbar { display: flex; align-items: center; gap: var(--sl-spacing-gap-md); flex-wrap: wrap; padding: 7px var(--sl-spacing-inset-md); border-top: 1px solid hsl(var(--sl-color-border-subtle)); background: hsl(var(--sl-color-surface)); font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); }
+  .kbar b { font-weight: var(--sl-font-weight-emphasis); color: hsl(var(--sl-color-text-primary)); }
+
+  /* Annotations */
+  .anno { display: flex; align-items: flex-start; gap: 7px; font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-tertiary)); margin: 6px 0 0; }
+  .anno b { color: hsl(var(--sl-color-primary)); font-family: var(--sl-primitive-font-family-mono); }
+  .legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 7px var(--sl-spacing-gap-lg); max-width: 1180px; margin-top: var(--sl-spacing-stack-sm); }
+  .legend div { font-size: var(--sl-text-overline); color: hsl(var(--sl-color-text-secondary)); }
+  .legend code { font-family: var(--sl-primitive-font-family-mono); color: hsl(var(--sl-color-text-primary)); }
+  .legend .sc { color: hsl(var(--sl-color-primary)); font-family: var(--sl-primitive-font-family-mono); }
+
+  /* Phone */
+  .phone { width: 340px; border: 1px solid hsl(var(--sl-color-border)); border-radius: var(--sl-radius-dialog); overflow: hidden; background: hsl(var(--sl-color-background)); box-shadow: var(--sl-shadow-modal); display: flex; flex-direction: column; }
+  .phone .canvas { padding: var(--sl-spacing-inset-sm); max-height: 460px; }
+  .sheet { border-top: 1px solid hsl(var(--sl-color-border)); background: hsl(var(--sl-color-surface)); padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm) var(--sl-spacing-inset-sm); border-radius: var(--sl-radius-dialog) var(--sl-radius-dialog) 0 0; }
+  .grab { width: 34px; height: 4px; border-radius: 2px; background: hsl(var(--sl-color-border-strong)); margin: 0 auto var(--sl-spacing-gap-sm); }
+  .flow { display: flex; gap: var(--sl-spacing-stack-lg); flex-wrap: wrap; align-items: flex-start; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">Vinnubekkurinn — samsetningarflöturinn í notkun</h1>
+  <p class="ds-sub">Allir 26 íhlutirnir (sc-138 – sc-163) settir saman í eina raunverulega skjámynd: foringi er að setja saman sveitarfund 12. febrúar, hefur dregið „Kötturinn og músin“ úr safninu og er í þann mund að sleppa henni ofan í auða leikjareitinn.</p>
+</header>
+
+<div class="app stage">
+
+  <!-- ── AssemblyHeader · sc-163 ─────────────────────────────────────────── -->
+  <div class="hdr">
+    <div class="hdr__id">
+      <span class="hdr__name">Sveitarfundur · 12. febrúar</span>
+      <div class="hdr__sub">
+        <span class="vb-chip">Sveitarfundur</span>
+        <span class="vb-chip">Öll sveitin</span>
+        <span class="vb-chip">Skátaheimilið</span>
+        <span class="vb-chip vb-status--draft">Drög</span>
+      </div>
+    </div>
+    <div class="hdr__acts">
+      <!-- AutosaveIndicator · sc-162 -->
+      <span class="save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Vistað kl. 19:42</span>
+      <button class="vb-btn vb-btn--secondary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Afrita sniðmát</button>
+      <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+    </div>
+  </div>
+
+  <div class="panes">
+
+    <!-- ── BlockPalette · sc-145 ──────────────────────────────────────────── -->
+    <aside class="pane pane--pal">
+      <div class="paneHead">
+        <span class="paneTitle">Blokkasafn</span>
+        <!-- PaletteSearch · sc-146 -->
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Leita í safninu…</div>
+        <div class="tabs">
+          <button class="tab tab--on" type="button">Allt</button>
+          <button class="tab" type="button">Leikir</button>
+          <button class="tab" type="button">Verkefni</button>
+          <button class="tab" type="button">Færnimerki</button>
+        </div>
+      </div>
+
+      <div class="paneBody">
+        <span class="groupLabel">Nýlega notað</span>
+        <!-- BlockLibraryItem · sc-147 — this is the one being dragged -->
+        <div class="lib lib--drag vb-kind-leikur">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="lib__b"><span class="lib__t">Kötturinn og músin</span><div class="lib__m"><span class="vb-chip">Leikur</span><span class="vb-chip">15 mín</span></div></div>
+        </div>
+        <div class="lib vb-kind-dagskra">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="lib__b"><span class="lib__t">Áttavitaleikur úti</span><div class="lib__m"><span class="vb-chip">Verkefni</span><span class="vb-chip">30 mín</span></div></div>
+        </div>
+
+        <span class="groupLabel">Sniðmát sveitarinnar</span>
+        <div class="lib vb-kind-setning">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="lib__b"><span class="lib__t">Fánahylling</span><div class="lib__m"><span class="vb-chip">Setning</span><span class="vb-chip">10 mín</span></div></div>
+        </div>
+        <div class="lib vb-kind-dagskra">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="lib__b"><span class="lib__t">Útieldun — grunnur</span><div class="lib__m"><span class="vb-chip">45 mín</span><span class="vb-chip" style="background:hsl(var(--sl-color-patrol-falkar-subtle));color:hsl(var(--sl-color-patrol-falkar))">Endurmat</span></div></div>
+        </div>
+
+        <span class="groupLabel">Færnimerki</span>
+        <div class="lib vb-kind-dagskra">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="lib__b"><span class="lib__t">Hjálp í viðlögum</span><div class="lib__m"><span class="vb-chip">2 fundir</span></div></div>
+        </div>
+      </div>
+
+      <!-- TypeAwareCreateLauncher · sc-148 -->
+      <div class="paneFoot">
+        <button class="vb-btn vb-btn--primary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Búa til…</button>
+      </div>
+    </aside>
+
+    <!-- ── AssemblyCanvas · sc-138 ────────────────────────────────────────── -->
+    <main class="pane pane--canvas">
+      <div class="canvas">
+
+        <!-- TimingField roll-up · sc-152 -->
+        <div class="budget">
+          <div class="budget__row"><strong>80 mín af 90</strong><span class="muted">10 mín eftir</span></div>
+          <div class="bar">
+            <i style="width:11%;background:hsl(var(--sl-color-patrol-drekar))"></i>
+            <i style="width:28%;background:hsl(var(--sl-color-primary))"></i>
+            <i style="width:33%;background:hsl(var(--sl-color-patrol-rekkar))"></i>
+            <i style="width:17%;background:hsl(var(--sl-color-secondary))"></i>
+          </div>
+        </div>
+
+        <!-- RequiredSlotWarning · sc-144 -->
+        <div class="warn" role="status">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>2 skyldureitir eru enn auðir — <strong>Leikur</strong> og <strong>Slit</strong>.</span>
+          <button class="warn__link" type="button">Fara í fyrsta gatið →</button>
+        </div>
+
+        <!-- SlotFrame: Setning · sc-139 -->
+        <section class="vb-slot">
+          <div class="vb-slot__head"><span class="vb-slot__kind">Setning</span><span class="vb-slot__count">1/1</span></div>
+          <!-- BlockCard · sc-140 -->
+          <article class="vb-block vb-kind-setning">
+            <button class="vb-iconbtn" aria-label="Grípa Fánahylling til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+            <div class="vb-block__body">
+              <span class="vb-block__title">Fánahylling</span>
+              <div class="vb-block__meta"><span class="vb-chip vb-status--confirmed">Staðfest</span><span class="vb-chip">10 mín</span></div>
+            </div>
+            <div style="display:flex;gap:2px">
+              <button class="vb-iconbtn vb-iconbtn--disabled" aria-label="Færa upp — þegar efst" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+            </div>
+          </article>
+        </section>
+
+        <!-- SlotFrame: Dagskrá — two blocks, one selected -->
+        <section class="vb-slot">
+          <div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span><span class="vb-slot__count">2/3</span></div>
+
+          <article class="vb-block vb-block--selected vb-kind-dagskra">
+            <button class="vb-iconbtn" aria-label="Grípa Hnútar til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+            <div class="vb-block__body">
+              <span class="vb-block__title">Hnútar — pelastikk og réttur hnútur</span>
+              <div class="vb-block__meta">
+                <span class="vb-chip vb-status--draft">Drög</span>
+                <span class="vb-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>25 mín</span>
+                <span class="vb-chip">Sjómennska</span>
+                <span class="vb-chip" style="background:hsl(var(--sl-color-patrol-falkar-subtle));color:hsl(var(--sl-color-patrol-falkar))">Endurmat 2025</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:2px">
+              <button class="vb-iconbtn" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              <button class="vb-iconbtn" aria-label="Færa niður"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+            </div>
+          </article>
+
+          <!-- InsertAffordance · sc-142 -->
+          <div class="gap"><span class="gap__line"></span><button class="gap__btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Setja hér</button></div>
+
+          <article class="vb-block vb-kind-dagskra">
+            <button class="vb-iconbtn" aria-label="Grípa Eldur og útieldun til að færa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+            <div class="vb-block__body">
+              <span class="vb-block__title">Eldur og útieldun</span>
+              <div class="vb-block__meta">
+                <span class="vb-chip vb-status--tentative">Til skoðunar</span>
+                <span class="vb-chip">30 mín</span>
+                <span class="vb-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>Skólalóðin</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:2px">
+              <button class="vb-iconbtn" aria-label="Færa upp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              <button class="vb-iconbtn vb-iconbtn--disabled" aria-label="Færa niður" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+            </div>
+          </article>
+        </section>
+
+        <!-- SlotFrame: Leikur — the live drop target -->
+        <section class="vb-slot vb-slot--over">
+          <div class="vb-slot__head"><span class="vb-slot__kind">Leikur</span><span class="vb-slot__count">Skyldureitur · 0/1</span></div>
+          <!-- BlankSlot · sc-141, in its --over state -->
+          <div class="blank blank--over">
+            <span class="blank__cta">Slepptu „Kötturinn og músin“ hér</span>
+            <span class="blank__hint">Leikur · 15 mín — fyllir skyldureitinn</span>
+          </div>
+        </section>
+
+        <!-- SlotFrame: Slit — still an empty required blank -->
+        <section class="vb-slot vb-slot--required-empty">
+          <div class="vb-slot__head"><span class="vb-slot__kind">Slit</span><span class="vb-slot__count">Skyldureitur · 0/1</span></div>
+          <button class="blank" type="button" aria-describedby="req-slit">
+            <span class="blank__cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Slit vantar</span>
+            <span class="blank__hint" id="req-slit">Skyldureitur — fundurinn er ekki tilbúinn án hans</span>
+          </button>
+        </section>
+
+        <!-- SlotFrame: Endurmat — optional, empty -->
+        <section class="vb-slot">
+          <div class="vb-slot__head"><span class="vb-slot__kind">Endurmat</span><span class="vb-slot__count">Valfrjálst · 0/1</span></div>
+          <button class="blank blank--plain" type="button">
+            <span class="blank__cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bæta við endurmatslið</span>
+            <span class="blank__hint">Fyllist sjálfkrafa eftir fundinn ef þið sleppið honum</span>
+          </button>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- ── BlockInspector · sc-150 ────────────────────────────────────────── -->
+    <aside class="pane pane--insp vb-kind-dagskra">
+      <div class="kindbar"></div>
+      <div class="paneHead" style="gap:4px">
+        <span class="paneTitle">Verkefni · reitur: Dagskrá</span>
+        <span style="font-size:var(--sl-text-body-sm);font-weight:var(--sl-font-weight-heading)">Hnútar — pelastikk og réttur hnútur</span>
+      </div>
+      <div class="paneBody" style="gap:var(--sl-spacing-gap-md)">
+        <div class="fld"><label>Heiti</label><div class="box">Hnútar — pelastikk og réttur hnútur</div></div>
+        <!-- ThemeParamField · sc-151 -->
+        <div class="fld"><label>Þema</label><div class="box">Sjómennska<span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></div></div>
+        <!-- TimingField · sc-152 -->
+        <div class="fld">
+          <label>Lengd</label>
+          <div class="presets"><button class="preset" type="button">10</button><button class="preset" type="button">15</button><button class="preset preset--on" type="button">25 mín</button><button class="preset" type="button">30</button><button class="preset" type="button">45</button></div>
+        </div>
+        <div class="two">
+          <!-- StatusSelect · sc-153 -->
+          <div class="fld"><label>Staða</label><div class="box"><span class="vb-chip vb-status--draft">Drög</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></div></div>
+        </div>
+        <!-- VenueField · sc-154 -->
+        <div class="fld"><label>Staðsetning</label><div class="box box--ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>Sami staður og fundurinn</div></div>
+        <!-- EndurmatNote · sc-155 -->
+        <div class="fld">
+          <label>Endurmat</label>
+          <div class="endur">
+            <span class="endur__h">Frá síðast</span>
+            <p class="endur__q">„Of stuttur tími — 25 mín dugðu ekki, taka 35 næst.“</p>
+            <span class="endur__by">Signý · 12. feb. 2025</span>
+            <button class="mini" type="button">Setja lengd í 35 mín</button>
+          </div>
+        </div>
+      </div>
+      <div class="inspFoot">
+        <button class="vb-btn vb-btn--ghost vb-btn--danger" type="button">Fjarlægja</button>
+        <span class="muted">Vistað sjálfkrafa</span>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- KeyboardDragHint bar · sc-159 -->
+  <div class="kbar">
+    <span><span class="vb-kbd">Bil</span> <b>grípa</b></span>
+    <span><span class="vb-kbd">↑</span><span class="vb-kbd">↓</span> <b>færa</b></span>
+    <span><span class="vb-kbd">←</span><span class="vb-kbd">→</span> <b>milli reita</b></span>
+    <span><span class="vb-kbd">Enter</span> <b>opna</b></span>
+    <span><span class="vb-kbd">Delete</span> <b>fjarlægja</b></span>
+    <span><span class="vb-kbd">Ctrl</span>+<span class="vb-kbd">Z</span> <b>afturkalla</b></span>
+    <span style="margin-left:auto"><span class="vb-kbd">?</span> <b>allir flýtilyklar</b></span>
+  </div>
+
+  <!-- DragOverlay / BlockGhost · sc-143 — floating over the drop target -->
+  <div class="vb-block ghost vb-kind-leikur" style="left:44%;top:474px">
+    <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+    <div class="vb-block__body">
+      <span class="vb-block__title">Kötturinn og músin</span>
+      <div class="vb-block__meta"><span class="vb-chip">Leikur</span><span class="vb-chip">15 mín</span><span class="vb-chip" style="background:hsl(var(--sl-color-primary));color:hsl(var(--sl-color-text-inverse))">afrit</span></div>
+    </div>
+  </div>
+  <svg class="cursorDot" style="left:calc(44% + 150px);top:508px" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 2l7 18 2.5-7.5L21 10z"/></svg>
+
+  <!-- LiveRegionAnnouncer · sc-158 — invisible in the real app -->
+  <div class="vb-sr-only" role="status" aria-live="polite" aria-atomic="true">Kötturinn og músin yfir reitnum Leikur. Slepptu til að setja í stöðu 1 af 1.</div>
+</div>
+
+<div class="legend">
+  <div><span class="sc">sc-163</span> <code>AssemblyHeader</code> — hausinn efst</div>
+  <div><span class="sc">sc-162</span> <code>AutosaveIndicator</code> — „Vistað kl. 19:42“</div>
+  <div><span class="sc">sc-145</span> <code>BlockPalette</code> — vinstri rásin</div>
+  <div><span class="sc">sc-146</span> <code>PaletteSearch</code> — leitarreiturinn</div>
+  <div><span class="sc">sc-147</span> <code>BlockLibraryItem</code> — „Kötturinn og músin“, dofnuð meðan dregið er</div>
+  <div><span class="sc">sc-148</span> <code>TypeAwareCreateLauncher</code> — „Búa til…“ neðst</div>
+  <div><span class="sc">sc-138</span> <code>AssemblyCanvas</code> — miðsvæðið</div>
+  <div><span class="sc">sc-152</span> <code>TimingField</code> — tímabókhaldið efst</div>
+  <div><span class="sc">sc-144</span> <code>RequiredSlotWarning</code> — gula samantektin</div>
+  <div><span class="sc">sc-139</span> <code>SlotFrame</code> — fimm reitir</div>
+  <div><span class="sc">sc-140</span> <code>BlockCard</code> — þrjár blokkir</div>
+  <div><span class="sc">sc-160</span> <code>DragHandle</code> — gripið vinstra megin á hverju korti</div>
+  <div><span class="sc">sc-157</span> <code>MoveControls</code> — ▲▼ hægra megin</div>
+  <div><span class="sc">sc-156</span> <code>BlockActionsMenu</code> — ⋯ hægra megin</div>
+  <div><span class="sc">sc-142</span> <code>InsertAffordance</code> — bilið milli blokka í Dagskrá</div>
+  <div><span class="sc">sc-141</span> <code>BlankSlot</code> — Leikur (yfir), Slit (skylda), Endurmat (valfrjálst)</div>
+  <div><span class="sc">sc-143</span> <code>DragOverlay</code> — vofan sem eltir bendilinn</div>
+  <div><span class="sc">sc-150</span> <code>BlockInspector</code> — hægri rásin</div>
+  <div><span class="sc">sc-151</span> <code>ThemeParamField</code> — „Sjómennska“</div>
+  <div><span class="sc">sc-153</span> <code>StatusPill/Select</code> — stöðupillur á hverju korti</div>
+  <div><span class="sc">sc-154</span> <code>VenueField</code> — „Skólalóðin“ á útieldunarkortinu</div>
+  <div><span class="sc">sc-155</span> <code>EndurmatNote</code> — ábendingin frá Signýju</div>
+  <div><span class="sc">sc-159</span> <code>KeyboardDragHint</code> — stikan neðst</div>
+  <div><span class="sc">sc-158</span> <code>LiveRegionAnnouncer</code> — ósýnilegur; les „Kötturinn og músin yfir reitnum Leikur…“</div>
+  <div><span class="sc">sc-161</span> <code>AssemblyProvider</code> — ósýnilegur; á ástandið sem allt hitt les</div>
+  <div><span class="sc">sc-149</span> <code>PaletteEmptyState</code> — sést ekki hér (safnið er fullt) — sjá eigið spjald</div>
+</div>
+
+<div class="ds-group" style="margin-top:44px">
+  <p class="ds-section">Sama mynd án músar — og á síma</p>
+  <div class="flow">
+
+    <!-- Keyboard-only path -->
+    <div style="max-width:460px">
+      <p class="vb-note"><strong>Lyklaborðsleiðin.</strong> Nákvæmlega sama ástandsbreyting, engin sérleið: foringi Tab-ar að blokkinni, ýtir á bil, færir með örvatökkum og sleppir. <code>AssemblyProvider</code> fær sama <code>move</code>-áform og dropið hefði sent.</p>
+      <div class="vb-slot" style="background:hsl(var(--sl-color-surface))">
+        <div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span><span class="vb-slot__count">2/3</span></div>
+        <article class="vb-block vb-block--grabbed vb-kind-dagskra">
+          <button class="vb-iconbtn" aria-label="Sleppa Hnútar"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+          <div class="vb-block__body">
+            <span class="vb-block__title">Hnútar — pelastikk</span>
+            <div class="vb-block__meta"><span class="vb-chip" style="background:hsl(var(--sl-color-info-subtle));color:hsl(var(--sl-color-info-text))">Gripin · staða 1 af 2 · ↑↓ færir, bil sleppir</span></div>
+          </div>
+        </article>
+        <article class="vb-block vb-kind-dagskra">
+          <span class="vb-iconbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+          <div class="vb-block__body"><span class="vb-block__title">Eldur og útieldun</span></div>
+        </article>
+      </div>
+      <p class="anno"><b>aria-live</b> „Hnútar — pelastikk gripin. Staða 1 af 2 í reitnum Dagskrá. Notaðu upp- og niðurörvar til að færa, bil til að sleppa, Esc til að hætta við.“</p>
+    </div>
+
+    <!-- Phone -->
+    <div>
+      <p class="vb-note" style="max-width:340px"><strong>Síminn.</strong> Rásirnar þrjár falla saman: vinnusvæðið er sjálfgefna sýnin, safnið kemur upp sem botnblað, ritillinn opnast við pikk á kort. ▲▼ og ⋯ stækka í 44 px snertimörk.</p>
+      <div class="phone">
+        <div class="hdr" style="padding:var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm)">
+          <div class="hdr__id">
+            <span class="hdr__name" style="font-size:var(--sl-text-body)">Sveitarfundur · 12. feb.</span>
+            <div class="hdr__sub"><span class="vb-chip vb-status--draft">Drög</span><span class="save" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Vistað</span></div>
+          </div>
+        </div>
+        <div class="canvas">
+          <div class="warn" style="font-size:var(--sl-text-overline)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg><span>2 skyldureitir auðir</span></div>
+          <section class="vb-slot">
+            <div class="vb-slot__head"><span class="vb-slot__kind">Setning</span><span class="vb-slot__count">1/1</span></div>
+            <article class="vb-block vb-kind-setning">
+              <button class="vb-iconbtn" aria-label="Grípa"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg></button>
+              <div class="vb-block__body"><span class="vb-block__title">Fánahylling</span><div class="vb-block__meta"><span class="vb-chip vb-status--confirmed">Staðfest</span><span class="vb-chip">10 mín</span></div></div>
+              <button class="vb-iconbtn" aria-label="Fleiri aðgerðir"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg></button>
+            </article>
+          </section>
+          <section class="vb-slot vb-slot--required-empty">
+            <div class="vb-slot__head"><span class="vb-slot__kind">Leikur</span><span class="vb-slot__count">0/1</span></div>
+            <button class="blank" type="button"><span class="blank__cta">Leikur vantar</span><span class="blank__hint">Pikkaðu til að velja úr safninu</span></button>
+          </section>
+        </div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="search" style="margin-bottom:var(--sl-spacing-gap-sm)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Leita í safninu…</div>
+          <div class="lib vb-kind-leikur" style="margin-bottom:6px"><div class="lib__b"><span class="lib__t">Kötturinn og músin</span><div class="lib__m"><span class="vb-chip">15 mín</span></div></div><button class="vb-btn vb-btn--secondary" type="button" style="min-height:2rem;padding:0 10px;font-size:var(--sl-text-overline)">Bæta við</button></div>
+          <div class="lib vb-kind-leikur"><div class="lib__b"><span class="lib__t">Boltaleikur — allir með</span><div class="lib__m"><span class="vb-chip">20 mín</span></div></div><button class="vb-btn vb-btn--secondary" type="button" style="min-height:2rem;padding:0 10px;font-size:var(--sl-text-overline)">Bæta við</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>
