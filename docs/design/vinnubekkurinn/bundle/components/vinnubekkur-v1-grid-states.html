@@ -1,0 +1,100 @@
+<!-- @dsCard group="Vinnubekkurinn v1" title="Dagskrárhringur — raungögn" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dagskrárhringur — raungögn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .g { border: 1px solid var(--sl-color-border); border-radius: var(--vb-block-radius);
+       overflow: hidden; background: var(--sl-color-surface); }
+  .g table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .g th, .g td { border: 1px solid var(--sl-color-border); padding: 6px 8px; text-align: left;
+                 vertical-align: top; height: 42px; }
+  .g thead th { background: var(--sl-color-surface-sunken); font-weight: 650; font-size: 12px; }
+  .g .wk { width: 92px; color: var(--sl-color-text-secondary); font-weight: 600; white-space: nowrap; }
+  .band td { background: color-mix(in srgb, var(--sl-color-primary) 7%, transparent); }
+  .ent { display: block; border-left: 3px solid var(--vb-kind, var(--sl-color-primary));
+         padding: 3px 6px; border-radius: 4px; background: var(--sl-color-surface);
+         box-shadow: 0 1px 2px rgba(0,0,0,.06); font-weight: 550; }
+  .ent small { display: block; font-weight: 400; color: var(--sl-color-text-secondary); }
+  .state { border: 1px dashed var(--sl-color-border-strong); border-radius: var(--vb-block-radius);
+           padding: 28px 20px; text-align: center; background: var(--sl-color-surface); }
+  .state h3 { margin: 0 0 6px; font-size: 15px; }
+  .state p { margin: 0 auto 14px; max-width: 46ch; color: var(--sl-color-text-secondary); font-size: 13px; }
+  .err { border-color: var(--sl-alert-border-error); background: var(--sl-alert-background-error); }
+  .err h3 { color: var(--sl-alert-text-error); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">Dagskrárhringur — raungögn</h1>
+  <p class="ds-sub">Það sem <code>PlanGrid</code> sýnir þegar hann les <code>GET /seasons/{id}/grid</code> í stað sýnigagna. Fjögur ástönd: fullt starfsár, tómt starfsár, ekkert starfsár, og þegar ekki tekst að sækja.</p>
+</header>
+
+<p class="vb-note"><strong>sc-524</strong> · Sýnigögnin höfðu alltaf efni, svo ástöndin þrjú hér að neðan hafa aldrei verið teiknuð. <strong>Tómt starfsár er ekki villa</strong> — sc-290 sendir <code>patrols</code> og <code>weeks</code> þótt enginn viðburður sé til, einmitt svo ný sveit sjái töflu sem hún getur fyllt.</p>
+
+<div class="ds-group">
+  <p class="ds-section">1 · Starfsár með dagskrá</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Bönd spanna röðina (<code>scope: troop-wide</code>), reitir sitja í einum dálki (<code>per-flokkur</code>)</span>
+    <div class="g">
+      <table>
+        <thead><tr><th class="wk">Vika</th><th>Drekar</th><th>Fálkar</th><th>Rekkar</th></tr></thead>
+        <tbody>
+          <tr class="band"><td class="wk">Vika 34</td><td colspan="3"><span class="ent vb-kind-setning">Skipulagsfundur<small>Öll sveitin · staðfest</small></span></td></tr>
+          <tr><td class="wk">Vika 35</td>
+            <td><span class="ent vb-kind-dagskra">Útieldun<small>staðfest</small></span></td>
+            <td><span class="ent vb-kind-leikur">Áttavitinn<small>drög</small></span></td>
+            <td></td></tr>
+          <tr><td class="wk">Vika 36</td>
+            <td><span class="ent vb-kind-dagskra">Hnútar<small>drög</small></span></td>
+            <td></td>
+            <td><span class="ent vb-kind-dagskra">Ratleikur<small>óráðið</small></span></td></tr>
+          <tr class="band"><td class="wk">Vika 37</td><td colspan="3"><span class="ent vb-kind-slit">Haustútilega<small>Öll sveitin · 3 vikur</small></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">2 · Tómt starfsár</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Flokkar og vikur birtast — taflan er tilbúin til að fylla, ekki villa</span>
+    <div class="g">
+      <table>
+        <thead><tr><th class="wk">Vika</th><th>Drekar</th><th>Fálkar</th><th>Rekkar</th></tr></thead>
+        <tbody>
+          <tr><td class="wk">Vika 34</td><td></td><td></td><td></td></tr>
+          <tr><td class="wk">Vika 35</td><td></td><td></td><td></td></tr>
+          <tr><td class="wk">Vika 36</td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">3 · Ekkert starfsár — fyrsta heimsókn</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Ný sveit má ekki lenda í blindgötu: hér er eina leiðin áfram boðin strax</span>
+    <div class="state">
+      <h3>Ekkert starfsár er til enn</h3>
+      <p>Búðu til starfsár til að byrja að skipuleggja. Þú getur líka byrjað á vinnublaði án dagsetninga og ákveðið tímabilið síðar.</p>
+      <button class="vb-btn vb-btn--primary" type="button">Búa til starfsár</button>
+      <button class="vb-btn vb-btn--secondary" type="button">Nýtt vinnublað</button>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">4 · Tókst ekki að sækja</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Segir hvað gerðist og giskar ekki á hvers vegna</span>
+    <div class="state err">
+      <h3>Ekki tókst að sækja dagskrána</h3>
+      <p>Reyndu aftur eftir augnablik. Ef þetta heldur áfram, láttu vita.</p>
+      <button class="vb-btn vb-btn--secondary" type="button">Reyna aftur</button>
+    </div>
+  </div>
+</div>
+
+<p class="vb-note">Skilaboðin nefna <strong>ekki</strong> ástæðu. FastAPI svarar óþekktri slóð með sama <code>{"detail": "Not Found"}</code> og vantandi færslu, svo „ekki komið í loftið“ og „bilað“ eru ógreinanleg héðan — og sannfærandi rangt svar er verra en óljóst.</p>
+</body></html>

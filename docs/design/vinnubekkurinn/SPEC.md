@@ -153,6 +153,40 @@ Steps 1–2 already deliver a working, accessible assembler. **New dependency:**
 
 ---
 
+## 5b. Vinnubekkur v1 — the states real data introduces
+
+Epic 523 takes the built surfaces off their fixtures. The fixtures always had
+content, so every state that appears only when real data arrives — or does not —
+was never drawn. These four cards are one per user story in that epic, group
+`Vinnubekkurinn v1`.
+
+| Card | Story | States |
+|---|---|---|
+| `vinnubekkur-v1-grid-states.html` | sc-524 | full starfsár · empty starfsár · no season at all · load failure |
+| `vinnubekkur-v1-create-fundur.html` | sc-527 | empty cell resting/hover/focus · naming · troop-wide row · saving and failed |
+| `vinnubekkur-v1-fundur-persistence.html` | sc-525 | loaded bands · split lanes · four save states · save failed |
+| `vinnubekkur-v1-block-rail.html` | sc-526 | bank with content · empty bank · no search results · loading |
+
+Two of these overlap deliberately with existing cards. `PaletteEmptyState`
+(sc-149) and `AutosaveIndicator` (sc-162) drew the component; these draw it
+**in its story's context**, which is where the difference between "the bank is
+empty" and "the bank is broken" — or between saved and unsaved — actually has
+to be legible.
+
+### Local preview
+
+The cards link `../tokens.css` and `../preview.css`, which the design project
+supplies (§1) and the repo deliberately does not. To render them in a browser
+while iterating, generate local copies into `bundle/`:
+
+```bash
+cp frontend/app/slodi-tokens.css docs/design/vinnubekkurinn/bundle/tokens.css
+# plus a preview.css providing .ds-head / .ds-title / .ds-sub / .ds-group / .ds-section
+```
+
+Both are **untracked and local only**. Exclude them from any `/design-sync`
+plan — the project has its own, and pushing these would overwrite them.
+
 ## 6. Files
 
 ```

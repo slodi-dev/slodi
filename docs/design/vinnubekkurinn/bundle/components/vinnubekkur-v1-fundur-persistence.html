@@ -1,0 +1,102 @@
+<!-- @dsCard group="Vinnubekkurinn v1" title="Fundur — hleðsla og vistun" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Fundur — hleðsla og vistun</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .bench { border: 1px solid var(--sl-color-border); border-radius: var(--vb-block-radius);
+           background: var(--sl-color-surface); padding: 12px; max-width: 560px; }
+  .bhead { display: flex; align-items: center; justify-content: space-between;
+           gap: 10px; margin-bottom: 10px; padding-bottom: 8px;
+           border-bottom: 1px solid var(--sl-color-border); }
+  .bhead h3 { margin: 0; font-size: 15px; }
+  .bhead small { color: var(--sl-color-text-secondary); font-weight: 400; display: block; }
+  .lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .lane { border: 1px solid var(--sl-color-border); border-radius: 6px; padding: 6px;
+          background: var(--sl-color-surface-sunken); }
+  .lane h4 { margin: 0 0 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+             color: var(--sl-color-text-secondary); }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
+          padding: 3px 9px; border-radius: 999px; font-weight: 550; }
+  .pill--saved { background: var(--sl-alert-background-success); color: var(--sl-alert-text-success); }
+  .pill--saving { background: var(--sl-alert-background-info); color: var(--sl-alert-text-info); }
+  .pill--dirty { background: var(--sl-alert-background-warning); color: var(--sl-alert-text-warning); }
+  .pill--failed { background: var(--sl-alert-background-error); color: var(--sl-alert-text-error); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+         margin-top: 10px; padding: 8px 10px; border-radius: 6px;
+         background: var(--sl-alert-background-error); border: 1px solid var(--sl-alert-border-error);
+         color: var(--sl-alert-text-error); font-size: 13px; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">Fundur — hleðsla og vistun</h1>
+  <p class="ds-sub">Vinnubekkurinn les raunverulegan fund gegnum sc-292 og vistar það sem foringinn gerir. Böndin þrjú, klofin bönd í rásir, og — það sem aldrei var teiknað — hvað gerist þegar vistun mistekst.</p>
+</header>
+
+<p class="vb-note"><strong>sc-525</strong> · <code>AutosaveIndicator</code> (sc-162) teiknaði aðeins farsælu leiðina. Sýnigögnin vistuðust aldrei, svo þau gátu aldrei mistekist.</p>
+
+<div class="ds-group">
+  <p class="ds-section">1 · Fundur sóttur — böndin þrjú</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Raðaðir, tímasettir liðir í beinagrindinni</span>
+    <div class="bench">
+      <div class="bhead"><div><h3>Hnútakvöld</h3><small>Vika 36 · Fálkar · 90 mín</small></div>
+        <span class="pill pill--saved"><span class="dot"></span>Vistað</span></div>
+      <div class="vb-slot"><div class="vb-slot__head"><span class="vb-slot__kind">Setning</span><span class="vb-slot__count">1</span></div>
+        <div class="vb-block vb-kind-setning"><div class="vb-block__body"><div class="vb-block__title">Fánastund</div><div class="vb-block__meta">10 mín</div></div></div></div>
+      <div class="vb-slot"><div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span><span class="vb-slot__count">2</span></div>
+        <div class="vb-block vb-kind-dagskra"><div class="vb-block__body"><div class="vb-block__title">Pelastikk og réttur hnútur</div><div class="vb-block__meta">30 mín · þarf: kaðlar</div></div></div>
+        <div class="vb-block vb-kind-leikur"><div class="vb-block__body"><div class="vb-block__title">Hnútaboðhlaup</div><div class="vb-block__meta">20 mín</div></div></div></div>
+      <div class="vb-slot"><div class="vb-slot__head"><span class="vb-slot__kind">Slit</span><span class="vb-slot__count">1</span></div>
+        <div class="vb-block vb-kind-slit"><div class="vb-block__body"><div class="vb-block__title">Kvöldhringur</div><div class="vb-block__meta">10 mín</div></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">2 · Klofið band — ein rás á flokk</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Liðir bandsins eru í sameiginlega listanum <strong>eða</strong> í rásum — aldrei hvoru tveggja. Bandið varir jafnlengi og lengsta rásin (35 mín)</span>
+    <div class="bench">
+      <div class="bhead"><div><h3>Sveitarfundur</h3><small>Vika 37 · öll sveitin · klofið band</small></div>
+        <span class="pill pill--saved"><span class="dot"></span>Vistað</span></div>
+      <div class="lanes">
+        <div class="lane"><h4>Drekar</h4>
+          <div class="vb-block vb-kind-dagskra"><div class="vb-block__body"><div class="vb-block__title">Áttavitinn</div><div class="vb-block__meta">25 mín</div></div></div></div>
+        <div class="lane"><h4>Fálkar</h4>
+          <div class="vb-block vb-kind-dagskra"><div class="vb-block__body"><div class="vb-block__title">Kortalestur</div><div class="vb-block__meta">35 mín</div></div></div></div>
+        <div class="lane"><h4>Rekkar</h4>
+          <div class="vb-block vb-kind-leikur"><div class="vb-block__body"><div class="vb-block__title">Ratleikur</div><div class="vb-block__meta">30 mín</div></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">3 · Vistunarstöður</p>
+  <div class="vb-grid">
+    <div class="vb-specimen"><span class="vb-specimen__label">Vistað</span><span class="pill pill--saved"><span class="dot"></span>Vistað</span></div>
+    <div class="vb-specimen"><span class="vb-specimen__label">Vistar</span><span class="pill pill--saving"><span class="dot"></span>Vistar…</span></div>
+    <div class="vb-specimen"><span class="vb-specimen__label">Óvistaðar breytingar</span><span class="pill pill--dirty"><span class="dot"></span>Óvistað</span></div>
+    <div class="vb-specimen"><span class="vb-specimen__label">Mistókst</span><span class="pill pill--failed"><span class="dot"></span>Vistun mistókst</span></div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">4 · Vistun mistókst</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Bekkurinn heldur því sem foringinn gerði. Að henda breytingu á sameiginlegri dagskrá þegjandi er verra en villa</span>
+    <div class="bench">
+      <div class="bhead"><div><h3>Hnútakvöld</h3><small>Vika 36 · Fálkar</small></div>
+        <span class="pill pill--failed"><span class="dot"></span>Vistun mistókst</span></div>
+      <div class="vb-slot"><div class="vb-slot__head"><span class="vb-slot__kind">Dagskrá</span><span class="vb-slot__count">2</span></div>
+        <div class="vb-block vb-kind-dagskra"><div class="vb-block__body"><div class="vb-block__title">Pelastikk og réttur hnútur</div><div class="vb-block__meta">30 mín</div></div></div>
+        <div class="vb-block vb-kind-leikur"><div class="vb-block__body"><div class="vb-block__title">Hnútaboðhlaup</div><div class="vb-block__meta">20 mín</div></div></div></div>
+      <div class="bar"><span>Breytingarnar þínar eru enn hér, en komust ekki til skila.</span>
+        <button class="vb-btn vb-btn--secondary" type="button">Reyna aftur</button></div>
+    </div>
+  </div>
+</div>
+
+<p class="vb-note"><strong>Opin spurning fyrir teymið:</strong> sjálfvirk vistun eða skýr „Vista“-hnappur? <code>AutosaveIndicator</code> gerir ráð fyrir sjálfvirkri vistun; ekkert annað hefur tekið afstöðu. Ástand 3 og 4 líta ólíkt út eftir svarinu — „Óvistað“ er merkingarlaust ef vistun er sjálfvirk.</p>
+</body></html>

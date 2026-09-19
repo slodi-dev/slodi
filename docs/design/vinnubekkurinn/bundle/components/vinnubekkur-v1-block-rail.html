@@ -1,0 +1,106 @@
+<!-- @dsCard group="Vinnubekkurinn v1" title="Blokkarásin — raunverulegur banki" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Blokkarásin — raunverulegur banki</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .rail { width: 268px; border: 1px solid var(--sl-color-border); border-radius: var(--vb-block-radius);
+          background: var(--sl-color-surface); padding: 10px; }
+  .rail input[type=search] { width: 100%; font: inherit; font-size: 12px; padding: 6px 9px;
+          border: 1px solid var(--sl-color-border); border-radius: 6px; margin-bottom: 8px;
+          background: var(--sl-color-surface-sunken); }
+  .tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tab { font-size: 11px; padding: 3px 9px; border-radius: 999px; cursor: pointer;
+         border: 1px solid var(--sl-color-border); background: transparent;
+         color: var(--sl-color-text-secondary); }
+  .tab[aria-selected=true] { background: var(--sl-color-primary); color: var(--sl-color-text-inverse, #fff);
+         border-color: var(--sl-color-primary); font-weight: 600; }
+  .lib { display: grid; gap: 6px; }
+  .theme { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px;
+           background: color-mix(in srgb, var(--sl-color-primary) 12%, transparent);
+           color: var(--sl-color-primary); font-weight: 600; margin-bottom: 3px; }
+  .needs { font-size: 11px; color: var(--sl-color-text-secondary); }
+  .empty { text-align: center; padding: 26px 14px; }
+  .empty h3 { margin: 0 0 6px; font-size: 14px; }
+  .empty p { margin: 0; font-size: 12px; color: var(--sl-color-text-secondary); }
+  .skel { height: 46px; border-radius: 6px; background: var(--sl-color-surface-sunken);
+          border: 1px solid var(--sl-color-border); }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">Blokkarásin — raunverulegur banki</h1>
+  <p class="ds-sub">Þegar <code>BlockPalette</code> les dagskrárbankann í stað sýnigagna. Mikilvægasta ástandið er tómi bankinn: falskur dagskrárbanki fyrir framan raunverulegan foringja er verri en enginn.</p>
+</header>
+
+<p class="vb-note"><strong>sc-526</strong> · <code>PaletteEmptyState</code> (sc-149) og <code>BlockLibraryItem</code> (sc-147) eru þegar teiknuð — þetta kort sýnir þau með raungögnum og bætir við hleðslu og leit án niðurstaðna. <strong>Blokk er ekki bert heiti:</strong> hún ber þemað sem hún þjónar og það sem hún þarf, sem er allt erindi B3 (sc-47).</p>
+
+<div class="ds-group">
+  <p class="ds-section">1 · Banki með efni · 2 · Tómur banki</p>
+  <div class="row">
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Hver blokk kemur með þema og þarfir</span>
+      <div class="rail">
+        <input type="search" placeholder="Leita í bankanum" aria-label="Leita í bankanum">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" aria-selected="true" type="button">Allt</button>
+          <button class="tab" role="tab" aria-selected="false" type="button">Sveitin mín</button>
+          <button class="tab" role="tab" aria-selected="false" type="button">Félagið</button>
+          <button class="tab" role="tab" aria-selected="false" type="button">Færnimerki</button>
+        </div>
+        <div class="lib">
+          <div class="vb-block vb-kind-dagskra"><div class="vb-block__body">
+            <span class="theme">Útilíf</span>
+            <div class="vb-block__title">Pelastikk og réttur hnútur</div>
+            <div class="vb-block__meta">30 mín</div>
+            <div class="needs">Þarf: kaðlar, spotti</div></div></div>
+          <div class="vb-block vb-kind-leikur"><div class="vb-block__body">
+            <span class="theme">Samvinna</span>
+            <div class="vb-block__title">Hnútaboðhlaup</div>
+            <div class="vb-block__meta">20 mín</div>
+            <div class="needs">Þarf: kaðlar</div></div></div>
+          <div class="vb-block vb-kind-setning"><div class="vb-block__body">
+            <span class="theme">Hefðir</span>
+            <div class="vb-block__title">Fánastund</div>
+            <div class="vb-block__meta">10 mín</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Aldrei sýnigögn — hér þarf foringi að geta greint „ekkert í bankanum“ frá „bilað“</span>
+      <div class="rail">
+        <input type="search" placeholder="Leita í bankanum" aria-label="Leita í bankanum" disabled>
+        <div class="empty">
+          <h3>Ekkert í bankanum enn</h3>
+          <p>Þegar sveitin setur dagskrárliði í bankann birtast þeir hér og þú getur dregið þá inn í fund.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">3 · Leit án niðurstaðna · 4 · Sækir</p>
+  <div class="row">
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Bankinn er ekki tómur — leitin skilaði engu. Ólík skilaboð, ólíkt ástand</span>
+      <div class="rail">
+        <input type="search" value="sjóræningjar" aria-label="Leita í bankanum">
+        <div class="empty">
+          <h3>Ekkert fannst</h3>
+          <p>Engin blokk passar við „sjóræningjar“. Prófaðu annað orð eða skoðaðu allan bankann.</p>
+        </div>
+      </div>
+    </div>
+    <div class="vb-specimen">
+      <span class="vb-specimen__label">Rásin heldur lögun sinni meðan hún sækir</span>
+      <div class="rail">
+        <input type="search" placeholder="Leita í bankanum" aria-label="Leita í bankanum" disabled>
+        <div class="lib"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="vb-note">Leit síast <strong>á þjóni</strong> — rásin má ekki treysta á að halda öllum bankanum í vafranum (sc-293, sc-447 sama rök). <code>timesUsed</code> („hefur verið notað“) er <strong>utan v1</strong>: ekkert vísar í blokk fyrr en liðir gera það, svo ekki er hægt að telja fyrr en sc-292 er komið.</p>
+</body></html>

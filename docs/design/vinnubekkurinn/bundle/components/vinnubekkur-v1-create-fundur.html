@@ -1,0 +1,116 @@
+<!-- @dsCard group="Vinnubekkurinn v1" title="Setja fund á hringinn" -->
+<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Setja fund á hringinn</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../preview.css"><link rel="stylesheet" href="vinnubekkur.css">
+<style>
+  .g { border: 1px solid var(--sl-color-border); border-radius: var(--vb-block-radius);
+       overflow: hidden; background: var(--sl-color-surface); }
+  .g table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .g th, .g td { border: 1px solid var(--sl-color-border); padding: 6px 8px; text-align: left;
+                 vertical-align: top; height: 46px; }
+  .g thead th { background: var(--sl-color-surface-sunken); font-weight: 650; font-size: 12px; }
+  .g .wk { width: 92px; color: var(--sl-color-text-secondary); font-weight: 600; white-space: nowrap; }
+  .ent { display: block; border-left: 3px solid var(--vb-kind, var(--sl-color-primary));
+         padding: 3px 6px; border-radius: 4px; background: var(--sl-color-surface);
+         box-shadow: 0 1px 2px rgba(0,0,0,.06); font-weight: 550; }
+  .ent small { display: block; font-weight: 400; color: var(--sl-color-text-secondary); }
+  .add { display: flex; align-items: center; justify-content: center; gap: 5px;
+         width: 100%; height: 30px; border: 1px dashed var(--sl-color-border-strong);
+         border-radius: 4px; background: transparent; cursor: pointer;
+         color: var(--sl-color-text-secondary); font-size: 12px; font-weight: 550;
+         opacity: 0; transition: opacity var(--vb-motion); }
+  .cell--hover .add { opacity: 1; }
+  .cell--hover { background: color-mix(in srgb, var(--sl-color-primary) 5%, transparent); }
+  .add--focus { opacity: 1; box-shadow: var(--vb-focus); outline: none; }
+  .naming { display: flex; gap: 6px; align-items: center; }
+  .naming input { flex: 1; min-width: 0; font: inherit; font-size: 12px; padding: 5px 7px;
+                  border: 1px solid var(--sl-color-primary); border-radius: 4px;
+                  box-shadow: var(--vb-focus); background: var(--sl-color-surface); }
+  .band td { background: color-mix(in srgb, var(--sl-color-primary) 7%, transparent); }
+  .saving { color: var(--sl-color-text-secondary); font-size: 12px; font-style: italic; }
+  .failed { border-left: 3px solid var(--sl-alert-border-error);
+            background: var(--sl-alert-background-error); padding: 4px 7px; border-radius: 4px;
+            font-size: 12px; color: var(--sl-alert-text-error); }
+</style>
+</head>
+<body>
+<header class="ds-head">
+  <h1 class="ds-title">Setja fund á hringinn</h1>
+  <p class="ds-sub">Minnsta skrifaðgerðin sem gerir v1 satt: smella á tóman reit, gefa fundi heiti, og hann er kominn. Ekkert annað — færsla, endurnefning og innlínubreyting tilheyra A3.</p>
+</header>
+
+<p class="vb-note"><strong>sc-527</strong> · Án þessa er v1 aðeins skoðari: ný sveit á tómt starfsár og sc-525 hefur engan fund að opna. <strong>Aðeins stofnun.</strong> Ef færsla eða endurnefning birtist í rýni tilheyrir hún sc-38 og þetta verkefni er að vaxa úr sér.</p>
+
+<div class="ds-group">
+  <p class="ds-section">1 · Tómur reitur — í hvíld og undir bendli</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Boðið birtist undir bendli eða við lyklaborðsfókus; taflan er róleg þangað til</span>
+    <div class="g">
+      <table>
+        <thead><tr><th class="wk">Vika</th><th>Drekar</th><th>Fálkar</th><th>Rekkar</th></tr></thead>
+        <tbody>
+          <tr><td class="wk">Vika 35</td>
+            <td><span class="ent vb-kind-dagskra">Útieldun<small>staðfest</small></span></td>
+            <td class="cell--hover"><button class="add" type="button">+ Nýr fundur</button></td>
+            <td><button class="add" type="button">+ Nýr fundur</button></td></tr>
+          <tr><td class="wk">Vika 36</td>
+            <td><button class="add" type="button">+ Nýr fundur</button></td>
+            <td><button class="add add--focus" type="button">+ Nýr fundur</button></td>
+            <td><button class="add" type="button">+ Nýr fundur</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">2 · Heitið slegið inn</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Aðeins heiti. Vika, flokkur og <code>scope</code> koma frá reitnum sjálfum; staða byrjar sem „óráðið“</span>
+    <div class="g">
+      <table>
+        <thead><tr><th class="wk">Vika</th><th>Drekar</th><th>Fálkar</th><th>Rekkar</th></tr></thead>
+        <tbody>
+          <tr><td class="wk">Vika 36</td>
+            <td></td>
+            <td><div class="naming"><input type="text" value="Hnútakvöld" aria-label="Heiti fundar"><button class="vb-btn vb-btn--primary" type="button">Vista</button></div></td>
+            <td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">3 · Fundur fyrir alla sveitina</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Sama aðgerð á bandaröð gefur <code>scope: troop-wide</code> — fundurinn spannar alla flokka</span>
+    <div class="g">
+      <table>
+        <thead><tr><th class="wk">Vika</th><th>Drekar</th><th>Fálkar</th><th>Rekkar</th></tr></thead>
+        <tbody>
+          <tr class="band"><td class="wk">Vika 37</td><td colspan="3"><button class="add" style="opacity:1" type="button">+ Fundur fyrir alla sveitina</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="ds-group">
+  <p class="ds-section">4 · Vistar · og þegar það mistekst</p>
+  <div class="vb-specimen">
+    <span class="vb-specimen__label">Reitur sem lítur fylltur út en vistaðist ekki er verri en sýnileg villa</span>
+    <div class="g">
+      <table>
+        <thead><tr><th class="wk">Vika</th><th>Drekar</th><th>Fálkar</th></tr></thead>
+        <tbody>
+          <tr><td class="wk">Vika 38</td>
+            <td><span class="saving">Vistar „Hnútakvöld“…</span></td>
+            <td><span class="failed">Ekki tókst að vista. <a href="#" style="color:inherit">Reyna aftur</a></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<p class="vb-note">Staðan byrjar sem <code>unknown</code> — „óráðið“ er gildi með spurningarmerki, ekki tómt svæði (ADR-002 §3). Foringi sem setur fund á hringinn hefur ekki enn ákveðið hvort hann verður; það er nákvæmlega það sem reiturinn á að segja.</p>
+</body></html>
