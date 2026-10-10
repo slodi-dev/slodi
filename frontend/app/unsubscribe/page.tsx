@@ -5,51 +5,54 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styles from "./unsubscribe.module.css";
 
+type Status = "checking" | "confirm" | "loading" | "success" | "invalid" | "error";
+
+const GENERIC_ERROR = "Ekki tókst að afskrá þig. Reyndu aftur síðar.";
+
 function UnsubscribeContent() {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const token = searchParams.get("token");
+  const [status, setStatus] = useState<Status>(token ? "checking" : "invalid");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    // Token-based unsubscribe from email links
-    const token = searchParams.get("token");
-    if (token) {
-      setStatus("loading");
-      fetch(`/api/emails/unsubscribe?token=${encodeURIComponent(token)}`)
-        .then((res) => {
-          if (res.ok) {
-            setStatus("success");
-            setMessage("Netfangið þitt er ekki lengur á póstlistanum okkar.");
-          } else {
-            return res.json().then((data) => {
-              setStatus("error");
-              setMessage(data.error || "Ekki tókst að afskrá þig. Reyndu aftur síðar.");
-            });
-          }
-        })
-        .catch(() => {
-          setStatus("error");
-          setMessage("Ekki tókst að afskrá þig. Reyndu aftur síðar.");
-        });
+    // Opening the link only checks the token. Unsubscribing waits for the
+    // button, because mail scanners and link previewers open links too.
+    if (!token) {
+      setStatus("invalid");
+      setMessage("");
       return;
     }
 
-    // Check if email is provided in URL parameters
-    const emailParam = searchParams.get("email");
-    if (emailParam) {
-      setEmail(emailParam);
-    }
-  }, [searchParams]);
+    let cancelled = false;
+    setStatus("checking");
+    fetch(`/api/emails/unsubscribe?token=${encodeURIComponent(token)}`)
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.ok) {
+          setStatus("confirm");
+          setMessage("");
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        setStatus(res.status === 400 || res.status === 404 ? "invalid" : "error");
+        setMessage(data.error || GENERIC_ERROR);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus("error");
+        setMessage(GENERIC_ERROR);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const handleUnsubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!email || !email.includes("@")) {
-      setStatus("error");
-      setMessage("Vinsamlegast sláðu inn gilt netfang.");
-      return;
-    }
+    if (!token) return;
 
     setStatus("loading");
     setMessage("");
@@ -58,20 +61,20 @@ function UnsubscribeContent() {
       const response = await fetch("/api/emails/unsubscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ token }),
       });
 
       if (response.ok) {
         setStatus("success");
         setMessage("Netfangið þitt er ekki lengur á póstlistanum okkar.");
       } else {
-        const data = await response.json();
-        setStatus("error");
-        setMessage(data.error || "Ekki tókst að afskrá þig. Reyndu aftur síðar.");
+        const data = await response.json().catch(() => ({}));
+        setStatus(response.status === 404 ? "invalid" : "error");
+        setMessage(data.error || GENERIC_ERROR);
       }
     } catch {
       setStatus("error");
-      setMessage("Ekki tókst að afskrá þig. Reyndu aftur síðar.");
+      setMessage(GENERIC_ERROR);
     }
   };
 
@@ -114,70 +117,65 @@ function UnsubscribeContent() {
             </div>
           ) : (
             <>
-              <p className={styles.description}>
-                Komið nóg af tölvupóstum? Sláðu inn netfangið þitt hér að neðan til að afskrá þig af
-                póstlistanum okkar. Það var gaman að hafa þig með!
-              </p>
+              {status === "checking" ? (
+                <div className={styles.loading}>Hleður...</div>
+              ) : status === "invalid" ? (
+                <p className={styles.description}>
+                  Til að afskrá þig skaltu nota hlekkinn neðst í tölvupósti frá okkur. Hver hlekkur
+                  virkar aðeins fyrir það netfang sem pósturinn var sendur á.
+                </p>
+              ) : (
+                <>
+                  <p className={styles.description}>
+                    Komið nóg af tölvupóstum? Smelltu á hnappinn hér að neðan til að afskrá
+                    netfangið þitt af póstlistanum okkar. Það var gaman að hafa þig með!
+                  </p>
 
-              <form onSubmit={handleUnsubscribe} className={styles.form}>
-                <div className={styles.inputGroup}>
-                  <label htmlFor="email-input" className={styles.label}>
-                    Netfang
-                  </label>
-                  <input
-                    id="email-input"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="netfang@example.is"
-                    className={styles.input}
-                    required
-                    disabled={status === "loading"}
-                    aria-describedby={message ? "unsubscribe-message" : undefined}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className={styles.submitButton}
-                  disabled={status === "loading"}
-                >
-                  {status === "loading" ? (
-                    <>
-                      <span className={styles.spinner} aria-hidden="true"></span>
-                      Afskrái...
-                    </>
-                  ) : (
-                    "Afskrá mig"
-                  )}
-                </button>
-
-                {message && status === "error" && (
-                  <div
-                    id="unsubscribe-message"
-                    className={styles.errorMessage}
-                    role="alert"
-                    aria-live="polite"
-                  >
-                    <svg
-                      className={styles.messageIcon}
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
+                  <form onSubmit={handleUnsubscribe} className={styles.form}>
+                    <button
+                      type="submit"
+                      className={styles.submitButton}
+                      disabled={status === "loading"}
+                      aria-describedby={message ? "unsubscribe-message" : undefined}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>{message}</span>
-                  </div>
-                )}
-              </form>
+                      {status === "loading" ? (
+                        <>
+                          <span className={styles.spinner} aria-hidden="true"></span>
+                          Afskrái...
+                        </>
+                      ) : (
+                        "Afskrá mig"
+                      )}
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {message && (status === "error" || status === "invalid") && (
+                <div
+                  id="unsubscribe-message"
+                  className={styles.errorMessage}
+                  role="alert"
+                  aria-live="polite"
+                >
+                  <svg
+                    className={styles.messageIcon}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{message}</span>
+                </div>
+              )}
 
               <div className={styles.footer}>
                 <p className={styles.footerText}>
