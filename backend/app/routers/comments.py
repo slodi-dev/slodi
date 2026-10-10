@@ -82,7 +82,10 @@ async def get_comment(
     current_user: UserOut = Depends(get_current_user),
 ) -> CommentOut:
     svc = CommentService(session)
-    return await svc.get(comment_id)
+    comment = await svc.get(comment_id)
+    # Same rule as listing the thread: the content has to be reachable.
+    await check_content_workspace_access(comment.content_id, current_user, session)
+    return comment
 
 
 @router.patch("/comments/{comment_id}", response_model=CommentOut)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Select, and_, delete, func, select, update
@@ -11,13 +12,34 @@ from sqlalchemy.orm import selectinload
 
 from app.models.content import Content
 from app.models.tag import ContentTag, Tag
+from app.models.workspace import WorkspaceMembership
 from app.repositories.base import Repository
 from app.repositories.content import (
     ContentStats,
     comment_count_subq,
     like_count_subq,
     liked_by_me_subq,
+    listable,
 )
+
+
+def _tagged_content_filters(tag_id: UUID, member_id: UUID | None) -> list[Any]:
+    """Conditions for content carrying a tag that the caller may list.
+
+    Deleted and hidden items are excluded for everyone, as in every other
+    listing. `member_id` limits the result to workspaces that user belongs
+    to; None means no workspace limit (platform admins).
+    """
+    filters = [ContentTag.tag_id == tag_id, listable(Content)]
+    if member_id is not None:
+        filters.append(
+            Content.workspace_id.in_(
+                select(WorkspaceMembership.workspace_id).where(
+                    WorkspaceMembership.user_id == member_id
+                )
+            )
+        )
+    return filters
 
 
 class TagRepository(Repository):
@@ -91,17 +113,23 @@ class TagRepository(Repository):
         )
         return await self.scalars(stmt)
 
-    async def count_tagged_content(self, tag_id: UUID) -> int:
+    async def count_tagged_content(self, tag_id: UUID, member_id: UUID | None = None) -> int:
         result = await self.session.scalar(
             select(func.count())
             .select_from(ContentTag)
             .join(Content, Content.id == ContentTag.content_id)
-            .where(ContentTag.tag_id == tag_id, Content.deleted_at.is_(None))
+            .where(*_tagged_content_filters(tag_id, member_id))
         )
         return result or 0
 
     async def list_tagged_content(
-        self, tag_id: UUID, current_user_id: UUID | None = None, *, limit: int = 50, offset: int = 0
+        self,
+        tag_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        member_id: UUID | None = None,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[tuple[Content, ContentStats]]:  # type: ignore[valid-type]
         stmt = (
             select(
@@ -113,7 +141,7 @@ class TagRepository(Repository):
                 selectinload(Content.workspace),
                 selectinload(Content.content_tags).selectinload(ContentTag.tag),
             )
-            .where(ContentTag.tag_id == tag_id, Content.deleted_at.is_(None))
+            .where(*_tagged_content_filters(tag_id, member_id))
             .order_by(Content.created_at.desc())
             .limit(limit)
             .offset(offset)

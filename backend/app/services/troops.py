@@ -88,6 +88,14 @@ class TroopService:
     async def add_participation(
         self, event_id: UUID, troop_id: UUID
     ) -> tuple[bool, TroopParticipationOut]:
+        troop = await self.repo.get(troop_id)
+        if not troop:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Troop not found")
+        # A troop can only take part in its own workspace's events. Without
+        # this, a troop admin could attach their troop to any event id at all,
+        # including deleted ones and events in workspaces they cannot see.
+        if not await self.repo.event_in_workspace(event_id, troop.workspace_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         try:
             created, tp = await self.repo.add_participation(event_id, troop_id)
             await self.session.commit()
