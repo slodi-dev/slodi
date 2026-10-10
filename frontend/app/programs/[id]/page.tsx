@@ -5,7 +5,10 @@ import React, { useCallback, useMemo, useState } from "react";
 import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
 import DocumentViewer, { type ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
 import ContentCreateModal from "@/components/ContentCreateModal/ContentCreateModal";
-import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
+import {
+  DeleteConfirmModal,
+  DELETE_FAILED_MESSAGE,
+} from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
 import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
@@ -18,7 +21,7 @@ import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
 import { cn } from "@/lib/util";
 import { createComment, deleteComment } from "@/services/comments.service";
-import { deleteProgram, type ContentComment } from "@/services/programs.service";
+import { deleteBankContent, type ContentComment } from "@/services/programs.service";
 import ItemFacts from "./components/ItemFacts";
 import ItemHero, { type HeroImage } from "./components/ItemHero";
 import ItemSections from "./components/ItemSections";
@@ -46,6 +49,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [extraComments, setExtraComments] = useState<ContentComment[]>([]);
@@ -104,12 +108,14 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     if (!canDelete) return;
     try {
       setIsDeleting(true);
-      await deleteProgram(program.id, getToken);
+      setDeleteError(null);
+      await deleteBankContent(program.content_type, program.id, getToken);
       router.push(ROUTES.PROGRAMS);
     } catch (err) {
       console.error("Failed to delete program:", err);
+      // Keep the modal open so the failure is visible, not silently swallowed.
       setIsDeleting(false);
-      setShowDeleteConfirm(false);
+      setDeleteError(DELETE_FAILED_MESSAGE);
     }
   };
   return (
@@ -228,7 +234,11 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         open={showDeleteConfirm}
         programName={program.name}
         isDeleting={isDeleting}
-        onClose={() => setShowDeleteConfirm(false)}
+        error={deleteError}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDeleteError(null);
+        }}
         onConfirm={handleDeleteConfirm}
       />
     </div>
