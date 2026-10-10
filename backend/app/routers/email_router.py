@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import check_workspace_access, get_current_user, require_permission
 from app.core.db import get_session
-from app.core.email import send_batch_background, send_email_background
+from app.core.email import (
+    one_click_unsubscribe_url,
+    send_batch_background,
+    send_email_background,
+    unsubscribe_page_url,
+)
 from app.core.email_templates.renderer import (
     ALLOWED_TEMPLATES,
     get_text_config,
@@ -109,13 +114,14 @@ async def broadcast_to_email_list(
     if subscribers:
         messages: list[tuple[str, str, str, str | None]] = []
         for entry in subscribers:
-            unsub_url = f"https://slodi.is/unsubscribe?token={entry.unsubscribe_token}"
             messages.append(
                 (
                     entry.email,
                     body.subject,
-                    body.html.replace("{unsubscribe_url}", unsub_url),
-                    unsub_url,
+                    body.html.replace(
+                        "{unsubscribe_url}", unsubscribe_page_url(entry.unsubscribe_token)
+                    ),
+                    one_click_unsubscribe_url(entry.unsubscribe_token),
                 )
             )
         send_batch_background(background_tasks, messages)
@@ -442,9 +448,11 @@ async def send_draft(
     else:
         subscribers = await EmailListService(session).list()
         for subscriber in subscribers:
-            unsub_url = f"https://slodi.is/unsubscribe?token={subscriber.unsubscribe_token}"
-            subscriber_html = html.replace("{unsubscribe_url}", unsub_url)
-            messages.append((subscriber.email, draft.subject, subscriber_html, unsub_url))
+            token = subscriber.unsubscribe_token
+            subscriber_html = html.replace("{unsubscribe_url}", unsubscribe_page_url(token))
+            messages.append(
+                (subscriber.email, draft.subject, subscriber_html, one_click_unsubscribe_url(token))
+            )
 
     if messages:
         send_batch_background(background_tasks, messages)

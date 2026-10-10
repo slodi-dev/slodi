@@ -28,6 +28,10 @@ class EmailListRepository(Repository):
         assert isinstance(res, CursorResult)
         return res.rowcount or 0
 
+    async def token_exists(self, token: UUID) -> bool:
+        stmt = select(EmailList.email).where(EmailList.unsubscribe_token == token)
+        return (await self.session.execute(stmt)).first() is not None
+
     async def delete_by_token(self, token: UUID) -> int:
         res = await self.session.execute(
             delete(EmailList).where(EmailList.unsubscribe_token == token)

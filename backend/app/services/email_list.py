@@ -38,6 +38,14 @@ class EmailListService:
             )
         await self.session.commit()
 
+    async def check_unsubscribe_token(self, token: UUID) -> None:
+        """Raise 404 unless the token belongs to a current subscriber. Read-only."""
+        if not await self.repo.token_exists(token):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invalid or expired unsubscribe token.",
+            )
+
     async def unsubscribe_by_token(self, token: UUID) -> None:
         deleted_count = await self.repo.delete_by_token(token)
         if deleted_count == 0:
