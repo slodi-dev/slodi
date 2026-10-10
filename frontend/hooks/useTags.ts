@@ -43,7 +43,7 @@ export function useTags(query?: string): UseTagsResult {
   const createTag = useCallback(
     async (name: string): Promise<Tag | null> => {
       try {
-        const newTag = await createTagApi({ name });
+        const newTag = await createTagApi({ name }, getToken);
         await loadTags(); // Refresh the list
         return newTag;
       } catch (err) {
@@ -52,7 +52,7 @@ export function useTags(query?: string): UseTagsResult {
         return null;
       }
     },
-    [loadTags]
+    [loadTags, getToken]
   );
 
   const tagNames = tags ? tags.map((tag) => tag.name) : null;

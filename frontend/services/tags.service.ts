@@ -4,6 +4,7 @@
  */
 
 import { buildApiUrl, fetchAndCheck } from "@/lib/api-utils";
+import { fetchWithAuth } from "@/lib/api";
 
 export type Tag = {
   id: string;
@@ -33,56 +34,62 @@ export async function fetchTags(query?: string, token?: string): Promise<Tag[]> 
   });
 }
 
+type GetToken = () => Promise<string | null>;
+
 /**
  * Create a new tag
+ *
+ * Writes need a bearer token: the API reads auth from the Authorization
+ * header, not from cookies, so `credentials: "include"` alone sent these as
+ * anonymous requests and every one was refused.
  */
-export async function createTag(input: TagCreateInput): Promise<Tag> {
+export async function createTag(input: TagCreateInput, getToken: GetToken): Promise<Tag> {
   const url = buildApiUrl("/tags");
-  return fetchAndCheck<Tag>(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  return fetchWithAuth<Tag>(
+    url,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: input.name.trim() }),
     },
-    body: JSON.stringify({ name: input.name.trim() }),
-    credentials: "include",
-  });
+    getToken
+  );
 }
 
 /**
  * Get a single tag by ID
  */
-export async function fetchTagById(id: string): Promise<Tag> {
+export async function fetchTagById(id: string, getToken: GetToken): Promise<Tag> {
   const url = buildApiUrl(`/tags/${id}`);
-  return fetchAndCheck<Tag>(url, {
-    method: "GET",
-    credentials: "include",
-  });
+  return fetchWithAuth<Tag>(url, { method: "GET" }, getToken);
 }
 
 /**
  * Update a tag
  */
-export async function updateTag(id: string, name: string): Promise<Tag> {
+export async function updateTag(id: string, name: string, getToken: GetToken): Promise<Tag> {
   const url = buildApiUrl(`/tags/${id}`);
-  return fetchAndCheck<Tag>(url, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
+  return fetchWithAuth<Tag>(
+    url,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: name.trim() }),
     },
-    body: JSON.stringify({ name: name.trim() }),
-    credentials: "include",
-  });
+    getToken
+  );
 }
 
 /**
  * Delete a tag
  */
-export async function deleteTag(id: string): Promise<void> {
+export async function deleteTag(id: string, getToken: GetToken): Promise<void> {
   const url = buildApiUrl(`/tags/${id}`);
-  await fetchAndCheck(url, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  await fetchWithAuth<void>(url, { method: "DELETE" }, getToken);
 }
 
 /**
@@ -95,12 +102,9 @@ export function extractTagNames(tags: Tag[]): string[] {
 /**
  * Get all tags for a specific content item
  */
-export async function fetchContentTags(contentId: string): Promise<Tag[]> {
+export async function fetchContentTags(contentId: string, getToken: GetToken): Promise<Tag[]> {
   const url = buildApiUrl(`/content/${contentId}/tags`);
-  return fetchAndCheck<Tag[]>(url, {
-    method: "GET",
-    credentials: "include",
-  });
+  return fetchWithAuth<Tag[]>(url, { method: "GET" }, getToken);
 }
 
 /**
