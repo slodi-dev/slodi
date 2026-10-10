@@ -38,8 +38,25 @@ async def create_email_entry(
 
 
 @router.get("/unsubscribe/{token}", status_code=status.HTTP_204_NO_CONTENT)
+async def check_unsubscribe_token(token: UUID, session: SessionDep) -> None:
+    """Report whether an unsubscribe token is valid, without unsubscribing.
+
+    GET must not change state: mail scanners and link previewers fetch links
+    in emails on their own, which would otherwise unsubscribe people who
+    never clicked. The unsubscribe page uses this to decide what to show.
+    """
+    await EmailListService(session).check_unsubscribe_token(token)
+
+
+@router.post("/unsubscribe/{token}", status_code=status.HTTP_204_NO_CONTENT)
 async def unsubscribe_by_token(token: UUID, session: SessionDep) -> None:
-    """Public one-click unsubscribe via token included in broadcast emails."""
+    """Unsubscribe via the token included in list emails. Public, no auth.
+
+    This is the RFC 8058 one-click target of the List-Unsubscribe header:
+    mail providers POST ``List-Unsubscribe=One-Click`` here with no cookies
+    or credentials. The body carries nothing we need, so it is ignored. The
+    unsubscribe page's confirm button posts here too, via the Next proxy.
+    """
     await EmailListService(session).unsubscribe_by_token(token)
 
 

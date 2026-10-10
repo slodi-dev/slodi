@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
 from app.core.db import get_session_maker
+from app.core.email import one_click_unsubscribe_url, unsubscribe_page_url
 from app.core.email_templates.renderer import render
 from app.models.email_draft import EmailDraft
 from app.services.email_list import EmailListService
@@ -48,8 +49,8 @@ async def claim_due_drafts(session: AsyncSession) -> list[EmailDraft]:
 def _send_batch_sync(messages: list[tuple[str, str, str, str | None]]) -> None:
     """Send emails via Resend SDK (blocking).
 
-    Each message is (recipient, subject, html, unsubscribe_url).
-    Adds List-Unsubscribe headers when unsubscribe_url is provided.
+    Each message is (recipient, subject, html, one_click_url).
+    Adds RFC 8058 List-Unsubscribe headers when one_click_url is provided.
     """
     if not settings.resend_api_key:
         logger.warning(
@@ -98,9 +99,16 @@ async def process_draft(draft: EmailDraft, session: AsyncSession) -> None:
         else:
             subscribers = await EmailListService(session).list()
             for subscriber in subscribers:
-                unsub_url = f"https://slodi.is/unsubscribe?token={subscriber.unsubscribe_token}"
-                subscriber_html = html.replace("{unsubscribe_url}", unsub_url)
-                messages.append((subscriber.email, draft.subject, subscriber_html, unsub_url))
+                token = subscriber.unsubscribe_token
+                subscriber_html = html.replace("{unsubscribe_url}", unsubscribe_page_url(token))
+                messages.append(
+                    (
+                        subscriber.email,
+                        draft.subject,
+                        subscriber_html,
+                        one_click_unsubscribe_url(token),
+                    )
+                )
 
         if messages:
             # Run blocking Resend call in a thread to avoid blocking the loop
