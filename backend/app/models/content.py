@@ -240,5 +240,5 @@ class Content(SoftDeleteMixin, Base):
 
     @property
     def tags(self) -> list[Tag]:
-        """Return list of Tag objects from content_tags relationship"""
-        return [ct.tag for ct in self.content_tags]
+        """Return the live (not deleted) Tag objects from content_tags"""
+        return [ct.tag for ct in self.content_tags if ct.tag.deleted_at is None]

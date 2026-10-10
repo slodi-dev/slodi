@@ -68,13 +68,21 @@ class TagRepository(Repository):
             update(Tag).where(Tag.id == tag_id, Tag.deleted_at.is_(None)).values(deleted_at=now)
         )
         assert isinstance(res, CursorResult)
-        return res.rowcount or 0
+        deleted = res.rowcount or 0
+        if deleted:
+            # The tag row stays (soft delete) but nothing should carry it any
+            # more: otherwise it lingers on items, in facets and in filters.
+            await self.session.execute(delete(ContentTag).where(ContentTag.tag_id == tag_id))
+        return deleted
 
     # ----- associations -----
 
     async def count_content_tags(self, content_id: UUID) -> int:
         result = await self.session.scalar(
-            select(func.count()).select_from(ContentTag).where(ContentTag.content_id == content_id)
+            select(func.count())
+            .select_from(ContentTag)
+            .join(Tag, Tag.id == ContentTag.tag_id)
+            .where(ContentTag.content_id == content_id, Tag.deleted_at.is_(None))
         )
         return result or 0
 
