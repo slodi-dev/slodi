@@ -16,7 +16,7 @@ const PAGE_SIZE = 20;
 
 export default function TagManagement() {
   const defaultWorkspaceId = useDefaultWorkspaceId();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, getToken } = useAuth();
   const { isLoading: roleLoading } = useWorkspaceRole(defaultWorkspaceId);
   const { tags, loading, error, refetch } = useTags();
   const { programs } = usePrograms(defaultWorkspaceId);
@@ -72,20 +72,20 @@ export default function TagManagement() {
 
   const handleSave = useCallback(
     async (tagId: string, newName: string) => {
-      await updateTag(tagId, newName);
+      await updateTag(tagId, newName, getToken);
       setEditingId(null);
       await refetch();
     },
-    [refetch]
+    [refetch, getToken]
   );
 
   const handleDelete = useCallback(
     async (tagId: string) => {
-      await deleteTag(tagId);
+      await deleteTag(tagId, getToken);
       setDeletingId(null);
       await refetch();
     },
-    [refetch]
+    [refetch, getToken]
   );
 
   // Access control. Platform permission rather than workspace role: the tag
