@@ -41,12 +41,14 @@ class EventRepository(Repository):
             .options(
                 selectinload(Event.author),
                 selectinload(Event.workspace),
-                selectinload(Event.tasks).options(
+                selectinload(Event.tasks.and_(listable(Task))).options(
                     selectinload(Task.author),
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments).selectinload(Comment.user),
+                selectinload(Event.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(Event.id == event_id, Event.deleted_at.is_(None))
@@ -75,12 +77,14 @@ class EventRepository(Repository):
             .options(
                 selectinload(Event.author),
                 selectinload(Event.workspace),
-                selectinload(Event.tasks).options(
+                selectinload(Event.tasks.and_(listable(Task))).options(
                     selectinload(Task.author),
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments).selectinload(Comment.user),
+                selectinload(Event.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(
