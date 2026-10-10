@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth0 } from "@/lib/auth0";
 
 const API_BASE_URL = process.env.API_BASE_URL;
 function json(body: unknown, status = 200) {
@@ -63,12 +64,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Get all emails in the emaillist (admin function)
+// Get all emails in the emaillist (admin function). The backend checks that
+// the caller is an admin, so this forwards the session's access token.
 export async function GET() {
+  let token: string;
   try {
-    const response = await fetch(`${API_BASE_URL}/emaillist/`, {
+    const { token: t } = await auth0.getAccessToken();
+    if (!t) throw new Error("No token");
+    token = t;
+  } catch {
+    return json({ message: "Innskráningar krafist" }, 401);
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/emaillist`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) {
