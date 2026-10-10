@@ -115,6 +115,8 @@ class TagService:
         return [ContentListOut.from_row(r, stats) for r, stats in rows]  # type: ignore[attr-defined]
 
     async def add_content_tag(self, content_id: UUID, tag_id: UUID) -> tuple[bool, ContentTagOut]:
+        if not await self.repo.get(tag_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
         try:
             created, ct = await self.repo.add_content_tag(content_id, tag_id)
             await self.session.commit()

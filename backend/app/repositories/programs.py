@@ -161,7 +161,7 @@ class ProgramRepository(Repository):
                     Content.id.in_(
                         select(ContentTag.content_id)
                         .join(Tag, Tag.id == ContentTag.tag_id)
-                        .where(func.lower(Tag.name).in_(wanted))
+                        .where(func.lower(Tag.name).in_(wanted), Tag.deleted_at.is_(None))
                     )
                 )
         if filters.author_id is not None:
@@ -260,7 +260,7 @@ class ProgramRepository(Repository):
             select(Tag.name)
             .join(ContentTag, ContentTag.tag_id == Tag.id)
             .join(Content, Content.id == ContentTag.content_id)
-            .where(*base)
+            .where(*base, Tag.deleted_at.is_(None))
             .distinct()
             .order_by(Tag.name)
         )
