@@ -1,14 +1,22 @@
 name: Frontend CI
 on:
+  # Re-run on main by hand, e.g. to redeploy without a code change.
+  workflow_dispatch:
   push:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
+      # A green run here is what deploys (deploy-frontend.yml), so anything
+      # that changes what gets deployed must trigger it too.
+      - ".github/workflows/deploy-frontend.yml"
+      - "docker-compose.yml"
   pull_request:
     branches: [main]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
+      - ".github/workflows/deploy-frontend.yml"
+      - "docker-compose.yml"
 
 defaults:
   run:
