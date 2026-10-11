@@ -384,6 +384,24 @@
   justify-content: center;
 }
 
+/* Fetching the whole item before the editor opens (sc-530). */
+.editButton[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .editButton[aria-busy="true"] .actionIcon {
+    animation: editPulse 0.9s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes editPulse {
+  to {
+    opacity: 0.3;
+  }
+}
+
 /* ── Delete button ────────────────────────────────────────── */
 
 .deleteButton {

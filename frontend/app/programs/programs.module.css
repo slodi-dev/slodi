@@ -178,3 +178,13 @@
   background: hsl(var(--sl-color-warning-subtle));
   color: hsl(var(--sl-color-text-primary));
 }
+
+/* The card's item could not be fetched, so the editor did not open. */
+.editLoadError {
+  margin: 0 0 var(--sl-spacing-md);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-left: 4px solid hsl(var(--sl-color-error));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-text-primary));
+}

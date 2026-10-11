@@ -13,6 +13,8 @@ interface ProgramGridProps {
   onRetry?: () => void;
   /** Called when the user selects "Edit" on a card. */
   onEdit?: (program: Program) => void;
+  /** The card whose item is being fetched for editing; its edit button waits. */
+  loadingEditId?: string | null;
   /** Called when the user selects "Delete" on a card. */
   onDelete?: (program: Program) => void;
   /** Returns true if the user can edit the given program. */
@@ -35,6 +37,7 @@ export default function ProgramGrid({
   error,
   onRetry,
   onEdit,
+  loadingEditId = null,
   onDelete,
   canEdit,
   canDelete,
@@ -152,6 +155,7 @@ export default function ProgramGrid({
               canEdit={canEdit ? canEdit(program) : false}
               canDelete={canDelete ? canDelete(program) : false}
               onEdit={onEdit ? () => onEdit(program) : undefined}
+              editLoading={loadingEditId === program.id}
               onDelete={onDelete ? () => onDelete(program) : undefined}
             />
           </li>

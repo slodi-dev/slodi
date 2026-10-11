@@ -39,6 +39,8 @@ export interface ProgramCardProps {
   canDelete?: boolean;
   /** Called when the user selects "Edit" in the menu. */
   onEdit?: () => void;
+  /** The item is being fetched for editing; the edit button shows it is busy. */
+  editLoading?: boolean;
   /** Called when the user selects "Delete" in the menu. */
   onDelete?: () => void;
   /** ISO date string for when the program was created. */
@@ -77,6 +79,7 @@ export default function ProgramCard({
   canEdit,
   canDelete,
   onEdit,
+  editLoading = false,
   onDelete,
   created_at,
   duration_min,
@@ -137,6 +140,7 @@ export default function ProgramCard({
     e.stopPropagation();
     e.preventDefault();
     setMenuOpen(false);
+    if (editLoading) return;
     onEdit?.();
   };
 
@@ -448,6 +452,8 @@ export default function ProgramCard({
             className={`${styles.actionButton} ${styles.editButton}`}
             onClick={handleEdit}
             aria-label={`Breyta ${name}`}
+            aria-busy={editLoading || undefined}
+            aria-disabled={editLoading || undefined}
           >
             <svg
               className={styles.actionIcon}

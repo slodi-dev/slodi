@@ -23,7 +23,12 @@ import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { canCreateProgram, canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import { deleteBankContent, type ContentQuery, type Program } from "@/services/programs.service";
+import {
+  deleteBankContent,
+  fetchProgramById,
+  type ContentQuery,
+  type Program,
+} from "@/services/programs.service";
 import {
   DeleteConfirmModal,
   DELETE_FAILED_MESSAGE,
@@ -133,6 +138,9 @@ function ProgramsPageInner() {
 
   // ── Edit / delete modal state ──────────────────────────────────────────
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  // The card being opened for editing, while its full item is fetched.
+  const [loadingEditId, setLoadingEditId] = useState<string | null>(null);
+  const [editLoadError, setEditLoadError] = useState<string | null>(null);
   const [pendingDeleteProgram, setPendingDeleteProgram] = useState<Program | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -156,6 +164,30 @@ function ProgramsPageInner() {
       setDeleteError(DELETE_FAILED_MESSAGE);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  /*
+   * Open the editor with the whole item, never with the card's row.
+   *
+   * The bank is listed from `ContentListOut`, a summary without
+   * `instructions` or `media`. Handing that to the form as `initial` made it
+   * start with those fields empty, and saving a new title wiped the
+   * leiðbeiningar and the attached documents (sc-530). If the item cannot be
+   * fetched the editor does not open at all: a form missing half the item is
+   * worse than no form.
+   */
+  const openEditor = async (row: Program) => {
+    if (loadingEditId) return;
+    setLoadingEditId(row.id);
+    setEditLoadError(null);
+    try {
+      setEditingProgram(await fetchProgramById(row.id, getToken, { fresh: true }));
+    } catch (err) {
+      console.error("Failed to load item for editing:", err);
+      setEditLoadError(`Ekki tókst að opna ${row.name} til breytinga. Reyndu aftur.`);
+    } finally {
+      setLoadingEditId(null);
     }
   };
 
@@ -313,13 +345,20 @@ function ProgramsPageInner() {
             {countLabel}
           </p>
 
+          {editLoadError && (
+            <p className={styles.editLoadError} role="alert">
+              {editLoadError}
+            </p>
+          )}
+
           {/* Program Grid */}
           <ProgramGrid
             programs={programs ?? []}
             isLoading={programsLoading}
             error={programsError ? "Villa kom upp við að sækja dagskrár" : undefined}
             onRetry={refetch}
-            onEdit={(p) => setEditingProgram(p)}
+            onEdit={(p) => void openEditor(p)}
+            loadingEditId={loadingEditId}
             onDelete={(p) => setPendingDeleteProgram(p)}
             canEdit={(p) => canEditProgram(user, p, role)}
             canDelete={(p) => canDeleteProgram(user, p, role)}
