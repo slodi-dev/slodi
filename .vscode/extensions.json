@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "ms-python.mypy-type-checker",
+    "vitest.explorer",
+    "ms-playwright.playwright",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-azuretools.vscode-containers"
+  ]
+}
