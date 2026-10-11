@@ -11,10 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 COPY alembic.ini ./
 
-RUN uv sync --no-dev
+# --locked: install exactly what CI tested. Without the lockfile, uv resolves
+# the newest versions allowed by pyproject.toml at build time, which put
+# SQLAlchemy 2.1 (no greenlet) in the image while uv.lock and CI had 2.0.
+RUN uv sync --locked --no-dev
 
 COPY alembic ./alembic
 COPY app ./app
@@ -24,7 +27,7 @@ COPY scripts ./scripts
 # Includes dev/test dependencies, runs pytest
 FROM base AS test
 
-RUN uv sync
+RUN uv sync --locked
 # ^ installs ALL dependencies including dev/test
 
 COPY tests ./tests
