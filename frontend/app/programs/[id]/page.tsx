@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfir
 import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
 import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
+import { HiddenChip, hiddenDimClass, isHidden } from "@/components/HiddenMark/HiddenMark";
 import { ROUTES } from "@/constants/routes";
 import { useLikes } from "@/contexts/LikesContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +20,6 @@ import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
 import { cn } from "@/lib/util";
 import { createComment, deleteComment } from "@/services/comments.service";
 import { deleteProgram, type ContentComment } from "@/services/programs.service";
-import { HiddenChip, hiddenDimClass, isHidden } from "@/components/HiddenMark/HiddenMark";
 import ItemFacts from "./components/ItemFacts";
 import ItemHero, { type HeroImage } from "./components/ItemHero";
 import ItemSections from "./components/ItemSections";
