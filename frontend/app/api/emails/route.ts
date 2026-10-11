@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/emaillist/`, {
+    const response = await fetch(`${API_BASE_URL}/emaillist`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),

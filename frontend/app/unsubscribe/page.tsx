@@ -5,15 +5,41 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styles from "./unsubscribe.module.css";
 
-type Status = "checking" | "confirm" | "loading" | "success" | "invalid" | "error";
+type Status =
+  | "checking"
+  | "confirm"
+  | "loading"
+  | "unsubscribed"
+  | "already"
+  | "resubscribed"
+  | "sample"
+  | "invalid"
+  | "error";
+
+type SubscriptionStatus = { subscribed: boolean; changed: boolean };
 
 const GENERIC_ERROR = "Ekki tókst að afskrá þig. Reyndu aftur síðar.";
+const RESUBSCRIBE_ERROR = "Ekki tókst að skrá netfangið aftur. Reyndu aftur síðar.";
+
+/**
+ * Test sends to an address that is not on the list link here with this token
+ * (backend: SAMPLE_UNSUBSCRIBE_TOKEN), so the footer can be seen working
+ * without a subscription behind it.
+ */
+const SAMPLE_TOKEN = "00000000-0000-0000-0000-000000000000";
+
+const DONE_MESSAGE: Partial<Record<Status, string>> = {
+  unsubscribed: "Netfangið þitt er ekki lengur á póstlistanum okkar.",
+  already: "Netfangið er þegar afskráð.",
+  resubscribed: "Netfangið er aftur komið á póstlistann.",
+};
 
 function UnsubscribeContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [status, setStatus] = useState<Status>(token ? "checking" : "invalid");
   const [message, setMessage] = useState("");
+  const [resubscribing, setResubscribing] = useState(false);
 
   useEffect(() => {
     // Opening the link only checks the token. Unsubscribing waits for the
@@ -23,19 +49,24 @@ function UnsubscribeContent() {
       setMessage("");
       return;
     }
+    if (token === SAMPLE_TOKEN) {
+      setStatus("sample");
+      setMessage("");
+      return;
+    }
 
     let cancelled = false;
     setStatus("checking");
     fetch(`/api/emails/unsubscribe?token=${encodeURIComponent(token)}`)
       .then(async (res) => {
         if (cancelled) return;
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
         if (res.ok) {
-          setStatus("confirm");
+          setStatus((data as SubscriptionStatus).subscribed ? "confirm" : "already");
           setMessage("");
           return;
         }
-        const data = await res.json().catch(() => ({}));
-        if (cancelled) return;
         setStatus(res.status === 400 || res.status === 404 ? "invalid" : "error");
         setMessage(data.error || GENERIC_ERROR);
       })
@@ -50,6 +81,16 @@ function UnsubscribeContent() {
     };
   }, [token]);
 
+  const post = async (action: "unsubscribe" | "resubscribe") => {
+    const response = await fetch("/api/emails/unsubscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(action === "unsubscribe" ? { token } : { token, action }),
+    });
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+  };
+
   const handleUnsubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -58,17 +99,12 @@ function UnsubscribeContent() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/emails/unsubscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-
+      const { response, data } = await post("unsubscribe");
       if (response.ok) {
-        setStatus("success");
-        setMessage("Netfangið þitt er ekki lengur á póstlistanum okkar.");
+        // Idempotent: a second click, or the mail app's own one-click button
+        // having got there first, is not an error.
+        setStatus((data as SubscriptionStatus).changed ? "unsubscribed" : "already");
       } else {
-        const data = await response.json().catch(() => ({}));
         setStatus(response.status === 404 ? "invalid" : "error");
         setMessage(data.error || GENERIC_ERROR);
       }
@@ -78,13 +114,34 @@ function UnsubscribeContent() {
     }
   };
 
+  const handleResubscribe = async () => {
+    if (!token) return;
+    setResubscribing(true);
+    setMessage("");
+
+    try {
+      const { response, data } = await post("resubscribe");
+      if (response.ok) {
+        setStatus("resubscribed");
+      } else {
+        setMessage(data.error || RESUBSCRIBE_ERROR);
+      }
+    } catch {
+      setMessage(RESUBSCRIBE_ERROR);
+    } finally {
+      setResubscribing(false);
+    }
+  };
+
+  const isDone = status === "unsubscribed" || status === "already" || status === "resubscribed";
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
         <div className={styles.card}>
           <h1 className={styles.heading}>Afskrá af póstlista</h1>
 
-          {status === "success" ? (
+          {isDone ? (
             <div className={styles.successContent}>
               <div className={styles.successIcon} aria-hidden="true">
                 <svg
@@ -102,14 +159,39 @@ function UnsubscribeContent() {
                 </svg>
               </div>
 
-              <p className={styles.successMessage}>{message}</p>
-
-              <p className={styles.description}>
-                Þú munt ekki lengur fá tölvupóst frá okkur. Ef þú skiptir um skoðun geturðu alltaf
-                skráð þig aftur á póstlistann.
+              <p className={styles.successMessage} role="status">
+                {DONE_MESSAGE[status]}
               </p>
 
+              {status === "resubscribed" ? (
+                <p className={styles.description}>
+                  Þú færð aftur tölvupóst frá okkur. Hlekkurinn neðst í hverjum pósti afskráir þig
+                  hvenær sem er.
+                </p>
+              ) : (
+                <p className={styles.description}>
+                  Þú munt ekki lengur fá tölvupóst frá okkur. Ef þetta var óvart geturðu skráð þig
+                  aftur hér.
+                </p>
+              )}
+
+              {message && (
+                <div className={styles.errorMessage} role="alert">
+                  <span>{message}</span>
+                </div>
+              )}
+
               <div className={styles.actions}>
+                {status !== "resubscribed" && (
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => void handleResubscribe()}
+                    disabled={resubscribing}
+                  >
+                    {resubscribing ? "Skrái..." : "Skrá mig aftur"}
+                  </button>
+                )}
                 <Link href="/" className={styles.primaryButton}>
                   Aftur á forsíðu
                 </Link>
@@ -119,6 +201,11 @@ function UnsubscribeContent() {
             <>
               {status === "checking" ? (
                 <div className={styles.loading}>Hleður...</div>
+              ) : status === "sample" ? (
+                <p className={styles.description}>
+                  Þetta er sýnishorn af afskráningarhlekk úr prufupósti. Netfangið er ekki á
+                  póstlistanum, svo engu var breytt.
+                </p>
               ) : status === "invalid" ? (
                 <p className={styles.description}>
                   Til að afskrá þig skaltu nota hlekkinn neðst í tölvupósti frá okkur. Hver hlekkur
