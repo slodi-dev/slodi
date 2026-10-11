@@ -14,6 +14,7 @@ import {
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import styles from "./yfirferd.module.css";
 import { cn } from "@/lib/util";
+import { publicMediaUrl } from "@/lib/private-network";
 import { formatIcelandicDate } from "@/lib/format";
 
 /** The type accent, so a Verkefni looks the same wherever a leader meets it. */
@@ -183,13 +184,13 @@ export default function ReviewDetailPane({
         </section>
       )}
 
-      {detail.image && (
+      {publicMediaUrl(detail.image) && (
         <section>
           <h3 className={styles.sectionTitle}>Mynd</h3>
           {/* Plain <img>: the pane shows one image at a time and the URL is a
               blob URL the optimiser is not configured for. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={styles.image} src={detail.image} alt="" />
+          <img className={styles.image} src={publicMediaUrl(detail.image)} alt="" />
         </section>
       )}
 

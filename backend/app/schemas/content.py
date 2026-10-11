@@ -23,6 +23,7 @@ from app.domain.content_constraints import (
     NAME_MIN,
 )
 from app.domain.enums import AgeGroup, ContentType, ReviewState
+from app.domain.private_network import check_public_media, check_public_url
 from app.repositories.content import ContentStats
 from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut
@@ -83,6 +84,18 @@ class ContentBase(BaseModel):
         if v is not None and v < 0:
             raise ValueError(f"{info.field_name} must be >= 0")
         return v
+
+    # A localhost or private-address picture makes Chrome ask every visitor
+    # for local network access. See app/domain/private_network.py.
+    @field_validator("image")
+    @classmethod
+    def validate_public_image(cls, v: str | None) -> str | None:
+        return check_public_url(v)
+
+    @field_validator("media")
+    @classmethod
+    def validate_public_media(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
+        return check_public_media(v)
 
 
 class ContentCreate(ContentBase):

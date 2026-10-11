@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ContentCreateModal.module.css";
 import { cn } from "@/lib/util";
+import { isPrivateNetworkUrl } from "@/lib/private-network";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDraft } from "@/hooks/useDraft";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
@@ -131,11 +132,19 @@ function draftFromProgram(p: Program): Draft {
  */
 function ImageUrlAdd({ onAdd }: { onAdd: (url: string) => void }) {
   const [value, setValue] = useState("");
+  const [refused, setRefused] = useState(false);
   const id = "image-url-add";
 
   function add() {
     const url = value.trim();
     if (!url) return;
+    // A link to the author's own machine or home network shows nobody else
+    // anything, and on the item page it would make Chrome ask every visitor
+    // for local network access. The API refuses it too.
+    if (isPrivateNetworkUrl(url)) {
+      setRefused(true);
+      return;
+    }
     onAdd(url);
     setValue("");
   }
@@ -151,7 +160,12 @@ function ImageUrlAdd({ onAdd }: { onAdd: (url: string) => void }) {
           className={styles.input}
           value={value}
           placeholder="https://…"
-          onChange={(e) => setValue(e.target.value)}
+          aria-invalid={refused ? true : undefined}
+          aria-describedby={refused ? `${id}-err` : undefined}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setRefused(false);
+          }}
           // Enter adds the image; it must not submit the whole form.
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -169,6 +183,12 @@ function ImageUrlAdd({ onAdd }: { onAdd: (url: string) => void }) {
           Bæta við
         </button>
       </div>
+      {refused && (
+        <p className={styles.err} id={`${id}-err`}>
+          Þessi slóð vísar á tæki á þínu eigin neti og sést ekki á vefnum. Hladdu myndinni frekar
+          upp sem skrá.
+        </p>
+      )}
     </div>
   );
 }

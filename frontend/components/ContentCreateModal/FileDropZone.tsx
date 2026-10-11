@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import styles from "./ContentCreateModal.module.css";
 import { cn } from "@/lib/util";
+import { publicMediaUrl } from "@/lib/private-network";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadFile } from "@/services/uploads.service";
 
@@ -267,7 +268,7 @@ export default function FileDropZone({
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- blob URL, not optimisable */}
-                  <img className={styles.shotImg} src={img.url} alt="" />
+                  <img className={styles.shotImg} src={publicMediaUrl(img.url)} alt="" />
                   {/*
                     Every image carries its position, not just the first. A
                     lone „Forsíðumynd" badge says which one leads but leaves

@@ -17,6 +17,7 @@ import {
   formatIcelandicDate,
 } from "@/lib/format";
 import { HiddenChip, hiddenDimClass } from "@/components/HiddenMark/HiddenMark";
+import { publicMediaUrl } from "@/lib/private-network";
 import { cn } from "@/lib/util";
 import styles from "./ProgramCard.module.css";
 
@@ -193,6 +194,9 @@ export default function ProgramCard({
   const hasMetadata = durationStr || participantsStr || priceStr || locationStr;
 
   // Icelandic writes "14. september 2026", month lowercase.
+  // See lib/private-network.ts: a private-address picture is not shown at all.
+  const heroSrc = publicMediaUrl(image);
+
   const dateFormatted = created_at ? formatIcelandicDate(created_at) : null;
   const hidden = Boolean(hidden_at);
 
@@ -205,9 +209,9 @@ export default function ProgramCard({
     >
       {/* ── Hero image ──────────────────────────────────────────── */}
       <div className={cn(styles.media, hidden && hiddenDimClass)}>
-        {image ? (
+        {heroSrc ? (
           <Image
-            src={image}
+            src={heroSrc}
             alt={name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

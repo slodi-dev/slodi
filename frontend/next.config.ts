@@ -1,7 +1,36 @@
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 
+/**
+ * Never let a page ask the visitor for local network access.
+ *
+ * Chrome 142+ prompts "wants to look for and connect to any device on your
+ * local network" the moment a public page requests anything on localhost or a
+ * private address (Local Network Access). Slóði never needs that, so the
+ * features are switched off for the document and every frame in it: with the
+ * feature disallowed, Chrome fails such a request as a network error *before*
+ * it would show the prompt (LNA spec §3.1.1, "If document is not allowed to
+ * use permissionName, then return error").
+ *
+ * - `local-network`: private addresses (10/8, 172.16/12, 192.168/16, …).
+ * - `loopback-network`: 127/8 and ::1.
+ * - `local-network-access`: the original single feature both replaced; Chrome
+ *   still accepts it as an alias, so it is denied too.
+ *
+ * Names as defined in https://wicg.github.io/local-network-access/ §2.6 and in
+ * Chromium's services/network/public/cpp/permissions_policy/permissions_policy_features.json5.
+ */
+const PERMISSIONS_POLICY = ["local-network=()", "loopback-network=()", "local-network-access=()"];
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [{ key: "Permissions-Policy", value: PERMISSIONS_POLICY.join(", ") }],
+      },
+    ];
+  },
   async redirects() {
     return [
       // Permanent redirects for the old /skatathing game hub and its sub-routes.

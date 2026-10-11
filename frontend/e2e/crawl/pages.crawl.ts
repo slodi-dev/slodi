@@ -9,6 +9,9 @@
  * - an API response with status ≥ 400, unless declared for this route and
  *   persona in expectations.ts;
  * - horizontal overflow at phone width;
+ * - a request to localhost or a private address other than this stack's own
+ *   (Chrome would ask a real visitor for local network access), or a page
+ *   served without the Permissions-Policy that denies it (next.config.ts);
  * - leftover English UI text (english.ts).
  *
  * axe runs on every page too, but is report-only for now: violations are
@@ -21,6 +24,7 @@
  */
 import AxeBuilder from "@axe-core/playwright";
 import { routeAccess } from "../../lib/route-access";
+import { isPrivateNetworkHost } from "../../lib/private-network";
 import { signIn, test as base, expect } from "../support/journey";
 import { PERSONAS } from "../support/fixtures";
 import { crawlTargets } from "./routes";
@@ -129,9 +133,32 @@ for (const { route, path } of crawlTargets()) {
           }
         });
 
+        // The stack itself runs on localhost, so its own two origins are the
+        // only private hosts a page may talk to. Anything else is what makes
+        // Chrome prompt a real visitor on slodi.is.
+        const ownOrigins = new Set([new URL(baseURL!).origin, API_ORIGIN]);
+        page.on("request", (req) => {
+          let url: URL;
+          try {
+            url = new URL(req.url());
+          } catch {
+            return;
+          }
+          if (ownOrigins.has(url.origin) || !isPrivateNetworkHost(url.hostname)) return;
+          findings.push(`[local-network] ${req.resourceType()} ${url.origin}${url.pathname}`);
+        });
+
         // ── Visit ─────────────────────────────────────────────────────────────
-        await page.goto(path);
+        const doc = await page.goto(path);
         await settle(page);
+        const policy = (await doc?.allHeaders())?.["permissions-policy"] ?? "";
+        if (doc && new URL(doc.url()).origin === new URL(baseURL!).origin) {
+          for (const feature of ["local-network=()", "loopback-network=()"]) {
+            if (!policy.split(",").some((f) => f.trim() === feature)) {
+              findings.push(`[headers] Permissions-Policy lacks ${feature} (got "${policy}")`);
+            }
+          }
+        }
         // The page's own status is judged by the response listener above.
 
         // A public page that needs an account for what it shows sends the
