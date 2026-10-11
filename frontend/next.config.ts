@@ -4,20 +4,9 @@ import { PHASE_PRODUCTION_BUILD } from "next/constants";
 const nextConfig: NextConfig = {
   async redirects() {
     return [
-      // Permanent redirects for the old /skatathing game hub and its sub-routes.
-      // These exist so that any bookmarked or shared links continue to work after
-      // the hub moved to /leikir.
+      // The old /skatathing game hub moved to /leikir; keep bookmarks working.
+      // Its Heiðursorðla sub-routes are gone with the game (hidden, a 404).
       { source: "/skatathing", destination: "/leikir", permanent: true },
-      {
-        source: "/skatathing/heidursordla",
-        destination: "/leikir/heidursordla",
-        permanent: true,
-      },
-      {
-        source: "/skatathing/heidursordla/:puzzleId",
-        destination: "/leikir/heidursordla/:puzzleId",
-        permanent: true,
-      },
     ];
   },
   images: {
