@@ -43,6 +43,7 @@ const test = base.extend<{ theme: Theme }>({
  */
 export const ENFORCED_AXE_RULES = new Set([
   "aria-hidden-focus",
+  "color-contrast",
   "definition-list",
   "dlitem",
   "label",
