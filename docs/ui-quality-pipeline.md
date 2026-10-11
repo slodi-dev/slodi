@@ -34,7 +34,8 @@ real Chromium (Vitest browser mode, Playwright provider). A story fails on:
 - any `console.error`. React reports caught errors, key warnings and invalid
   nesting this way, and none of them throw. A story that shows an error state on
   purpose lists exactly what it expects: `parameters.allowedConsoleErrors`;
-- an axe violation, once its group is set to `a11y: { test: "error" }`.
+- an axe violation (WCAG A/AA). A story with a known violation opts out with
+  `a11y: { test: "todo" }` and a comment naming the rule.
 
 **Four forms.** Every story runs four times: light and dark, at phone (390px)
 and desktop (1280px) width. `vitest.config.ts` defines one Vitest project per
@@ -43,9 +44,9 @@ form (`storybook-light-phone` … `storybook-dark-desktop`). Each passes differe
 `ThemeProvider` the same way as the toolbar, and `viewport` names one of the two
 viewports in `preview.tsx`. The plugin sets the browser size from it.
 
-**a11y.** It stays `todo` globally and is flipped to `error` one component group
-at a time, starting with the design-system primitives. Fix the group, flip it,
-and from then on CI keeps it clean.
+**a11y.** `error` globally since step 4's first pass (see below): every story
+is clean in all four forms except three Heiðursorðla story files, which are
+`todo` with the remaining rule named.
 
 **Every component has stories.** `scripts/check-stories.mjs` fails when a
 `.tsx` under `components/` or `app/` is not imported by any story. Route files
@@ -110,7 +111,7 @@ the bank, one program page, `/leikir`). It runs in the deploy workflow next to
 | 1 | `check-tokens` in CI; stories as tests in 4 forms; every component has stories; a11y `error` for clean primitives | ½ day | sc-582 | Done, see below |
 | 2 | Route crawler + 2 journeys | 1–2 days | sc-583 | Backlog |
 | 3 | Visual regression | 1 day | sc-584 | Backlog |
-| 4 | a11y `error` group by group; post-deploy smoke | ongoing | sc-585 | Backlog |
+| 4 | a11y `error` group by group; post-deploy smoke | ongoing | sc-585 | a11y done but Heiðursorðla, see below; smoke to do |
 
 ### Step 1, as built
 
@@ -136,9 +137,27 @@ the bank, one program page, `/leikir`). It runs in the deploy workflow next to
   list/ARIA structure in TagPicker and ContentCreateModal. That is step 4's
   backlog.
 
+### Step 4, a11y pass
+
+- **Contrast (sc-586).** Decided: darker tokens, same hues. `green-500` 42% →
+  32% (white on it 3.27 → 5.29:1), `error-500` 58% → 44% (3.84 → 5.8:1),
+  `info-500` 45% → 30% (2.76 → 5.63:1); the dark theme keeps the lighter red
+  and teal as `error-400`/`info-400` and lifts `secondary` to `forest-300`.
+  The legacy tokens Button still reads (`globals.css`) follow. A handful of
+  components that hard-coded white or a grey on a token now use the token.
+- **Structure.** `<dl>` grouping in ItemFacts, listbox/option structure in
+  TagPicker, labels (file input, palette samples), focusable scroll regions
+  (admin tables, game leaderboard), no `aria-label` on plain divs, underlined
+  in-text links.
+- **Drawers.** The header drawer is `inert` when closed and a modal dialog
+  when open; the dashboard drawer is `visibility: hidden` when closed on a
+  phone. `hooks/useDrawerFocus.ts` moves focus in, traps Tab, closes on Escape
+  and returns focus. Both have a `MobileDrawerKeyboard` story.
+- **Ratchet.** Stories: `error` globally (survey: 400 failing tests → 0
+  outside Heiðursorðla). Crawler: rules in `ENFORCED_AXE_RULES`
+  (`e2e/crawl/pages.crawl.ts`) fail the crawl; the rest stay report-only.
+
 ## Open questions
 
-- Button contrast (sc-586): darken the button green, or use bold/larger text?
-  Either way it changes the brand look, so design should decide.
 - Visual baselines: commit PNGs to the repo (simple), or keep them in Git LFS?
   1,500 PNGs is roughly 50–100 MB per full refresh.
