@@ -1,0 +1,71 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Design system/Introduction" />
+
+# Slóði design system
+
+Slóði is a scout programme planning platform for Icelandic scout leaders. Its design
+system is nature-inspired — moss and forest greens on warm neutrals — and is built so
+that a leader can tell a **Dagskrá**, a **Viðburður** and a **Verkefni** apart at a
+glance, in bright sun, on a phone, in either theme.
+
+It is plain CSS: no Tailwind and no component library. Three layers do all the work.
+
+## Where things live
+
+| What            | Where                                                                          | Notes                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Tokens          | `frontend/app/slodi-tokens.css`                                                | Every colour, space, radius, type size, shadow and z-index. The **Tokens** page here is generated from this file. |
+| Utilities       | `frontend/app/slodi-utilities.css`                                             | `sl-*` helper classes (`sl-bg-background`, `sl-text-primary`, `sl-sr-only`…).                                     |
+| Legacy base     | `frontend/app/globals.css`                                                     | Reset plus the old shadcn token set (`--background`, `--primary`…). Being retired; do not use in new code.        |
+| Primitives      | `frontend/components/Button`, `Modal`, `Alert`, `TypeBadge`, `components/ui/*` | The building blocks — see **Design system / Primitives**.                                                         |
+| Components      | `frontend/components/**`, `frontend/app/**/components/**`                      | Feature components, each with a `Component.module.css` beside it. See **Components**.                             |
+| Theme switching | `frontend/components/ThemeProvider`                                            | Sets `class="dark"` or `data-theme="…"` on `<html>`, and overrides `--sl-color-primary` for a patrol colour.      |
+| Token checker   | `frontend/scripts/check-tokens.mjs`                                            | Finds undefined tokens, unwrapped colour tokens and legacy tokens. Run it on what you touch.                      |
+
+## Three tiers of tokens
+
+1. **Primitives** — raw values: `--sl-primitive-green-500`, `--sl-primitive-space-4`.
+   Never used directly in components.
+2. **Semantic** — meaning: `--sl-color-primary`, `--sl-color-text-secondary`,
+   `--sl-spacing-gap-md`, `--sl-radius-card`. **This is what components use.**
+3. **Component** — one component's knobs: `--sl-button-background-primary`,
+   `--sl-input-border-focus`.
+
+Dark mode and the named themes only override the semantic tier; component tokens follow.
+
+## Rules that bite
+
+- **Colour tokens are bare HSL triplets.** `--sl-color-primary: 142 50% 42%`. Always wrap:
+  `color: hsl(var(--sl-color-text-primary))`. Unwrapped, the declaration is silently dropped.
+- **A token that does not exist drops the whole declaration.** `--sl-spacing-2` looks
+  plausible and does not exist. Check the Tokens page.
+- **Both themes, both selectors.** A dark override must match `:root.dark, [data-theme="dark"]`,
+  because the in-app toggle sets the class, not the attribute.
+- **`--sl-*` only.** The legacy `--primary`/`--foreground` set still exists in
+  `globals.css` and `components/Button` (sc-553), but the two sets disagree on shades.
+- Touch targets ≥ 48px; `100dvh`, never `vh`; every transition needs a
+  `prefers-reduced-motion` branch.
+
+## Using this Storybook
+
+- **Þema** (toolbar) switches light, dark, forest-night, campfire and northern-lights.
+  It goes through the real `ThemeProvider`, so stories render exactly as in the app.
+- **Sveit** (toolbar) applies a patrol colour as the primary accent, as the settings page does.
+- The **Accessibility** panel runs axe on every story.
+- Nothing talks to a backend. `useAuth()` is mocked (switch user with `parameters.auth`),
+  and `fetch` is answered from fixtures in `stories/fixtures.ts`
+  (override per story with `parameters.mockApi`). See `.storybook/mocks/fetch.ts`.
+- Stories sit next to their component as `Component.stories.tsx`.
+
+## Known problems shown on purpose
+
+The design-token audit found real bugs that are tracked in Shortcut and **not** fixed on
+this branch. Stories that show one say so in their docs, naming the story id. The main two:
+
+- **sc-549 — invisible focus rings.** `--sl-color-focus-ring` is `142 50% 42% / 0.3`, so
+  `--sl-shadow-focus` resolves to `0 0 0 3px 142 50% 42% / 0.3` — not a colour, so the
+  whole `box-shadow` is dropped and keyboard focus has no visible ring. The Tokens page
+  flags it under Shadows.
+- **sc-553 — legacy tokens in Button.** `components/Button` reads `--primary`,
+  `--foreground`, `--error`… so it ignores patrol colours and named themes.

@@ -1,0 +1,94 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import {
+  TokenSummary,
+  ColorTable,
+  PrimitiveRamps,
+  ThemeMatrix,
+  PatrolColors,
+  SpacingTokens,
+  RadiusTokens,
+  TypographyTokens,
+  ShadowTokens,
+  ZIndexTokens,
+  OtherTokens,
+} from "./tokens/TokenDocs";
+
+<Meta title="Design system/Tokens" />
+
+# Tokens
+
+Generated from `app/slodi-tokens.css` every time Storybook builds — there is no
+hand-copied value on this page. Each value is resolved through its `var()` chain the way
+the browser's cascade does it on `<html>`: **Light** is the `:root` blocks, **Dark** adds the
+`:root.dark, [data-theme="dark"]` blocks that the in-app toggle triggers. `@media
+(prefers-color-scheme)` blocks are skipped, because they follow the OS rather than the
+toggle.
+
+A red ⚠ marks a token that points at an undeclared name or resolves to an invalid value.
+
+<TokenSummary />
+
+## Semantic colours
+
+What components use. Remember to wrap them: `hsl(var(--sl-color-…))`.
+
+<ColorTable group="semantic-color" />
+
+## Named themes
+
+Semantic colours that forest-night, campfire or northern-lights override, across all five themes.
+
+<ThemeMatrix />
+
+## Patrol colours
+
+The six sveit colours. Picking one in **Sveit** on the toolbar (or in Stillingar in the app)
+overrides `--sl-color-primary` with it.
+
+<PatrolColors />
+
+<ColorTable group="patrol" />
+
+## Primitive palette
+
+Raw ramps. Components should not reference these directly.
+
+<PrimitiveRamps />
+
+## Component colour tokens
+
+<ColorTable group="component-color" />
+
+## Spacing
+
+Use `--sl-spacing-gap-*` between siblings, `--sl-spacing-inset-*` inside a box and
+`--sl-spacing-stack-*` for vertical rhythm.
+
+<SpacingTokens />
+
+## Radius
+
+<RadiusTokens />
+
+## Typography
+
+<TypographyTokens />
+
+## Shadows
+
+Shown on each theme's own background and surface.
+
+<ShadowTokens />
+
+## Z-index
+
+A `z-index` inside an element that already has one is compared only with its siblings —
+see the slodi-tokens skill for the scrim-inside-a-fixed-anchor bug this caused.
+
+<ZIndexTokens />
+
+## Everything else
+
+Motion, sizes, layout and any token not covered above.
+
+<OtherTokens />
