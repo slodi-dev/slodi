@@ -31,7 +31,7 @@ export function DeleteConfirmModal({
   onConfirm,
 }: Props) {
   return (
-    <Modal open={open} onClose={isDeleting ? () => {} : onClose} title="Eyða dagskrá">
+    <Modal open={open} onClose={isDeleting ? () => {} : onClose} title="Eyða">
       <div className={styles.body}>
         <p className={styles.warning}>
           Ertu viss um að þú viljir eyða{" "}
@@ -40,7 +40,7 @@ export function DeleteConfirmModal({
               <strong>&bdquo;{programName}&rdquo;</strong>?
             </>
           ) : (
-            "þessa dagskrá?"
+            "þessu?"
           )}{" "}
           Þetta er óafturkræft.
         </p>
@@ -66,7 +66,7 @@ export function DeleteConfirmModal({
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? "Eyði…" : "Eyða dagskrá"}
+            {isDeleting ? "Eyði…" : "Eyða"}
           </button>
         </div>
       </div>
