@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_workspace_access, get_current_user, require_permission
 from app.core.db import get_session
 from app.core.email import (
-    one_click_unsubscribe_url,
+    SAMPLE_UNSUBSCRIBE_TOKEN,
     send_batch_background,
     send_email_background,
     unsubscribe_page_url,
@@ -38,6 +38,7 @@ from app.schemas.email import (
     WorkspaceInviteRequest,
 )
 from app.schemas.user import UserOut
+from app.services.email_delivery import build_test_message, draft_messages, subscriber_message
 from app.services.email_list import EmailListService
 from app.services.workspaces import WorkspaceService
 from app.settings import settings
@@ -112,19 +113,13 @@ async def broadcast_to_email_list(
         )
 
     if subscribers:
-        messages: list[tuple[str, str, str, str | None]] = []
-        for entry in subscribers:
-            messages.append(
-                (
-                    entry.email,
-                    body.subject,
-                    body.html.replace(
-                        "{unsubscribe_url}", unsubscribe_page_url(entry.unsubscribe_token)
-                    ),
-                    one_click_unsubscribe_url(entry.unsubscribe_token),
-                )
-            )
-        send_batch_background(background_tasks, messages)
+        send_batch_background(
+            background_tasks,
+            [
+                subscriber_message(entry.email, body.subject, body.html, entry.unsubscribe_token)
+                for entry in subscribers
+            ],
+        )
 
     return BroadcastOut(recipients_count=len(subscribers))
 
@@ -256,10 +251,7 @@ async def preview_template(
             detail="Template rendering failed",
         ) from None
 
-    html = html.replace(
-        "{unsubscribe_url}",
-        "https://slodi.is/unsubscribe?token=preview",
-    )
+    html = html.replace("{unsubscribe_url}", unsubscribe_page_url(SAMPLE_UNSUBSCRIBE_TOKEN))
     return Response(content=html, media_type="text/html")
 
 
@@ -396,26 +388,6 @@ async def delete_draft(
     await session.commit()
 
 
-def _build_render_context(draft: EmailDraft) -> dict[str, Any]:
-    """Build the Jinja2 context dict from a draft.
-
-    - ``newsletter`` stores blocks as a list of block dicts → passed as {"blocks": [...]}.
-    - Other templates (welcome, new_feature, workspace_invite) store their
-      variables as a flat dict → merged directly into context.
-    """
-    context: dict[str, Any] = {
-        "subject": draft.subject,
-        "preheader": draft.preheader,
-    }
-    if isinstance(draft.blocks, dict):
-        # Flat key/value context for non-newsletter templates
-        context.update(draft.blocks)
-    else:
-        # Block list for newsletter template
-        context["blocks"] = draft.blocks
-    return context
-
-
 @router.post("/drafts/{draft_id}/send", response_model=DraftOut)
 async def send_draft(
     draft_id: UUID,
@@ -437,22 +409,7 @@ async def send_draft(
     draft.status = "processing"
     await session.commit()
 
-    html = render(draft.template, _build_render_context(draft))
-
-    messages: list[tuple[str, str, str, str | None]] = []
-
-    if draft.manual_recipients:
-        for recipient in draft.manual_recipients:
-            recipient_html = html.replace("{unsubscribe_url}", "https://slodi.is/unsubscribe")
-            messages.append((recipient, draft.subject, recipient_html, None))
-    else:
-        subscribers = await EmailListService(session).list()
-        for subscriber in subscribers:
-            token = subscriber.unsubscribe_token
-            subscriber_html = html.replace("{unsubscribe_url}", unsubscribe_page_url(token))
-            messages.append(
-                (subscriber.email, draft.subject, subscriber_html, one_click_unsubscribe_url(token))
-            )
+    messages = await draft_messages(session, draft)
 
     if messages:
         send_batch_background(background_tasks, messages)
@@ -476,12 +433,7 @@ async def test_send_draft(
     if draft is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
 
-    html = render(draft.template, _build_render_context(draft))
-    html = html.replace("{unsubscribe_url}", "https://slodi.is/unsubscribe?token=test")
-
-    send_email_background(
-        background_tasks,
-        recipients=[current_user.email],
-        subject=f"[TEST] {draft.subject}",
-        html=html,
+    # Same path as a real send, so the test shows the real footer and headers.
+    send_batch_background(
+        background_tasks, [await build_test_message(session, draft, current_user.email)]
     )

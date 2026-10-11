@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.core.db import get_session
 from app.core.email import _send_batch, one_click_unsubscribe_url, unsubscribe_page_url
 from app.main import create_app
-from app.schemas.email_list import EmailListOut
+from app.schemas.email_list import EmailListOut, SubscriptionStatusOut
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -85,53 +85,59 @@ def anon_client(mock_db_session):
     return TestClient(app)
 
 
+SVC = "app.services.email_list.EmailListService"
+
+
 def test_get_unsubscribe_token_only_checks_it(anon_client):
     """GET must not unsubscribe: link scanners and previewers fetch email links."""
     token = uuid4()
 
     with (
-        patch(
-            "app.services.email_list.EmailListService.check_unsubscribe_token",
-            new_callable=AsyncMock,
-        ) as mock_check,
-        patch(
-            "app.services.email_list.EmailListService.unsubscribe_by_token",
-            new_callable=AsyncMock,
-        ) as mock_unsub,
+        patch(f"{SVC}.subscription_status", new_callable=AsyncMock) as mock_check,
+        patch(f"{SVC}.unsubscribe_by_token", new_callable=AsyncMock) as mock_unsub,
     ):
+        mock_check.return_value = SubscriptionStatusOut(subscribed=True, changed=False)
         response = anon_client.get(f"/emaillist/unsubscribe/{token}")
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"subscribed": True, "changed": False}
     mock_check.assert_called_once_with(token)
     mock_unsub.assert_not_called()
 
 
+def test_get_unsubscribe_reports_an_address_that_already_left(anon_client):
+    with patch(f"{SVC}.subscription_status", new_callable=AsyncMock) as mock_check:
+        mock_check.return_value = SubscriptionStatusOut(subscribed=False, changed=False)
+        response = anon_client.get(f"/emaillist/unsubscribe/{uuid4()}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["subscribed"] is False
+
+
 def test_get_unsubscribe_invalid_token_returns_404(anon_client):
-    with patch(
-        "app.services.email_list.EmailListService.check_unsubscribe_token",
-        new_callable=AsyncMock,
-    ) as mock_check:
+    with patch(f"{SVC}.subscription_status", new_callable=AsyncMock) as mock_check:
         mock_check.side_effect = HTTPException(status_code=404, detail="Token not found")
 
         response = anon_client.get(f"/emaillist/unsubscribe/{uuid4()}")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_one_click_post_unsubscribes_without_auth(anon_client):
-    """RFC 8058: the provider POSTs List-Unsubscribe=One-Click, no credentials."""
+@pytest.mark.parametrize("changed", [True, False])
+def test_one_click_post_returns_200_whether_or_not_already_unsubscribed(anon_client, changed):
+    """RFC 8058: the provider POSTs List-Unsubscribe=One-Click, no credentials.
+    A retry, or a second click, is not an error."""
     token = uuid4()
 
-    with patch(
-        "app.services.email_list.EmailListService.unsubscribe_by_token",
-        new_callable=AsyncMock,
-    ) as mock_unsub:
+    with patch(f"{SVC}.unsubscribe_by_token", new_callable=AsyncMock) as mock_unsub:
+        mock_unsub.return_value = SubscriptionStatusOut(subscribed=False, changed=changed)
         response = anon_client.post(
             f"/emaillist/unsubscribe/{token}",
             content="List-Unsubscribe=One-Click",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"subscribed": False, "changed": changed}
     mock_unsub.assert_called_once_with(token)
 
 
@@ -139,25 +145,36 @@ def test_post_unsubscribe_without_body(anon_client):
     """The unsubscribe page's confirm button posts with no body."""
     token = uuid4()
 
-    with patch(
-        "app.services.email_list.EmailListService.unsubscribe_by_token",
-        new_callable=AsyncMock,
-    ) as mock_unsub:
+    with patch(f"{SVC}.unsubscribe_by_token", new_callable=AsyncMock) as mock_unsub:
+        mock_unsub.return_value = SubscriptionStatusOut(subscribed=False, changed=True)
         response = anon_client.post(f"/emaillist/unsubscribe/{token}")
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_200_OK
     mock_unsub.assert_called_once_with(token)
 
 
 def test_post_unsubscribe_invalid_token_returns_404(anon_client):
-    with patch(
-        "app.services.email_list.EmailListService.unsubscribe_by_token",
-        new_callable=AsyncMock,
-    ) as mock_unsub:
+    with patch(f"{SVC}.unsubscribe_by_token", new_callable=AsyncMock) as mock_unsub:
         mock_unsub.side_effect = HTTPException(status_code=404, detail="Token not found")
 
         response = anon_client.post(f"/emaillist/unsubscribe/{uuid4()}")
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_resubscribe_is_a_public_post(anon_client):
+    token = uuid4()
+    with patch(f"{SVC}.resubscribe_by_token", new_callable=AsyncMock) as mock_resub:
+        mock_resub.return_value = SubscriptionStatusOut(subscribed=True, changed=True)
+        response = anon_client.post(f"/emaillist/resubscribe/{token}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"subscribed": True, "changed": True}
+    mock_resub.assert_called_once_with(token)
+
+
+def test_resubscribe_cannot_be_triggered_by_a_get(anon_client):
+    """A prefetched link must never change a subscription, in either direction."""
+    assert anon_client.get(f"/emaillist/resubscribe/{uuid4()}").status_code == 405
 
 
 def test_post_unsubscribe_malformed_token_rejected(anon_client):

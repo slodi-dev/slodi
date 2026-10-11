@@ -13,6 +13,14 @@ logger = logging.getLogger(__name__)
 _BATCH_SIZE = 100
 
 
+#: Stands in for a real token where a link has to be shown but there is no
+#: subscription behind it: template previews and test sends to an address that
+#: is not on the list. The unsubscribe page recognises it and says it is a
+#: sample instead of calling the backend. It never goes into a
+#: List-Unsubscribe header.
+SAMPLE_UNSUBSCRIBE_TOKEN = UUID(int=0)
+
+
 def unsubscribe_page_url(token: UUID | str) -> str:
     """Link for the email body: a page where the reader confirms unsubscribing."""
     return f"{settings.public_site_url.rstrip('/')}/unsubscribe?token={token}"
