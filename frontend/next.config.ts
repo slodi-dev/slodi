@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 
 const nextConfig: NextConfig = {
   async redirects() {
@@ -39,4 +40,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// NEXT_PUBLIC_API_URL is baked into the client bundle by `next build`. If it
+// is missing the browser has no API to talk to, and older code silently fell
+// back to http://localhost:8000 — which on a public site makes Chrome prompt
+// visitors for local-network access. Fail the build instead.
+export default function config(phase: string): NextConfig {
+  // `storybook build` loads this config with the same phase but never talks to
+  // the API, so it is exempt (Storybook sets STORYBOOK=true).
+  const isStorybook = process.env.STORYBOOK === "true";
+  if (phase === PHASE_PRODUCTION_BUILD && !isStorybook && !process.env.NEXT_PUBLIC_API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL must be set for `next build` (it is inlined into the client bundle). " +
+        "Production: https://api.slodi.is. Local builds: http://localhost:8000."
+    );
+  }
+  return nextConfig;
+}
