@@ -15,7 +15,14 @@ const eslintConfig = [
     // `.next*` covers .next and any alternate distDir a `next build --distDir`
     // leaves behind. All of it is generated, and its route types use @ts-ignore,
     // which the ban-ts-comment rule would otherwise fail the whole run on.
-    ignores: ["node_modules/**", ".next*/**", "out/**", "build/**", "next-env.d.ts"],
+    ignores: [
+      "node_modules/**",
+      ".next*/**",
+      "out/**",
+      "build/**",
+      "storybook-static/**",
+      "next-env.d.ts",
+    ],
   },
 ];
 

@@ -47,3 +47,6 @@ next-env.d.ts
 yarn.lock
 # pnpm lock file
 pnpm-lock.yaml
+# storybook
+/storybook-static/
+*storybook.log
