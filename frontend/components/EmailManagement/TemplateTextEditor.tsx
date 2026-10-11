@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Button from "@/components/Button/Button";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getTemplateText,
@@ -110,7 +111,27 @@ export default function TemplateTextEditor() {
     return <p className={styles.loading}>Hleður texta...</p>;
   }
 
-  if (!config) return null;
+  if (!config) {
+    // Without this, a failed load rendered nothing at all and the error was lost.
+    if (!error) return null;
+    return (
+      <div className={styles.editor}>
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            setError(null);
+            fetchConfig();
+          }}
+        >
+          Reyna aftur
+        </Button>
+      </div>
+    );
+  }
 
   const sections = Object.keys(FIELD_LABELS);
 
