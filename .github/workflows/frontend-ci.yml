@@ -10,13 +10,10 @@ on:
       # that changes what gets deployed must trigger it too.
       - ".github/workflows/deploy-frontend.yml"
       - "docker-compose.yml"
+  # No path filter on pull requests: these jobs are required checks on main,
+  # and a required check whose workflow never starts blocks the PR forever.
   pull_request:
     branches: [main]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-ci.yml"
-      - ".github/workflows/deploy-frontend.yml"
-      - "docker-compose.yml"
 
 defaults:
   run:
