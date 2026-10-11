@@ -28,6 +28,18 @@ export const PERSONAS = {
     name: "Rýnir Prófari",
     email: "reviewer@e2e.example.com",
   },
+  /** Platform member and an editor of the bank; owns the "Sveitin Prófun" workspace. */
+  editor: {
+    sub: "e2e|editor",
+    name: "Edda Prófari",
+    email: "editor@e2e.example.com",
+  },
+  /** Platform admin. */
+  admin: {
+    sub: "e2e|admin",
+    name: "Ari Prófari",
+    email: "admin@e2e.example.com",
+  },
 } satisfies Record<string, Persona>;
 
 export const BANK_WORKSPACE_ID = "00000000-0000-4000-8000-0000000000b0";
@@ -51,4 +63,15 @@ export const LIKEABLE_TASK = {
 export const UNREVIEWED_TASK = {
   id: "00000000-0000-4000-8000-0000000000a3",
   name: "Óyfirfarin hugmynd",
+} as const;
+
+/** Rows the route crawler (e2e/crawl/) opens `/programs/[id]` and friends with. */
+export const CRAWL = {
+  programId: "00000000-0000-4000-8000-0000000000a4",
+  eventId: "00000000-0000-4000-8000-0000000000a5",
+  /** Hidden by a moderator; authored by the community member. */
+  hiddenTaskId: "00000000-0000-4000-8000-0000000000a6",
+  editorWorkspaceId: "00000000-0000-4000-8000-0000000000b1",
+  /** Heiðursorðla round 1, whose migration-made id the seed pins. */
+  puzzleId: "00000000-0000-4000-8000-0000000000c1",
 } as const;

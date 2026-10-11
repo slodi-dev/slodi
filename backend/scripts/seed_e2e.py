@@ -25,6 +25,8 @@ import logging
 import sys
 from uuid import UUID
 
+from sqlalchemy import update
+
 from app.core.db import get_session_maker
 from app.domain.enums import (
     EventInterval,
@@ -33,6 +35,11 @@ from app.domain.enums import (
     Weekday,
     WorkspaceRole,
 )
+from app.models.content import Content
+from app.models.event import Event
+from app.models.heidursordla import HeidursordlaPuzzle
+from app.models.like import UserLikedContent
+from app.models.program import Program
 from app.models.task import Task
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMembership
@@ -49,6 +56,9 @@ SYSTEM_USER_ID = UUID("00000000-0000-4000-8000-000000000001")
 OWNER_ID = UUID("00000000-0000-4000-8000-000000000002")
 MEMBER_ID = UUID("00000000-0000-4000-8000-000000000003")
 REVIEWER_ID = UUID("00000000-0000-4000-8000-000000000004")
+# Route crawler personas (frontend/e2e/crawl/): a bank editor and a platform admin.
+EDITOR_ID = UUID("00000000-0000-4000-8000-000000000005")
+ADMIN_ID = UUID("00000000-0000-4000-8000-000000000006")
 
 # Journey: program-owner-edits-from-bank
 OWNER_TASK_ID = UUID("00000000-0000-4000-8000-0000000000a1")
@@ -56,6 +66,16 @@ OWNER_TASK_ID = UUID("00000000-0000-4000-8000-0000000000a1")
 LIKEABLE_TASK_ID = UUID("00000000-0000-4000-8000-0000000000a2")
 # Journey: reviewer-sweeps-yfirferd
 UNREVIEWED_TASK_ID = UUID("00000000-0000-4000-8000-0000000000a3")
+
+# Route crawler (frontend/e2e/crawl/): one item of each other type, liked and
+# with instructions, so `/programs/[id]` renders every kind of item page; a
+# hidden item, which only moderators and the author may open; the editor's own
+# workspace; and a fixed id for Heiðursorðla round 1 (`/leikir/heidursordla/[puzzleId]`).
+CRAWL_PROGRAM_ID = UUID("00000000-0000-4000-8000-0000000000a4")
+CRAWL_EVENT_ID = UUID("00000000-0000-4000-8000-0000000000a5")
+HIDDEN_TASK_ID = UUID("00000000-0000-4000-8000-0000000000a6")
+EDITOR_WORKSPACE_ID = UUID("00000000-0000-4000-8000-0000000000b1")
+PUZZLE_ID = UUID("00000000-0000-4000-8000-0000000000c1")
 
 CREATED_AT = dt.datetime(2026, 1, 15, 12, 0, tzinfo=dt.timezone.utc)
 
@@ -93,6 +113,22 @@ USERS: list[tuple[UUID, str, str, str, Permissions, WorkspaceRole]] = [
         Permissions.moderator,
         WorkspaceRole.viewer,
     ),
+    (
+        EDITOR_ID,
+        "e2e|editor",
+        "Edda Prófari",
+        "editor@e2e.example.com",
+        Permissions.member,
+        WorkspaceRole.editor,
+    ),
+    (
+        ADMIN_ID,
+        "e2e|admin",
+        "Ari Prófari",
+        "admin@e2e.example.com",
+        Permissions.admin,
+        WorkspaceRole.viewer,
+    ),
 ]
 
 OWNER_TASK_INSTRUCTIONS = (
@@ -108,8 +144,10 @@ def _task(
     *,
     instructions: str | None = None,
     media: dict | None = None,
-) -> Task:
-    return Task(
+    hidden_at: dt.datetime | None = None,
+    kind: type[Content] = Task,
+) -> Content:
+    return kind(
         id=id,
         name=name,
         description=f"{name} — prófunargögn fyrir ferlaprófanir.",
@@ -126,7 +164,7 @@ def _task(
         review_note=None,
         reviewed_by_id=None,
         reviewed_at=None,
-        hidden_at=None,
+        hidden_at=hidden_at,
         deleted_at=None,
         author_id=author_id,
         workspace_id=BANK_WORKSPACE_ID,
@@ -188,6 +226,78 @@ async def main() -> None:
         await session.merge(_task(LIKEABLE_TASK_ID, "Hnútakeppni", OWNER_ID, ReviewState.approved))
         await session.merge(
             _task(UNREVIEWED_TASK_ID, "Óyfirfarin hugmynd", MEMBER_ID, ReviewState.unreviewed)
+        )
+
+        # Route crawler fixtures.
+        await session.merge(
+            Workspace(
+                id=EDITOR_WORKSPACE_ID,
+                name="Sveitin Prófun",
+                default_meeting_weekday=Weekday.wednesday,
+                default_start_time=dt.time(19, 30),
+                default_end_time=dt.time(21, 0),
+                default_interval=EventInterval.weekly,
+                season_start=dt.date(2026, 9, 7),
+            )
+        )
+        await session.flush()
+        await session.merge(
+            WorkspaceMembership(
+                workspace_id=EDITOR_WORKSPACE_ID, user_id=EDITOR_ID, role=WorkspaceRole.owner
+            )
+        )
+        documents = {
+            "images": [],
+            "documents": [
+                {
+                    "name": "Gátlisti.pdf",
+                    "url": "uploads/documents/00000000-0000-4000-8000-0000000000d3/"
+                    "00000000-0000-4000-8000-0000000000d4",
+                    "content_type": "application/pdf",
+                }
+            ],
+        }
+        await session.merge(
+            _task(
+                CRAWL_PROGRAM_ID,
+                "Haustdagskrá fálkaskáta",
+                EDITOR_ID,
+                ReviewState.approved,
+                instructions="Hittumst við skátaheimilið.\nFarið yfir dagskrá vetrarins.",
+                media=documents,
+                kind=Program,
+            )
+        )
+        await session.merge(
+            _task(
+                CRAWL_EVENT_ID,
+                "Næturganga á Esjuna",
+                EDITOR_ID,
+                ReviewState.approved,
+                instructions="Mæting klukkan átta.\nTakið með höfuðljós.",
+                media=documents,
+                kind=Event,
+            )
+        )
+        await session.merge(
+            _task(
+                HIDDEN_TASK_ID,
+                "Falin hugmynd",
+                MEMBER_ID,
+                ReviewState.approved,
+                hidden_at=CREATED_AT,
+            )
+        )
+        await session.flush()
+        for content_id in (OWNER_TASK_ID, CRAWL_PROGRAM_ID, CRAWL_EVENT_ID):
+            await session.merge(UserLikedContent(user_id=REVIEWER_ID, content_id=content_id))
+        # The rounds themselves come from a migration, with random ids. Pin
+        # round 1's id so the crawler can open it; a fresh database has no
+        # attempts that would reference the old one.
+        await session.execute(
+            update(HeidursordlaPuzzle)
+            .where(HeidursordlaPuzzle.puzzle_number == 1)
+            .values(id=PUZZLE_ID)
         )
 
     log.info("E2E fixtures in place (bank workspace %s)", BANK_WORKSPACE_ID)
