@@ -5,10 +5,14 @@ import React, { useCallback, useMemo, useState } from "react";
 import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
 import DocumentViewer, { type ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
 import ContentCreateModal from "@/components/ContentCreateModal/ContentCreateModal";
-import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
+import {
+  DeleteConfirmModal,
+  DELETE_FAILED_MESSAGE,
+} from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
 import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
+import { HiddenChip, hiddenDimClass, isHidden } from "@/components/HiddenMark/HiddenMark";
 import { ROUTES } from "@/constants/routes";
 import { useLikes } from "@/contexts/LikesContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +22,7 @@ import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
 import { cn } from "@/lib/util";
 import { createComment, deleteComment } from "@/services/comments.service";
-import { deleteProgram, type ContentComment } from "@/services/programs.service";
+import { deleteBankContent, type ContentComment } from "@/services/programs.service";
 import ItemFacts from "./components/ItemFacts";
 import ItemHero, { type HeroImage } from "./components/ItemHero";
 import ItemSections from "./components/ItemSections";
@@ -46,6 +50,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [extraComments, setExtraComments] = useState<ContentComment[]>([]);
@@ -104,12 +109,14 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     if (!canDelete) return;
     try {
       setIsDeleting(true);
-      await deleteProgram(program.id, getToken);
+      setDeleteError(null);
+      await deleteBankContent(program.content_type, program.id, getToken);
       router.push(ROUTES.PROGRAMS);
     } catch (err) {
       console.error("Failed to delete program:", err);
+      // Keep the modal open so the failure is visible, not silently swallowed.
       setIsDeleting(false);
-      setShowDeleteConfirm(false);
+      setDeleteError(DELETE_FAILED_MESSAGE);
     }
   };
   return (
@@ -128,8 +135,12 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         </span>
       </nav>
       <div className={styles.titleblock}>
-        <TypeBadge type={type} size="md" />
-        <h1 className={styles.title}>{program.name}</h1>
+        <div className={styles.badges}>
+          <TypeBadge type={type} size="md" />
+          {/* Only moderators and the author are ever sent a hidden item. */}
+          {isHidden(program) && <HiddenChip />}
+        </div>
+        <h1 className={cn(styles.title, isHidden(program) && hiddenDimClass)}>{program.name}</h1>
       </div>
       <div className={styles.actions}>
         <button
@@ -191,7 +202,15 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             canComment={isAuthenticated}
             onSubmitComment={handleSubmitComment}
             currentUserName={user?.name ?? null}
-            heroSlot={<ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />}
+            heroSlot={
+              isHidden(program) && images.length > 0 ? (
+                <div className={hiddenDimClass}>
+                  <ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />
+                </div>
+              ) : (
+                <ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />
+              )
+            }
             onOpenDocument={setOpenDoc}
             onReportComment={setReportingComment}
             onRemoveComment={(c) => void handleRemoveComment(c)}
@@ -228,7 +247,11 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         open={showDeleteConfirm}
         programName={program.name}
         isDeleting={isDeleting}
-        onClose={() => setShowDeleteConfirm(false)}
+        error={deleteError}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDeleteError(null);
+        }}
         onConfirm={handleDeleteConfirm}
       />
     </div>

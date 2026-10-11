@@ -152,6 +152,16 @@ class ContentListOut(BaseModel):
     comment_count: int = 0
     like_count: int = 0
     liked_by_me: bool = False
+    #: Set when a moderator has unlisted the item. Carried on the same terms as
+    #: the review fields: the author is told their item was hidden, so the item
+    #: has to be able to say so, and a stranger is not shown the timestamp of a
+    #: decision about somebody else.
+    #:
+    #: On list items it is only ever non-null where a moderator's listing keeps
+    #: hidden items in (nested events/tasks, a tag's content), so the frontend
+    #: can mark them "Falið" instead of showing them as live. Every listing a
+    #: non-moderator reads goes through `listable()` and never contains one.
+    hidden_at: dt.datetime | None = None
 
     @classmethod
     def from_row(cls, obj: Any, stats: ContentStats) -> Self:
@@ -168,11 +178,6 @@ class ContentOut(ContentListOut):
     #: these rather than the schema, because the schema cannot see who is asking.
     review_state: ReviewState | None = None
     review_note: str | None = None
-    #: Set when a moderator has unlisted the item. Carried on the same terms as
-    #: the review fields: the author is told their item was hidden, so the item
-    #: has to be able to say so, and a stranger is not shown the timestamp of a
-    #: decision about somebody else.
-    hidden_at: dt.datetime | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
     media: dict[str, Any] | None = None

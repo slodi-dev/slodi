@@ -22,7 +22,14 @@ const eslintConfig = [
       "build/**",
       "storybook-static/**",
       "next-env.d.ts",
+      "e2e-results/**",
     ],
+  },
+  {
+    // Playwright fixtures hand their value over with a callback named `use`,
+    // which the React hooks rule mistakes for React's `use()`.
+    files: ["e2e/**"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
   },
 ];
 

@@ -18,7 +18,9 @@ import {
 import styles from "./UserManagement.module.css";
 
 // Ranked order, lowest first — the same order the picker offers them in.
-const PERMISSIONS: UserPermissions[] = ["viewer", "member", "moderator", "admin"];
+// `admin` is not offered: platform admin comes only from ADMIN_EMAILS, and the
+// API refuses to grant or remove it (sc-535).
+const PERMISSIONS: UserPermissions[] = ["viewer", "member", "moderator"];
 const PERMISSION_LABELS: Record<UserPermissions, string> = {
   viewer: "Skoðandi",
   member: "Meðlimur",
@@ -222,21 +224,25 @@ export default function UserManagement() {
                     </td>
                     <td className={styles.td}>{u.email}</td>
                     <td className={styles.td}>
-                      <select
-                        className={styles.permSelect}
-                        value={u.permissions}
-                        disabled={pendingUpdates[u.id] || u.id === currentUser?.id}
-                        onChange={(e) =>
-                          handlePermissionChange(u.id, e.target.value as UserPermissions)
-                        }
-                        aria-label={`Réttindi ${u.name}`}
-                      >
-                        {PERMISSIONS.map((p) => (
-                          <option key={p} value={p}>
-                            {PERMISSION_LABELS[p]}
-                          </option>
-                        ))}
-                      </select>
+                      {u.permissions === "admin" ? (
+                        PERMISSION_LABELS.admin
+                      ) : (
+                        <select
+                          className={styles.permSelect}
+                          value={u.permissions}
+                          disabled={pendingUpdates[u.id] || u.id === currentUser?.id}
+                          onChange={(e) =>
+                            handlePermissionChange(u.id, e.target.value as UserPermissions)
+                          }
+                          aria-label={`Réttindi ${u.name}`}
+                        >
+                          {PERMISSIONS.map((p) => (
+                            <option key={p} value={p}>
+                              {PERMISSION_LABELS[p]}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       {pendingUpdates[u.id] && <span className={styles.saving}>…</span>}
                     </td>
                     {defaultWorkspaceId && (

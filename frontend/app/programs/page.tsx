@@ -23,8 +23,11 @@ import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { canCreateProgram, canEditProgram, canDeleteProgram } from "@/lib/permissions";
-import { deleteProgram, type ContentQuery, type Program } from "@/services/programs.service";
-import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
+import { deleteBankContent, type ContentQuery, type Program } from "@/services/programs.service";
+import {
+  DeleteConfirmModal,
+  DELETE_FAILED_MESSAGE,
+} from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 
 /**
  * Map between the new FilterState sortBy values ("liked", "alpha")
@@ -132,6 +135,7 @@ function ProgramsPageInner() {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [pendingDeleteProgram, setPendingDeleteProgram] = useState<Program | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // ── WHERE TO POST new programs ──────────────────────────────────────────
   const postWorkspaceId = defaultWorkspaceId ?? "";
@@ -143,11 +147,13 @@ function ProgramsPageInner() {
     if (!pendingDeleteProgram) return;
     try {
       setIsDeleting(true);
-      await deleteProgram(pendingDeleteProgram.id, getToken);
+      setDeleteError(null);
+      await deleteBankContent(pendingDeleteProgram.content_type, pendingDeleteProgram.id, getToken);
       setPendingDeleteProgram(null);
       await refetch();
     } catch (err) {
       console.error("Failed to delete program:", err);
+      setDeleteError(DELETE_FAILED_MESSAGE);
     } finally {
       setIsDeleting(false);
     }
@@ -362,7 +368,11 @@ function ProgramsPageInner() {
         open={!!pendingDeleteProgram}
         programName={pendingDeleteProgram?.name}
         isDeleting={isDeleting}
-        onClose={() => setPendingDeleteProgram(null)}
+        error={deleteError}
+        onClose={() => {
+          setPendingDeleteProgram(null);
+          setDeleteError(null);
+        }}
         onConfirm={handleDeleteConfirm}
       />
     </div>

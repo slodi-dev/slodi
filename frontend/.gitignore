@@ -50,3 +50,6 @@ pnpm-lock.yaml
 # storybook
 /storybook-static/
 *storybook.log
+# journey tests (scripts/e2e.sh)
+/e2e/.auth/
+/e2e-results/

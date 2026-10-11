@@ -21,6 +21,7 @@ from app.repositories.content import (
     comment_count_subq,
     like_count_subq,
     liked_by_me_subq,
+    listable,
 )
 from app.schemas.program import ProgramFilters
 
@@ -35,6 +36,7 @@ class ProgramRepository(Repository):
         current_user_id: UUID | None = None,
         *,
         include_hidden: bool = False,
+        include_hidden_children: bool = False,
     ) -> tuple[Program, ContentStats] | None:
         stmt = (
             select(
@@ -43,12 +45,16 @@ class ProgramRepository(Repository):
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.events).options(
+                selectinload(
+                    Program.events.and_(listable(Event, include_hidden=include_hidden_children))
+                ).options(
                     selectinload(Event.author),
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Program.comments).selectinload(Comment.user),
+                selectinload(Program.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(Program.id == program_id, Program.deleted_at.is_(None))
@@ -64,7 +70,12 @@ class ProgramRepository(Repository):
         return prog, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm))
 
     async def get_in_workspace(
-        self, program_id: UUID, workspace_id: UUID, current_user_id: UUID | None = None
+        self,
+        program_id: UUID,
+        workspace_id: UUID,
+        current_user_id: UUID | None = None,
+        *,
+        include_hidden_children: bool = False,
     ) -> tuple[Program, ContentStats] | None:
         stmt = (
             select(
@@ -73,12 +84,16 @@ class ProgramRepository(Repository):
             .options(
                 selectinload(Program.author),
                 selectinload(Program.workspace),
-                selectinload(Program.events).options(
+                selectinload(
+                    Program.events.and_(listable(Event, include_hidden=include_hidden_children))
+                ).options(
                     selectinload(Event.author),
                     selectinload(Event.workspace),
                     selectinload(Event.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Program.comments).selectinload(Comment.user),
+                selectinload(Program.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Program.content_tags).selectinload(ContentTag.tag),
             )
             .where(

@@ -241,3 +241,22 @@ describe("ProgramCard", () => {
     expect(article).toBeInTheDocument();
   });
 });
+
+describe("ProgramCard — hidden items (moderator view)", () => {
+  it("marks a hidden item with a 'Falið' chip and greys it out", () => {
+    render(<ProgramCard {...createProps({ hidden_at: "2026-10-01T12:00:00Z" })} />);
+
+    expect(screen.getByText("Falið")).toBeInTheDocument();
+    const article = screen.getByRole("article", { name: "Test Program (falið)" });
+    expect(article).toHaveAttribute("data-hidden", "true");
+  });
+
+  it("shows no hidden marking on a live item", () => {
+    render(<ProgramCard {...createProps({ hidden_at: null })} />);
+
+    expect(screen.queryByText("Falið")).not.toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "Test Program" })).not.toHaveAttribute(
+      "data-hidden"
+    );
+  });
+});

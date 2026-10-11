@@ -33,6 +33,7 @@ class EventRepository(Repository):
         current_user_id: UUID | None = None,
         *,
         include_hidden: bool = False,
+        include_hidden_children: bool = False,
     ) -> tuple[Event, ContentStats] | None:
         stmt = (
             select(
@@ -41,12 +42,16 @@ class EventRepository(Repository):
             .options(
                 selectinload(Event.author),
                 selectinload(Event.workspace),
-                selectinload(Event.tasks).options(
+                selectinload(
+                    Event.tasks.and_(listable(Task, include_hidden=include_hidden_children))
+                ).options(
                     selectinload(Task.author),
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments).selectinload(Comment.user),
+                selectinload(Event.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(Event.id == event_id, Event.deleted_at.is_(None))
@@ -67,6 +72,8 @@ class EventRepository(Repository):
         program_id: UUID,
         workspace_id: UUID,
         current_user_id: UUID | None = None,
+        *,
+        include_hidden_children: bool = False,
     ) -> tuple[Event, ContentStats] | None:
         stmt = (
             select(
@@ -75,12 +82,16 @@ class EventRepository(Repository):
             .options(
                 selectinload(Event.author),
                 selectinload(Event.workspace),
-                selectinload(Event.tasks).options(
+                selectinload(
+                    Event.tasks.and_(listable(Task, include_hidden=include_hidden_children))
+                ).options(
                     selectinload(Task.author),
                     selectinload(Task.workspace),
                     selectinload(Task.content_tags).selectinload(ContentTag.tag),
                 ),
-                selectinload(Event.comments).selectinload(Comment.user),
+                selectinload(Event.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Event.content_tags).selectinload(ContentTag.tag),
             )
             .where(

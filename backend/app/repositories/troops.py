@@ -120,6 +120,17 @@ class TroopRepository(Repository):
         )
         return await self.scalars(stmt)
 
+    async def event_in_workspace(self, event_id: UUID, workspace_id: UUID) -> bool:
+        """True if the event exists, is not deleted, and belongs to the workspace."""
+        found = await self.session.scalar(
+            select(Event.id).where(
+                Event.id == event_id,
+                Event.workspace_id == workspace_id,
+                Event.deleted_at.is_(None),
+            )
+        )
+        return found is not None
+
     async def get_participation(self, event_id: UUID, troop_id: UUID) -> TroopParticipation | None:
         return await self.session.scalar(
             select(TroopParticipation).where(

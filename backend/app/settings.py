@@ -1,5 +1,10 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# The only ENV values under which AUTH_TEST_JWKS_FILE may be set. An allowlist
+# rather than a check for "production": a new environment name (staging, a
+# typo) must fail closed, not open.
+E2E_AUTH_ENVS: frozenset[str] = frozenset({"e2e"})
 
 
 class Settings(BaseSettings):
@@ -25,6 +30,13 @@ class Settings(BaseSettings):
     auth0_audience: str = Field(..., alias="AUTH0_AUDIENCE")
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
     auth_debug: bool = Field(False, alias="AUTH0_DEBUG")
+
+    # Journey tests only (docs/journey-testing-in-ci.md). Path to a JWKS file
+    # whose keys replace Auth0's. Tokens are still verified in full (signature,
+    # expiry, audience, issuer), but against keys the e2e run generated for
+    # itself. Settings refuses to load if this is set and ENV is not in
+    # E2E_AUTH_ENVS. See tests/test_auth_test_jwks.py.
+    auth_test_jwks_file: str | None = Field(None, alias="AUTH_TEST_JWKS_FILE")
 
     # Seed: emails that are always promoted to admin on `make seed`
     admin_emails: str = Field("", alias="ADMIN_EMAILS")
@@ -95,6 +107,17 @@ class Settings(BaseSettings):
         """
         addresses = [e.strip().lower() for e in self.moderation_emails.split(",") if e.strip()]
         return addresses or self.admin_email_list
+
+    @model_validator(mode="after")
+    def _test_jwks_only_in_e2e(self) -> "Settings":
+        """Refuse to start with test signing keys outside the e2e environment."""
+        if self.auth_test_jwks_file and self.env.strip().lower() not in E2E_AUTH_ENVS:
+            raise ValueError(
+                f"AUTH_TEST_JWKS_FILE is set but ENV is {self.env!r}. Test signing keys "
+                f"are only accepted when ENV is one of {sorted(E2E_AUTH_ENVS)}. "
+                "Unset AUTH_TEST_JWKS_FILE."
+            )
+        return self
 
     def model_post_init(self, __context: object) -> None:
         # Production database URL

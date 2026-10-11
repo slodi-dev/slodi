@@ -9,6 +9,7 @@ This module provides:
 """
 
 import asyncio
+import json
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
@@ -109,6 +110,11 @@ class JWKSCache:
         Raises:
             HTTPException: 503 if Auth0 is unreachable.
         """
+        if settings.auth_test_jwks_file:
+            # Journey tests only. Settings refuses to load with this set
+            # outside ENV=e2e, so production never reaches this branch.
+            return _load_test_jwks(settings.auth_test_jwks_file)
+
         jwks_url = f"https://{settings.auth0_domain}/.well-known/jwks.json"
         try:
             response = httpx.get(jwks_url, timeout=10.0)
@@ -138,6 +144,24 @@ class JWKSCache:
                 self._jwks = self._fetch()
                 self._fetched_at = datetime.now(tz=timezone.utc)
             return self._jwks  # type: ignore[return-value]
+
+
+def _load_test_jwks(path: str) -> dict:
+    """Read the public keys an e2e run generated for itself.
+
+    Only the key source changes: `verify_auth0_token` still checks signature,
+    expiry, audience and issuer exactly as it does against Auth0.
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            jwks: dict = json.load(fh)
+    except (OSError, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Unable to read test JWKS: {e}",
+        ) from e
+    logger.warning("Verifying tokens against TEST keys from %s (ENV=%s)", path, settings.env)
+    return jwks
 
 
 # Module-level singleton shared across all requests

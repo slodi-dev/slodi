@@ -38,7 +38,9 @@ class TaskRepository(Repository):
             .options(
                 selectinload(Task.author),
                 selectinload(Task.workspace),
-                selectinload(Task.comments).selectinload(Comment.user),
+                selectinload(Task.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
             .where(Task.id == task_id, Task.deleted_at.is_(None))
@@ -63,7 +65,9 @@ class TaskRepository(Repository):
             .options(
                 selectinload(Task.author),
                 selectinload(Task.workspace),
-                selectinload(Task.comments).selectinload(Comment.user),
+                selectinload(Task.comments.and_(Comment.deleted_at.is_(None))).selectinload(
+                    Comment.user
+                ),
                 selectinload(Task.content_tags).selectinload(ContentTag.tag),
             )
             .where(Task.id == task_id, Task.event_id == event_id, listable(Task))

@@ -1,0 +1,110 @@
+name: Journeys
+# End-to-end user journeys (docs/journeys/) against a throwaway stack.
+# Design and gates: docs/journey-testing-in-ci.md.
+#
+# Every job runs scripts/e2e.sh, the same script as a local run. It generates
+# a fresh signing key, starts Postgres + migrations + the e2e seed + the backend
+# with docker compose, builds the frontend, runs Playwright, and writes the
+# story coverage report to the job summary.
+#
+# Secrets: none are needed to run the journeys. Auth0 is never contacted; the
+# run signs its own tokens with a key it generates and throws away.
+#   DISCORD_WEBHOOK_URL   (existing) status notification, optional
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "docs/journeys/**"
+      - "docker-compose.e2e.yml"
+      - "scripts/e2e.sh"
+      - ".github/workflows/journeys.yml"
+  push:
+    branches: [main]
+  schedule:
+    # Nightly, 03:17 UTC (= Reykjavik), all journeys including @nightly.
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: "Playwright --grep (empty = all journeys)"
+        required: false
+        default: ""
+
+concurrency:
+  group: journeys-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  journeys:
+    name: Journeys (${{ github.event_name == 'pull_request' && 'PR gate' || 'all' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      # PRs run the @pr gate; main, nightly and manual runs run everything.
+      E2E_GREP: ${{ github.event_name == 'pull_request' && '@pr' || inputs.grep }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        working-directory: frontend
+        run: npm ci
+
+      - name: Playwright version
+        id: pw
+        working-directory: frontend
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: |
+          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Run journeys
+        run: |
+          if [ -n "$E2E_GREP" ]; then
+            scripts/e2e.sh --grep "$E2E_GREP"
+          else
+            scripts/e2e.sh
+          fi
+
+      - name: Upload report, traces and videos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: journeys-${{ github.run_id }}-${{ github.run_attempt }}
+          path: frontend/e2e-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Notify Discord
+        if: ${{ failure() && github.event_name != 'pull_request' }}
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Journeys — ${{ github.repository }}"
+          description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"

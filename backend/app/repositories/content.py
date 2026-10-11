@@ -30,7 +30,7 @@ class ContentStats:
     liked_by_me: bool
 
 
-def listable(model: Any) -> Any:
+def listable(model: Any, *, include_hidden: bool = False) -> Any:
     """
     The conditions every listing of bank content has to carry.
 
@@ -44,7 +44,15 @@ def listable(model: Any) -> Any:
 
     Take this rather than writing the pair by hand, so "list content" cannot be
     written without answering both.
+
+    `include_hidden=True` keeps hidden items and still drops deleted ones. It is
+    for Dagskrárstjórnarteymið only: decide it with `is_content_moderator()` at
+    the route, never from anything the caller sends. The response then carries
+    `hidden_at` so the frontend can mark those items instead of presenting them
+    as live.
     """
+    if include_hidden:
+        return model.deleted_at.is_(None)
     return (model.deleted_at.is_(None)) & (model.hidden_at.is_(None))
 
 

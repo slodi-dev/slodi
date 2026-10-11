@@ -34,6 +34,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@storybook/addon-a11y": "^10.6.1",
     "@storybook/addon-docs": "^10.6.1",
     "@storybook/nextjs-vite": "^10.6.1",
@@ -46,6 +47,7 @@
     "eslint": "^9.39.3",
     "eslint-config-next": "^15.5.12",
     "eslint-config-prettier": "^10.1.8",
+    "jose": "^6.2.12",
     "jsdom": "^25.0.1",
     "prettier": "^3.8.1",
     "storybook": "^10.6.1",

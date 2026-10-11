@@ -1,6 +1,6 @@
 """Tests for permission enforcement on admin-only endpoints."""
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -177,3 +177,73 @@ def test_the_self_update_schema_has_no_permissions_field():
     parsed = UserUpdateSelf.model_validate({"name": "Ný", "permissions": "admin"})
     assert not hasattr(parsed, "permissions")
     assert "permissions" not in parsed.model_dump(exclude_unset=True)
+
+
+# ── Platform admin is never granted or removed through the API ───────────────
+
+
+def _user_row(permissions):
+    from types import SimpleNamespace
+
+    from app.domain.enums import Permissions
+
+    return SimpleNamespace(id=uuid4(), permissions=Permissions(permissions))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("current", "requested"),
+    [("member", "admin"), ("moderator", "admin"), ("admin", "member"), ("admin", "viewer")],
+)
+async def test_an_admin_cannot_grant_or_remove_platform_admin(current, requested):
+    """Platform admin comes from ADMIN_EMAILS only, so one admin can't mint or demote another."""
+    from fastapi import HTTPException
+
+    from app.schemas.user import UserUpdateAdmin
+    from app.services.users import UserService
+
+    session = AsyncMock()
+    svc = UserService(session)
+    row = _user_row(current)
+    svc.repo.get = AsyncMock(return_value=row)
+
+    with pytest.raises(HTTPException) as exc:
+        await svc.update(row.id, UserUpdateAdmin(permissions=requested))
+
+    assert exc.value.status_code == status.HTTP_403_FORBIDDEN
+    assert row.permissions.value == current
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_an_admin_can_still_change_other_ranks():
+    from app.schemas.user import UserUpdateAdmin
+    from app.services.users import UserService
+
+    session = AsyncMock()
+    svc = UserService(session)
+    row = _user_row("member")
+    svc.repo.get = AsyncMock(return_value=row)
+
+    with patch("app.services.users.UserOut.model_validate", return_value=row):
+        await svc.update(row.id, UserUpdateAdmin(permissions="moderator"))
+
+    assert row.permissions.value == "moderator"
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_a_user_cannot_be_created_as_platform_admin():
+    from fastapi import HTTPException
+
+    from app.schemas.user import UserCreate
+    from app.services.users import UserService
+
+    session = AsyncMock()
+    with pytest.raises(HTTPException) as exc:
+        await UserService(session).create(
+            UserCreate(auth0_id="auth0|123", email="ny@test.is", name="Ný", permissions="admin")
+        )
+
+    assert exc.value.status_code == status.HTTP_403_FORBIDDEN
+    session.commit.assert_not_awaited()
