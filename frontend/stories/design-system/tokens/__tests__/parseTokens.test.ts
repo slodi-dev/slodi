@@ -42,6 +42,7 @@ describe("parseTokens on app/slodi-tokens.css", () => {
   });
 
   it("reports undeclared references", () => {
+    // token-check-ignore: an undeclared token is the fixture under test.
     const tokens = buildTokenSet(":root { --sl-a: var(--sl-nope); }");
     expect(tokens.byTheme.light.get("--sl-a")).toMatchObject({
       resolved: null,

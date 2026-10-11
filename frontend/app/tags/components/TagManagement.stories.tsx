@@ -67,6 +67,8 @@ export const Empty: Story = {
 
 export const LoadError: Story = {
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^API Error Details:/],
     mockApi: [configRoute, { match: /\/tags/, status: 500, body: { detail: "Villa" } }],
   },
 };

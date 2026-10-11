@@ -39,14 +39,12 @@ page. Both entry points open the same `ContentCreateModal`.
 
 ## What it guards
 
-- **sc-530.** Editing from a bank card wipes the leiðbeiningar. The bank list
-  returns `ContentListOut`, which has no `instructions` or `media`. The card
-  passes that summary to the form as `initial`, the form starts with those
-  fields empty, and saving sends them back as cleared.
-  - On `main`, S5 fails: the item shows "Engar leiðbeiningar fylgja."
-  - S6 (documents) is broken by the same cause, but it doesn't run while S5
-    fails.
-  - The test marks S5 as `knownBugStep("sc-530", ...)` until the fix merges.
+- **sc-530** (fixed). Editing from a bank card wiped the leiðbeiningar and
+  attached documents. The bank list returns `ContentListOut`, which has no
+  `instructions` or `media`; the card passed that summary to the form as
+  `initial`, and saving sent those fields back as cleared. The card now fetches
+  the whole item before the editor opens, and an edit sends only the fields
+  that changed. S5 (leiðbeiningar) and S6 (documents) guard it.
 - efnissida `SPEC.md` §10 #9: `Breyta` is offered to the author. S2 checks it
   from the bank side.
 

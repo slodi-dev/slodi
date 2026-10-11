@@ -7,6 +7,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   title?: string;
+  /**
+   * Accessible name for a modal without a visible `title`. A dialog needs a
+   * name so a screen reader can announce what opened.
+   */
+  ariaLabel?: string;
   children?: React.ReactNode;
   /**
    * `wide` for content that has its own natural width — a document preview
@@ -29,6 +34,7 @@ export default function Modal({
   open,
   onClose,
   title,
+  ariaLabel,
   children,
   size = "default",
   confirmOnClose,
@@ -73,6 +79,7 @@ export default function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
+        aria-label={title ? undefined : ariaLabel}
         ref={dialogRef}
       >
         {title && (

@@ -145,7 +145,7 @@ visits every page as four personas: signed out, `e2e|community-member`
 
 | Journey | Persona | Stories | Gate | Test |
 |---|---|---|---|---|
-| [program-owner-edits-from-bank](program-owner-edits-from-bank.md) | Program Owner | B4, E2, E6 | pr | automated (known bug sc-530) |
+| [program-owner-edits-from-bank](program-owner-edits-from-bank.md) | Program Owner | B4, E2, E6 | pr | automated |
 | [community-member-likes-and-shares](community-member-likes-and-shares.md) | Community Member | E4, J4 | pr | automated (known bug sc-531; S6 manual) |
 | [reviewer-sweeps-yfirferd](reviewer-sweeps-yfirferd.md) | Reviewer | E5 | nightly | not yet |
 

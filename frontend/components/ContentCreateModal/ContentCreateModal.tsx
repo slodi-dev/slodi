@@ -12,7 +12,12 @@ import TagPicker from "./TagPicker";
 import FileDropZone, { type Attachment } from "./FileDropZone";
 import { AGE_GROUPS, getAgeGroupPatrol } from "@/lib/format";
 import DocumentViewer from "@/components/DocumentViewer/DocumentViewer";
-import { createBankContent, updateBankContent, type Program } from "@/services/programs.service";
+import {
+  createBankContent,
+  updateBankContent,
+  type Program,
+  type ProgramUpdateInput,
+} from "@/services/programs.service";
 import type { BankContentType } from "@/components/ContentTypeChooser/ContentTypeChooser";
 
 /** The four kinds, in the accusative — the title reads "Bæta við — verkefni". */
@@ -182,6 +187,36 @@ const FIELD_SECTION: Record<string, SectionId> = {
 
 const numeric = (v: string) => v.trim() === "" || /^\d+$/.test(v.trim());
 
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * The scalar part of the payload, as the API wants it.
+ *
+ * `blank` is what an empty field becomes: `undefined` (omit) when creating,
+ * an explicit `null` (clear) when editing — see `submit`.
+ */
+function fieldsFrom(d: Draft, blank: null | undefined) {
+  const num = (v: string) => (v.trim() === "" ? blank : Number(v));
+  const text = (v: string) => v.trim() || blank;
+  return {
+    name: d.name.trim(),
+    description: text(d.description),
+    instructions: text(d.instructions),
+    image: d.images[0]?.url ?? blank,
+    equipment: d.equipment,
+    duration_min: num(d.durationMin),
+    duration_max: num(d.durationMax),
+    prep_time_min: num(d.prepMin),
+    prep_time_max: num(d.prepMax),
+    count_min: num(d.countMin),
+    count_max: num(d.countMax),
+    price: num(d.price),
+    location: text(d.location),
+    age: d.ages.length ? d.ages : blank,
+    tagNames: d.tagList,
+  };
+}
+
 /**
  * The bank's create form.
  *
@@ -234,11 +269,17 @@ export default function ContentCreateModal({
   // Keyed by workspace *and* type: with four kinds, a half-written viðburður
   // reappearing inside a new verkefni reads as the form being haunted.
   const draftKey = editing ? `bank-edit-${initial.id}` : `bank-draft-${workspaceId}-${contentType}`;
-  // Editing starts from what is stored, not from an empty form; `useDraft`
-  // still restores an interrupted edit, keyed by the item so it cannot bleed
-  // into a different one.
+  // Editing starts from what is stored, not from an empty form. An
+  // interrupted edit is kept, keyed by the item so it cannot bleed into a
+  // different one — but it is *offered*, never merged in silently: a draft
+  // that says "no leiðbeiningar" would otherwise quietly replace the ones the
+  // item has (sc-530).
   const seed = useMemo(() => (initial ? draftFromProgram(initial) : EMPTY), [initial]);
-  const { draft, updateDraft, clearDraft } = useDraft<Draft>(draftKey, seed);
+  const { draft, updateDraft, clearDraft, pending, restoreDraft } = useDraft<Draft>(
+    draftKey,
+    seed,
+    { restore: editing ? "ask" : "auto" }
+  );
 
   const [open, setOpen] = useState<SectionId[]>(["basic"]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -300,6 +341,17 @@ export default function ContentCreateModal({
     // once, on mount — later keystrokes are the author's own
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // When editing, the form always holds the item, so "there is something in
+  // the form" says nothing. The offer is the stored draft itself.
+  const showDraftOffer = editing ? pending !== null : draftOffer;
+
+  // Closing an edit discards it. Leaving the draft behind is how a blanked
+  // form opened from a bank card later came back on the item's own page.
+  // A new item's draft is kept: "ósent drög" is a feature of the create form.
+  const close = useCallback(() => {
+    if (editing) clearDraft();
+    onClose();
+  }, [editing, clearDraft, onClose]);
 
   // Focus the first field, and trap focus in the dialog. Escape closes.
   useEffect(() => {
@@ -310,7 +362,7 @@ export default function ContentCreateModal({
     (event: React.KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        close();
         return;
       }
       if (event.key !== "Tab") return;
@@ -328,7 +380,7 @@ export default function ContentCreateModal({
         last.focus();
       }
     },
-    [onClose]
+    [close]
   );
 
   const toggle = (id: SectionId) =>
@@ -420,47 +472,53 @@ export default function ContentCreateModal({
      * description or unticking every age band all looked like they worked and
      * then came back on reload, because the payload simply left them out.
      *
-     * So `blank` is `undefined` while creating and an explicit `null` while
-     * editing.
+     * So an emptied field is `undefined` while creating and an explicit
+     * `null` while editing (`fieldsFrom`'s `blank`).
+     *
+     * The other half: an edit sends **only what changed**. Sending every
+     * field meant that anything the form had not been given — the bank card
+     * hands over a summary without `instructions` or `media` — went back as
+     * "cleared", and saving a new title wiped the leiðbeiningar and the
+     * attached documents (sc-530). An untouched field now never leaves the
+     * browser, whatever the form was seeded with.
      */
-    const blank = editing ? null : undefined;
-    const num = (v: string) => (v.trim() === "" ? blank : Number(v));
-    const text = (v: string) => v.trim() || blank;
-
     try {
-      const payload = {
-        name: draft.name.trim(),
-        description: text(draft.description),
-        instructions: text(draft.instructions),
-        image: draft.images[0]?.url ?? blank,
-        equipment: draft.equipment,
-        duration_min: num(draft.durationMin),
-        duration_max: num(draft.durationMax),
-        prep_time_min: num(draft.prepMin),
-        prep_time_max: num(draft.prepMax),
-        count_min: num(draft.countMin),
-        count_max: num(draft.countMax),
-        price: num(draft.price),
-        location: text(draft.location),
-        age: draft.ages.length ? draft.ages : blank,
-        tagNames: draft.tagList,
-        // Preserve any other keys `media` carries; only `documents` is ours.
-        // `image` stays the hero so cards, Yfirferð and the listings keep
-        // reading one URL; `media.images` carries the order.
-        media: editing
-          ? { ...(initial.media ?? {}), images: draft.images, documents: draft.documents }
-          : draft.images.length || draft.documents.length
-            ? { images: draft.images, documents: draft.documents }
-            : undefined,
-        workspaceId,
-      };
-
-      // Editing PATCHes the subtype's own route. `/programs/{id}` matches only
-      // rows whose content_type is "program", so assuming it here is what made
-      // saving a Verkefni fail the same way reading one did.
-      const saved = editing
-        ? await updateBankContent(contentType, initial.id, payload, getToken)
-        : await createBankContent(contentType, payload, getToken);
+      let saved: Program;
+      if (editing) {
+        const before = fieldsFrom(seed, null);
+        const after = fieldsFrom(draft, null);
+        const changes: ProgramUpdateInput = Object.fromEntries(
+          Object.entries(after).filter(([k, v]) => !same(v, before[k as keyof typeof before]))
+        );
+        // `media` only when the lists changed, and built from the item's own
+        // media so any other keys it carries survive. `image` stays the hero
+        // so cards, Yfirferð and the listings keep reading one URL;
+        // `media.images` carries the order.
+        if (!same(draft.images, seed.images) || !same(draft.documents, seed.documents)) {
+          changes.media = {
+            ...(initial.media ?? {}),
+            images: draft.images,
+            documents: draft.documents,
+          };
+        }
+        // Editing PATCHes the subtype's own route. `/programs/{id}` matches
+        // only rows whose content_type is "program", so assuming it here is
+        // what made saving a Verkefni fail the same way reading one did.
+        saved = await updateBankContent(contentType, initial.id, changes, getToken);
+      } else {
+        saved = await createBankContent(
+          contentType,
+          {
+            ...fieldsFrom(draft, undefined),
+            media:
+              draft.images.length || draft.documents.length
+                ? { images: draft.images, documents: draft.documents }
+                : undefined,
+            workspaceId,
+          },
+          getToken
+        );
+      }
 
       setDone(
         editing
@@ -826,7 +884,7 @@ export default function ContentCreateModal({
           <h2 className={styles.title} id={titleId}>
             {editing ? "Breyta" : "Bæta við"} — <em>{TYPE_WORD[contentType]}</em>
           </h2>
-          <button type="button" className={styles.close} aria-label="Loka" onClick={onClose}>
+          <button type="button" className={styles.close} aria-label="Loka" onClick={close}>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -840,7 +898,7 @@ export default function ContentCreateModal({
             </svg>
           </button>
         </div>
-        {draftOffer && (
+        {showDraftOffer && (
           <div className={styles.draft} role="status">
             <svg
               className={styles.draftIcon}
@@ -860,7 +918,11 @@ export default function ContentCreateModal({
                 ? "Þú áttir óvistaðar breytingar frá því síðast."
                 : "Þú áttir ósent drög frá því síðast."}
             </p>
-            <button type="button" className={styles.draftAct} onClick={() => setDraftOffer(false)}>
+            <button
+              type="button"
+              className={styles.draftAct}
+              onClick={() => (editing ? restoreDraft() : setDraftOffer(false))}
+            >
               {editing ? "Halda áfram með þær" : "Halda áfram með þau"}
             </button>
             <button
@@ -1102,7 +1164,7 @@ export default function ContentCreateModal({
       // Clicking away closes it, but only from the scrim itself — a click that
       // started inside the form and drifted out must not discard the draft.
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) close();
       }}
     >
       {withPreview}

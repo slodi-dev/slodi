@@ -56,6 +56,8 @@ export const Saving: Story = {
 
 export const AlreadyExists: Story = {
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 409\]/],
     mockApi: [
       {
         method: "POST",

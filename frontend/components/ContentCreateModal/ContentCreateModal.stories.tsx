@@ -91,6 +91,29 @@ export const DraftOffer: Story = {
   },
 };
 
+/**
+ * An interrupted edit is offered, never merged in: the form shows the stored
+ * item until "Halda áfram með þær" is pressed (sc-530).
+ */
+export const EditDraftOffer: Story = {
+  args: { contentType: "event", initial: programRatleikur },
+  beforeEach: () => {
+    window.localStorage.setItem(
+      `bank-edit-${programRatleikur.id}`,
+      JSON.stringify({ name: `${programRatleikur.name} (óvistað)` })
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText(/óvistaðar breytingar/)).toBeInTheDocument();
+    await expect(canvas.getByDisplayValue(programRatleikur.name)).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Halda áfram með þær" }));
+    await expect(
+      await canvas.findByDisplayValue(`${programRatleikur.name} (óvistað)`)
+    ).toBeInTheDocument();
+  },
+};
+
 export const ValidationErrors: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -101,6 +124,8 @@ export const ValidationErrors: Story = {
 
 export const SaveFails: Story = {
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 422\]/],
     mockApi: [
       {
         method: "POST",

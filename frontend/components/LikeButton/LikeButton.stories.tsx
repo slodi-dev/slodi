@@ -51,6 +51,8 @@ const failingLike: MockRoute[] = [
 export const RollsBackOnError: Story = {
   args: { programId: "p-error" },
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 500\]/],
     mockApi: failingLike,
     docs: {
       description: {
