@@ -16,7 +16,6 @@ const meta = {
     },
   },
   parameters: {
-    // Stays "todo" (preview.tsx) until sc-586: primary, danger and dark secondary fail AA contrast.
     docs: {
       description: {
         component:

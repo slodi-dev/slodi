@@ -25,6 +25,12 @@ export type Entry = {
   /** Leftover-English hits (english.ts) that are not leftovers. */
   english?: RegExp[];
   overflow?: boolean;
+  /**
+   * axe violations that are expected, for the rules the crawler enforces
+   * (ENFORCED_AXE_RULES in pages.crawl.ts): the rule id, and optionally the
+   * offending element's selector. Only ever with a `bug`.
+   */
+  axe?: { rule: string; target?: RegExp }[];
   /** A signed-out visitor is sent to log in after the page loads. */
   redirectsToLogin?: boolean;
   /** Shortcut story, for an entry that tolerates a bug rather than a contract. */
@@ -112,6 +118,7 @@ export type Expected = {
   console: (text: string) => Entry | undefined;
   english: (hit: string) => Entry | undefined;
   overflow: () => Entry | undefined;
+  axe: (rule: string, target: string) => Entry | undefined;
 };
 
 export function expectationsFor(route: string, path: string, persona: PersonaName): Expected {
@@ -127,5 +134,9 @@ export function expectationsFor(route: string, path: string, persona: PersonaNam
     console: (text) => entries.find((e) => e.console?.some((re) => re.test(text))),
     english: (hit) => entries.find((e) => e.english?.some((re) => re.test(hit))),
     overflow: () => entries.find((e) => e.overflow),
+    axe: (rule, target) =>
+      entries.find((e) =>
+        e.axe?.some((a) => a.rule === rule && (!a.target || a.target.test(target)))
+      ),
   };
 }

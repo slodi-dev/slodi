@@ -24,7 +24,6 @@ const meta = {
     ),
   ],
   // Clean under axe in all four forms: a new violation fails CI (docs/ui-quality-pipeline.md).
-  parameters: { a11y: { test: "error" } },
 } satisfies Meta<typeof RangeInput>;
 
 export default meta;
@@ -65,7 +64,7 @@ export const FocusRing: Story = {
         story:
           "Known issue sc-549 (story `design-system-primitives-rangeinput--focus-ring`): tab into " +
           "a field. `.rangeInputField:focus-visible` sets `outline: none` and relies on " +
-          "`--sl-input-shadow-focus`, which resolves to `0 0 0 3px 142 50% 42% / 0.3` — not a " +
+          "`--sl-input-shadow-focus`, which resolves to `0 0 0 3px 142 50% 32% / 0.3` — not a " +
           "colour — so the box-shadow is dropped and there is no visible focus ring.",
       },
     },

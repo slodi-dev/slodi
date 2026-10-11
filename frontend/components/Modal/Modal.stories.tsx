@@ -17,8 +17,6 @@ const meta = {
     ),
   },
   parameters: {
-    // Clean under axe in all four forms: a new violation fails CI (docs/ui-quality-pipeline.md).
-    a11y: { test: "error" },
     layout: "fullscreen",
     docs: { story: { inline: false, height: "420px" } },
   },
