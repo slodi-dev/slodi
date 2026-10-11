@@ -377,21 +377,27 @@ export async function updateProgram(
 }
 
 /**
- * Delete a program
- * Requires authentication
+ * Delete a bank item of any kind.
+ *
+ * Same trap as `updateBankContent`: `/programs/{id}` only finds rows whose
+ * content_type is "program", so deleting a Verkefni or Viðburður through it
+ * 404'd. Each subtype is deleted through its own route.
  */
+export async function deleteBankContent(
+  type: BankContentType,
+  id: string,
+  getToken: () => Promise<string | null>
+): Promise<void> {
+  const url = buildApiUrl(`/${CREATE_ROUTE[type]}/${id}`);
+  await fetchWithAuth<void>(url, { method: "DELETE" }, getToken);
+}
+
+/** @deprecated Pass the content type — use `deleteBankContent`. */
 export async function deleteProgram(
   id: string,
   getToken: () => Promise<string | null>
 ): Promise<void> {
-  const url = buildApiUrl(`/programs/${id}`);
-  await fetchWithAuth(
-    url,
-    {
-      method: "DELETE",
-    },
-    getToken
-  );
+  return deleteBankContent("program", id, getToken);
 }
 
 /**
