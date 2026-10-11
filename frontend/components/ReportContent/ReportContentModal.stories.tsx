@@ -55,6 +55,8 @@ export const Sent: Story = {
 export const ErrorState: Story = {
   name: "Error",
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 500\]/],
     mockApi: [
       { match: /\/reports/, status: 500, body: { detail: "Villa á netþjóni" } },
     ] satisfies MockRoute[],

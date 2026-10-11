@@ -51,6 +51,9 @@ jobs:
       - name: Design tokens
         run: npm run check:tokens
 
+      - name: Every component has stories
+        run: npm run check:stories
+
       - name: Unit tests
         run: npm test
 
@@ -71,4 +74,53 @@ jobs:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
           status: ${{ job.status }}
           title: "Lint & Build — ${{ github.repository }}"
+          description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"
+
+  # Every Storybook story rendered in real Chromium in four forms (light/dark ×
+  # phone/desktop). Fails on render errors, failing play functions, console.error
+  # and, where enabled, axe violations. Design: docs/ui-quality-pipeline.md.
+  storybook-tests:
+    name: Storybook tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Playwright version
+        id: pw
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Chromium
+        run: |
+          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Stories as tests (4 forms)
+        run: npm run test:stories
+
+      - name: Notify Discord
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Storybook tests — ${{ github.repository }}"
           description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"

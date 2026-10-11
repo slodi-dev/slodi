@@ -101,6 +101,8 @@ export const ValidationErrors: Story = {
 
 export const SaveFails: Story = {
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 422\]/],
     mockApi: [
       {
         method: "POST",

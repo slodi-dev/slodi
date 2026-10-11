@@ -66,7 +66,11 @@ export const ErrorFromApi: Story = {
 
 /** The request itself fails (not JSON). */
 export const NetworkError: Story = {
-  parameters: { mockApi: [{ match: CONTRIBUTORS, status: 502 }] },
+  parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^Error fetching contributors:/],
+    mockApi: [{ match: CONTRIBUTORS, status: 502 }],
+  },
 };
 
 export const NoContributors: Story = {

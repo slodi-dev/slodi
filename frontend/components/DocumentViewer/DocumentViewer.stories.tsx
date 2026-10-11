@@ -97,6 +97,8 @@ export const Loading: Story = {
 export const ErrorState: Story = {
   name: "Error",
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 500\]/],
     mockApi: [
       { match: /\/uploads\/sas\/download/, status: 500, body: { detail: "Skjalið fannst ekki." } },
     ] satisfies MockRoute[],

@@ -119,6 +119,8 @@ export const Uploading: Story = {
 
 export const UploadFailed: Story = {
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 500\]/],
     mockApi: [
       { match: /\/uploads\/sas/, status: 500, body: { detail: "Geymslan svarar ekki" } },
     ] satisfies MockRoute[],
