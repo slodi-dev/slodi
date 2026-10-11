@@ -17,7 +17,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build -o storybook-static"
+    "build-storybook": "storybook build -o storybook-static",
+    "check:tokens": "node scripts/check-tokens.mjs"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.14.0",

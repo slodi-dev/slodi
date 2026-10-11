@@ -42,9 +42,11 @@ const mono: React.CSSProperties = {
   fontSize: 12,
 };
 
+// The transparency checkerboard behind translucent swatches, in the border grey
+// of the current theme.
+const checkerGrey = "hsl(var(--sl-color-border))";
 const checker: React.CSSProperties = {
-  backgroundImage:
-    "linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%)",
+  backgroundImage: `linear-gradient(45deg,${checkerGrey} 25%,transparent 25%),linear-gradient(-45deg,${checkerGrey} 25%,transparent 25%),linear-gradient(45deg,transparent 75%,${checkerGrey} 75%),linear-gradient(-45deg,transparent 75%,${checkerGrey} 75%)`,
   backgroundSize: "8px 8px",
   backgroundPosition: "0 0,0 4px,4px -4px,-4px 0",
 };
@@ -58,8 +60,8 @@ function Problem({ children }: { children: React.ReactNode }) {
         marginTop: 4,
         padding: "1px 6px",
         borderRadius: 4,
-        background: "#fde8e8",
-        color: "#8a1c1c",
+        background: "hsl(var(--sl-color-error-subtle))",
+        color: "hsl(var(--sl-color-error-text))",
       }}
     >
       ⚠ {children}

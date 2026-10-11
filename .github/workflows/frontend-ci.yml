@@ -46,6 +46,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Unwrapped, undefined and hard-coded colour tokens. Errors fail; warnings
+      # (legacy tokens, literal rgba) are printed but do not.
+      - name: Design tokens
+        run: npm run check:tokens
+
       - name: Unit tests
         run: npm test
 
