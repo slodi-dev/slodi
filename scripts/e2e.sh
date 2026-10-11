@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-# Run the journey tests against a throwaway stack. CI runs exactly this script
-# (.github/workflows/journeys.yml), so a local run is the CI run.
+# Run the journey tests and the route crawler against a throwaway stack. CI
+# runs exactly this script (.github/workflows/journeys.yml), so a local run is
+# the CI run.
 #
-#   scripts/e2e.sh                     # all journeys
-#   scripts/e2e.sh --grep @pr          # only the PR gate
+#   scripts/e2e.sh                     # all journeys, crawl in all four forms
+#   scripts/e2e.sh --grep @pr --project chromium --project crawl-desktop-light
+#                                      # the PR gate
+#   scripts/e2e.sh --project crawl-phone-dark --grep /programs
+#                                      # one form, some pages
 #   E2E_KEEP_STACK=1 scripts/e2e.sh    # leave the backend up afterwards
 #
 # Ports default to 18000 (backend) and 13000 (frontend) so they do not clash
 # with a dev stack on 8000/3000. Postgres is not exposed at all.
 #
 # Steps: generate signing keys -> backend stack up (migrate + e2e seed) ->
-# next build -> playwright (starts next) -> coverage report -> tear down.
+# next build -> playwright (starts next) -> coverage and crawl reports -> tear down.
 # Extra arguments are passed to `playwright test`.
 set -euo pipefail
 
@@ -25,6 +29,9 @@ export E2E_AUTH_DIR="$FRONTEND/e2e/.auth"
 # Frontend config. AUTH0_DOMAIN is never contacted: sessions are minted by the
 # tests, and the SDK only talks to Auth0 on login, callback and refresh.
 export NEXT_PUBLIC_API_URL="http://localhost:$E2E_BACKEND_PORT"
+# Server-side route handlers (app/api/leikir, app/api/emails) reach the backend
+# through this one; in production it comes from frontend/.env.docker.
+export API_BASE_URL="$NEXT_PUBLIC_API_URL"
 export APP_BASE_URL="http://localhost:$E2E_FRONTEND_PORT"
 export AUTH0_DOMAIN="e2e.slodi.invalid"
 export AUTH0_AUDIENCE="https://api.e2e.slodi.invalid"
@@ -63,7 +70,7 @@ compose up --build --detach --wait backend
 echo "==> next build"
 npm run build
 
-echo "==> Journeys"
+echo "==> Journeys and route crawl"
 set +e
 npx playwright test "$@"
 status=$?
@@ -71,8 +78,10 @@ set -e
 
 echo "==> Coverage"
 node e2e/support/coverage-report.mjs e2e-results/results.json | tee e2e-results/coverage.md
+node e2e/support/crawl-report.mjs e2e-results/results.json >e2e-results/crawl.md
+cat e2e-results/crawl.md
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
-  cat e2e-results/coverage.md >>"$GITHUB_STEP_SUMMARY"
+  cat e2e-results/coverage.md e2e-results/crawl.md >>"$GITHUB_STEP_SUMMARY"
 fi
 
 exit $status

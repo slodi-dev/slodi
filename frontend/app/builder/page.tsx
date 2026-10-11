@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import ProgramCard from "@/app/programs/components/ProgramCard";
 import styles from "./builder.module.css";
 import usePrograms, { Program as ProgramType } from "@/hooks/usePrograms";
+import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 
 export default function BuilderPage() {
   const [query, setQuery] = useState("");
@@ -11,7 +12,7 @@ export default function BuilderPage() {
 
   // Use the hook that will fetch from the backend. The hook uses
   // either an array response or `{ programs: Program[] }`.
-  const workspaceId = "defaultWorkspace"; // Replace with the actual workspace ID
+  const workspaceId = useDefaultWorkspaceId();
   const { programs, facets, loading, error } = usePrograms(workspaceId);
 
   const filtered = useMemo(() => {

@@ -127,3 +127,14 @@ export async function knownBugStep(
       `back to step("${id}", ...) in this PR.`
   );
 }
+
+/**
+ * A step marked _(manual)_ in the journey file: it can't be automated yet.
+ *
+ * Nothing runs. The step is recorded as a `manual` annotation, and the
+ * coverage report counts the journey as covered but not proven, however the
+ * automated steps went.
+ */
+export function manualStep(id: StepId, title: string, reason: string): void {
+  test.info().annotations.push({ type: "manual", description: `${id} ${title}: ${reason}` });
+}
