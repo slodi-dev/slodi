@@ -191,6 +191,9 @@ export function installMockFetch() {
       init?.method ?? (input instanceof Request ? input.method : "GET")
     ).toUpperCase();
 
+    // In-memory URLs never leave the browser; their origin is "null".
+    if (url.protocol === "data:" || url.protocol === "blob:") return realFetch(input, init);
+
     const route = [...storyRoutes, ...defaultRoutes()].find((r) => matches(r, url, method));
     if (route) return respond(route, url);
 
