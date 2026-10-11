@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import styles from "./header.module.css";
 import { useUser } from "@auth0/nextjs-auth0";
+import { useDrawerFocus } from "@/hooks/useDrawerFocus";
 
 const GITHUB_URL = "https://github.com/halldorvalberg/slodi";
 
@@ -11,8 +12,16 @@ export default function Header() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const openDrawer = () => setIsDrawerOpen(true);
-  const closeDrawer = () => setIsDrawerOpen(false);
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
   const { user } = useUser();
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useDrawerFocus({
+    open: isDrawerOpen,
+    containerRef: drawerRef,
+    triggerRef: toggleRef,
+    onClose: closeDrawer,
+  });
 
   return (
     <header className={styles.headerRoot}>
@@ -54,11 +63,12 @@ export default function Header() {
 
         {/* Mobile menu toggle */}
         <button
+          ref={toggleRef}
           type="button"
           className={styles.menuToggleButton}
           onClick={openDrawer}
           aria-label="Opna valmynd"
-          aria-haspopup="true"
+          aria-haspopup="dialog"
           aria-expanded={isDrawerOpen}
           aria-controls="main-menu-drawer"
         >
@@ -70,13 +80,28 @@ export default function Header() {
           <div className={styles.drawerOverlay} onClick={closeDrawer} aria-hidden="true" />
         )}
 
-        {/* Mobile drawer */}
-        <aside
+        {/* Mobile drawer. Closed, it is `inert`: off screen, out of the tab
+            order and hidden from assistive technology. Open, it is a modal
+            dialog that holds focus until Escape, the close button, the overlay
+            or a link closes it (useDrawerFocus). */}
+        <div
+          ref={drawerRef}
           id="main-menu-drawer"
           className={`${styles.drawerPanel} ${isDrawerOpen ? styles.drawerPanelOpen : ""}`}
-          aria-hidden={!isDrawerOpen}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Valmynd"
+          inert={!isDrawerOpen}
         >
-          <nav className={styles.drawerNav}>
+          <button
+            type="button"
+            className={styles.drawerCloseButton}
+            onClick={closeDrawer}
+            aria-label="Loka valmynd"
+          >
+            ✕
+          </button>
+          <nav className={styles.drawerNav} aria-label="Aðalvalmynd">
             <Link href="/" className={styles.drawerNavLink} onClick={closeDrawer}>
               Heim
             </Link>
@@ -106,7 +131,7 @@ export default function Header() {
               </Link>
             )}
           </nav>
-        </aside>
+        </div>
       </div>
     </header>
   );
