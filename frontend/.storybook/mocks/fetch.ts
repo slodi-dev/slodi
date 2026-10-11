@@ -24,6 +24,7 @@ import {
   workspace,
 } from "@/stories/fixtures";
 import type { User } from "@/services/users.service";
+import type { AuthorStanding } from "@/services/suspensions.service";
 
 export type MockRoute = {
   /** Matched against `pathname + search` of the request URL. */
@@ -140,15 +141,13 @@ function facets() {
   };
 }
 
-function standing() {
+function standing(): AuthorStanding {
   return {
     author_id: userMember.id,
-    author_name: userMember.name,
-    strikes: [],
-    active_suspension: null,
+    reports_received: 0,
+    strikes: 0,
     suspensions: [],
-    approved_count: 14,
-    rejected_count: 1,
+    active_suspension: null,
   };
 }
 
