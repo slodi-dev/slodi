@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import logging
-from typing import Any
 
 import resend
 from sqlalchemy import update
@@ -20,10 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
 from app.core.db import get_session_maker
-from app.core.email import one_click_unsubscribe_url, unsubscribe_page_url
-from app.core.email_templates.renderer import render
 from app.models.email_draft import EmailDraft
-from app.services.email_list import EmailListService
+from app.services.email_delivery import draft_messages
 from app.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -83,32 +80,7 @@ def _send_batch_sync(messages: list[tuple[str, str, str, str | None]]) -> None:
 async def process_draft(draft: EmailDraft, session: AsyncSession) -> None:
     """Render, build per-recipient HTML, send, and update status."""
     try:
-        context: dict[str, Any] = {"subject": draft.subject, "preheader": draft.preheader}
-        if isinstance(draft.blocks, dict):
-            context.update(draft.blocks)
-        else:
-            context["blocks"] = draft.blocks
-        html = render(draft.template, context)
-
-        messages: list[tuple[str, str, str, str | None]] = []
-
-        if draft.manual_recipients:
-            for recipient in draft.manual_recipients:
-                recipient_html = html.replace("{unsubscribe_url}", "https://slodi.is/unsubscribe")
-                messages.append((recipient, draft.subject, recipient_html, None))
-        else:
-            subscribers = await EmailListService(session).list()
-            for subscriber in subscribers:
-                token = subscriber.unsubscribe_token
-                subscriber_html = html.replace("{unsubscribe_url}", unsubscribe_page_url(token))
-                messages.append(
-                    (
-                        subscriber.email,
-                        draft.subject,
-                        subscriber_html,
-                        one_click_unsubscribe_url(token),
-                    )
-                )
+        messages = await draft_messages(session, draft)
 
         if messages:
             # Run blocking Resend call in a thread to avoid blocking the loop

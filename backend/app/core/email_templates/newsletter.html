@@ -45,6 +45,10 @@
 {% endfor %}
 {% endblock %}
 {% block unsubscribe %}
+{#- Off for recipients who are not on the list: they have nothing to leave,
+    and a link without a token would be dead. See services/email_delivery.py. -#}
+{% if include_unsubscribe|default(true) %}
   &nbsp;|&nbsp;
   <a href="{unsubscribe_url}" style="color:#6b7280;text-decoration:underline;">{{ unsubscribe_label|default("Segja upp póstlista") }}</a>
+{% endif %}
 {% endblock %}

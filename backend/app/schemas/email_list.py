@@ -35,3 +35,16 @@ class EmailListOut(BaseModel):
 
     email: EmailConstrained
     unsubscribe_token: UUID
+
+
+class SubscriptionStatusOut(BaseModel):
+    """Where a token's address stands after a check, unsubscribe or resubscribe.
+
+    `changed` is False when the address was already in that state — the
+    second click on an unsubscribe link, or a mail provider retrying its
+    one-click POST — so the page can say "already unsubscribed" rather than
+    treating it as an error.
+    """
+
+    subscribed: bool
+    changed: bool
