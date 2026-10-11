@@ -228,7 +228,7 @@ export async function fetchContentFacets(
 export async function fetchProgramById(
   id: string,
   getToken: () => Promise<string | null>,
-  { fresh = false }: { fresh?: boolean } = {}
+  { fresh = false, refreshCache = false }: { fresh?: boolean; refreshCache?: boolean } = {}
 ): Promise<Program> {
   // `/content/{id}`, not `/programs/{id}`, for the same reason the listing
   // moved: the latter selects `Program`, which under joined-table inheritance
@@ -244,6 +244,10 @@ export async function fetchProgramById(
       // pre-edit copy in the browser cache for the item page to show after
       // the save — so `fresh` neither reads nor writes the HTTP cache.
       ...(fresh ? { cache: "no-store" as const } : {}),
+      // `refreshCache` skips the cached copy but stores the new one, so the
+      // next ordinary read (a new tab, a back button) sees it — used after a
+      // like, which changes `like_count` and `liked_by_me` under the cache.
+      ...(refreshCache && !fresh ? { cache: "reload" as const } : {}),
     },
     getToken
   );
