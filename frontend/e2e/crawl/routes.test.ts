@@ -4,6 +4,7 @@
  * can't open fails CI before the journey stack is even started.
  */
 import { describe, expect, it } from "vitest";
+import { routeAccess } from "../../lib/route-access";
 import { crawlTargets, FILL, isDynamic, pageRoutes, SKIP } from "./routes";
 
 describe("route crawler targets", () => {
@@ -35,5 +36,14 @@ describe("route crawler targets", () => {
 
   it("fills every dynamic segment", () => {
     for (const { path } of crawlTargets()) expect(path).not.toMatch(/\[|\]/);
+  });
+
+  // Item pages are signed-in only (user decision 2026-10-11). Private routes
+  // make the crawler assert that a signed-out visit is sent to log in
+  // (pages.crawl.ts), so this pins every item path the crawl opens to that.
+  it("crawls item pages, and every one is private", () => {
+    const items = crawlTargets().filter((t) => t.route === "/programs/[id]");
+    expect(items.length).toBeGreaterThan(0);
+    for (const { path } of items) expect(routeAccess(path), path).toBe("private");
   });
 });
