@@ -15,6 +15,7 @@ from app.core.auth import (
     check_content_edit_access,
     check_workspace_access,
     get_current_user,
+    is_content_moderator,
     require_not_suspended,
 )
 from app.core.db import get_session
@@ -180,7 +181,12 @@ async def get_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> EventOut:
     svc = EventService(session)
-    event = await svc.get(event_id, current_user.id, include_hidden=True)
+    event = await svc.get(
+        event_id,
+        current_user.id,
+        include_hidden=True,
+        include_hidden_children=is_content_moderator(current_user),
+    )
     await check_workspace_access(
         event.workspace_id,
         current_user,

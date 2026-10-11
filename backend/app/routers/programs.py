@@ -14,6 +14,7 @@ from app.core.auth import (
     check_content_edit_access,
     check_workspace_access,
     get_current_user,
+    is_content_moderator,
     require_not_suspended,
 )
 from app.core.db import get_session
@@ -399,9 +400,19 @@ async def get_content(
     # cannot answer "is this reader its author?" without first loading the row.
     item: ContentOut
     if content_type == ContentType.program:
-        item = await svc.get(content_id, current_user.id, include_hidden=True)
+        item = await svc.get(
+            content_id,
+            current_user.id,
+            include_hidden=True,
+            include_hidden_children=is_content_moderator(current_user),
+        )
     elif content_type == ContentType.event:
-        item = await EventService(session).get(content_id, current_user.id, include_hidden=True)
+        item = await EventService(session).get(
+            content_id,
+            current_user.id,
+            include_hidden=True,
+            include_hidden_children=is_content_moderator(current_user),
+        )
     else:
         item = await TaskService(session).get(content_id, current_user.id, include_hidden=True)
 
@@ -427,7 +438,12 @@ async def get_program(
     current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
     svc = ProgramService(session)
-    program = await svc.get(program_id, current_user.id, include_hidden=True)
+    program = await svc.get(
+        program_id,
+        current_user.id,
+        include_hidden=True,
+        include_hidden_children=is_content_moderator(current_user),
+    )
     await check_workspace_access(
         program.workspace_id,
         current_user,

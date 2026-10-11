@@ -130,8 +130,14 @@ class ProgramService:
         current_user_id: UUID | None = None,
         *,
         include_hidden: bool = False,
+        include_hidden_children: bool = False,
     ) -> ProgramOut:
-        row = await self.repo.get(program_id, current_user_id, include_hidden=include_hidden)
+        row = await self.repo.get(
+            program_id,
+            current_user_id,
+            include_hidden=include_hidden,
+            include_hidden_children=include_hidden_children,
+        )
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")

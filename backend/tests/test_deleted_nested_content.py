@@ -13,6 +13,8 @@ from app import schemas as s
 from app.repositories.events import EventRepository
 from app.repositories.programs import ProgramRepository
 from app.repositories.tasks import TaskRepository
+from app.schemas.event import EventOut
+from app.schemas.program import ProgramOut
 from app.utils import get_current_datetime
 
 
@@ -172,3 +174,130 @@ async def test_a_program_hides_deleted_comments_and_deleted_or_hidden_events(db)
         loaded, _ = row
         assert [c.body for c in loaded.comments] == ["Stendur"]
         assert [e.name for e in loaded.events] == ["Sýnilegur"]
+
+
+# ── Moderators see hidden children, marked ───────────────────────────────────
+#
+# Dagskrárstjórnarteymið has to be able to find what it hid in order to unhide
+# it, so the detail loaders keep hidden children for them — flagged through
+# `hidden_at` so the frontend can grey them out. Deleted children stay gone for
+# everyone.
+
+
+async def _program_with_children(db):
+    user, ws = await _workspace(db)
+    program = _content(m.Program, user, ws, "Dagskrá", content_type=m.ContentType.program)
+    db.add(program)
+    await db.flush()
+    now = get_current_datetime()
+    db.add_all(
+        [
+            _content(
+                m.Event,
+                user,
+                ws,
+                "Sýnilegur",
+                content_type=m.ContentType.event,
+                program_id=program.id,
+            ),
+            _content(
+                m.Event,
+                user,
+                ws,
+                "Eytt",
+                content_type=m.ContentType.event,
+                program_id=program.id,
+                deleted_at=now,
+            ),
+            _content(
+                m.Event,
+                user,
+                ws,
+                "Falinn",
+                content_type=m.ContentType.event,
+                program_id=program.id,
+                hidden_at=now,
+            ),
+        ]
+    )
+    await db.flush()
+    db.expunge_all()
+    return program.id, ws.id
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_a_moderator_sees_hidden_events_flagged_but_not_deleted_ones(db):
+    program_id, ws_id = await _program_with_children(db)
+    repo = ProgramRepository(db)
+
+    for row in (
+        await repo.get(program_id, include_hidden_children=True),
+        await repo.get_in_workspace(program_id, ws_id, include_hidden_children=True),
+    ):
+        assert row is not None
+        out = ProgramOut.from_row(*row)
+        by_name = {e.name: e for e in out.events}
+        assert set(by_name) == {"Sýnilegur", "Falinn"}
+        assert by_name["Falinn"].hidden_at is not None
+        assert by_name["Sýnilegur"].hidden_at is None
+        db.expunge_all()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_without_the_moderator_flag_hidden_events_stay_out(db):
+    program_id, _ = await _program_with_children(db)
+
+    row = await ProgramRepository(db).get(program_id)
+
+    assert row is not None
+    out = ProgramOut.from_row(*row)
+    assert [e.name for e in out.events] == ["Sýnilegur"]
+    assert out.events[0].hidden_at is None
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_a_moderator_sees_hidden_tasks_flagged_but_not_deleted_ones(db):
+    user, ws = await _workspace(db)
+    event = _content(m.Event, user, ws, "Viðburður", content_type=m.ContentType.event)
+    db.add(event)
+    await db.flush()
+    now = get_current_datetime()
+    db.add_all(
+        [
+            _content(
+                m.Task, user, ws, "Sýnilegt", content_type=m.ContentType.task, event_id=event.id
+            ),
+            _content(
+                m.Task,
+                user,
+                ws,
+                "Eytt",
+                content_type=m.ContentType.task,
+                event_id=event.id,
+                deleted_at=now,
+            ),
+            _content(
+                m.Task,
+                user,
+                ws,
+                "Falið",
+                content_type=m.ContentType.task,
+                event_id=event.id,
+                hidden_at=now,
+            ),
+        ]
+    )
+    await db.flush()
+    db.expunge_all()
+
+    row = await EventRepository(db).get(event.id, include_hidden_children=True)
+
+    assert row is not None
+    out = EventOut.from_row(*row)
+    by_name = {t.name: t for t in out.tasks}
+    assert set(by_name) == {"Sýnilegt", "Falið"}
+    assert by_name["Falið"].hidden_at is not None
+    assert by_name["Sýnilegt"].hidden_at is None
