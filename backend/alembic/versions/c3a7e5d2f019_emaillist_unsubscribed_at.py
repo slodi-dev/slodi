@@ -6,7 +6,7 @@ got 404. Rows are now kept and marked; every send reads only rows where
 unsubscribed_at is null.
 
 Revision ID: c3a7e5d2f019
-Revises: 505edb93669c
+Revises: 8d15668ed4d4
 Create Date: 2026-10-11 00:30:00.000000
 
 """
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "c3a7e5d2f019"
-down_revision: Union[str, Sequence[str], None] = "505edb93669c"
+down_revision: Union[str, Sequence[str], None] = "8d15668ed4d4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
