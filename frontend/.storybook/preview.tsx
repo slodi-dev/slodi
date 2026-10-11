@@ -127,7 +127,24 @@ const preview: Preview = {
     },
     a11y: {
       // Report violations in the a11y panel without failing anything yet.
+      // Groups that are clean opt in with `a11y: { test: "error" }` in their meta.
       test: "todo",
+    },
+    viewport: {
+      // The two widths every story is tested at (vitest.config.ts): a common
+      // phone and a laptop. Also in the toolbar.
+      options: {
+        phone: {
+          name: "Phone (390)",
+          styles: { width: "390px", height: "844px" },
+          type: "mobile",
+        },
+        desktop: {
+          name: "Desktop (1280)",
+          styles: { width: "1280px", height: "800px" },
+          type: "desktop",
+        },
+      },
     },
     options: {
       storySort: {

@@ -90,6 +90,8 @@ export const Loading: Story = {
 export const FetchFails: Story = {
   args: { summary: { reports: 1, strikes: 0, spells: 0, suspendedUntil: null } },
   parameters: {
+    // The failed request is logged by the app on purpose; nothing else may log.
+    allowedConsoleErrors: [/^\[API 500\]/],
     mockApi: [
       {
         match: /\/moderation\/authors\/[^/]+\/standing/,
