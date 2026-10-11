@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import type { MockRoute } from "@/.storybook/mocks/fetch";
-import { GAMES, type GameDef } from "@/lib/leikir-games";
+import { ALL_GAMES, type GameDef } from "@/lib/leikir-games";
 import GameCard from "./GameCard";
 
-const bySlug = (slug: string) => GAMES.find((g) => g.slug === slug) as GameDef;
+// ALL_GAMES, not GAMES: NoLeaderboard uses Heiðursorðla, which the hub hides
+// while HEIDURSORDLA_ENABLED is off (lib/feature-flags.ts).
+const bySlug = (slug: string) => ALL_GAMES.find((g) => g.slug === slug) as GameDef;
 
 const podiumScores: MockRoute = {
   match: /\/api\/leikir\/[^/]+\/scores/,
@@ -57,7 +59,10 @@ export const WithPodium: Story = {
 /** A scored game nobody has played yet — default mock returns an empty board. */
 export const EmptyPodium: Story = {};
 
-/** Heiðursorðla has its own daily board, so it shows no podium. */
+/**
+ * Heiðursorðla has its own daily board, so it shows no podium. The game is hidden
+ * from the hub for now (HEIDURSORDLA_ENABLED); this keeps the card variant covered.
+ */
 export const NoLeaderboard: Story = { args: { game: bySlug("heidursordla") } };
 
 export const ArnorClicker: Story = {

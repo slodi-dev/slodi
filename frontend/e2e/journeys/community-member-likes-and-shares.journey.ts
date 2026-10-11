@@ -5,7 +5,7 @@
  * link herself. She expects it to look the way she left it: liked by her, with
  * a count that includes her.
  */
-import { test, expect, step, knownBugStep, manualStep } from "../support/journey";
+import { test, expect, step, manualStep } from "../support/journey";
 import { LIKEABLE_TASK, PERSONAS } from "../support/fixtures";
 
 test(
@@ -75,10 +75,10 @@ test(
         .toBe(`${baseURL}/programs/${LIKEABLE_TASK.id}`);
     });
 
-    // sc-531: on a page load that starts at the item, the item page registers
-    // the like before the item has loaded (not liked, 0), and LikesContext
-    // keeps the first value it is given, so the real one never shows.
-    await knownBugStep("sc-531", "S5", "Opens the link in a new tab", async () => {
+    // sc-531 (fixed): a page load that starts at the item used to register
+    // the like before the item had loaded (not liked, 0), and LikesContext
+    // kept the first value it was given, so the real one never showed.
+    await step("S5", "Opens the link in a new tab", async () => {
       const tab = await context.newPage();
       await tab.goto(link);
       await expect(tab.getByRole("heading", { level: 1 })).toHaveText(LIKEABLE_TASK.name);

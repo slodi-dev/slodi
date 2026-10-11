@@ -104,8 +104,11 @@ services:
       target: production
       args:
         # NEXT_PUBLIC_API_URL is baked into the client bundle at build time.
-        # Must be reachable from the browser — set this in your .env file on each machine.
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        # Must be reachable from the browser — set this in your .env file on each machine
+        # (https://api.slodi.is in production, http://localhost:8000 locally). No default:
+        # a silent localhost fallback on a public site makes Chrome prompt visitors for
+        # local-network access.
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env (see .env.example)}
     container_name: slodi-frontend
     env_file:
       - ./frontend/.env.docker

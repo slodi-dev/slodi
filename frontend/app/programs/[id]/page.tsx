@@ -60,10 +60,11 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
      without a refetch of the whole item. */
   const [removedComments, setRemovedComments] = useState<string[]>([]);
   const { program, isLoading, error, setProgram } = useProgram(id);
+  // Undefined until the item loads, so the loading render registers nothing.
   const { likeCount, isLiked, toggleLike } = useLikes(
     id,
-    program?.like_count || 0,
-    program?.liked_by_me ?? false
+    program?.like_count,
+    program?.liked_by_me
   );
   const { handleShare, handleAddToWorkspace } = useProgramActions(program);
   const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);

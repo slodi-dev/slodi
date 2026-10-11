@@ -109,7 +109,7 @@ the bank, one program page, `/leikir`). It runs in the deploy workflow next to
 | Step | What | Effort | Story | Status |
 |---|---|---|---|---|
 | 1 | `check-tokens` in CI; stories as tests in 4 forms; every component has stories; a11y `error` for clean primitives | ½ day | sc-582 | Done, see below |
-| 2 | Route crawler + 2 journeys | 1–2 days | sc-583 | Backlog |
+| 2 | Route crawler + 2 journeys | 1–2 days | sc-583 | Done, see below |
 | 3 | Visual regression | 1 day | sc-584 | Backlog |
 | 4 | a11y `error` group by group; post-deploy smoke | ongoing | sc-585 | a11y done but Heiðursorðla, see below; smoke to do |
 
@@ -136,6 +136,45 @@ the bank, one program page, `/leikir`). It runs in the deploy workflow next to
   everywhere failed 404 of 1,504 tests. Most are `color-contrast`, plus form labels and
   list/ARIA structure in TagPicker and ContentCreateModal. That is step 4's
   backlog.
+
+### Step 2, as built
+
+From #170.
+
+- **Crawler** (`frontend/e2e/crawl/`). Every route under `app/` × 4 personas
+  (anonymous, member, editor, admin) × 4 forms. At merge: 26 page routes and 31
+  paths (`/programs/[id]` for 6 items, one devlog, one Heiðursorðla round), so
+  124 tests per form and 496 in all.
+- **PR gate.** `crawl-desktop-light` for every persona, plus the `@pr`
+  journeys. Nightly, `main` and dispatch runs crawl all four forms.
+- **Fails on** page errors, `console.error`, responses ≥ 400 (API and app),
+  overflow at 390px and leftover English UI words. axe is report-only and
+  summarised in the job summary. A signed-out visit to a private page asserts
+  the redirect to login and nothing else.
+- **Expectations.** Expected statuses and tolerated bugs live in
+  `frontend/e2e/crawl/expectations.ts`, per route and persona. A tolerated bug
+  carries its Shortcut id.
+- **New dynamic routes** must be filled from the e2e seed or skipped with a
+  reason; `routes.test.ts` enforces it in `npm test`.
+- **First run found** 4 page bugs (fixed in #170), one e2e config gap (fixed)
+  and one deploy-level bug (sc-589).
+- **axe.** 8 rules fail somewhere: `color-contrast` on almost every page, and
+  the phone drawer's `aria-hidden-focus` on every phone page. Both feed step 4.
+- **Journeys.** `community-member-likes-and-shares` is automated, with known bug
+  sc-531 at S5 and S6 manual. `program-owner-edits-from-bank` is covered by the
+  sc-530 PR. `reviewer-sweeps-yfirferd` is a follow-up.
+
+Decisions taken 2026-10-11:
+
+- **Heiðursorðla is hidden.** The code, models and tables stay, but the hub
+  shows no card, both routes are a 404 and the backend does not register its
+  router, behind `HEIDURSORDLA_ENABLED` (frontend `lib/feature-flags.ts`,
+  backend setting, both off). The crawler now expects the 404.
+- **Item pages are signed-in only.** `/programs/[id]` is a private route and
+  every item endpoint answers 401 to an anonymous caller (backend
+  `tests/test_item_auth.py`). S6 of the likes-and-shares journey ("open the link
+  signed out") becomes "a signed-out visitor is sent to log in".
+- **Journeys becomes a required check** on pull requests.
 
 ### Step 4, a11y pass
 

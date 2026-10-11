@@ -42,15 +42,6 @@ export const ENTRIES: Entry[] = [
   // ── Every page ──────────────────────────────────────────────────────────
   {
     route: "*",
-    personas: "all",
-    api: [{ status: 404, path: /^\/_vercel\/insights\/script\.js$/ }],
-    bug: "sc-589",
-    why:
-      "<Analytics /> from @vercel/analytics loads /_vercel/insights/script.js, which only " +
-      "Vercel serves; Slóði is not deployed there. It is in the root layout, so every page.",
-  },
-  {
-    route: "*",
     personas: ["anonymous"],
     api: [{ status: 401, path: /^\/auth\/profile$/ }],
     why:
@@ -103,22 +94,20 @@ export const ENTRIES: Entry[] = [
 
   // ── Leikir ──────────────────────────────────────────────────────────────
   {
+    // Hidden behind HEIDURSORDLA_ENABLED (user decision 2026-10-11).
     route: "/leikir/heidursordla",
-    personas: ["anonymous"],
-    redirectsToLogin: true,
-    api: [{ status: 401, path: /^\/api\/auth\/token$/ }],
-    console: [/^\[heidursordla\] today failed Error: No authentication token available/],
+    personas: "all",
+    api: [{ status: 404, path: /^\/leikir\/heidursordla$/ }],
     why:
-      "/leikir is public, but Heiðursorðla keeps score per account: the page asks for a token, " +
-      "gets none, and lib/api.ts sends the visitor to log in.",
+      "Heiðursorðla is hidden: the page code stays, but while HEIDURSORDLA_ENABLED " +
+      "(lib/feature-flags.ts) is off the route is a 404 for everyone. The crawl checks it stays so.",
   },
   {
+    // Hidden behind HEIDURSORDLA_ENABLED (user decision 2026-10-11).
     route: "/leikir/heidursordla/[puzzleId]",
-    personas: ["anonymous"],
-    redirectsToLogin: true,
-    api: [{ status: 401, path: /^\/api\/auth\/token$/ }],
-    console: [/^\[heidursordla\] puzzle state failed Error: No authentication token available/],
-    why: "As /leikir/heidursordla: a round needs an account.",
+    personas: "all",
+    api: [{ status: 404, path: /^\/leikir\/heidursordla\/[^/]+$/ }],
+    why: "As /leikir/heidursordla: hidden, so a round is a 404 too.",
   },
 ];
 

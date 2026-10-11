@@ -13,7 +13,6 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "deploy-prod": "vercel --prod",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
     "storybook": "storybook dev -p 6006",
@@ -25,7 +24,6 @@
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.14.0",
     "@hookform/resolvers": "^5.2.2",
-    "@vercel/analytics": "^1.6.1",
     "audit": "^0.0.6",
     "clsx": "^2.1.1",
     "lucide-react": "^0.555.0",

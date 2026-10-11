@@ -39,10 +39,15 @@ steps 1, 4 and 6.
 
 - **sc-531.** Likes show 0 on a direct link: S5 and S6 open the item with no
   bank page loaded first, which is where `LikesContext` had nothing cached.
-  - On `main`, S5 fails: the new tab shows `Líkar við` with 0. The item page
-    registers the like as (not liked, 0) before the item has loaded, and
-    `initLike` keeps the first value it gets.
-  - The test marks S5 as `knownBugStep("sc-531", ...)` until the fix merges.
+  - Before the fix, S5 failed: the new tab showed `Líkar við` with 0. The
+    item page registered the like as (not liked, 0) before the item had
+    loaded, and `initLike` kept the first value it got.
+  - Now `LikesContext` registers only like data that came from the server,
+    lets each later server value replace the stored one, and holds back only
+    while the reader's own toggle is in flight. After a toggle it re-fetches
+    the item past the browser cache, so a link opened in a new tab within the
+    minute `/content/{id}` is cacheable does not get the pre-like copy.
+  - S5 is a normal `step`.
 - efnissida `SPEC.md`: `Líkar` (♡ + count) and `Deila` on the item page; a
   signed-out `Líkar` is disabled with its reason, never hidden.
 
