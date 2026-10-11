@@ -126,9 +126,11 @@ const preview: Preview = {
       },
     },
     a11y: {
-      // Report violations in the a11y panel without failing anything yet.
-      // Groups that are clean opt in with `a11y: { test: "error" }` in their meta.
-      test: "todo",
+      // Every story fails on an axe violation, in all four forms. A story with
+      // a known violation opts out with `a11y: { test: "todo" }` in its meta
+      // (report only, in the a11y panel) and a comment naming the rule and
+      // its story; there are none left outside Heiðursorðla.
+      test: "error",
     },
     viewport: {
       // The two widths every story is tested at (vitest.config.ts): a common

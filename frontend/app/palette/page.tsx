@@ -161,7 +161,7 @@ export default function PalettePage() {
                 <span className={styles.k}>Þrep 1 · Frumefni</span>
                 <h3>Primitives</h3>
                 <p>Hrá gildi, samhengislaus. Aldrei notuð beint.</p>
-                <code>--sl-primitive-green-500: 142 50% 42%</code>
+                <code>--sl-primitive-green-500: 142 50% 32%</code>
               </div>
               <div className={styles.tierCard}>
                 <span className={styles.k}>Þrep 2 · Merking</span>
@@ -355,13 +355,25 @@ export default function PalettePage() {
               <div className={styles.compGroup}>
                 <p className={styles.compLabel}>Innsláttarreitir</p>
                 <div className={styles.compRow} style={{ gap: "0.75rem" }}>
-                  <input className={styles.field} type="text" placeholder="Leitaðu að dagskrá…" />
+                  <input
+                    className={styles.field}
+                    type="text"
+                    aria-label="Dæmi: leit"
+                    placeholder="Leitaðu að dagskrá…"
+                  />
                   <input
                     className={cx(styles.field, styles.fieldFocus)}
                     type="text"
+                    aria-label="Dæmi: reitur í fókus"
                     defaultValue="Í fókus"
                   />
-                  <input className={styles.field} type="text" placeholder="Óvirkur" disabled />
+                  <input
+                    className={styles.field}
+                    type="text"
+                    aria-label="Dæmi: óvirkur reitur"
+                    placeholder="Óvirkur"
+                    disabled
+                  />
                 </div>
               </div>
 

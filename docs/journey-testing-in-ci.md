@@ -279,8 +279,12 @@ every form, on the same stack and seed.
   anything marked `translate="no"` or `data-user-content`). A signed-out visit
   to a private page (`lib/route-access.ts`) asserts the redirect to log in
   instead.
-- **axe** runs on every page but is report-only: violations are annotations
-  and an `axe-violations.json` attachment, summarised in the job summary.
+- **axe** runs every WCAG 2.1 A/AA rule on every page. A rule in
+  `ENFORCED_AXE_RULES` (`pages.crawl.ts`) fails the test; a rule joins that
+  set once no page breaks it in any form, so it stays fixed. The rest are
+  report-only. Every violation is an annotation and an `axe-violations.json`
+  attachment, summarised in the job summary. A known exception to an enforced
+  rule is an `axe` entry with a `bug` in `expectations.ts`.
 - **Expected failures** are declared in `expectations.ts`, per route and
   persona, with the reason: an admin page's 403 for a member, a hidden item's
   404 for someone who may not see it. A tolerated bug names its Shortcut story

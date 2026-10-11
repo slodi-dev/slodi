@@ -7,7 +7,9 @@
  * Reads the annotations each crawl test leaves in Playwright's JSON report:
  *   finding    a check that failed the test
  *   known-bug  a finding tolerated by an entry in e2e/crawl/expectations.ts
- *   axe        an axe violation (report only, fails nothing yet)
+ *   axe        an axe violation. Rules in ENFORCED_AXE_RULES (pages.crawl.ts)
+ *              also leave a `finding`, which fails the test; the rest are
+ *              report only.
  *
  * Prints nothing when the run had no crawl tests. Never fails the build
  * itself: the gate is the Playwright exit code.
@@ -100,7 +102,7 @@ for (const t of tests) {
   }
 }
 const IMPACT = ["critical", "serious", "moderate", "minor", "?"];
-lines.push("", `### axe, report only (${axe.size} rules)`, "");
+lines.push("", `### axe (${axe.size} rules)`, "");
 if (axe.size) {
   lines.push("| Rule | Impact | Pages | Tests | Nodes | Help |", "|---|---|---|---|---|---|");
   for (const [rule, e] of [...axe].sort(
@@ -110,7 +112,12 @@ if (axe.size) {
       `| ${rule} | ${e.impact} | ${e.pages.size} | ${e.tests} | ${e.nodes} | ${cell(e.help)} |`
     );
   }
-  lines.push("", "Every test with a violation carries `axe-violations.json` in the HTML report.");
+  lines.push(
+    "",
+    "Rules in `ENFORCED_AXE_RULES` (e2e/crawl/pages.crawl.ts) fail the test and appear under " +
+      "Findings too; the rest are report only. Every test with a violation carries " +
+      "`axe-violations.json` in the HTML report."
+  );
 } else {
   lines.push("None.");
 }

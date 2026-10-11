@@ -6,7 +6,11 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.8);
+  /* Inverse of the page in either theme, so the text can always be the
+     inverse text colour. The status colour is on the dot; the words say it
+     too. (Was rgba(0,0,0,0.8) with the light theme's dark status text on it.) */
+  background: hsl(var(--sl-color-surface-inverse) / 0.9);
+  color: hsl(var(--sl-color-text-inverse));
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
@@ -31,18 +35,6 @@
 
 .indicator[data-status="checking"] .dot {
   background: hsl(var(--sl-color-warning));
-}
-
-.indicator[data-status="healthy"] .text {
-  color: hsl(var(--sl-color-success-text));
-}
-
-.indicator[data-status="unhealthy"] .text {
-  color: hsl(var(--sl-color-error-text));
-}
-
-.indicator[data-status="checking"] .text {
-  color: hsl(var(--sl-color-warning-text));
 }
 
 @keyframes pulse {

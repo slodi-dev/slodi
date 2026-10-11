@@ -186,7 +186,8 @@ export default function UserManagement() {
         </p>
       )}
 
-      <div className={styles.tableWrapper}>
+      {/* Scrolls sideways on a phone, so it takes focus: arrow keys scroll it. */}
+      <div className={styles.tableWrapper} role="region" aria-label="Notendur" tabIndex={0}>
         <table className={styles.table}>
           <thead>
             <tr>

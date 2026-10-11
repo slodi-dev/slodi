@@ -68,14 +68,14 @@
 
 /* Focus State */
 .searchInput:focus-visible {
-  border-color: hsl(var(--sl-color-primary, 142 50% 42%));
+  border-color: hsl(var(--sl-color-primary, 142 50% 32%));
   box-shadow: 0 0 0 3px
-    hsl(var(--sl-color-primary, 142 50% 42%) / var(--sl-primitive-opacity-10, 0.1));
+    hsl(var(--sl-color-primary, 142 50% 32%) / var(--sl-primitive-opacity-10, 0.1));
   background: hsl(var(--sl-color-surface, 0 0% 100%));
 }
 
 .searchWrapper:focus-within .searchIcon {
-  color: hsl(var(--sl-color-primary, 142 50% 42%));
+  color: hsl(var(--sl-color-primary, 142 50% 32%));
 }
 
 /* Clear Button */
@@ -116,7 +116,7 @@
 }
 
 .clearButton:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 42%));
+  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 32%));
   outline-offset: 2px;
 }
 
@@ -165,6 +165,6 @@
 
   .searchInput:focus-visible {
     box-shadow: 0 0 0 4px
-      hsl(var(--sl-color-primary, 142 50% 42%) / var(--sl-primitive-opacity-20, 0.2));
+      hsl(var(--sl-color-primary, 142 50% 32%) / var(--sl-primitive-opacity-20, 0.2));
   }
 }

@@ -13,7 +13,7 @@ describe("parseTokens on app/slodi-tokens.css", () => {
   });
 
   it("resolves var() chains to literal values", () => {
-    expect(set.byTheme.light.get("--sl-color-primary")?.resolved).toBe("142 50% 42%");
+    expect(set.byTheme.light.get("--sl-color-primary")?.resolved).toBe("142 50% 32%");
     expect(set.byTheme.dark.get("--sl-color-primary")?.resolved).toBe("142 50% 55%");
   });
 
@@ -54,7 +54,7 @@ describe("parseTokens on app/slodi-tokens.css", () => {
     expect(groupOf("--sl-color-patrol-drekar", "28 90% 50%")).toBe("patrol");
     expect(groupOf("--sl-spacing-gap-md", "1rem")).toBe("spacing");
     expect(groupOf("--sl-z-modal", "50")).toBe("z-index");
-    expect(isHslTriplet("142 50% 42% / 0.3")).toBe(true);
+    expect(isHslTriplet("142 50% 32% / 0.3")).toBe(true);
     expect(isHslTriplet("0 0 0 3px red")).toBe(false);
   });
 });

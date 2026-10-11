@@ -36,6 +36,10 @@ const meta = {
   },
   parameters: {
     layout: "fullscreen",
+    // Report only: aria-dialog-name (the game-over dialog has no name) and
+    // aria-prohibited-attr (aria-label on the grid's plain div). Heiðursorðla
+    // is being hidden; fix both if it comes back.
+    a11y: { test: "todo" },
     // Any guess comes back as a partial match unless a story says otherwise.
     mockApi: [
       {

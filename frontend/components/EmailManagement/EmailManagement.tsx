@@ -349,7 +349,8 @@ export default function EmailManagement() {
         )}
         {successMsg && <p className={styles.success}>{successMsg}</p>}
 
-        <div className={styles.tableWrapper}>
+        {/* Scrolls sideways on a phone, so it takes focus: arrow keys scroll it. */}
+        <div className={styles.tableWrapper} role="region" aria-label="Sniðmát" tabIndex={0}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -644,7 +645,8 @@ export default function EmailManagement() {
           </span>
         </div>
 
-        <div className={styles.tableWrapper}>
+        {/* Scrolls sideways on a phone, so it takes focus: arrow keys scroll it. */}
+        <div className={styles.tableWrapper} role="region" aria-label="Póstar" tabIndex={0}>
           <table className={styles.table}>
             <thead>
               <tr>

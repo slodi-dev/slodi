@@ -316,7 +316,7 @@ export function SpacingTokens() {
             maxWidth: 320,
             height: 12,
             borderRadius: 2,
-            background: "hsl(142 50% 42%)",
+            background: "hsl(142 50% 32%)",
           }}
         />
       )}
@@ -334,7 +334,7 @@ export function RadiusTokens() {
             width: 64,
             height: 40,
             borderRadius: v,
-            border: "2px solid hsl(142 50% 42%)",
+            border: "2px solid hsl(142 50% 32%)",
             background: "hsl(142 50% 96%)",
           }}
         />

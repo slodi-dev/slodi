@@ -116,7 +116,9 @@ export default function TagPicker({
           // so there is no label element to point at.
           aria-label="Merkimiðar — leita og velja"
           aria-expanded="true"
-          aria-controls="tag-list"
+          // The list when there is one; with no match there is no list, so the
+          // whole picker (its "no match" message) — an id must not dangle.
+          aria-controls={shown.length > 0 ? "tag-list" : "tag-picker"}
           aria-describedby="tag-help"
           aria-autocomplete="list"
           aria-activedescendant={shown[active] ? `tag-opt-${active}` : undefined}
@@ -141,7 +143,9 @@ export default function TagPicker({
             {shown.map((tag, i) => {
               const on = selected.includes(tag);
               return (
-                <li key={tag}>
+                // The <li> is presentational so the listbox's children are
+                // the options themselves (ARIA: listbox > option).
+                <li key={tag} role="presentation">
                   <button
                     type="button"
                     id={`tag-opt-${i}`}

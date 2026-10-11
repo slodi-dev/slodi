@@ -6,7 +6,7 @@ import PriceFilter from "./PriceFilter";
 const focusNote =
   "Known issue sc-549: the max-price field's focus style is `var(--sl-input-shadow-focus, …)`. " +
   "The token exists, so the fallback never applies, but it resolves to an invalid shadow " +
-  "(`142 50% 42% / 0.3` is not a colour) and is dropped — focus shows only as a border change.";
+  "(`142 50% 32% / 0.3` is not a colour) and is dropped — focus shows only as a border change.";
 
 const meta = {
   title: "Components/Síur/PriceFilter",

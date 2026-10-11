@@ -27,7 +27,7 @@ export const Toggle: Story = {
         story:
           "Known issue sc-549 (story `components-sameiginlegt-mobilemenubutton--toggle`): tab to the " +
           "button. `:focus-visible` sets `outline: none` and `box-shadow: var(--sl-shadow-focus)`, " +
-          "which is invalid (`--sl-color-focus-ring` is a bare `142 50% 42% / 0.3`), so the " +
+          "which is invalid (`--sl-color-focus-ring` is a bare `142 50% 32% / 0.3`), so the " +
           "focus ring is invisible.",
       },
     },

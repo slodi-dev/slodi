@@ -111,6 +111,25 @@
   transform: translateX(0);
 }
 
+/* Close button, top right of the open drawer */
+.drawerCloseButton {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-primitive-space-10);
+  height: var(--sl-primitive-space-10);
+  background: none;
+  border: 1px solid hsl(var(--sl-color-border) / 0.4);
+  border-radius: var(--sl-primitive-radius-md);
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-primitive-font-size-lg);
+  cursor: pointer;
+}
+.drawerCloseButton:hover {
+  background: hsl(var(--sl-color-surface-secondary) / 0.6);
+}
+
 /* Drawer navigation layout */
 .drawerNav {
   display: flex;

@@ -100,8 +100,11 @@ export default function TagRow({
         : "Ertu viss?";
 
     return (
-      <li className={styles.row} role="alert">
-        <span className={styles.deleteMessage}>{message}</span>
+      <li className={styles.row}>
+        {/* The question is the alert, not the row: an <li> must stay a list item. */}
+        <span className={styles.deleteMessage} role="alert">
+          {message}
+        </span>
         <div className={styles.actions}>
           <button
             type="button"

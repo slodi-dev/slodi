@@ -11,8 +11,8 @@
   /* #d9d9d9 Soft gray border */
 
   /* Brand / Actions - Green accents */
-  --primary: 142 50% 42%;
-  /* #35a65f Fresh green */
+  --primary: 142 50% 32%;
+  /* #297a47 Fresh green — 5.3:1 with white (was 42%, 3.27:1; sc-586) */
   --primary-foreground: 0 0% 100%;
   /* #ffffff */
   --secondary: 160 42% 32%;
@@ -21,16 +21,16 @@
   /* #ffffff */
 
   /* Semantic states */
-  --success: 142 50% 42%;
-  /* #35a65f Fresh green */
+  --success: 142 50% 32%;
+  /* #297a47 Fresh green */
   --success-foreground: 0 0% 100%;
   /* #ffffff */
   --warning: 35 100% 64%;
   /* #ffb347 Campfire */
   --warning-foreground: 0 0% 20%;
   /* #333333 */
-  --error: 0 79% 65%;
-  /* #ec6060 Drótt Red */
+  --error: 0 79% 44%;
+  /* #c91818 Drótt Red — 5.8:1 with white (was 65%, 3.29:1) */
   --error-foreground: 0 0% 100%;
   /* #ffffff */
   --info: 195 83% 66%;
@@ -102,8 +102,9 @@
   /* Moss, a touch brighter on dark */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 154 43% 22%;
-  /* Pine, lifted for contrast */
+  --secondary: 154 43% 50%;
+  /* Pine, lifted for contrast: an outline button's text and border on the
+     dark page (was 22%, 1.9:1; now 7:1) */
   --secondary-foreground: 0 0% 100%;
 
   /* Semantic */
@@ -114,7 +115,8 @@
   --warning-foreground: 36 41% 10%;
   /* dark text on warm warning */
 
-  --error: 0 79% 62%;
+  /* Same as light: white on it is 5.8:1 (62% was 3.58:1). */
+  --error: 0 79% 44%;
   --error-foreground: 0 0% 100%;
 
   --info: 195 83% 64%;
@@ -152,7 +154,7 @@
 
   /* Brand colors - Green accents */
   --color-primary: var(--primary);
-  --color-primary-dark: 142 50% 35%; /* darker green */
+  --color-primary-dark: 142 50% 27%; /* darker green */
   --color-primary-subtle: 142 50% 96%; /* very light green tint */
   --color-secondary: var(--secondary);
   --color-secondary-subtle: 160 42% 95%; /* very light forest green */

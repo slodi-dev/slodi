@@ -198,7 +198,7 @@ export function buildTokenSet(css: string): TokenSet {
   return { names: [...all], byTheme };
 }
 
-/** A bare HSL triplet, optionally with alpha: `142 50% 42%` or `142 50% 42% / 0.3`. */
+/** A bare HSL triplet, optionally with alpha: `142 50% 32%` or `142 50% 32% / 0.3`. */
 export function isHslTriplet(value: string | null): value is string {
   return !!value && /^-?[\d.]+(deg)?\s+[\d.]+%\s+[\d.]+%(\s*\/\s*[\d.]+%?)?$/.test(value.trim());
 }

@@ -107,7 +107,7 @@
   background: hsl(var(--sl-color-error) / 0.1);
   border: 1px solid hsl(var(--sl-color-error) / 0.3);
   border-radius: var(--sl-radius-card);
-  color: hsl(var(--sl-color-error));
+  color: hsl(var(--sl-color-error-text));
   font-size: var(--sl-text-body);
   text-align: center;
 }

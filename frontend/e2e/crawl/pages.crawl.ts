@@ -11,8 +11,11 @@
  * - horizontal overflow at phone width;
  * - leftover English UI text (english.ts).
  *
- * axe runs on every page too, but is report-only for now: violations are
- * attached to the test and summarised by crawl-report.mjs, and fail nothing.
+ * - an axe violation of a rule in ENFORCED_AXE_RULES below.
+ *
+ * axe runs every WCAG 2.1 A/AA rule on every page. Violations of the other
+ * rules are report-only: attached to the test and summarised by
+ * crawl-report.mjs, failing nothing.
  *
  * A signed-out visit to a private route (lib/route-access.ts) asserts the
  * redirect to login instead, and checks nothing else.
@@ -32,6 +35,21 @@ export type Theme = "light" | "dark";
 const test = base.extend<{ theme: Theme }>({
   theme: ["light", { option: true }],
 });
+
+/**
+ * axe rules that fail the crawl. A rule joins once no page violates it in any
+ * form, so from then on it stays clean; a known exception needs an `axe` entry
+ * with a `bug` in expectations.ts. The rest stay report-only.
+ */
+export const ENFORCED_AXE_RULES = new Set([
+  "aria-hidden-focus",
+  "color-contrast",
+  "definition-list",
+  "dlitem",
+  "label",
+  "link-in-text-block",
+  "scrollable-region-focusable",
+]);
 
 const API_ORIGIN = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:18000").origin;
 
@@ -179,7 +197,7 @@ for (const { route, path } of crawlTargets()) {
         // ── Leftover English ──────────────────────────────────────────────────
         for (const hit of await findEnglish(page)) check("english", hit, expected.english(hit));
 
-        // ── axe (report only) ─────────────────────────────────────────────────
+        // ── axe ───────────────────────────────────────────────────────────────
         const axe = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
           .analyze();
@@ -188,6 +206,11 @@ for (const { route, path } of crawlTargets()) {
             type: "axe",
             description: `${v.id} (${v.impact ?? "?"}): ${v.nodes.length} node(s) — ${v.help}`,
           });
+          if (!ENFORCED_AXE_RULES.has(v.id)) continue;
+          for (const node of v.nodes) {
+            const target = node.target.map(String).join(" ");
+            check("axe", `${v.id}: ${target} — ${v.help}`, expected.axe(v.id, target));
+          }
         }
         if (axe.violations.length) {
           await testInfo.attach("axe-violations.json", {

@@ -1,10 +1,12 @@
 "use client";
 
+import { useRef } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "@/components/DashboardSidebar/DashboardSidebar";
 import { MobileMenuButton } from "@/components/MobileMenuButton/MobileMenuButton";
 import { useSidebarState } from "@/hooks/useSidebarState";
+import { useDrawerFocus } from "@/hooks/useDrawerFocus";
 import styles from "./DashboardLayout.module.css";
 
 interface DashboardLayoutProps {
@@ -38,6 +40,18 @@ export default function DashboardLayout({
   const { user: slodiUser } = useAuth();
   const { sidebarCollapsed, mobileMenuOpen, toggleSidebar, toggleMobileMenu, closeMobileMenu } =
     useSidebarState();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  // Phone only: the drawer is open only below 768px (useSidebarState closes
+  // it on resize). The menu button stays in the Tab cycle, since it is also
+  // how the drawer closes. Hidden while closed: DashboardLayout.module.css.
+  useDrawerFocus({
+    open: mobileMenuOpen,
+    containerRef: drawerRef,
+    triggerRef: menuButtonRef,
+    onClose: closeMobileMenu,
+    includeTrigger: true,
+  });
 
   // Resolve user data with Auth0 fallbacks
   const resolvedUserName = user?.name || userName;
@@ -48,10 +62,17 @@ export default function DashboardLayout({
   return (
     <div className={styles.layout}>
       {/* Mobile menu button - only visible on mobile */}
-      <MobileMenuButton isOpen={mobileMenuOpen} onClick={toggleMobileMenu} />
+      <MobileMenuButton
+        ref={menuButtonRef}
+        isOpen={mobileMenuOpen}
+        onClick={toggleMobileMenu}
+        controls="dashboard-sidebar"
+      />
 
       {/* Sidebar wrapper - handles mobile drawer positioning */}
       <div
+        ref={drawerRef}
+        id="dashboard-sidebar"
         className={styles.sidebarWrapper}
         data-open={mobileMenuOpen}
         data-collapsed={sidebarCollapsed}

@@ -6,7 +6,7 @@ import { reviewDetail, standingClean, standingRoute, standingSuspended } from ".
 
 const focusNote =
   "Known issue sc-549: the note composer (`.noteInput`) and custom-days field use " +
-  "`box-shadow: var(--sl-shadow-focus)`, which is an invalid shadow (`142 50% 42% / 0.3` is not a " +
+  "`box-shadow: var(--sl-shadow-focus)`, which is an invalid shadow (`142 50% 32% / 0.3` is not a " +
   "colour) — focus shows only as a border change.";
 
 const meta = {
