@@ -1,32 +1,272 @@
 {
+  // Every Slóði tool as an entry in Run and Debug (Ctrl+Shift+D), grouped by
+  // `presentation.group`. Python entries attach the debugger; the rest run in
+  // a terminal. Test explorer setup lives in settings.json.
   "version": "0.2.0",
   "configurations": [
+    // ── 1 · Develop ─────────────────────────────────────────────────────────
     {
-      "name": "Launch",
-      "type": "node-terminal",
+      "name": "Backend: FastAPI (debug)",
+      "type": "debugpy",
       "request": "launch",
-      "command": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up"
+      "module": "uvicorn",
+      "args": ["app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/bin/python",
+      "env": { "PYTHONPATH": "${workspaceFolder}/backend" },
+      "jinja": true,
+      "justMyCode": true,
+      "presentation": { "group": "1-develop", "order": 1 }
     },
-
     {
-      "name": "Launch Frontend",
+      "name": "Frontend: Next.js dev",
       "type": "node-terminal",
       "request": "launch",
       "command": "npm run dev",
-      "cwd": "${workspaceFolder}/frontend"
+      "cwd": "${workspaceFolder}/frontend",
+      "serverReadyAction": {
+        "pattern": "- Local:.+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      },
+      "presentation": { "group": "1-develop", "order": 2 }
     },
     {
-      "name": "Launch Backend",
+      "name": "Storybook",
       "type": "node-terminal",
       "request": "launch",
-      "command": "make run",
-      "cwd": "${workspaceFolder}/backend"
+      "command": "npm run storybook",
+      "cwd": "${workspaceFolder}/frontend",
+      "presentation": { "group": "1-develop", "order": 3 }
+    },
+    {
+      "name": "Docker: dev stack up",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "docker compose up --build",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "1-develop", "order": 4 }
+    },
+    {
+      "name": "Docker: dev stack down",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "docker compose down",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "1-develop", "order": 5 }
+    },
+
+    // ── 2 · Test ────────────────────────────────────────────────────────────
+    {
+      "name": "Backend: pytest current file (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-q", "${file}"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/bin/python",
+      "env": { "PYTHONPATH": "${workspaceFolder}/backend" },
+      "justMyCode": false,
+      "presentation": { "group": "2-test", "order": 1 }
+    },
+    {
+      "name": "Backend: unit tests",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "make test-unit",
+      "cwd": "${workspaceFolder}/backend",
+      "presentation": { "group": "2-test", "order": 2 }
+    },
+    {
+      "name": "Backend: integration tests (Docker)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "PYTHONPATH=. uv run pytest -q -m integration",
+      "cwd": "${workspaceFolder}/backend",
+      "presentation": { "group": "2-test", "order": 3 }
+    },
+    {
+      "name": "Frontend: Vitest current file (debug)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}/frontend",
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "console": "integratedTerminal",
+      "presentation": { "group": "2-test", "order": 4 }
+    },
+    {
+      "name": "Frontend: unit tests",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm test",
+      "cwd": "${workspaceFolder}/frontend",
+      "presentation": { "group": "2-test", "order": 5 }
+    },
+    {
+      "name": "Frontend: unit tests (watch)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run test:watch",
+      "cwd": "${workspaceFolder}/frontend",
+      "presentation": { "group": "2-test", "order": 6 }
+    },
+    {
+      "name": "Journeys: PR gate",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "scripts/e2e.sh --grep @pr",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "2-test", "order": 7 }
+    },
+    {
+      "name": "Journeys: all",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "scripts/e2e.sh",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "2-test", "order": 8 }
+    },
+    {
+      "name": "Journeys: all, keep stack up (for the Testing panel)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "E2E_KEEP_STACK=1 scripts/e2e.sh",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "2-test", "order": 9 }
+    },
+    {
+      "name": "Journeys: open last report",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npx playwright show-report e2e-results/html",
+      "cwd": "${workspaceFolder}/frontend",
+      "presentation": { "group": "2-test", "order": 10 }
+    },
+
+    // ── 3 · Check (lint, types, format) ─────────────────────────────────────
+    {
+      "name": "Check: everything (scripts/check.sh)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "scripts/check.sh",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "3-check", "order": 1 }
+    },
+    {
+      "name": "Check: backend lint + types",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "make lint && uv run ruff format --check . && make typecheck",
+      "cwd": "${workspaceFolder}/backend",
+      "presentation": { "group": "3-check", "order": 2 }
+    },
+    {
+      "name": "Check: frontend lint + types",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run lint && npm run typecheck",
+      "cwd": "${workspaceFolder}/frontend",
+      "presentation": { "group": "3-check", "order": 3 }
+    },
+    {
+      "name": "Check: design tokens",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "node scripts/check-tokens.mjs",
+      "cwd": "${workspaceFolder}/frontend",
+      "presentation": { "group": "3-check", "order": 4 }
+    },
+    {
+      "name": "Fix: format backend + frontend",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "(cd backend && make fmt) && (cd frontend && npm run format)",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "3-check", "order": 5 }
+    },
+
+    // ── 4 · Database ────────────────────────────────────────────────────────
+    {
+      "name": "DB: migrate to head",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "make migrate",
+      "cwd": "${workspaceFolder}/backend",
+      "presentation": { "group": "4-database", "order": 1 }
+    },
+    {
+      "name": "DB: new migration (autogenerate)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "make makemigration m=\"${input:migrationMessage}\"",
+      "cwd": "${workspaceFolder}/backend",
+      "presentation": { "group": "4-database", "order": 2 }
+    },
+    {
+      "name": "DB: downgrade one step",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "make downgrade",
+      "cwd": "${workspaceFolder}/backend",
+      "presentation": { "group": "4-database", "order": 3 }
+    },
+    {
+      "name": "DB: seed",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "make seed",
+      "cwd": "${workspaceFolder}/backend",
+      "presentation": { "group": "4-database", "order": 4 }
+    },
+    {
+      "name": "DB: psql shell (Docker dev stack)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "docker exec -it slodi-postgres psql -U slodi_user -d slodi_db",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "4-database", "order": 5 }
+    },
+
+    // ── 5 · Production (read-only) ──────────────────────────────────────────
+    {
+      "name": "Prod: verify deploy",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "scripts/verify-deploy.sh",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "5-production", "order": 1 }
+    },
+    {
+      "name": "Prod: ssh slodi-dev",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "ssh slodi-dev",
+      "cwd": "${workspaceFolder}",
+      "presentation": { "group": "5-production", "order": 2 }
     }
   ],
   "compounds": [
     {
-      "name": "Launch System (Frontend & Backend)",
-      "configurations": ["Launch Frontend", "Launch Backend"]
+      "name": "Full stack: backend (debug) + frontend",
+      "configurations": ["Backend: FastAPI (debug)", "Frontend: Next.js dev"],
+      "stopAll": true,
+      "presentation": { "group": "0-start", "order": 1 }
+    },
+    {
+      "name": "Full stack + Storybook",
+      "configurations": ["Backend: FastAPI (debug)", "Frontend: Next.js dev", "Storybook"],
+      "stopAll": true,
+      "presentation": { "group": "0-start", "order": 2 }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "migrationMessage",
+      "type": "promptString",
+      "description": "Migration message, e.g. add likes to content"
     }
   ]
 }

@@ -138,8 +138,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# vscode workspace configuration
-.vscode/
+# vscode: share run/debug, test and extension setup; keep the rest personal
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/extensions.json
 # npm package lock
 package-lock.json
 
