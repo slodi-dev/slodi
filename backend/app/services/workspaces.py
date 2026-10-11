@@ -83,8 +83,8 @@ class WorkspaceService:
         - Platform admins may make any change, including transferring ownership.
         - Only the current owner may transfer ownership (assign `owner`).
         - Otherwise the actor may only change the role of members ranked strictly
-          below them, which rules out changing their own role, and may not grant
-          a role above their own.
+          below them, which rules out changing their own role, and may only grant
+          roles strictly below their own — so an admin cannot make another admin.
 
         The router has already checked that the actor is at least a workspace
         admin; this guards against an admin promoting themselves to owner (and
@@ -113,10 +113,10 @@ class WorkspaceService:
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Cannot change the role of a member at or above your own role",
                     )
-                if _ROLE_RANK[role] > actor_rank:
+                if _ROLE_RANK[role] >= actor_rank:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Cannot grant a role above your own",
+                        detail="Cannot grant a role at or above your own",
                     )
 
         return await self.set_member_role(workspace_id, user_id, role)

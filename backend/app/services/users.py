@@ -7,9 +7,19 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.enums import Permissions
 from app.models.user import User
 from app.repositories.users import UserRepository
 from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
+
+
+# Platform admin comes only from ADMIN_EMAILS (scripts/seed.py), never through
+# the API, so one admin cannot mint another or demote a peer.
+def _admin_not_grantable() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Platform admin is granted through ADMIN_EMAILS, not through the API",
+    )
 
 
 class UserService:
@@ -61,6 +71,8 @@ class UserService:
         return [UserOut.model_validate(r) for r in rows]
 
     async def create(self, data: UserCreate) -> UserOut:
+        if data.permissions == Permissions.admin:
+            raise _admin_not_grantable()
         user = User(**data.model_dump())
         try:
             await self.repo.create(user)
@@ -81,6 +93,13 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         patch = data.model_dump(exclude_unset=True)
+        new_permissions = patch.get("permissions")
+        if (
+            new_permissions is not None
+            and new_permissions != row.permissions
+            and Permissions.admin in (new_permissions, row.permissions)
+        ):
+            raise _admin_not_grantable()
         for k, v in patch.items():
             setattr(row, k, v)
 

@@ -191,11 +191,31 @@ async def test_an_admin_can_change_members_below_them(db):
     svc = WorkspaceService(db)
 
     await svc.change_member_role(ws.id, editor.id, WorkspaceRole.viewer, _as(admin))
-    await svc.change_member_role(ws.id, viewer.id, WorkspaceRole.admin, _as(admin))
+    await svc.change_member_role(ws.id, viewer.id, WorkspaceRole.editor, _as(admin))
 
     roles = await _roles(db, ws.id)
     assert roles[editor.id] == WorkspaceRole.viewer
-    assert roles[viewer.id] == WorkspaceRole.admin
+    assert roles[viewer.id] == WorkspaceRole.editor
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_an_admin_cannot_make_another_admin(db):
+    ws, people, _ = await _workspace(db)
+    admin, editor = people[WorkspaceRole.admin], people[WorkspaceRole.editor]
+
+    await _refused(WorkspaceService(db), ws.id, editor.id, WorkspaceRole.admin, _as(admin))
+    assert (await _roles(db, ws.id))[editor.id] == WorkspaceRole.editor
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_the_owner_can_make_an_admin(db):
+    ws, people, _ = await _workspace(db)
+    owner, editor = people[WorkspaceRole.owner], people[WorkspaceRole.editor]
+
+    await WorkspaceService(db).change_member_role(ws.id, editor.id, WorkspaceRole.admin, _as(owner))
+    assert (await _roles(db, ws.id))[editor.id] == WorkspaceRole.admin
 
 
 @pytest.mark.integration
@@ -239,4 +259,23 @@ async def test_a_platform_admin_can_transfer_ownership(db):
 
     roles = await _roles(db, ws.id)
     assert roles[editor.id] == WorkspaceRole.owner
+    assert roles[owner.id] == WorkspaceRole.admin
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_a_platform_admin_can_make_themselves_owner_without_being_a_member(db):
+    ws, people, _ = await _workspace(db)
+    owner = people[WorkspaceRole.owner]
+    platform_admin = User(name="Stjórn", auth0_id=f"auth0|{uuid4()}", email=f"{uuid4()}@test.is")
+    db.add(platform_admin)
+    await db.flush()
+
+    _, displaced = await WorkspaceService(db).change_member_role(
+        ws.id, platform_admin.id, WorkspaceRole.owner, _as(platform_admin, Permissions.admin)
+    )
+
+    assert displaced == owner.id
+    roles = await _roles(db, ws.id)
+    assert roles[platform_admin.id] == WorkspaceRole.owner
     assert roles[owner.id] == WorkspaceRole.admin
