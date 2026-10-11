@@ -4,7 +4,7 @@
  * Sigurður edits his own item from its card in the dagskrárbanki, changes only
  * the title, and expects everything else he wrote to still be there.
  */
-import { test, expect, step, knownBugStep } from "../support/journey";
+import { test, expect, step } from "../support/journey";
 import { OWNER_TASK, PERSONAS } from "../support/fixtures";
 
 const NEW_NAME = `${OWNER_TASK.name} (uppfært)`;
@@ -49,26 +49,25 @@ test(
 
     await step("S4", "Sees the new title in the bank", async () => {
       await search.fill(NEW_NAME);
+      // The search box reaches the URL after a debounce. Wait for it: the old
+      // search already matches the new title, so the card shows at once, and
+      // a still-pending URL update would navigate back here mid-S5.
+      await expect(page).toHaveURL(/[?&]search=[^&]*uppf/);
       await expect(updatedCard).toBeVisible();
     });
 
-    // sc-530: the bank's list endpoint returns ContentListOut, which has no
-    // `instructions` or `media`. The card hands that summary to the edit form,
-    // and saving sends the empty fields back as cleared.
-    await knownBugStep(
-      "sc-530",
-      "S5",
-      "Opens the item and the leiðbeiningar are still there",
-      async () => {
-        await updatedCard.getByRole("link").first().click();
-        await expect(page).toHaveURL(new RegExp(`/programs/${OWNER_TASK.id}`));
-        await expect(page.getByRole("heading", { level: 1 })).toHaveText(NEW_NAME);
-        const leidbeiningar = page.getByRole("region", { name: "Leiðbeiningar" });
-        for (const line of OWNER_TASK.instructionSteps) {
-          await expect(leidbeiningar).toContainText(line);
-        }
+    // sc-530: the bank lists ContentListOut, which has no `instructions` or
+    // `media`. The card used to hand that summary to the edit form, and saving
+    // sent the missing fields back as cleared.
+    await step("S5", "Opens the item and the leiðbeiningar are still there", async () => {
+      await updatedCard.getByRole("link").first().click();
+      await expect(page).toHaveURL(new RegExp(`/programs/${OWNER_TASK.id}`));
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(NEW_NAME);
+      const leidbeiningar = page.getByRole("region", { name: "Leiðbeiningar" });
+      for (const line of OWNER_TASK.instructionSteps) {
+        await expect(leidbeiningar).toContainText(line);
       }
-    );
+    });
 
     await step("S6", "The attached documents are still there", async () => {
       await expect(

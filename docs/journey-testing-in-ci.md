@@ -297,7 +297,7 @@ fix is on this branch as its own commit.
 
 - [ ] Merge, watch `Journeys` on 10 PRs as an advisory check
 - [ ] Implement community-member-likes-and-shares (sc-531)
-- [ ] Turn S5's `knownBugStep` back into `step` in the sc-530 PR. The run forces this.
+- [x] Turn S5's `knownBugStep` back into `step` in the sc-530 PR. The run forces this.
 - [ ] Make `Journeys (PR gate)` a required check
 - [ ] Cache backend image layers in GHA (`docker/build-push-action` with `cache-to: type=gha`)
 
