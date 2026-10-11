@@ -55,6 +55,9 @@ jobs:
             git checkout --quiet --detach "$DEPLOY_SHA"
             docker compose -f docker-compose.yml up -d --build frontend
             docker image prune -f
+            # Build cache is never used by a running container; it grew to 10 GB
+            # on a 28 GB disk before this. Keep a week of it for fast rebuilds.
+            docker builder prune -f --filter until=168h
             echo "$DEPLOY_SHA" > "$STAMP"
       - name: Notify Discord
         if: always()
