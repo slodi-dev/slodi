@@ -6,6 +6,8 @@ const meta = {
   title: "Design system/Primitives/ActiveChip",
   component: ActiveChip,
   args: { label: "Drekaskátar", onRemove: fn() },
+  // Clean under axe in all four forms: a new violation fails CI (docs/ui-quality-pipeline.md).
+  parameters: { a11y: { test: "error" } },
 } satisfies Meta<typeof ActiveChip>;
 
 export default meta;

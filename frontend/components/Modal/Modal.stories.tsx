@@ -17,6 +17,8 @@ const meta = {
     ),
   },
   parameters: {
+    // Clean under axe in all four forms: a new violation fails CI (docs/ui-quality-pipeline.md).
+    a11y: { test: "error" },
     layout: "fullscreen",
     docs: { story: { inline: false, height: "420px" } },
   },
@@ -28,7 +30,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const WithoutTitle: Story = {
-  args: { title: undefined },
+  args: { title: undefined, ariaLabel: "Staðfesting" },
 };
 
 export const Wide: Story = {

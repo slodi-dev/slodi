@@ -25,6 +25,7 @@ const meta = {
       </div>
     ),
   ],
+  // a11y stays "todo" (preview.tsx) until sc-586: the count badge fails AA contrast in light.
 } satisfies Meta<typeof CollapsibleSection>;
 
 export default meta;

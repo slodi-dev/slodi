@@ -11,6 +11,8 @@ const meta = {
   argTypes: {
     variant: { control: "inline-radio", options: ["success", "warning", "error", "info"] },
   },
+  // Clean under axe in all four forms: a new violation fails CI (docs/ui-quality-pipeline.md).
+  parameters: { a11y: { test: "error" } },
 } satisfies Meta<typeof Alert>;
 
 export default meta;
