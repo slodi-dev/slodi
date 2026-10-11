@@ -48,6 +48,11 @@
   border-radius: var(--sl-radius-card);
 }
 
+.tableWrapper:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
 .table {
   width: 100%;
   min-width: 540px;
@@ -121,22 +126,22 @@
 
 .statusScheduled {
   background: hsl(var(--sl-color-info) / 0.12);
-  color: hsl(var(--sl-color-info));
+  color: hsl(var(--sl-color-info-text));
 }
 
 .statusProcessing {
   background: hsl(var(--sl-color-warning) / 0.12);
-  color: hsl(var(--sl-color-warning));
+  color: hsl(var(--sl-color-warning-text));
 }
 
 .statusSent {
   background: hsl(var(--sl-color-success) / 0.12);
-  color: hsl(var(--sl-color-success));
+  color: hsl(var(--sl-color-success-text));
 }
 
 .statusFailed {
   background: hsl(var(--sl-color-error) / 0.12);
-  color: hsl(var(--sl-color-error));
+  color: hsl(var(--sl-color-error-text));
 }
 
 /* ---------------------------------------------------------------------------

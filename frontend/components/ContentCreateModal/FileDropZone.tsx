@@ -226,6 +226,8 @@ export default function FileDropZone({
             accept={ACCEPT}
             className="sl-sr-only"
             id="drop-input"
+            aria-label="Velja skrár"
+            tabIndex={-1}
             onChange={(e) => void take(e.target.files)}
           />
           {/* Dragging is unreachable from a keyboard, so the picker is the

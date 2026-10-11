@@ -91,12 +91,13 @@ function Avatar({ src, alt }: { src?: string; alt: string }) {
       <div
         className={styles.avatarFallback}
         style={{ width: size, height: size }}
+        role="img"
         aria-label="Engin mynd"
       />
     );
   }
   return (
-    <div className={styles.avatar} aria-label="Notendamynd">
+    <div className={styles.avatar}>
       {/* Plain <img>, not next/image, and deliberately so.
           `user.picture` is whatever the identity provider hands us — Google
           serves it from lh3…lh6.googleusercontent.com, and there is also

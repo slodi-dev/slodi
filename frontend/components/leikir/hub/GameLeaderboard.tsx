@@ -29,7 +29,12 @@ export default function GameLeaderboard({
   errorMessage,
 }: Props) {
   return (
-    <aside className={`${styles.leaderboard} ${visible ? styles.active : ""}`}>
+    // A long list scrolls inside the panel, so the panel takes focus.
+    <aside
+      className={`${styles.leaderboard} ${visible ? styles.active : ""}`}
+      aria-labelledby="game-leaderboard-title"
+      tabIndex={0}
+    >
       {/* Dismiss handle — mobile only. A real button rather than a div with
           role="button": on a touch device this is the only way to close the
           sheet, so a keyboard or switch-control user would otherwise be stuck
@@ -38,7 +43,9 @@ export default function GameLeaderboard({
         <span className={styles.srOnly}>Loka stigatöflu</span>
       </button>
 
-      <h2 className={styles.title}>Stigatafla</h2>
+      <h2 className={styles.title} id="game-leaderboard-title">
+        Stigatafla
+      </h2>
 
       {entries.length === 0 ? (
         <p className={styles.empty}>Engar færslur</p>

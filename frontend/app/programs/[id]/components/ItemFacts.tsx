@@ -112,14 +112,19 @@ const REVIEW_LABEL: Record<string, string> = {
   rejected: "Ekki samþykkt",
 };
 
+/**
+ * One `dt`/`dd` pair, grouped in the one wrapper a `<dl>` allows (a `div`
+ * holding only `dt` and `dd`). The icon is decorative and lives inside the
+ * `dt`; CSS hangs it to the left of both lines.
+ */
 function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
   return (
     <div className={styles.fact}>
-      {icon}
-      <div>
-        <dt>{label}</dt>
-        <dd>{value}</dd>
-      </div>
+      <dt>
+        {icon}
+        {label}
+      </dt>
+      <dd>{value}</dd>
     </div>
   );
 }

@@ -794,17 +794,21 @@
 }
 
 /* Icon centres against the whole label+value block rather than hanging off
-   the first line — every fact is two lines tall, so centred reads deliberate. */
+   the first line — every fact is two lines tall, so centred reads deliberate.
+   The icon sits inside the <dt> (a <dl> group may hold only dt and dd), so it
+   is positioned against the group rather than laid out as a flex item. */
 .fact {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  position: relative;
+  padding-left: 33px; /* 21px icon + 12px gap */
 }
 
 .fact svg {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
   width: 21px;
   height: 21px;
-  flex: none;
   color: hsl(var(--ef-accent));
 }
 

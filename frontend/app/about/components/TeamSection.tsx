@@ -74,7 +74,7 @@ export default function TeamSection() {
 
           {loading && (
             <div className={styles.loading}>
-              <div className={styles.spinner} aria-label="Hleður..." />
+              <div className={styles.spinner} aria-hidden="true" />
               <p>Sæki upplýsingar um framlagsaðila...</p>
             </div>
           )}
