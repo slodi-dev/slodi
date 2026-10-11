@@ -9,6 +9,11 @@ on:
     types:
       - completed
 
+# One deploy at a time; a newer queued run replaces an older queued one.
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy Frontend to Azure VM
@@ -17,15 +22,43 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
         with:
+          envs: DEPLOY_SHA
           host: ${{ secrets.AZURE_VM_IP }}
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
+            set -eu
             cd ~/slodi
-            git pull origin main
+
+            # ── Deploy the commit CI tested, not whatever main is now ──
+            #
+            # `git pull origin main` deployed the newest commit on main, which
+            # can be one whose CI is still running (or later fails). Check out
+            # exactly the SHA this workflow_run tested instead.
+            #
+            # Backend and frontend deploys share this checkout, so they take
+            # the same lock and never move it under each other. A CI run that
+            # finishes out of order must not roll back a newer deploy, so a
+            # SHA that is an ancestor of the last one deployed is skipped.
+            exec 9>~/.slodi-deploy.lock
+            flock -w 900 9
+            STAMP=~/.slodi-deployed-frontend
+            git fetch --quiet origin main
+            if [ -s "$STAMP" ] && [ "$(cat "$STAMP")" != "$DEPLOY_SHA" ] \
+               && git merge-base --is-ancestor "$DEPLOY_SHA" "$(cat "$STAMP")"; then
+              echo "$DEPLOY_SHA is older than the deployed $(cat "$STAMP") — skipping."
+              exit 0
+            fi
+            git checkout --quiet --detach "$DEPLOY_SHA"
             docker compose -f docker-compose.yml up -d --build frontend
             docker image prune -f
+            # Build cache is never used by a running container; it grew to 10 GB
+            # on a 28 GB disk before this. Keep a week of it for fast rebuilds.
+            docker builder prune -f --filter until=168h
+            echo "$DEPLOY_SHA" > "$STAMP"
       - name: Notify Discord
         if: always()
         uses: sarisia/actions-status-discord@v1
