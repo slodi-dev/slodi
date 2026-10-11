@@ -82,7 +82,7 @@ function defaultRoutes(): MockRoute[] {
     { match: /\/users\/me$/, status: user ? 200 : 401, body: user },
     {
       match: /\/users\/admin\/list/,
-      body: { items: users, total: users.length },
+      body: users,
       headers: { "X-Total-Count": String(users.length) },
     },
 
@@ -105,6 +105,12 @@ function defaultRoutes(): MockRoute[] {
     { match: /\/workspaces\/[^/]+\/members/, body: [] },
 
     // Tags
+    {
+      match: /\/tags(\?|$)/,
+      method: "POST",
+      status: 201,
+      body: { id: "t-new", name: "nýtt merki" },
+    },
     { match: /\/tags/, body: tags },
 
     // Favourites (FavoritesContext talks to a Next route that does not exist yet)
@@ -124,8 +130,16 @@ function defaultRoutes(): MockRoute[] {
     { match: /\/(scores|leaderboard)/, body: [] },
 
     // Emails
-    { match: /\/emails\/templates/, body: [] },
+    { match: /\/emails\/templates\/text/, body: {} },
+    {
+      match: /\/emails\/templates\/[^/]+\/preview/,
+      body: "<p>Sæl/l, þetta er forskoðun á tölvupósti.</p>",
+    },
+    { match: /\/emails\/templates(\?|$)/, body: [] },
     { match: /\/emails\/drafts/, body: [] },
+
+    // Next route that hands the client the default workspace id.
+    { match: /^\/api\/config/, body: { default_workspace_id: workspace.id } },
 
     // Health
     { match: /\/health/, body: { status: "ok" } },
@@ -169,6 +183,12 @@ async function respond(route: MockRoute, url: URL): Promise<Response> {
   const body = typeof route.body === "function" ? (route.body as BodyFn)(url) : route.body;
   if (status === 204 || body === undefined) {
     return new Response(null, { status: status === 200 ? 204 : status, headers: route.headers });
+  }
+  if (typeof body === "string") {
+    return new Response(body, {
+      status,
+      headers: { "Content-Type": "text/html; charset=utf-8", ...route.headers },
+    });
   }
   return new Response(JSON.stringify(body), {
     status,

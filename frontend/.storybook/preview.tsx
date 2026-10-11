@@ -131,7 +131,7 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ["Design system", ["Introduction", "Tokens", "Primitives"], "Components", "Leikir"],
+        order: ["Design system", ["Introduction", "Tokens", "Primitives"], "Components"],
       },
     },
   },

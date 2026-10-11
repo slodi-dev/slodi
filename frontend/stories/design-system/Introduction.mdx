@@ -13,15 +13,13 @@ It is plain CSS: no Tailwind and no component library. Three layers do all the w
 
 ## Where things live
 
-| What            | Where                                                                          | Notes                                                                                                             |
-| --------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Tokens          | `frontend/app/slodi-tokens.css`                                                | Every colour, space, radius, type size, shadow and z-index. The **Tokens** page here is generated from this file. |
-| Utilities       | `frontend/app/slodi-utilities.css`                                             | `sl-*` helper classes (`sl-bg-background`, `sl-text-primary`, `sl-sr-only`…).                                     |
-| Legacy base     | `frontend/app/globals.css`                                                     | Reset plus the old shadcn token set (`--background`, `--primary`…). Being retired; do not use in new code.        |
-| Primitives      | `frontend/components/Button`, `Modal`, `Alert`, `TypeBadge`, `components/ui/*` | The building blocks — see **Design system / Primitives**.                                                         |
-| Components      | `frontend/components/**`, `frontend/app/**/components/**`                      | Feature components, each with a `Component.module.css` beside it. See **Components**.                             |
-| Theme switching | `frontend/components/ThemeProvider`                                            | Sets `class="dark"` or `data-theme="…"` on `<html>`, and overrides `--sl-color-primary` for a patrol colour.      |
-| Token checker   | `frontend/scripts/check-tokens.mjs`                                            | Finds undefined tokens, unwrapped colour tokens and legacy tokens. Run it on what you touch.                      |
+- **Tokens** — `frontend/app/slodi-tokens.css`. Every colour, space, radius, type size, shadow and z-index. The **Tokens** page here is generated from this file.
+- **Utilities** — `frontend/app/slodi-utilities.css`. `sl-*` helper classes (`sl-bg-background`, `sl-text-primary`, `sl-sr-only`…).
+- **Legacy base** — `frontend/app/globals.css`. Reset plus the old shadcn token set (`--background`, `--primary`…). Being retired; do not use in new code.
+- **Primitives** — `frontend/components/Button`, `Modal`, `Alert`, `TypeBadge`, `components/ui/*`. The building blocks — see **Design system / Primitives**.
+- **Components** — `frontend/components/**`, `frontend/app/**/components/**`. Feature components, each with a `Component.module.css` beside it. See **Components**.
+- **Theme switching** — `frontend/components/ThemeProvider`. Sets `class="dark"` or `data-theme="…"` on `<html>`, and overrides `--sl-color-primary` for a patrol colour.
+- **Token checker** — `frontend/scripts/check-tokens.mjs`. Finds undefined tokens, unwrapped colour tokens and legacy tokens. Run it on what you touch.
 
 ## Three tiers of tokens
 
