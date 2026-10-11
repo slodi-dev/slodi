@@ -188,7 +188,9 @@ async def set_member_role(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
     )
     svc = WorkspaceService(session)
-    result, displaced_owner_id = await svc.set_member_role(workspace_id, user_id, body.role)
+    result, displaced_owner_id = await svc.change_member_role(
+        workspace_id, user_id, body.role, current_user
+    )
     await membership_cache.invalidate(user_id, workspace_id)
     if displaced_owner_id:
         await membership_cache.invalidate(displaced_owner_id, workspace_id)
