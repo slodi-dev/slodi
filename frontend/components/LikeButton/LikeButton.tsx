@@ -35,7 +35,7 @@ export default function LikeButton({
       type="button"
       className={`${styles.likeButton} ${styles[size]} ${liked ? styles.liked : ""} ${className || ""}`}
       onClick={handleClick}
-      aria-label={liked ? "Unlike this program" : "Like this program"}
+      aria-label={`${liked ? "Taka rokkstig til baka" : "Gefa rokkstig"}, ${likeCountValue} rokkstig`}
       aria-pressed={liked}
     >
       <svg
