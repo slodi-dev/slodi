@@ -47,3 +47,6 @@ next-env.d.ts
 yarn.lock
 # pnpm lock file
 pnpm-lock.yaml
+# journey tests (scripts/e2e.sh)
+/e2e/.auth/
+/e2e-results/

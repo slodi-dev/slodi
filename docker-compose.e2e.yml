@@ -1,0 +1,79 @@
+# Backend stack for the journey tests. Use it through scripts/e2e.sh, which is
+# also what CI runs (.github/workflows/journeys.yml).
+#
+# Standalone on purpose, not an override of docker-compose.yml: that file pins
+# container names (slodi-postgres, ...) and host ports, so the two could not run
+# side by side on a dev machine. Here nothing is named, Postgres is not exposed,
+# and scripts/e2e.sh sets the project name `slodi-e2e`.
+#
+# The frontend is not in here: scripts/e2e.sh builds it on the host and
+# Playwright starts it, so it shares AUTH0_SECRET with the tests that mint its
+# session cookies.
+
+x-backend-env: &backend-env
+  ENV: e2e
+  DB_NAME: slodi_e2e
+  DB_USER: slodi_e2e
+  DB_PASSWORD: slodi_e2e
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  # Never contacted: tokens carry `email`, and keys come from the file below.
+  AUTH0_DOMAIN: e2e.slodi.invalid
+  AUTH0_AUDIENCE: https://api.e2e.slodi.invalid
+  AUTH_TEST_JWKS_FILE: /e2e-auth/jwks.json
+  AZURE_STORAGE_ACCOUNT: e2e
+  AZURE_STORAGE_KEY: ZTJl
+  AZURE_STORAGE_CONTAINER_IMAGES: content-images
+  AZURE_STORAGE_CONTAINER_DOCUMENTS: documents
+  GAME_TOKEN_SECRET: e2e-not-a-secret
+  DEFAULT_WORKSPACE_ID: 00000000-0000-4000-8000-0000000000b0
+  CORS_ORIGINS: '["http://localhost:${E2E_FRONTEND_PORT:-13000}"]'
+  UV_NO_SYNC: "true"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: slodi_e2e
+      POSTGRES_USER: slodi_e2e
+      POSTGRES_PASSWORD: slodi_e2e
+    # No volume: every run starts from an empty database.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slodi_e2e -d slodi_e2e"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  seed:
+    build:
+      context: ./backend
+      target: base
+    environment: *backend-env
+    command: >
+      sh -c "uv run alembic upgrade head &&
+             PYTHONPATH=. uv run python scripts/seed_e2e.py"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    environment: *backend-env
+    volumes:
+      - ${E2E_AUTH_DIR:-./frontend/e2e/.auth}/jwks.json:/e2e-auth/jwks.json:ro
+    ports:
+      - "${E2E_BACKEND_PORT:-18000}:8000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/healthz"]
+      interval: 2s
+      timeout: 3s
+      start_period: 5s
+      retries: 30
