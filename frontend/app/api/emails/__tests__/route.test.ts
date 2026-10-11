@@ -9,7 +9,7 @@ const { getAccessToken } = vi.hoisted(() => {
 
 vi.mock("@/lib/auth0", () => ({ auth0: { getAccessToken } }));
 
-import { GET as listEmails } from "../route";
+import { GET as listEmails, POST as subscribe } from "../route";
 import { GET as checkToken, POST as unsubscribe } from "../unsubscribe/route";
 
 const TOKEN = "550e8400-e29b-41d4-a716-446655440000";
@@ -56,18 +56,49 @@ describe("GET /api/emails (admin email list)", () => {
   });
 });
 
+describe("POST /api/emails (newsletter signup)", () => {
+  it("posts to the backend route exactly, with no trailing slash", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 202 }));
+
+    const res = await subscribe(
+      new NextRequest("https://slodi.is/api/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "a@example.com" }),
+      })
+    );
+
+    expect(res.status).toBe(201);
+    expect(fetchMock.mock.calls[0][0]).toBe("http://backend.test/emaillist");
+  });
+});
+
+const status = (subscribed: boolean, changed: boolean) => Response.json({ subscribed, changed });
+
 describe("/api/emails/unsubscribe", () => {
   it("GET only checks the token with the backend", async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    fetchMock.mockResolvedValue(status(true, false));
 
     const res = await checkToken(
       new NextRequest(`https://slodi.is/api/emails/unsubscribe?token=${TOKEN}`)
     );
 
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ subscribed: true, changed: false });
     expect(fetchMock).toHaveBeenCalledWith(`http://backend.test/emaillist/unsubscribe/${TOKEN}`, {
       method: "GET",
     });
+  });
+
+  it("GET reports an address that already unsubscribed, not an error", async () => {
+    fetchMock.mockResolvedValue(status(false, false));
+
+    const res = await checkToken(
+      new NextRequest(`https://slodi.is/api/emails/unsubscribe?token=${TOKEN}`)
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ subscribed: false, changed: false });
   });
 
   it("GET reports an unknown token as 404", async () => {
@@ -90,14 +121,42 @@ describe("/api/emails/unsubscribe", () => {
   });
 
   it("POST unsubscribes with the token", async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    fetchMock.mockResolvedValue(status(false, true));
 
     const res = await unsubscribe(postJson({ token: TOKEN }));
 
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ subscribed: false, changed: true });
     expect(fetchMock).toHaveBeenCalledWith(`http://backend.test/emaillist/unsubscribe/${TOKEN}`, {
       method: "POST",
     });
+  });
+
+  it("POST with a used token is still 200, marked unchanged", async () => {
+    fetchMock.mockResolvedValue(status(false, false));
+
+    const res = await unsubscribe(postJson({ token: TOKEN }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ subscribed: false, changed: false });
+  });
+
+  it("POST resubscribes with action=resubscribe", async () => {
+    fetchMock.mockResolvedValue(status(true, true));
+
+    const res = await unsubscribe(postJson({ token: TOKEN, action: "resubscribe" }));
+
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(`http://backend.test/emaillist/resubscribe/${TOKEN}`, {
+      method: "POST",
+    });
+  });
+
+  it("POST rejects an unknown action without calling the backend", async () => {
+    const res = await unsubscribe(postJson({ token: TOKEN, action: "delete" }));
+
+    expect(res.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("POST no longer unsubscribes by email address", async () => {
@@ -107,7 +166,7 @@ describe("/api/emails/unsubscribe", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("POST passes through a spent token as 404", async () => {
+  it("POST passes through a token that never existed as 404", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }));
 
     const res = await unsubscribe(postJson({ token: TOKEN }));
