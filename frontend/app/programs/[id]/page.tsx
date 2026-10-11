@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfir
 import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
 import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
+import { HiddenChip, hiddenDimClass, isHidden } from "@/components/HiddenMark/HiddenMark";
 import { ROUTES } from "@/constants/routes";
 import { useLikes } from "@/contexts/LikesContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -128,8 +129,12 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         </span>
       </nav>
       <div className={styles.titleblock}>
-        <TypeBadge type={type} size="md" />
-        <h1 className={styles.title}>{program.name}</h1>
+        <div className={styles.badges}>
+          <TypeBadge type={type} size="md" />
+          {/* Only moderators and the author are ever sent a hidden item. */}
+          {isHidden(program) && <HiddenChip />}
+        </div>
+        <h1 className={cn(styles.title, isHidden(program) && hiddenDimClass)}>{program.name}</h1>
       </div>
       <div className={styles.actions}>
         <button
@@ -191,7 +196,15 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             canComment={isAuthenticated}
             onSubmitComment={handleSubmitComment}
             currentUserName={user?.name ?? null}
-            heroSlot={<ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />}
+            heroSlot={
+              isHidden(program) && images.length > 0 ? (
+                <div className={hiddenDimClass}>
+                  <ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />
+                </div>
+              ) : (
+                <ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />
+              )
+            }
             onOpenDocument={setOpenDoc}
             onReportComment={setReportingComment}
             onRemoveComment={(c) => void handleRemoveComment(c)}

@@ -51,6 +51,18 @@
    HERO IMAGE
    ═══════════════════════════════════════════════════════════ */
 
+/* A hidden item, as only moderators see it. Dashed edge plus the "Falið" chip
+   and dimmed imagery (see components/HiddenMark). */
+.cardHidden,
+.cardHidden:hover {
+  border-style: dashed;
+  border-color: hsl(var(--sl-color-border-strong));
+}
+
+.hiddenChip {
+  align-self: flex-start;
+}
+
 .media {
   position: relative;
   aspect-ratio: 16 / 9;

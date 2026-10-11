@@ -51,6 +51,13 @@
   align-items: flex-start;
 }
 
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+}
+
 .title {
   margin: 0;
   font-size: var(--sl-text-heading-1);

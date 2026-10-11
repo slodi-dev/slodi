@@ -16,6 +16,8 @@ import {
   getAgeGroupPatrol,
   formatIcelandicDate,
 } from "@/lib/format";
+import { HiddenChip, hiddenDimClass } from "@/components/HiddenMark/HiddenMark";
+import { cn } from "@/lib/util";
 import styles from "./ProgramCard.module.css";
 
 export interface ProgramCardProps {
@@ -53,6 +55,11 @@ export interface ProgramCardProps {
   location?: string | null;
   /** Age group enum values. */
   age?: string[] | null;
+  /**
+   * Set when a moderator has hidden the item. Only moderators (and the item's
+   * author) are ever sent one; the card greys out and says "Falið".
+   */
+  hidden_at?: string | null;
 }
 
 const MAX_VISIBLE_TAGS = 4;
@@ -79,6 +86,7 @@ export default function ProgramCard({
   price,
   location,
   age,
+  hidden_at,
 }: ProgramCardProps) {
   const { likeCount, isLiked, toggleLike } = useLikes(id, like_count, liked_by_me);
   const { isFavorite, toggleFavorite } = useFavorite(id);
@@ -182,11 +190,17 @@ export default function ProgramCard({
 
   // Icelandic writes "14. september 2026", month lowercase.
   const dateFormatted = created_at ? formatIcelandicDate(created_at) : null;
+  const hidden = Boolean(hidden_at);
 
   return (
-    <article className={`${styles.card} ${className || ""}`} aria-label={name} data-program-id={id}>
+    <article
+      className={cn(styles.card, hidden && styles.cardHidden, className)}
+      aria-label={hidden ? `${name} (falið)` : name}
+      data-program-id={id}
+      data-hidden={hidden || undefined}
+    >
       {/* ── Hero image ──────────────────────────────────────────── */}
-      <div className={styles.media}>
+      <div className={cn(styles.media, hidden && hiddenDimClass)}>
         {image ? (
           <Image
             src={image}
@@ -223,8 +237,10 @@ export default function ProgramCard({
 
       {/* ── Content body ────────────────────────────────────────── */}
       <div className={styles.body}>
+        {hidden && <HiddenChip className={styles.hiddenChip} />}
+
         {/* Title */}
-        <h2 className={styles.title}>{name}</h2>
+        <h2 className={cn(styles.title, hidden && hiddenDimClass)}>{name}</h2>
 
         {/* Author + date */}
         {(author || dateFormatted) && (

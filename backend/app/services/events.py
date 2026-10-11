@@ -162,8 +162,14 @@ class EventService:
         current_user_id: UUID | None = None,
         *,
         include_hidden: bool = False,
+        include_hidden_children: bool = False,
     ) -> EventOut:
-        row = await self.repo.get(event_id, current_user_id, include_hidden=include_hidden)
+        row = await self.repo.get(
+            event_id,
+            current_user_id,
+            include_hidden=include_hidden,
+            include_hidden_children=include_hidden_children,
+        )
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         ev, stats = row
