@@ -33,6 +33,10 @@ INSERT INTO troops (id, name, workspace_id) VALUES
 INSERT INTO tags (id, name) VALUES
   ('00000000-0000-4000-8000-000000000401', 'Útivera'),
   ('00000000-0000-4000-8000-000000000402', 'Leikir');
+-- A deleted tag whose name has been reused: the downgrade restoring the full
+-- unique constraint on tags.name has to cope with it.
+INSERT INTO tags (id, name, deleted_at) VALUES
+  ('00000000-0000-4000-8000-000000000403', 'Útivera', now());
 
 -- One of each content type, across review states, with every range filled.
 INSERT INTO content (id, content_type, name, description, instructions, created_at, author_id, workspace_id,

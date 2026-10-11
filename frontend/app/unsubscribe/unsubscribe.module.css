@@ -367,3 +367,14 @@
     animation: none;
   }
 }
+
+/* The resubscribe action is a <button>, not a link. */
+button.secondaryButton {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: var(--sl-primitive-opacity-60);
+}

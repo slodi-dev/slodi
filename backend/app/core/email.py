@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from uuid import UUID
 
 import resend
 from fastapi import BackgroundTasks
@@ -10,6 +11,28 @@ from app.settings import settings
 logger = logging.getLogger(__name__)
 
 _BATCH_SIZE = 100
+
+
+#: Stands in for a real token where a link has to be shown but there is no
+#: subscription behind it: template previews and test sends to an address that
+#: is not on the list. The unsubscribe page recognises it and says it is a
+#: sample instead of calling the backend. It never goes into a
+#: List-Unsubscribe header.
+SAMPLE_UNSUBSCRIBE_TOKEN = UUID(int=0)
+
+
+def unsubscribe_page_url(token: UUID | str) -> str:
+    """Link for the email body: a page where the reader confirms unsubscribing."""
+    return f"{settings.public_site_url.rstrip('/')}/unsubscribe?token={token}"
+
+
+def one_click_unsubscribe_url(token: UUID | str) -> str:
+    """RFC 8058 one-click target for the List-Unsubscribe header.
+
+    Mail providers POST to this URL directly, so it has to be the backend
+    endpoint that actually unsubscribes, not a page.
+    """
+    return f"{settings.public_api_url.rstrip('/')}/emaillist/unsubscribe/{token}"
 
 
 def _send_email(recipients: list[str], subject: str, html: str) -> None:
@@ -32,9 +55,10 @@ def _send_email(recipients: list[str], subject: str, html: str) -> None:
 def _send_batch(messages: list[tuple[str, str, str, str | None]]) -> None:
     """Send a batch of individual emails.
 
-    Each message is (recipient, subject, html, unsubscribe_url).
-    When unsubscribe_url is provided, List-Unsubscribe headers are added
-    so Gmail/Outlook show a one-click unsubscribe button.
+    Each message is (recipient, subject, html, one_click_url).
+    When one_click_url is provided (see one_click_unsubscribe_url), RFC 8058
+    List-Unsubscribe headers are added so Gmail/Outlook show a one-click
+    unsubscribe button that POSTs straight to the backend.
     """
     if not settings.resend_api_key:
         logger.warning(
@@ -85,6 +109,6 @@ def send_batch_background(
 ) -> None:
     """Queue a batch of individual emails as a background task.
 
-    Each message is (recipient, subject, html, unsubscribe_url).
+    Each message is (recipient, subject, html, one_click_url).
     """
     background_tasks.add_task(_send_batch, messages)

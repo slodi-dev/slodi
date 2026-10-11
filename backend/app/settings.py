@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
     resend_max_recipients: int = Field(50, alias="RESEND_MAX_RECIPIENTS")
 
+    # Public base URLs used to build links in outgoing email. The unsubscribe
+    # page lives on the site; the RFC 8058 one-click List-Unsubscribe POST goes
+    # straight to the API, because mail providers POST to it server-to-server.
+    public_site_url: str = Field("https://slodi.is", alias="PUBLIC_SITE_URL")
+    public_api_url: str = Field("https://api.slodi.is", alias="PUBLIC_API_URL")
+
     # Cache configuration
     cache_backend: str = Field("memory", alias="CACHE_BACKEND")  # "memory" or "redis"
     redis_host: str = Field("localhost", alias="REDIS_HOST")
