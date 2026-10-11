@@ -17,15 +17,10 @@ name: Journeys
 #   DISCORD_WEBHOOK_URL   (existing) status notification, optional
 
 on:
+  # No path filter on pull requests: these jobs are required checks on main,
+  # and a required check whose workflow never starts blocks the PR forever.
   pull_request:
     branches: [main]
-    paths:
-      - "frontend/**"
-      - "backend/**"
-      - "docs/journeys/**"
-      - "docker-compose.e2e.yml"
-      - "scripts/e2e.sh"
-      - ".github/workflows/journeys.yml"
   push:
     branches: [main]
   schedule:
