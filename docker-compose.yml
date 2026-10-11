@@ -9,8 +9,12 @@ services:
       POSTGRES_DB: slodi_db
       POSTGRES_USER: slodi_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-slodi_password}
+    # Published on loopback only. Docker writes its own iptables rules, so a
+    # port bound to 0.0.0.0 is open to the internet whatever ufw says; on the
+    # VM nginx is the only thing that should reach these. Set BIND_ADDRESS=0.0.0.0
+    # to reach them from another device on your network in development.
     ports:
-      - "${DB_EXPOSE_PORT:-5432}:5432"
+      - "${BIND_ADDRESS:-127.0.0.1}:${DB_EXPOSE_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -67,10 +71,18 @@ services:
       DB_PORT: 5432
       SEED_OUTPUT_DIR: /app/seed_data
       UV_NO_SYNC: "true"
+      # nginx reaches the container through the Docker bridge gateway, which
+      # uvicorn does not trust by default (only 127.0.0.1). Untrusted, it ignores
+      # X-Forwarded-For and every visitor gets the gateway's IP, so the
+      # IP rate limiter put everyone in one bucket. Trust the Docker range only:
+      # uvicorn then takes the rightmost untrusted address, the one nginx
+      # appended, not anything the client wrote into the header. Never "*",
+      # which makes uvicorn take the leftmost, client-supplied, address.
+      FORWARDED_ALLOW_IPS: "127.0.0.1,172.16.0.0/12"
     volumes:
       - seed_data:/app/seed_data
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8000}:8000"
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -102,7 +114,7 @@ services:
     volumes:
       - seed_data:/app/seed_data
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-3000}:3000"
     depends_on:
       backend:
         condition: service_healthy
