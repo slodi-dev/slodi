@@ -11,7 +11,7 @@ import {
 
 const focusNote =
   "Known issue sc-549: the custom-days field (`.numInput`) uses `box-shadow: var(--sl-shadow-focus)`, " +
-  "which resolves to `0 0 0 3px 142 50% 42% / 0.3` — not a colour — so the ring is dropped and " +
+  "which resolves to `0 0 0 3px 142 50% 32% / 0.3` — not a colour — so the ring is dropped and " +
   "focus shows only as a border change.";
 
 const meta = {

@@ -33,9 +33,12 @@
   --sl-primitive-green-200: 142 50% 80%;
   --sl-primitive-green-300: 142 50% 70%;
   --sl-primitive-green-400: 142 50% 55%;
-  --sl-primitive-green-500: 142 50% 42%; /* Fresh green - primary */
-  --sl-primitive-green-600: 142 50% 35%;
-  --sl-primitive-green-700: 142 50% 28%;
+  /* 500–700 were 42% / 35% / 28%. White on 42% is 3.27:1, under AA for
+     normal text, and so is 42% green text on white; 32% gives 5.29:1 on white
+     and 4.96:1 on green-50, keeping the hue (sc-586). */
+  --sl-primitive-green-500: 142 50% 32%; /* Fresh green - primary */
+  --sl-primitive-green-600: 142 50% 27%;
+  --sl-primitive-green-700: 142 50% 23%;
   --sl-primitive-green-800: 142 50% 22%;
   --sl-primitive-green-900: 142 50% 15%;
 
@@ -143,10 +146,16 @@
   --sl-primitive-adrir-on: 0 0% 100%;
 
   /* Semantic State Colors - Primitives */
-  --sl-primitive-success-500: 142 50% 42%; /* Fresh green */
+  --sl-primitive-success-500: 142 50% 32%; /* Fresh green — same as green-500 */
   --sl-primitive-warning-500: 36 85% 55%; /* Campfire amber — desaturated for comfort */
-  --sl-primitive-error-500: 4 72% 58%; /* Warm red */
-  --sl-primitive-info-500: 190 72% 45%; /* Teal — consolidated with alert cyan */
+  /* Error and info were 58% and 45%: 3.84:1 and 2.76:1 with white, and the
+     same as text on a light page. 44% and 30% pass AA both ways (5.8:1,
+     5.63:1). The old lighter values live on as the 400s, which the dark theme
+     uses: there they sit on a dark page or carry dark text. */
+  --sl-primitive-error-400: 4 72% 65%;
+  --sl-primitive-error-500: 4 72% 44%; /* Warm red */
+  --sl-primitive-info-400: 190 72% 45%;
+  --sl-primitive-info-500: 190 72% 30%; /* Teal — consolidated with alert cyan */
 
   /* Neutral Primitives */
   --sl-primitive-neutral-0: 0 0% 100%; /* Pure white */
@@ -415,13 +424,13 @@
   --sl-color-warning-text: 32 90% 25%; /* AAA (7.3:1) on warning-subtle */
 
   --sl-color-error: var(--sl-primitive-error-500);
-  --sl-color-error-hover: 4 68% 50%;
+  --sl-color-error-hover: 4 70% 38%;
   --sl-color-error-subtle: 6 78% 95%;
   --sl-color-error-muted: 6 72% 90%;
   --sl-color-error-text: 4 70% 34%; /* AAA (7.3:1) on error-subtle */
 
   --sl-color-info: var(--sl-primitive-info-500);
-  --sl-color-info-hover: 190 72% 38%;
+  --sl-color-info-hover: 190 72% 24%;
   --sl-color-info-subtle: 188 55% 94%;
   --sl-color-info-muted: 188 52% 88%;
   --sl-color-info-text: 190 85% 21%; /* AAA (7.7:1) on info-subtle — consolidated teal */
@@ -794,9 +803,10 @@
   --sl-color-primary-subtle: var(--sl-primitive-green-900);
   --sl-color-primary-muted: var(--sl-primitive-green-800);
 
-  --sl-color-secondary: var(--sl-primitive-forest-400);
-  --sl-color-secondary-hover: var(--sl-primitive-forest-300);
-  --sl-color-secondary-active: var(--sl-primitive-forest-200);
+  /* forest-400 carried dark text at 4.15:1; forest-300 is 6.28:1. */
+  --sl-color-secondary: var(--sl-primitive-forest-300);
+  --sl-color-secondary-hover: var(--sl-primitive-forest-200);
+  --sl-color-secondary-active: var(--sl-primitive-forest-100);
   --sl-color-secondary-subtle: var(--sl-primitive-forest-900);
   --sl-color-secondary-muted: var(--sl-primitive-forest-800);
 
@@ -842,11 +852,13 @@
   --sl-color-warning-subtle: 36 55% 14%;
   --sl-color-warning-text: 38 90% 70%;
 
-  --sl-color-error: var(--sl-primitive-error-500);
+  --sl-color-error: var(--sl-primitive-error-400);
+  --sl-color-error-hover: 4 72% 72%;
   --sl-color-error-subtle: 6 50% 16%;
   --sl-color-error-text: 6 85% 78%;
 
-  --sl-color-info: var(--sl-primitive-info-500);
+  --sl-color-info: var(--sl-primitive-info-400);
+  --sl-color-info-hover: 190 72% 55%;
   --sl-color-info-subtle: 190 45% 15%;
   --sl-color-info-text: 190 65% 70%;
 
@@ -1080,7 +1092,9 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Primary border shifts lighter for visibility on dark backgrounds */
-    --sl-color-primary-border: var(--sl-primitive-green-600);
+    /* The old green-600: green-600 is darker since sc-586, too dark to read
+       as a border on a dark surface. */
+    --sl-color-primary-border: 142 50% 35%;
     /* Primary text lightened for readability on dark primary-subtle bg */
     --sl-color-primary-text: var(--sl-primitive-green-200);
     /* Raised surface on dark is a slightly lighter shade */
@@ -1114,7 +1128,7 @@
    surface in the create chooser. */
 :root.dark,
 [data-theme="dark"] {
-  --sl-color-primary-border: var(--sl-primitive-green-600);
+  --sl-color-primary-border: 142 50% 35%;
   --sl-color-primary-text: var(--sl-primitive-green-200);
   --sl-color-surface-raised: 0 0% 14%;
   --sl-color-surface-sunken: 0 0% 8%;
@@ -1166,10 +1180,17 @@
    --sl-color-primary-text (hsl 142 50% 22%) on --sl-color-primary-subtle (hsl 142 50% 96%)
      Contrast: ~9.2:1   PASS AA/AAA
 
-   --sl-color-text-inverse (hsl 0 0% 100%) on --sl-color-primary (hsl 142 50% 42%)
-     Contrast: ~3.4:1   PASS AA (large text only)
-     NOTE: Use --sl-font-weight-semibold and >=18.66px for body text on primary bg,
-           or use --sl-color-primary-text on --sl-color-primary-subtle instead.
+   --sl-color-text-inverse (hsl 0 0% 100%) on --sl-color-primary (hsl 142 50% 32%)
+     Contrast: ~5.3:1   PASS AA (was 3.27:1 at 42% — sc-586)
+
+   --sl-color-primary (hsl 142 50% 32%) as text on --sl-color-background
+     Contrast: ~5.2:1   PASS AA
+
+   --sl-color-text-inverse (hsl 0 0% 100%) on --sl-color-error (hsl 4 72% 44%)
+     Contrast: ~5.8:1   PASS AA (was 3.84:1 at 58%)
+
+   Dark: --sl-color-error (hsl 4 72% 65%) on --sl-color-background ~5.7:1, and
+   carries --sl-color-text-inverse (dark ink) at ~5.1:1.
 
    --sl-color-error-text (hsl 0 79% 40%) on --sl-color-error-subtle (hsl 0 79% 95%)
      Contrast: ~5.8:1   PASS AA

@@ -21,7 +21,7 @@
 .priceCheckbox {
   width: 1.125rem;
   height: 1.125rem;
-  accent-color: hsl(var(--sl-color-primary, 142 50% 42%));
+  accent-color: hsl(var(--sl-color-primary, 142 50% 32%));
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -55,8 +55,8 @@
 
 .priceMaxInput:focus-visible {
   outline: none;
-  border-color: hsl(var(--sl-input-border-focus, 142 50% 42%));
-  box-shadow: var(--sl-input-shadow-focus, 0 0 0 3px hsl(142 50% 42% / 0.3));
+  border-color: hsl(var(--sl-input-border-focus, 142 50% 32%));
+  box-shadow: var(--sl-input-shadow-focus, 0 0 0 3px hsl(142 50% 32% / 0.3));
 }
 
 .priceHint {

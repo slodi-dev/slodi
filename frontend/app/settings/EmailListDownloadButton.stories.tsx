@@ -14,9 +14,8 @@ const meta = {
     docs: {
       description: {
         component:
-          "Built on `components/Button`, so it inherits sc-553 (legacy tokens). Design-token " +
-          "audit finding: the error message is styled inline with `color: red` rather than a " +
-          "`--sl-color-error-*` token — see the `Empty` and `Error` stories.",
+          "Built on `components/Button`, so it inherits sc-553 (legacy tokens). The error " +
+          "message (`Empty` and `Error` stories) uses `sl-text-error` and is announced as an alert.",
       },
     },
   },

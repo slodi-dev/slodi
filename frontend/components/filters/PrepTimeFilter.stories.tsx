@@ -4,7 +4,7 @@ import PrepTimeFilter from "./PrepTimeFilter";
 
 const focusNote =
   "Known issue sc-549: these fields use RangeInput, whose focus ring is " +
-  "`var(--sl-input-shadow-focus)`. That token resolves to `0 0 0 3px 142 50% 42% / 0.3` — not a " +
+  "`var(--sl-input-shadow-focus)`. That token resolves to `0 0 0 3px 142 50% 32% / 0.3` — not a " +
   "colour — so the box-shadow is dropped and keyboard focus shows only as a border-colour change.";
 
 const meta = {

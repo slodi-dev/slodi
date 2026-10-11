@@ -28,7 +28,7 @@
 }
 
 .collapsibleToggle:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 32%));
   outline-offset: 2px;
   border-radius: var(--sl-primitive-radius-sm, 0.25rem);
 }
@@ -48,7 +48,7 @@
   font-weight: var(--sl-font-weight-emphasis, 600);
   line-height: 1;
   color: hsl(var(--sl-color-text-inverse, 0 0% 100%));
-  background-color: hsl(var(--sl-color-primary, 142 50% 42%));
+  background-color: hsl(var(--sl-color-primary, 142 50% 32%));
   border-radius: var(--sl-radius-badge, 9999px);
 }
 
@@ -127,8 +127,8 @@
 
 .rangeInputField:focus-visible {
   outline: none;
-  border-color: hsl(var(--sl-input-border-focus, 142 50% 42%));
-  box-shadow: var(--sl-input-shadow-focus, 0 0 0 3px hsl(142 50% 42% / 0.3));
+  border-color: hsl(var(--sl-input-border-focus, 142 50% 32%));
+  box-shadow: var(--sl-input-shadow-focus, 0 0 0 3px hsl(142 50% 32% / 0.3));
 }
 
 .rangeInputSeparator {
@@ -204,7 +204,7 @@
 }
 
 .activeChipRemove:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 32%));
   outline-offset: 1px;
 }
 

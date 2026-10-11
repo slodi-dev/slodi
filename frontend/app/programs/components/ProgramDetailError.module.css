@@ -58,7 +58,7 @@
 
 .primaryButton {
   background: hsl(var(--sl-color-primary));
-  color: white;
+  color: hsl(var(--sl-color-text-inverse));
   border: 2px solid hsl(var(--sl-color-primary));
 }
 

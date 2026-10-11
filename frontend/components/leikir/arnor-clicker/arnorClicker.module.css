@@ -440,7 +440,6 @@
   text-transform: none;
   letter-spacing: 0;
   font-weight: 700;
-  opacity: 0.8;
 }
 .lboard ol {
   list-style: none;
@@ -833,7 +832,9 @@
   font-size: 30px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: hsl(var(--ink));
+  /* Text, not outline: --ink is the hard-shadow colour and vanishes on the
+     dark page. */
+  color: hsl(var(--sl-color-text-primary));
 }
 .cost {
   flex: none;

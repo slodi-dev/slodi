@@ -13,7 +13,7 @@
  * const color = tokens.colorPrimary; // "hsl(var(--sl-color-primary))"
  *
  * // To read the computed value at runtime:
- * const hex = getTokenValue("--sl-color-primary"); // e.g. "142 50% 42%"
+ * const hex = getTokenValue("--sl-color-primary"); // e.g. "142 50% 32%"
  * ```
  */
 
@@ -186,7 +186,7 @@ export type TokenKey = keyof typeof tokens;
  * @example
  * ```ts
  * const primary = getTokenValue("--sl-color-primary");
- * // => "142 50% 42%" (the raw HSL components)
+ * // => "142 50% 32%" (the raw HSL components)
  * ```
  */
 export function getTokenValue(name: string): string {

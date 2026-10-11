@@ -93,7 +93,7 @@
   font-size: var(--sl-primitive-font-size-base, 1rem);
   font-weight: var(--sl-font-weight-medium, 500);
   color: hsl(var(--sl-color-surface, 0 0% 100%));
-  background: hsl(var(--sl-color-primary, 142 50% 42%));
+  background: hsl(var(--sl-color-primary, 142 50% 32%));
   border: none;
   border-radius: var(--sl-radius-button, 0.5rem);
   cursor: pointer;
@@ -105,7 +105,7 @@
 }
 
 .retryButton:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 32%));
   outline-offset: 2px;
 }
 

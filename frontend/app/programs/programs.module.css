@@ -57,7 +57,7 @@
 }
 
 .filterToggle:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 42%));
+  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 32%));
   outline-offset: 2px;
 }
 
@@ -78,7 +78,7 @@
   font-weight: var(--sl-font-weight-semibold, 600);
   line-height: 1;
   color: hsl(var(--sl-color-text-inverse, 0 0% 100%));
-  background: hsl(var(--sl-color-primary, 142 50% 42%));
+  background: hsl(var(--sl-color-primary, 142 50% 32%));
   border-radius: var(--sl-radius-pill, 9999px);
   margin-left: var(--sl-spacing-gap-xs, 4px);
 }
