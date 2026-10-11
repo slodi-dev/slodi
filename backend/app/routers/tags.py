@@ -11,6 +11,7 @@ from app.core.auth import (
     check_content_edit_access,
     check_content_workspace_access,
     get_current_user,
+    is_content_moderator,
     require_not_suspended,
     require_permission,
 )
@@ -168,10 +169,18 @@ async def list_tagged_content(
     # A tag spans workspaces, so the listing is limited to the caller's own
     # workspaces; platform admins bypass workspace checks everywhere else too.
     member_id = None if current_user.permissions == Permissions.admin else current_user.id
+    # Moderators (and admins) also get hidden items, flagged by hidden_at so the
+    # frontend can mark them; deleted ones stay out for everyone.
+    include_hidden = is_content_moderator(current_user)
     svc = TagService(session)
-    total = await svc.count_tagged_content(tag_id, member_id)
+    total = await svc.count_tagged_content(tag_id, member_id, include_hidden=include_hidden)
     items = await svc.list_tagged_content(
-        tag_id, current_user.id, member_id=member_id, limit=limit, offset=offset
+        tag_id,
+        current_user.id,
+        member_id=member_id,
+        include_hidden=include_hidden,
+        limit=limit,
+        offset=offset,
     )
     add_pagination_headers(
         response=response,

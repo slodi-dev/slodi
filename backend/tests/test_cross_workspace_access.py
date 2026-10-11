@@ -20,11 +20,13 @@ from app import models as m
 from app import schemas as s
 from app.core.auth import get_current_user
 from app.core.db import get_session
-from app.domain.enums import WorkspaceRole
+from app.domain.enums import Permissions, WorkspaceRole
 from app.main import create_app
 from app.repositories.content import ContentAccess
 from app.repositories.tags import TagRepository
 from app.schemas.comment import CommentOut
+from app.schemas.content import ContentListOut
+from app.schemas.user import UserOut
 from app.services.troops import TroopService
 from app.utils import get_current_datetime
 
@@ -103,6 +105,37 @@ def test_tagged_content_is_limited_to_the_callers_workspaces(mock_db_session, vi
 
 def test_tagged_content_is_unlimited_for_a_platform_admin(mock_db_session, admin_user):
     assert _tagged_content_member_id(admin_user, mock_db_session) is None
+
+
+@pytest.mark.parametrize(
+    "permissions,expected",
+    [
+        (Permissions.viewer, False),
+        (Permissions.member, False),
+        (Permissions.moderator, True),
+        (Permissions.admin, True),
+    ],
+)
+def test_only_moderators_get_hidden_tagged_content(mock_db_session, permissions, expected):
+    """Moderators need to find what the team hid; everyone else must not see it."""
+    user = UserOut(
+        id=uuid4(),
+        auth0_id=f"auth0|{permissions}",
+        email=f"{permissions}@test.is",
+        name=permissions.value.title(),
+        permissions=permissions,
+    )
+    with (
+        patch("app.services.tags.TagService.count_tagged_content", new_callable=AsyncMock) as cnt,
+        patch("app.services.tags.TagService.list_tagged_content", new_callable=AsyncMock) as lst,
+    ):
+        cnt.return_value = 0
+        lst.return_value = []
+        res = _client_as(user, mock_db_session).get(f"/tags/{uuid4()}/content")
+    assert res.status_code == 200
+    assert lst.await_args.kwargs["include_hidden"] is expected
+    # The total header has to count the same rows the page lists.
+    assert cnt.await_args.kwargs["include_hidden"] is expected
 
 
 # ── Single comment (unit) ─────────────────────────────────────────────────────
@@ -228,10 +261,21 @@ async def test_tagged_content_lists_only_visible_items_in_the_callers_workspaces
     assert [c.name for c, _ in rows] == ["Sýnilegt"]
     assert await repo.count_tagged_content(tag.id, member.id) == 1
 
-    # No workspace limit (platform admin): still no hidden or deleted items.
+    # No workspace limit (platform admin) but without include_hidden: still no
+    # hidden or deleted items.
     everywhere = await repo.list_tagged_content(tag.id, member.id)
     assert sorted(c.name for c, _ in everywhere) == ["Annars staðar", "Sýnilegt"]
     assert await repo.count_tagged_content(tag.id) == 2
+
+    # A moderator (include_hidden): the hidden item too, flagged; deleted still out.
+    rows = await repo.list_tagged_content(
+        tag.id, member.id, member_id=member.id, include_hidden=True
+    )
+    listed = {o.name: o for o in (ContentListOut.from_row(c, st) for c, st in rows)}
+    assert set(listed) == {"Sýnilegt", "Falið"}
+    assert listed["Falið"].hidden_at is not None
+    assert listed["Sýnilegt"].hidden_at is None
+    assert await repo.count_tagged_content(tag.id, member.id, include_hidden=True) == 2
 
 
 async def _troop_and_events(db):

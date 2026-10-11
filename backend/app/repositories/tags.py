@@ -23,14 +23,17 @@ from app.repositories.content import (
 )
 
 
-def _tagged_content_filters(tag_id: UUID, member_id: UUID | None) -> list[Any]:
+def _tagged_content_filters(
+    tag_id: UUID, member_id: UUID | None, *, include_hidden: bool = False
+) -> list[Any]:
     """Conditions for content carrying a tag that the caller may list.
 
-    Deleted and hidden items are excluded for everyone, as in every other
-    listing. `member_id` limits the result to workspaces that user belongs
-    to; None means no workspace limit (platform admins).
+    Deleted items are excluded for everyone, hidden ones unless
+    `include_hidden` (moderators only — the route decides; see `listable`).
+    `member_id` limits the result to workspaces that user belongs to; None
+    means no workspace limit (platform admins).
     """
-    filters = [ContentTag.tag_id == tag_id, listable(Content)]
+    filters = [ContentTag.tag_id == tag_id, listable(Content, include_hidden=include_hidden)]
     if member_id is not None:
         filters.append(
             Content.workspace_id.in_(
@@ -113,12 +116,14 @@ class TagRepository(Repository):
         )
         return await self.scalars(stmt)
 
-    async def count_tagged_content(self, tag_id: UUID, member_id: UUID | None = None) -> int:
+    async def count_tagged_content(
+        self, tag_id: UUID, member_id: UUID | None = None, *, include_hidden: bool = False
+    ) -> int:
         result = await self.session.scalar(
             select(func.count())
             .select_from(ContentTag)
             .join(Content, Content.id == ContentTag.content_id)
-            .where(*_tagged_content_filters(tag_id, member_id))
+            .where(*_tagged_content_filters(tag_id, member_id, include_hidden=include_hidden))
         )
         return result or 0
 
@@ -128,6 +133,7 @@ class TagRepository(Repository):
         current_user_id: UUID | None = None,
         *,
         member_id: UUID | None = None,
+        include_hidden: bool = False,
         limit: int = 50,
         offset: int = 0,
     ) -> list[tuple[Content, ContentStats]]:  # type: ignore[valid-type]
@@ -141,7 +147,7 @@ class TagRepository(Repository):
                 selectinload(Content.workspace),
                 selectinload(Content.content_tags).selectinload(ContentTag.tag),
             )
-            .where(*_tagged_content_filters(tag_id, member_id))
+            .where(*_tagged_content_filters(tag_id, member_id, include_hidden=include_hidden))
             .order_by(Content.created_at.desc())
             .limit(limit)
             .offset(offset)
