@@ -36,15 +36,6 @@ export const ENTRIES: Entry[] = [
   // ── Every page ──────────────────────────────────────────────────────────
   {
     route: "*",
-    personas: "all",
-    api: [{ status: 404, path: /^\/_vercel\/insights\/script\.js$/ }],
-    bug: "sc-589",
-    why:
-      "<Analytics /> from @vercel/analytics loads /_vercel/insights/script.js, which only " +
-      "Vercel serves; Slóði is not deployed there. It is in the root layout, so every page.",
-  },
-  {
-    route: "*",
     personas: ["anonymous"],
     api: [{ status: 401, path: /^\/auth\/profile$/ }],
     why:
