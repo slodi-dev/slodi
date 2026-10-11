@@ -203,13 +203,13 @@ flowchart LR
         FE["Frontend CI<br/>lint · types · vitest · build"]
         BE["Backend CI<br/>ruff · mypy · pytest · migrations"]
         SB["Storybook<br/>interaction + a11y (planned)"]
-        JPR["Journeys @pr<br/>scripts/e2e.sh --grep @pr"]
+        JPR["Journeys @pr + crawl desktop/light<br/>scripts/e2e.sh --grep @pr"]
     end
     PR -->|"all green → merge"| MAIN["main"]
     MAIN --> JALL["Journeys, all<br/>(push to main)"]
     MAIN --> DEP["deploy-backend /<br/>deploy-frontend"]
     DEP --> SMOKE["Smoke @smoke<br/>read-only vs slodi.is"]
-    NIGHT["Nightly 03:17"] --> JN["Journeys, all<br/>+ @nightly"]
+    NIGHT["Nightly 03:17"] --> JN["Journeys, all<br/>+ @nightly + crawl, 4 forms"]
     JN -->|"red"| DISCORD["Discord"]
     SMOKE -->|"red"| DISCORD
 ```
@@ -255,6 +255,43 @@ and an Auth0 rule restricting it to the smoke runner if possible.
 
 A red nightly posts to Discord.
 
+## 5. Route crawler
+
+Journeys prove a few tasks end to end. The crawler (`frontend/e2e/crawl/`)
+covers breadth: it opens **every page under `app/`** as every persona, in
+every form, on the same stack and seed.
+
+- **Pages.** `routes.ts` reads `app/**/page.tsx`. A dynamic route
+  (`/programs/[id]`) is filled from the e2e seed: one path per kind of page it
+  can render (a task, a program and an event with instructions, documents
+  and likes; an unreviewed and a hidden item; a devlog; a Heiðursorðla round).
+  A dynamic route it can't fill goes in `SKIP` with a reason. `routes.test.ts`
+  runs with `npm test` and fails on a new dynamic route that is in neither.
+- **Personas.** Signed out, member (`e2e|community-member`), editor
+  (`e2e|editor`, bank editor with a workspace of her own) and admin
+  (`e2e|admin`).
+- **Forms.** Playwright projects `crawl-{desktop,phone}-{light,dark}`. Phone
+  is 390px. The theme is set the way the app reads it: `slodi-theme` in
+  localStorage, plus `prefers-color-scheme`.
+- **Fails on.** An uncaught error or `console.error`; an API (or app route)
+  response ≥ 400; horizontal overflow at phone width; leftover English UI
+  words (`english.ts`, a short, case-sensitive denylist that skips code and
+  anything marked `translate="no"` or `data-user-content`). A signed-out visit
+  to a private page (`lib/route-access.ts`) asserts the redirect to log in
+  instead.
+- **axe** runs on every page but is report-only: violations are annotations
+  and an `axe-violations.json` attachment, summarised in the job summary.
+- **Expected failures** are declared in `expectations.ts`, per route and
+  persona, with the reason: an admin page's 403 for a member, a hidden item's
+  404 for someone who may not see it. A tolerated bug names its Shortcut story
+  and matches only its own message; the summary lists every one it saw.
+- **Report.** `e2e/support/crawl-report.mjs` adds a "Route crawl" section to
+  the job summary: results per form, every finding, tolerated bugs and the
+  axe rules.
+
+The PR gate crawls desktop + light (`--project crawl-desktop-light`), every
+persona. Nightly, pushes to `main` and manual runs crawl all four forms.
+
 ## Costs
 
 | Item | Cost |
@@ -296,7 +333,7 @@ fix is on this branch as its own commit.
 **Phase 2: make it a gate**
 
 - [ ] Merge, watch `Journeys` on 10 PRs as an advisory check
-- [ ] Implement community-member-likes-and-shares (sc-531)
+- [x] Implement community-member-likes-and-shares (sc-531 as a known bug)
 - [ ] Turn S5's `knownBugStep` back into `step` in the sc-530 PR. The run forces this.
 - [ ] Make `Journeys (PR gate)` a required check
 - [ ] Cache backend image layers in GHA (`docker/build-push-action` with `cache-to: type=gha`)
@@ -311,7 +348,7 @@ fix is on this branch as its own commit.
 **Phase 4: production**
 
 - [ ] Smoke account in Auth0. Add `@smoke` tests and a post-deploy `workflow_run` job.
-- [ ] Phone-viewport project, nightly
+- [x] Phone-viewport project, nightly (the route crawler's phone forms)
 
 ## Open decisions
 

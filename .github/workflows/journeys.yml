@@ -4,8 +4,13 @@ name: Journeys
 #
 # Every job runs scripts/e2e.sh, the same script as a local run. It generates
 # a fresh signing key, starts Postgres + migrations + the e2e seed + the backend
-# with docker compose, builds the frontend, runs Playwright, and writes the
-# story coverage report to the job summary.
+# with docker compose, builds the frontend, runs Playwright (journeys and the
+# route crawler), and writes the story coverage and crawl reports to the job
+# summary.
+#
+# The PR gate runs the @pr journeys and crawls every page as every persona in
+# one form (desktop, light). Pushes to main, nightly and manual runs crawl all
+# four forms (desktop/phone x light/dark).
 #
 # Secrets: none are needed to run the journeys. Auth0 is never contacted; the
 # run signs its own tokens with a key it generates and throws away.
@@ -24,12 +29,13 @@ on:
   push:
     branches: [main]
   schedule:
-    # Nightly, 03:17 UTC (= Reykjavik), all journeys including @nightly.
+    # Nightly, 03:17 UTC (= Reykjavik), all journeys including @nightly, and
+    # the crawl in all four forms.
     - cron: "17 3 * * *"
   workflow_dispatch:
     inputs:
       grep:
-        description: "Playwright --grep (empty = all journeys)"
+        description: "Playwright --grep (empty = all journeys and the whole crawl)"
         required: false
         default: ""
 
@@ -44,7 +50,7 @@ jobs:
   journeys:
     name: Journeys (${{ github.event_name == 'pull_request' && 'PR gate' || 'all' }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CI: "true"
       # PRs run the @pr gate; main, nightly and manual runs run everything.
@@ -83,13 +89,17 @@ jobs:
             npx playwright install --with-deps chromium
           fi
 
-      - name: Run journeys
+      - name: Run journeys and route crawl
         run: |
-          if [ -n "$E2E_GREP" ]; then
-            scripts/e2e.sh --grep "$E2E_GREP"
-          else
-            scripts/e2e.sh
+          args=()
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # One crawl form on PRs; the other three run nightly.
+            args+=(--project chromium --project crawl-desktop-light)
           fi
+          if [ -n "$E2E_GREP" ]; then
+            args+=(--grep "$E2E_GREP")
+          fi
+          scripts/e2e.sh "${args[@]}"
 
       - name: Upload report, traces and videos
         if: ${{ !cancelled() }}
