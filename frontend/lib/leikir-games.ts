@@ -6,7 +6,11 @@
  * app/api/leikir/[game]/scores/route.ts uses to decide which slugs may reach
  * the generic `/games/{slug}/scores` backend) is derived from the games that
  * declare `hasLeaderboard`, so the two never drift apart.
+ *
+ * A game behind a feature flag stays in `ALL_GAMES` and is left out of `GAMES`
+ * while its flag is off (Heiðursorðla: lib/feature-flags.ts).
  */
+import { HEIDURSORDLA_ENABLED } from "@/lib/feature-flags";
 
 export type GameAccent = "heidursordla" | "falkar" | "rekkar" | "drekar";
 export type GameStatus = "live" | "soon";
@@ -35,7 +39,8 @@ export interface GameDef {
   hasLeaderboard: boolean;
 }
 
-export const GAMES: GameDef[] = [
+/** Every game, including those hidden behind a flag. */
+export const ALL_GAMES: GameDef[] = [
   {
     slug: "heidursordla",
     name: "Heiðursorðla",
@@ -79,6 +84,11 @@ export const GAMES: GameDef[] = [
     hasLeaderboard: true,
   },
 ];
+
+/** The games shown on the hub: hidden games are left out, so nothing links to them. */
+export const GAMES: GameDef[] = ALL_GAMES.filter(
+  (g) => g.slug !== "heidursordla" || HEIDURSORDLA_ENABLED
+);
 
 /**
  * Slugs allowed to reach the generic scores proxy. Derived from the registry

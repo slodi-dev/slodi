@@ -65,6 +65,14 @@ class Settings(BaseSettings):
     # variable and another does not, so set it everywhere in the same release.
     game_token_secret: str = Field("", alias="GAME_TOKEN_SECRET")
 
+    # Heiðursorðla (the Skátaþing word game) is hidden from the site by user
+    # decision 2026-10-11: its code, models, migrations and tables stay, but its
+    # router is not registered unless this is true (see app/main.py), so every
+    # /leikir/heidursordla/* endpoint is a 404. Re-enable with
+    # HEIDURSORDLA_ENABLED=true here and NEXT_PUBLIC_HEIDURSORDLA_ENABLED=true on
+    # the frontend (frontend/lib/feature-flags.ts).
+    heidursordla_enabled: bool = Field(False, alias="HEIDURSORDLA_ENABLED")
+
     # CORS configuration
     cors_origins: list[str] = Field(["http://localhost:3000"], alias="CORS_ORIGINS")
 

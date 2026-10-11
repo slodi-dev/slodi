@@ -68,7 +68,9 @@ export const FILL: Record<string, () => string[]> = {
     devlogSlugs()
       .slice(-1)
       .map((slug) => `/dev/${slug}`),
-  // Round 1, whose id the e2e seed pins. Its window is in the past, so it opens.
+  // Round 1, whose id the e2e seed pins. Hidden behind HEIDURSORDLA_ENABLED
+  // (user decision 2026-10-11), so today it is a 404 (expectations.ts); the
+  // pinned id keeps the crawl pointed at a real round for when it comes back.
   "/leikir/heidursordla/[puzzleId]": () => [`/leikir/heidursordla/${CRAWL.puzzleId}`],
 };
 

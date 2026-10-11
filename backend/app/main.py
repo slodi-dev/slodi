@@ -86,7 +86,9 @@ def create_app() -> FastAPI:
     app.include_router(tags_router.router)
     app.include_router(comments_router.router)
     app.include_router(likes_router.router)
-    app.include_router(heidursordla_router.router)
+    # Hidden behind HEIDURSORDLA_ENABLED (user decision 2026-10-11); see settings.
+    if settings.heidursordla_enabled:
+        app.include_router(heidursordla_router.router)
     app.include_router(game_scores_router.router)
     app.include_router(game_saves_router.router)
     app.include_router(uploads_router.router)
