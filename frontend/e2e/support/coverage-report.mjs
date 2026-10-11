@@ -76,11 +76,15 @@ function walk(suite) {
     for (const test of spec.tests ?? []) {
       const last = test.results?.[test.results.length - 1];
       const knownBug = test.expectedStatus === "failed";
+      const manual = [...(test.annotations ?? []), ...(last?.annotations ?? [])].some(
+        (a) => a.type === "manual"
+      );
       let status;
       if (test.status === "skipped") status = "skipped";
       else if (test.status === "flaky") status = "flaky";
       else if (test.status === "unexpected") status = "failing";
-      else status = knownBug ? "known-bug" : "passing";
+      else if (knownBug) status = "known-bug";
+      else status = manual ? "manual-steps" : "passing";
       results.set(journeyTag.slice("journey:".length), {
         status,
         step: firstFailingStep(last?.steps),
@@ -105,6 +109,7 @@ const ICON = {
   skipped: "⏭️ skipped",
   "not-run": "⚪ not run",
   "not-automated": "📝 not automated",
+  "manual-steps": "📝 passing, some steps manual",
 };
 
 function journeyStatus(j) {
@@ -127,7 +132,16 @@ for (const j of journeys) {
 }
 
 // Worst status wins, so a story is only "proven" if every journey proving it passes.
-const RANK = ["failing", "flaky", "known-bug", "not-run", "skipped", "not-automated", "passing"];
+const RANK = [
+  "failing",
+  "flaky",
+  "known-bug",
+  "not-run",
+  "skipped",
+  "not-automated",
+  "manual-steps",
+  "passing",
+];
 const byStory = new Map();
 for (const j of journeys) {
   for (const id of j.stories ?? []) {

@@ -68,8 +68,9 @@ in `[a, b]` form.
   their terms ("the leiðbeiningar are still there"), not the UI's ("the
   `#ef-leidbeiningar` section is non-empty").
 - A step that cannot be automated yet, because the feature is not built or the
-  check needs a human, is marked _(manual)_. The test skips it and the report
-  counts the journey as covered but not proven.
+  check needs a human, is marked _(manual)_. The test records it with
+  `manualStep("S6", ..., reason)` and runs nothing; the report counts the
+  journey as covered but not proven.
 
 ## The test
 
@@ -134,12 +135,18 @@ and the roles in `user-stories.md`. Each one maps to a seeded account in
 | Community Member | Anna, a foringi from another troop, browsing for ideas | `e2e\|community-member`, member, bank viewer |
 | Reviewer | One of Dagskrárstjórnarteymið, sweeping new submissions | `e2e\|reviewer`, moderator |
 
+The route crawler (`frontend/e2e/crawl/`, see
+[`../journey-testing-in-ci.md`](../journey-testing-in-ci.md#route-crawler))
+visits every page as four personas: signed out, `e2e|community-member`
+(member), `e2e|editor` (member, bank editor, owns a workspace) and `e2e|admin`
+(platform admin).
+
 ## Journeys
 
 | Journey | Persona | Stories | Gate | Test |
 |---|---|---|---|---|
 | [program-owner-edits-from-bank](program-owner-edits-from-bank.md) | Program Owner | B4, E2, E6 | pr | automated (known bug sc-530) |
-| [community-member-likes-and-shares](community-member-likes-and-shares.md) | Community Member | E4, J4 | pr | not yet |
+| [community-member-likes-and-shares](community-member-likes-and-shares.md) | Community Member | E4, J4 | pr | automated (known bug sc-531; S6 manual) |
 | [reviewer-sweeps-yfirferd](reviewer-sweeps-yfirferd.md) | Reviewer | E5 | nightly | not yet |
 
 ## Who writes them

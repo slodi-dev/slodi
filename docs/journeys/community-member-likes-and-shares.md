@@ -4,7 +4,7 @@ persona: Community Member
 stories: [E4, J4]
 shortcut: [sc-531]
 specs: [efnissida]
-test: none
+test: frontend/e2e/journeys/community-member-likes-and-shares.journey.ts
 gate: pr
 ---
 
@@ -33,12 +33,16 @@ steps 1, 4 and 6.
 | S3 | opens the item | `Líkar` filled and the count at 1 |
 | S4 | presses `Deila verkefni` and copies the link | the link on her clipboard |
 | S5 | opens the link in a new tab | `Líkar` filled and the count at 1 |
-| S6 | opens the link signed out, in a fresh browser _(as a Public Visitor)_ | the count at 1, and `Líkar` disabled with "Skráðu þig inn til að líka við" |
+| S6 | opens the link signed out, in a fresh browser _(as a Public Visitor; manual)_ | the count at 1, and `Líkar` disabled with "Skráðu þig inn til að líka við" |
 
 ## What it guards
 
 - **sc-531.** Likes show 0 on a direct link: S5 and S6 open the item with no
   bank page loaded first, which is where `LikesContext` had nothing cached.
+  - On `main`, S5 fails: the new tab shows `Líkar við` with 0. The item page
+    registers the like as (not liked, 0) before the item has loaded, and
+    `initLike` keeps the first value it gets.
+  - The test marks S5 as `knownBugStep("sc-531", ...)` until the fix merges.
 - efnissida `SPEC.md`: `Líkar` (♡ + count) and `Deila` on the item page; a
   signed-out `Líkar` is disabled with its reason, never hidden.
 
@@ -50,7 +54,12 @@ browser context with no session.
 
 ## Automation notes
 
-S4 needs `context.grantPermissions(["clipboard-read", "clipboard-write"])` in
-Chromium. S6 needs `/programs/<id>` to be readable signed out. Today
+S4 grants `clipboard-read` and `clipboard-write`, and hides Web Share, so
+`Deila` takes the clipboard path (and its "Hlekkur afritaður!" alert) on every
+runner. S2 also waits for the like to reach the server, not just the
+optimistic heart.
+
+S6 needs `/programs/<id>` to be readable signed out. Today
 `lib/route-access.ts` makes it private, so S6 stays _(manual)_ until there is a
-decision on public item pages.
+decision on public item pages. The test records it with `manualStep`, and the
+report shows the journey as "passing, some steps manual" rather than proven.
