@@ -38,7 +38,7 @@ const imageUrl = "/apple-touch-icon.png";
 const unsupportedUrl = "/site.webmanifest";
 
 const meta = {
-  title: "Components/Shared/DocumentViewer",
+  title: "Components/Sameiginlegt/DocumentViewer",
   component: DocumentViewer,
   args: {
     open: true,

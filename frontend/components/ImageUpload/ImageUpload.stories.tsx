@@ -10,7 +10,7 @@ import ImageUpload from "./ImageUpload";
  * states, not a live upload.
  */
 const meta = {
-  title: "Components/Shared/ImageUpload",
+  title: "Components/Sameiginlegt/ImageUpload",
   component: ImageUpload,
   args: { value: "", onChange: fn() },
   decorators: [

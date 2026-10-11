@@ -5,7 +5,7 @@ import { programRatleikur } from "@/stories/fixtures";
 import ReportContentModal from "./ReportContentModal";
 
 const meta = {
-  title: "Components/Shared/ReportContentModal",
+  title: "Components/Sameiginlegt/ReportContentModal",
   component: ReportContentModal,
   args: {
     open: true,

@@ -8,7 +8,7 @@ import { ApiHealthIndicator } from "./ApiHealthIndicator";
  * sets it.
  */
 const meta = {
-  title: "Components/Shared/ApiHealthIndicator",
+  title: "Components/Sameiginlegt/ApiHealthIndicator",
   component: ApiHealthIndicator,
   args: { showInProduction: true },
   parameters: {

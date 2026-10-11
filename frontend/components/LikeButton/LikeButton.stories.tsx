@@ -9,7 +9,7 @@ import LikeButton from "./LikeButton";
  * like/unlike request is answered by the Storybook fetch mock.
  */
 const meta = {
-  title: "Components/Shared/LikeButton",
+  title: "Components/Sameiginlegt/LikeButton",
   component: LikeButton,
   args: {
     programId: programKotturinn.id,

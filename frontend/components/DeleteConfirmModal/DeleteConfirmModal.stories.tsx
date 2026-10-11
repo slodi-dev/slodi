@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 
 const meta = {
-  title: "Components/Shared/DeleteConfirmModal",
+  title: "Components/Sameiginlegt/DeleteConfirmModal",
   component: DeleteConfirmModal,
   args: {
     open: true,

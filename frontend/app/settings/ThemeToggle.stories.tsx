@@ -7,7 +7,7 @@ import ThemeToggle from "./ThemeToggle";
  * next story.
  */
 const meta = {
-  title: "Components/Settings/ThemeToggle",
+  title: "Components/Stillingar/ThemeToggle",
   component: ThemeToggle,
   decorators: [
     (Story) => (
@@ -28,7 +28,7 @@ export const FocusRing: Story = {
     docs: {
       description: {
         story:
-          "Known issue sc-549 (story `components-settings-themetoggle--focus-ring`): tab through " +
+          "Known issue sc-549 (story `components-stillingar-themetoggle--focus-ring`): tab through " +
           "the options. `.themeOption:focus-visible` sets `outline: none` and " +
           "`box-shadow: var(--sl-shadow-focus)`, which is invalid, so no focus ring is drawn.",
       },

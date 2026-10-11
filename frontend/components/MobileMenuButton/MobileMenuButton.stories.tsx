@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import { MobileMenuButton } from "./MobileMenuButton";
 
 const meta = {
-  title: "Components/Shared/MobileMenuButton",
+  title: "Components/Sameiginlegt/MobileMenuButton",
   component: MobileMenuButton,
   args: { isOpen: false, onClick: fn() },
 } satisfies Meta<typeof MobileMenuButton>;
@@ -25,7 +25,7 @@ export const Toggle: Story = {
     docs: {
       description: {
         story:
-          "Known issue sc-549 (story `components-shared-mobilemenubutton--toggle`): tab to the " +
+          "Known issue sc-549 (story `components-sameiginlegt-mobilemenubutton--toggle`): tab to the " +
           "button. `:focus-visible` sets `outline: none` and `box-shadow: var(--sl-shadow-focus)`, " +
           "which is invalid (`--sl-color-focus-ring` is a bare `142 50% 42% / 0.3`), so the " +
           "focus ring is invisible.",

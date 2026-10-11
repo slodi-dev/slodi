@@ -4,7 +4,7 @@ import type { MockRoute } from "@/.storybook/mocks/fetch";
 import EmailListDownloadButton from "./email-download-service";
 
 const meta = {
-  title: "Components/Settings/EmailListDownloadButton",
+  title: "Components/Stillingar/EmailListDownloadButton",
   component: EmailListDownloadButton,
   args: { allowed: true },
   parameters: {
