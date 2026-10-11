@@ -161,6 +161,21 @@
   max-width: 100%;
 }
 
+/* Static status chip marking content a moderator has hidden. Dashed border and
+   an eye-slash icon so the state never rests on colour alone. */
+.activeChipHidden {
+  background-color: hsl(var(--sl-color-surface-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  border: 1px dashed hsl(var(--sl-color-border-strong));
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.activeChipIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
 .activeChipLabel {
   overflow: hidden;
   text-overflow: ellipsis;
