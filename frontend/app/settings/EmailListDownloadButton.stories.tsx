@@ -1,0 +1,52 @@
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { userEvent, within } from "storybook/test";
+import type { MockRoute } from "@/.storybook/mocks/fetch";
+import EmailListDownloadButton from "./email-download-service";
+
+const meta = {
+  title: "Components/Settings/EmailListDownloadButton",
+  component: EmailListDownloadButton,
+  args: { allowed: true },
+  parameters: {
+    mockApi: [
+      { match: /^\/api\/emails/, body: ["sigga@skatar.is", "gunnar@skatar.is"] },
+    ] satisfies MockRoute[],
+    docs: {
+      description: {
+        component:
+          "Built on `components/Button`, so it inherits sc-553 (legacy tokens). Design-token " +
+          "audit finding: the error message is styled inline with `color: red` rather than a " +
+          "`--sl-color-error-*` token — see the `Empty` and `Error` stories.",
+      },
+    },
+  },
+} satisfies Meta<typeof EmailListDownloadButton>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+const clickDownload = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  await userEvent.click(within(canvasElement).getByRole("button"));
+};
+
+export const Default: Story = {};
+
+export const NotAllowed: Story = { args: { allowed: false } };
+
+export const Loading: Story = {
+  parameters: { mockApi: [{ match: /^\/api\/emails/, delay: Infinity }] satisfies MockRoute[] },
+  play: clickDownload,
+};
+
+export const Empty: Story = {
+  parameters: { mockApi: [{ match: /^\/api\/emails/, body: [] }] satisfies MockRoute[] },
+  play: clickDownload,
+};
+
+export const ErrorState: Story = {
+  name: "Error",
+  parameters: {
+    mockApi: [{ match: /^\/api\/emails/, status: 502, body: {} }] satisfies MockRoute[],
+  },
+  play: clickDownload,
+};
