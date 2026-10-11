@@ -109,6 +109,17 @@ export const EditableByAuthor: Story = {
   },
 };
 
+/** The whole item is being fetched before the editor opens (sc-530). */
+export const EditLoading: Story = {
+  args: {
+    canEdit: true,
+    canDelete: true,
+    onEdit: fn(),
+    onDelete: fn(),
+    editLoading: true,
+  },
+};
+
 export const LikeRequestFails: Story = {
   args: cardProps(programKotturinn),
   parameters: {

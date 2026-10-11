@@ -227,7 +227,8 @@ export async function fetchContentFacets(
  */
 export async function fetchProgramById(
   id: string,
-  getToken: () => Promise<string | null>
+  getToken: () => Promise<string | null>,
+  { fresh = false }: { fresh?: boolean } = {}
 ): Promise<Program> {
   // `/content/{id}`, not `/programs/{id}`, for the same reason the listing
   // moved: the latter selects `Program`, which under joined-table inheritance
@@ -238,6 +239,11 @@ export async function fetchProgramById(
     url,
     {
       method: "GET",
+      // The endpoint is cacheable for a minute (`private, max-age=60`). An
+      // editor must start from what is stored *now*, and must not leave a
+      // pre-edit copy in the browser cache for the item page to show after
+      // the save — so `fresh` neither reads nor writes the HTTP cache.
+      ...(fresh ? { cache: "no-store" as const } : {}),
     },
     getToken
   );
