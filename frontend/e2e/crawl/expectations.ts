@@ -92,6 +92,18 @@ export const ENTRIES: Entry[] = [
       "each patrol's identity, so the fix is a design call.",
   },
 
+  // ── Favourites ──────────────────────────────────────────────────────────
+  {
+    // Hidden behind FAVOURITES_ENABLED (UX-01). Private, so a signed-out
+    // visitor is sent to log in before the 404 and is not listed here.
+    route: "/programs/favorites",
+    personas: ["member", "editor", "admin"],
+    api: [{ status: 404, path: /^\/programs\/favorites$/ }],
+    why:
+      "Favourites are hidden until they have a backend: the page code stays, but while " +
+      "FAVOURITES_ENABLED (lib/feature-flags.ts) is off the route is a 404. The crawl checks it stays so.",
+  },
+
   // ── Leikir ──────────────────────────────────────────────────────────────
   {
     // Hidden behind HEIDURSORDLA_ENABLED (user decision 2026-10-11).
