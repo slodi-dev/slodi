@@ -21,4 +21,12 @@ describe("LikeButton", () => {
       screen.getByRole("button", { name: "Taka rokkstig til baka, 3 rokkstig" })
     ).toHaveAttribute("aria-pressed", "true");
   });
+
+  it("groups a large count the Icelandic way, in the name and on screen", () => {
+    likes.isLiked = false;
+    likes.likeCount = 1048;
+    render(<LikeButton programId="p1" initialLikeCount={1048} />);
+    const button = screen.getByRole("button", { name: "Gefa rokkstig, 1.048 rokkstig" });
+    expect(button).toHaveTextContent("1.048");
+  });
 });
