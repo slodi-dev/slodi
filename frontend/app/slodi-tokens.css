@@ -443,17 +443,17 @@
   --sl-color-patrol-drekar-subtle: var(--sl-primitive-drekar-50);
   --sl-color-patrol-drekar-muted: var(--sl-primitive-drekar-100);
 
-  --sl-color-patrol-falkar: var(--sl-primitive-falkar-500);
+  --sl-color-patrol-falkar: var(--sl-primitive-falkar-600); /* -500 fails AA with white (sc-600) */
   --sl-color-patrol-falkar-foreground: var(--sl-primitive-falkar-on);
-  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-600);
-  --sl-color-patrol-falkar-active: var(--sl-primitive-falkar-700);
+  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-700);
+  --sl-color-patrol-falkar-active: var(--sl-primitive-falkar-800);
   --sl-color-patrol-falkar-subtle: var(--sl-primitive-falkar-50);
   --sl-color-patrol-falkar-muted: var(--sl-primitive-falkar-100);
 
-  --sl-color-patrol-drott: var(--sl-primitive-drott-500);
+  --sl-color-patrol-drott: var(--sl-primitive-drott-600); /* -500 fails AA with white (sc-600) */
   --sl-color-patrol-drott-foreground: var(--sl-primitive-drott-on);
-  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-600);
-  --sl-color-patrol-drott-active: var(--sl-primitive-drott-700);
+  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-700);
+  --sl-color-patrol-drott-active: var(--sl-primitive-drott-800);
   --sl-color-patrol-drott-subtle: var(--sl-primitive-drott-50);
   --sl-color-patrol-drott-muted: var(--sl-primitive-drott-100);
 
@@ -471,10 +471,10 @@
   --sl-color-patrol-rover-subtle: var(--sl-primitive-rover-50);
   --sl-color-patrol-rover-muted: var(--sl-primitive-rover-100);
 
-  --sl-color-patrol-adrir: var(--sl-primitive-adrir-500);
+  --sl-color-patrol-adrir: var(--sl-primitive-adrir-600); /* -500 fails AA with white (sc-600) */
   --sl-color-patrol-adrir-foreground: var(--sl-primitive-adrir-on);
-  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-600);
-  --sl-color-patrol-adrir-active: var(--sl-primitive-adrir-700);
+  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-700);
+  --sl-color-patrol-adrir-active: var(--sl-primitive-adrir-800);
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-50);
   --sl-color-patrol-adrir-muted: var(--sl-primitive-adrir-100);
 
@@ -867,12 +867,14 @@
   --sl-color-patrol-drekar-hover: var(--sl-primitive-drekar-300);
   --sl-color-patrol-drekar-subtle: var(--sl-primitive-drekar-900);
 
-  --sl-color-patrol-falkar: var(--sl-primitive-falkar-400);
-  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-300);
+  /* Same as light: lighter steps fail AA with white text (sc-600) */
+  --sl-color-patrol-falkar: var(--sl-primitive-falkar-600);
+  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-700);
   --sl-color-patrol-falkar-subtle: var(--sl-primitive-falkar-900);
 
-  --sl-color-patrol-drott: var(--sl-primitive-drott-400);
-  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-300);
+  /* Same as light: lighter steps fail AA with white text (sc-600) */
+  --sl-color-patrol-drott: var(--sl-primitive-drott-600);
+  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-700);
   --sl-color-patrol-drott-subtle: var(--sl-primitive-drott-900);
 
   --sl-color-patrol-rekkar: var(--sl-primitive-rekkar-400);
@@ -883,8 +885,9 @@
   --sl-color-patrol-rover-hover: var(--sl-primitive-rover-300);
   --sl-color-patrol-rover-subtle: var(--sl-primitive-rover-900);
 
-  --sl-color-patrol-adrir: var(--sl-primitive-adrir-400);
-  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-300);
+  /* Same as light: lighter steps fail AA with white text (sc-600) */
+  --sl-color-patrol-adrir: var(--sl-primitive-adrir-600);
+  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-700);
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-900);
 
   /* ===== HEIÐURSORÐLA TILE COLORS (Dark) ===== */
