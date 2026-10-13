@@ -396,6 +396,9 @@
   --sl-color-border-focus: var(--sl-primitive-green-500);
   --sl-color-border-subtle: 150 14% 90%;
   --sl-color-border-strong: var(--sl-primitive-neutral-dark-400);
+  /* Hover for a border-strong edge: darker, so hovering never takes a form
+     control below 3:1 (border-hover above is lighter than border-strong). */
+  --sl-color-border-strong-hover: var(--sl-primitive-neutral-dark-500);
   --sl-color-border-inverse: var(--sl-primitive-neutral-700);
 
   /* ===== TEXT COLORS ===== */
@@ -673,10 +676,14 @@
   --sl-card-transition: var(--sl-transition-base);
 
   /* ===== INPUT COMPONENT ===== */
+  /* The border is the only edge a text field, textarea, select or combobox
+     has, so WCAG 1.4.11 wants 3:1 against what it sits on (TOK-04).
+     border-strong is 3.66:1 on the light surface and 3.76:1 on the dark one;
+     plain border (1.38 / 1.67) is for cards and dividers, never for a field. */
   --sl-input-background: var(--sl-color-surface);
   --sl-input-background-disabled: var(--sl-color-background-secondary);
-  --sl-input-border: var(--sl-color-border);
-  --sl-input-border-hover: var(--sl-color-border-hover);
+  --sl-input-border: var(--sl-color-border-strong);
+  --sl-input-border-hover: var(--sl-color-border-strong-hover);
   --sl-input-border-focus: var(--sl-color-border-focus);
   --sl-input-border-error: var(--sl-color-error);
   --sl-input-text: var(--sl-color-text-primary);
@@ -833,6 +840,7 @@
   --sl-color-border-focus: var(--sl-primitive-green-400);
   --sl-color-border-subtle: 150 8% 20%;
   --sl-color-border-strong: 150 8% 45%;
+  --sl-color-border-strong-hover: 150 8% 58%;
   --sl-color-border-inverse: var(--sl-primitive-neutral-300);
 
   /* ===== TEXT COLORS (Dark) ===== */

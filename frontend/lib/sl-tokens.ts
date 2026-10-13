@@ -60,6 +60,7 @@ export const tokens = {
   colorBorderFocus: "hsl(var(--sl-color-border-focus))",
   colorBorderSubtle: "hsl(var(--sl-color-border-subtle))",
   colorBorderStrong: "hsl(var(--sl-color-border-strong))",
+  colorBorderStrongHover: "hsl(var(--sl-color-border-strong-hover))",
 
   // --- Color: text ---
   colorTextPrimary: "hsl(var(--sl-color-text-primary))",
