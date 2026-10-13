@@ -8,7 +8,10 @@
 #   ssh slodi-dev bash -s -- /opt/slodi/backups/slodi_2026-09-12_03-00-00.dump < scripts/recover-leidbeiningar.sh
 #
 # With no argument it picks the newest backup taken before the bug shipped
-# (2026-09-13). It then:
+# (#137, deployed 2026-09-13 23:22 UTC), i.e. slodi_2026-09-13_02-00-01. The
+# 2026-09-14 02:00 backup, 2.5 h after the deploy and overnight, is usually the
+# better baseline because it already has the release's own changes: pass it
+# explicitly. It then:
 #   1. restores that backup into a scratch database, slodi_recover, in the
 #      same Postgres container (prod's slodi_db is only read);
 #   2. copies prod's current id/instructions/media into the scratch database;
@@ -33,7 +36,7 @@ DB_USER="${DB_USER:-slodi_user}"
 PROD_DB="${PROD_DB:-slodi_db}"
 SCRATCH_DB="slodi_recover"
 BACKUP_DIR="${BACKUP_DIR:-/opt/slodi/backups}"
-BUG_SHIPPED="2026-09-13"
+BUG_SHIPPED="2026-09-13_23-22-00"  # backup names are slodi_YYYY-MM-DD_HH-MM-SS
 OUT="${OUT:-$HOME/slodi-recover}"
 
 psql_() { docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -v ON_ERROR_STOP=1 -X -q "$@"; }
