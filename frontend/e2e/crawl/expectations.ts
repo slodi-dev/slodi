@@ -81,17 +81,6 @@ export const ENTRIES: Entry[] = [
     why: "A hidden item is 404 for anyone but its author and moderators; the page says so.",
   },
 
-  // ── Palette ─────────────────────────────────────────────────────────────
-  {
-    route: "/palette",
-    personas: "all",
-    axe: [{ rule: "color-contrast", target: /patrolBadge/ }],
-    bug: "sc-600",
-    why:
-      "White on the Fálkar and Drótt patrol colours is under 4.5:1. The patrol colours are " +
-      "each patrol's identity, so the fix is a design call.",
-  },
-
   // ── Leikir ──────────────────────────────────────────────────────────────
   {
     // Hidden behind HEIDURSORDLA_ENABLED (user decision 2026-10-11).

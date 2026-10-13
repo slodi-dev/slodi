@@ -907,64 +907,6 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   ALTERNATIVE THEMES
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/*
- * Pine and moss exist only for Forest Night. They were referenced by that
- * theme but never declared, and `var()` on an undeclared property invalidates
- * the whole declaration — so every line of the theme below was inert and the
- * theme rendered as plain dark. Declared here, next to their only consumer.
- *
- * Contrast, on the pairs the theme actually forms:
- *   moss-50 on pine-900   16.2:1   body text
- *   moss-50 on pine-800   14.4:1   text on a card
- *   moss-400 on pine-900   8.5:1   primary on the page
- */
-:root {
-  --sl-primitive-pine-800: 158 28% 11%;
-  --sl-primitive-pine-900: 158 32% 7%;
-  --sl-primitive-moss-50: 95 22% 94%;
-  --sl-primitive-moss-400: 95 40% 58%;
-  --sl-primitive-moss-700: 95 26% 26%;
-}
-
-/* Forest Night Theme */
-[data-theme="forest-night"] {
-  --sl-color-background: var(--sl-primitive-pine-900);
-  --sl-color-surface: var(--sl-primitive-pine-800);
-  --sl-color-primary: var(--sl-primitive-moss-400);
-  --sl-color-secondary: var(--sl-primitive-rekkar-500);
-  --sl-color-text-primary: var(--sl-primitive-moss-50);
-  --sl-color-border: var(--sl-primitive-moss-700);
-
-  color-scheme: dark;
-}
-
-/* Campfire Theme */
-[data-theme="campfire"] {
-  --sl-color-background: 35 30% 94%;
-  --sl-color-surface: 35 40% 96%;
-  --sl-color-primary: var(--sl-primitive-rover-600);
-  --sl-color-secondary: var(--sl-primitive-warning-500);
-  --sl-color-border: 28 40% 35%;
-
-  color-scheme: light;
-}
-
-/* Northern Lights Theme */
-[data-theme="northern-lights"] {
-  --sl-color-background: 270 30% 12%;
-  --sl-color-surface: 270 30% 14%;
-  --sl-color-primary: var(--sl-primitive-adrir-500);
-  --sl-color-secondary: var(--sl-primitive-rekkar-500);
-  --sl-color-text-primary: var(--sl-primitive-rekkar-100);
-  --sl-color-border: 177 40% 30%;
-
-  color-scheme: dark;
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
    PROGRAM CATALOG EXTENSIONS
    Additional semantic tokens for the program catalog rework (Phase 1B).
    Appended — no existing tokens are duplicated or renamed.
@@ -1120,10 +1062,9 @@
    `:root`.
 
    And the selector has to be the same pair the rest of the file uses.
-   `ThemeProvider` adds `class="dark"` for plain dark mode and only sets
-   `data-theme` for the *named* themes (forest-night, campfire,
-   northern-lights) — so a block matching `[data-theme="dark"]` alone never
-   fires for the ordinary toggle. That left `--sl-color-primary-text` at
+   `ThemeProvider` adds `class="dark"` for dark mode and never sets
+   `data-theme` — so a block matching `[data-theme="dark"]` alone never
+   fires for the toggle. That left `--sl-color-primary-text` at
    green-800 in dark mode, which is what painted a dark-green ring on a dark
    surface in the create chooser. */
 :root.dark,

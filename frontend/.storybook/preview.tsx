@@ -30,7 +30,7 @@ sb.mock("../contexts/AuthContext.tsx");
 
 installMockFetch();
 
-const THEMES = ["light", "dark", "forest-night", "campfire", "northern-lights"] as const;
+const THEMES = ["light", "dark"] as const;
 const PATROLS = ["drekar", "falkar", "drott", "rekkar", "rover", "adrir"] as const;
 
 /**

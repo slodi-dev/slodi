@@ -43,7 +43,6 @@ describe("middleware, signed out", () => {
     ["/badges", 307],
     ["/analytics", 307],
     ["/builder", 307],
-    ["/palette", 307],
     ["/dev", 307],
     ["/settings", 307],
     ["/api/emails", 401],
