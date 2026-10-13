@@ -31,6 +31,11 @@
 
 set -euo pipefail
 
+# Everything runs inside main(): with `ssh … bash -s < script` the script itself
+# is stdin, and `docker exec -i` would otherwise swallow the rest of it. Bash
+# reads the whole function before running any of it.
+main() {
+
 DB_CONTAINER="${DB_CONTAINER:-slodi-postgres}"
 DB_USER="${DB_USER:-slodi_user}"
 PROD_DB="${PROD_DB:-slodi_db}"
@@ -117,3 +122,7 @@ echo "Restore SQL: $OUT/restore.sql ($(grep -c '^UPDATE' "$OUT/restore.sql") sta
 echo ""
 echo "Next: read the report, then apply with"
 echo "  docker exec -i $DB_CONTAINER psql -U $DB_USER -d $PROD_DB -v ON_ERROR_STOP=1 -1 < $OUT/restore.sql"
+}
+
+main "$@"
+exit
