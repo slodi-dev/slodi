@@ -54,6 +54,9 @@ export const Sent: Story = {
 
 export const ErrorState: Story = {
   name: "Error",
+  // No visual baseline: the controls are disabled while sending, so whether
+  // focus survives depends on whether the mocked reply lands first (UX rule 11).
+  tags: ["skip-visual"],
   parameters: {
     // The failed request is logged by the app on purpose; nothing else may log.
     allowedConsoleErrors: [/^\[API 500\]/],
