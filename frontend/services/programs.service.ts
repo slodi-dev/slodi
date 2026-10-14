@@ -193,12 +193,12 @@ function buildContentParams(query: ContentQuery, limit: number, offset: number):
 export async function fetchPrograms(
   workspaceId: string,
   getToken: () => Promise<string | null>,
-  options: { query?: ContentQuery; limit?: number; offset?: number } = {}
+  options: { query?: ContentQuery; limit?: number; offset?: number; signal?: AbortSignal } = {}
 ): Promise<{ items: Program[]; total: number | null }> {
-  const { query = {}, limit = 24, offset = 0 } = options;
+  const { query = {}, limit = 24, offset = 0, signal } = options;
   const params = buildContentParams(query, limit, offset);
   const url = buildApiUrl(`/workspaces/${workspaceId}/content?${params.toString()}`);
-  return fetchPageWithAuth<Program>(url, { method: "GET" }, getToken);
+  return fetchPageWithAuth<Program>(url, { method: "GET", signal }, getToken);
 }
 
 /**
