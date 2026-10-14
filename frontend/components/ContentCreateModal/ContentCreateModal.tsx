@@ -10,7 +10,7 @@ import { useTags } from "@/hooks/useTags";
 import ChipList from "./ChipList";
 import TagPicker from "./TagPicker";
 import FileDropZone, { type Attachment } from "./FileDropZone";
-import { AGE_GROUPS, getAgeGroupPatrol } from "@/lib/format";
+import { AGE_GROUPS, countIs, getAgeGroupPatrol, pluralIs } from "@/lib/format";
 import DocumentViewer from "@/components/DocumentViewer/DocumentViewer";
 import {
   createBankContent,
@@ -444,7 +444,7 @@ export default function ContentCreateModal({
       setSummary(
         count === 1
           ? "Einn reitur vantar eða er ekki réttur. Hann er merktur hér fyrir ofan."
-          : `${count} reitir vantar eða eru ekki réttir. Þeir eru merktir hér fyrir ofan.`
+          : `${countIs(count, "reitur", "reitir")} ${pluralIs(count, "vantar eða er ekki réttur. Hann er merktur", "vantar eða eru ekki réttir. Þeir eru merktir")} hér fyrir ofan.`
       );
       setDone(null);
       // after the section has unrolled, or focus lands on a clipped field
@@ -633,7 +633,7 @@ export default function ContentCreateModal({
   /** The same state in words, for anyone who cannot see the dot. */
   const stateWord = (id: SectionId) => {
     const bad = errorsIn(id);
-    if (bad > 0) return bad === 1 ? "— 1 villa" : `— ${bad} villur`;
+    if (bad > 0) return `— ${countIs(bad, "villa", "villur")}`;
     if (filled[id]) return "— útfyllt";
     return "— ekkert útfyllt";
   };
@@ -1013,9 +1013,7 @@ export default function ContentCreateModal({
                     )}
                   </h3>
                   {errorsIn(id) > 0 && (
-                    <span className={styles.flag}>
-                      {errorsIn(id) === 1 ? "1 villa" : `${errorsIn(id)} villur`}
-                    </span>
+                    <span className={styles.flag}>{countIs(errorsIn(id), "villa", "villur")}</span>
                   )}
                 </div>
                 {panels[id]}
@@ -1057,7 +1055,7 @@ export default function ContentCreateModal({
                   <span className="sl-sr-only">{stateWord(id)}</span>
                   {/* A closed section still says it holds an error. */}
                   {bad > 0 && (
-                    <span className={styles.flag}>{bad === 1 ? "1 villa" : `${bad} villur`}</span>
+                    <span className={styles.flag}>{countIs(bad, "villa", "villur")}</span>
                   )}
                   <svg
                     className={styles.chev}

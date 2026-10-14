@@ -4,6 +4,7 @@
 
 import type { CSSProperties } from "react";
 import type { IconKey } from "./icons";
+import { formatIcelandicDecimal } from "@/lib/format";
 
 /** Inline-style object that also carries CSS custom properties (`--foo`). */
 export type Vars = CSSProperties & Record<string, string>;
@@ -1348,7 +1349,7 @@ export interface ScoreParts {
 }
 
 function isNum(n: number, max = 2): string {
-  return n.toLocaleString("is-IS", { maximumFractionDigits: max });
+  return formatIcelandicDecimal(n, max);
 }
 
 /** Structured score for the readout plate (number, suffix, long-scale name). */

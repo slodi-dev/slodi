@@ -11,7 +11,7 @@ import {
   suspendAuthor,
 } from "@/services/suspensions.service";
 import styles from "./yfirferd.module.css";
-import { formatIcelandicNumber, formatIcelandicDate } from "@/lib/format";
+import { countIs, formatIcelandicNumber, formatIcelandicDate, pluralIs } from "@/lib/format";
 
 /** Initials for the monogram. Decorative — it carries nothing the name does not. */
 function monogram(name: string): string {
@@ -21,11 +21,6 @@ function monogram(name: string): string {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
-}
-
-/** Icelandic counts, where the singular is a different word rather than a suffix. */
-function plural(n: number, one: string, many: string): string {
-  return `${formatIcelandicNumber(n)} ${n === 1 ? one : many}`;
 }
 
 /**
@@ -90,7 +85,7 @@ export default function AuthorStandingPanel({
       );
       if (!sure) return;
     }
-    const span = days === null ? "ótímabundið" : `í ${days} daga`;
+    const span = days === null ? "ótímabundið" : `í ${countIs(days, "dag", "daga")}`;
     const reason = window.prompt(
       `Af hverju fer ${authorName} ${span} í skammarkrók? ${authorName} sér þessa ástæðu.`
     );
@@ -101,7 +96,7 @@ export default function AuthorStandingPanel({
       setMessage(
         days === null
           ? `${authorName} getur ekki sent inn efni fyrr en því er aflétt.`
-          : `${authorName} getur ekki sent inn efni næstu ${days} daga.`
+          : `${authorName} getur ekki sent inn efni næstu ${countIs(days, "dag", "daga")}.`
       );
       await load();
     } catch (e) {
@@ -157,7 +152,7 @@ export default function AuthorStandingPanel({
           <dd className={styles.statNum}>{formatIcelandicNumber(strikes)}</dd>
         </div>
         <div className={`${styles.stat} ${spells === 0 ? styles.statZero : styles.statFlag}`}>
-          <dt className={styles.statLabel}>{spells === 1 ? "sinni" : "sinnum"} í skammarkrók</dt>
+          <dt className={styles.statLabel}>{pluralIs(spells, "sinni", "sinnum")} í skammarkrók</dt>
           <dd className={styles.statNum}>{formatIcelandicNumber(spells)}</dd>
         </div>
       </dl>
@@ -196,8 +191,8 @@ export default function AuthorStandingPanel({
               </ul>
             ) : (
               <p className={styles.bodyMuted}>
-                {plural(reports, "tilkynning", "tilkynningar")} og{" "}
-                {plural(strikes, "áminning", "áminningar")}. Enginn skammarkrókur.
+                {countIs(reports, "tilkynning", "tilkynningar")} og{" "}
+                {countIs(strikes, "áminning", "áminningar")}. Enginn skammarkrókur.
               </p>
             )}
           </>
@@ -247,7 +242,7 @@ export default function AuthorStandingPanel({
                   disabled={busy}
                   onClick={() => void suspend(days)}
                 >
-                  {days} dagar
+                  {countIs(days, "dagur", "dagar")}
                 </button>
               ))}
               <span className={styles.dursOr}>eða</span>

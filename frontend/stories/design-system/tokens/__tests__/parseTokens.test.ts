@@ -27,11 +27,15 @@ describe("parseTokens on app/slodi-tokens.css", () => {
     );
   });
 
-  it("applies named themes via data-theme", () => {
-    expect(set.byTheme["forest-night"].get("--sl-color-background")?.declared).toBe(
-      "var(--sl-primitive-pine-900)"
-    );
-    expect(set.byTheme.campfire.get("--sl-color-background")?.resolved).toBe("35 30% 94%");
+  it("knows only the two themes the app can show", () => {
+    expect(Object.keys(set.byTheme)).toEqual(["light", "dark"]);
+  });
+
+  it("ignores a data-theme block other than dark", () => {
+    // ThemeProvider never sets data-theme, so a stray named-theme block is inert.
+    const tokens = buildTokenSet(':root { --sl-a: 1; } [data-theme="other"] { --sl-a: 2; }');
+    expect(tokens.byTheme.light.get("--sl-a")?.resolved).toBe("1");
+    expect(tokens.byTheme.dark.get("--sl-a")?.resolved).toBe("1");
   });
 
   it("skips @media blocks", () => {

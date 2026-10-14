@@ -163,7 +163,7 @@ describe("ProgramCard", () => {
 
     // Overflow indicator should have aria-label
     const overflow = screen.getByText("+2");
-    expect(overflow.closest("[aria-label]")).toHaveAttribute("aria-label", "2 fleiri flokkar");
+    expect(overflow.closest("[aria-label]")).toHaveAttribute("aria-label", "2 flokkar í viðbót");
   });
 
   it("hides edit/delete buttons when canEdit and canDelete are false", () => {
@@ -258,5 +258,18 @@ describe("ProgramCard — hidden items (moderator view)", () => {
     expect(screen.getByRole("article", { name: "Test Program" })).not.toHaveAttribute(
       "data-hidden"
     );
+  });
+
+  it("hides the favourite button by default while FAVOURITES_ENABLED is off (UX-01)", () => {
+    render(<ProgramCard {...createProps()} />);
+    expect(screen.queryByRole("button", { name: /í möppu/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the favourite button when showFavourite is set", () => {
+    render(<ProgramCard {...createProps({ showFavourite: true })} />);
+    const button = screen.getByRole("button", { name: "Vista Test Program í möppu" });
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    button.click();
+    expect(mockToggleFavorite).toHaveBeenCalledTimes(1);
   });
 });

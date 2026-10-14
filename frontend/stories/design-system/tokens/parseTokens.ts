@@ -6,11 +6,11 @@
  * add a token to the file and it appears on the page.
  *
  * Deliberately small. It understands exactly the selectors the token file uses
- * (`:root`, `:root.dark`, `[data-theme="…"]`, comma lists of those) and skips
+ * (`:root`, `:root.dark`, `[data-theme="dark"]`, comma lists of those) and skips
  * `@media` blocks — those follow the OS, not the in-app theme toggle.
  */
 
-export const THEMES = ["light", "dark", "forest-night", "campfire", "northern-lights"] as const;
+export const THEMES = ["light", "dark"] as const;
 export type ThemeName = (typeof THEMES)[number];
 
 export type Declaration = { name: string; value: string; order: number };
@@ -90,19 +90,14 @@ export function parseRules(css: string): Rule[] {
 /**
  * Specificity of a selector part when it matches <html> in the given theme, or
  * null when it does not match. Mirrors what ThemeProvider sets: `class="dark"`
- * for dark, `data-theme="…"` for the named themes, nothing for light.
+ * for dark, nothing for light. It never sets `data-theme`.
  */
 function matchSpecificity(selector: string, theme: ThemeName): number | null {
   const s = selector.replace(/\s+/g, "");
   if (s === ":root") return 10;
   if (s === ":root.dark") return theme === "dark" ? 20 : null;
-  const attr = s.match(/^(?::root)?\[data-theme=["']?([\w-]+)["']?\]$/);
-  if (attr) {
-    // `dark` never sets data-theme in the app; the block is matched by its
-    // `:root.dark` sibling instead.
-    if (attr[1] !== theme || theme === "dark" || theme === "light") return null;
-    return s.startsWith(":root") ? 20 : 10;
-  }
+  // `[data-theme="dark"]` sits beside `:root.dark` in the dark blocks, but
+  // ThemeProvider never sets the attribute, so it matches nothing on its own.
   return null;
 }
 

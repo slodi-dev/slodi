@@ -55,13 +55,16 @@ test(
       expect((await saved).ok()).toBe(true);
     });
 
-    // On the item page the like button is named for what pressing it does.
-    const liked = (p = page) => p.getByRole("button", { name: "Fjarlægja líkar" });
+    // On the item page the like button is named for what pressing it does,
+    // with the count, as on the card.
+    const liked = (p = page) =>
+      p.getByRole("button", { name: "Taka rokkstig til baka, 1 rokkstig" });
 
     await step("S3", "Opens the item", async () => {
       await card.getByRole("link").first().click();
       await expect(page).toHaveURL(new RegExp(`/programs/${LIKEABLE_TASK.id}$`));
       await expect(liked()).toBeVisible();
+      await expect(liked()).toHaveAttribute("aria-pressed", "true");
       await expect(liked()).toHaveText("1");
     });
 
@@ -83,6 +86,7 @@ test(
       await tab.goto(link);
       await expect(tab.getByRole("heading", { level: 1 })).toHaveText(LIKEABLE_TASK.name);
       await expect(liked(tab)).toBeVisible();
+      await expect(liked(tab)).toHaveAttribute("aria-pressed", "true");
       await expect(liked(tab)).toHaveText("1");
     });
 

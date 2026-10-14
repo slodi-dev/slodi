@@ -15,7 +15,7 @@ import {
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import styles from "./yfirferd.module.css";
 import { cn } from "@/lib/util";
-import { formatIcelandicDate } from "@/lib/format";
+import { countIs, formatIcelandicDate } from "@/lib/format";
 import { isOptimisableImageUrl } from "@/lib/image-hosts";
 
 /** The type accent, so a Verkefni looks the same wherever a leader meets it. */
@@ -144,7 +144,7 @@ export default function ReviewDetailPane({
           {detail.hidden_at && <span className={cn(styles.chip, styles.chipWarning)}>Falið</span>}
           {detail.author_strikes > 0 && (
             <span className={cn(styles.chip, styles.chipWarning)}>
-              {detail.author_strikes} áminning{detail.author_strikes === 1 ? "" : "ar"} áður
+              {countIs(detail.author_strikes, "áminning", "áminningar")} áður
             </span>
           )}
         </p>

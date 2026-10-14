@@ -11,6 +11,7 @@ import ParticipantFilter from "./ParticipantFilter";
 import PriceFilter from "./PriceFilter";
 import LocationFilter from "./LocationFilter";
 import styles from "./FilterSidebar.module.css";
+import { countIs } from "@/lib/format";
 
 export interface FilterSidebarProps {
   // Age group filter
@@ -248,7 +249,10 @@ export function FilterDrawer({
           <h2 className={styles.drawerTitle}>
             Síur
             {activeFilterCount > 0 && (
-              <span className={styles.drawerBadge} aria-label={`${activeFilterCount} virkar síur`}>
+              <span
+                className={styles.drawerBadge}
+                aria-label={countIs(activeFilterCount, "virk sía", "virkar síur")}
+              >
                 {activeFilterCount}
               </span>
             )}

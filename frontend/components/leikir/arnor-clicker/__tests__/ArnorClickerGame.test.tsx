@@ -16,6 +16,7 @@ vi.mock("next/image", () => ({
 
 import ArnorClickerGame from "../ArnorClickerGame";
 import { WORKERS, CHAIRS, COMBO_BASE, signSave, prestigeBonusPct } from "../gameData";
+import { formatIcelandicNumber } from "@/lib/format";
 
 const SAVE_KEY = "arnor_clicker_save_v2";
 
@@ -103,7 +104,7 @@ describe("ArnorClickerGame", () => {
       // 100 - 50, and the permanent boost falls with it, along the √ curve.
       expect(stat("Óeydd Þingstig — á töflunni")).toBe("50");
       expect(stat("Varanleg uppörvun")).toBe(
-        `+${Math.round(prestigeBonusPct(50)).toLocaleString("is-IS")}%`
+        `+${formatIcelandicNumber(Math.round(prestigeBonusPct(50)))}%`
       );
     });
 

@@ -369,7 +369,7 @@
 .favoriteButton.favorited {
   background: hsl(var(--sl-color-warning-subtle));
   border-color: hsl(var(--sl-color-warning) / var(--sl-primitive-opacity-40));
-  color: hsl(var(--sl-color-warning));
+  color: hsl(var(--sl-color-warning-text));
 }
 
 .favoriteButton.favorited:hover {
