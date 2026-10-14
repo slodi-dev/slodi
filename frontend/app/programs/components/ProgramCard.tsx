@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLikes } from "@/contexts/LikesContext";
 import { useFavorite } from "@/contexts/FavoritesContext";
+import { FAVOURITES_ENABLED } from "@/lib/feature-flags";
 import {
   formatDuration,
   formatDurationLabel,
@@ -62,6 +63,11 @@ export interface ProgramCardProps {
    * author) are ever sent one; the card greys out and says "Falið".
    */
   hidden_at?: string | null;
+  /**
+   * Show the "Vista í möppu" bookmark button. Defaults to FAVOURITES_ENABLED,
+   * which is off until favourites have a backend (UX-01).
+   */
+  showFavourite?: boolean;
 }
 
 const MAX_VISIBLE_TAGS = 4;
@@ -90,6 +96,7 @@ export default function ProgramCard({
   location,
   age,
   hidden_at,
+  showFavourite = FAVOURITES_ENABLED,
 }: ProgramCardProps) {
   const { likeCount, isLiked, toggleLike } = useLikes(id, like_count, liked_by_me);
   const { isFavorite, toggleFavorite } = useFavorite(id);
@@ -417,30 +424,32 @@ export default function ProgramCard({
           <span className={styles.likeCount}>{likeCount}</span>
         </button>
 
-        {/* Favorite button */}
-        <button
-          type="button"
-          className={`${styles.actionButton} ${styles.favoriteButton} ${isFavorite ? styles.favorited : ""}`}
-          onClick={handleFavorite}
-          aria-label={isFavorite ? `Fjarlægja ${name} úr möppu` : `Vista ${name} í möppu`}
-          aria-pressed={isFavorite}
-        >
-          <svg
-            className={styles.actionIcon}
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill={isFavorite ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden="true"
+        {/* Favorite button (hidden behind FAVOURITES_ENABLED, UX-01) */}
+        {showFavourite && (
+          <button
+            type="button"
+            className={`${styles.actionButton} ${styles.favoriteButton} ${isFavorite ? styles.favorited : ""}`}
+            onClick={handleFavorite}
+            aria-label={isFavorite ? `Fjarlægja ${name} úr möppu` : `Vista ${name} í möppu`}
+            aria-pressed={isFavorite}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-            />
-          </svg>
-        </button>
+            <svg
+              className={styles.actionIcon}
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill={isFavorite ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+              />
+            </svg>
+          </button>
+        )}
 
         {/* Spacer pushes edit/delete to the right */}
         <div className={styles.footerSpacer} />

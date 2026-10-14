@@ -396,6 +396,9 @@
   --sl-color-border-focus: var(--sl-primitive-green-500);
   --sl-color-border-subtle: 150 14% 90%;
   --sl-color-border-strong: var(--sl-primitive-neutral-dark-400);
+  /* Hover for a border-strong edge: darker, so hovering never takes a form
+     control below 3:1 (border-hover above is lighter than border-strong). */
+  --sl-color-border-strong-hover: var(--sl-primitive-neutral-dark-500);
   --sl-color-border-inverse: var(--sl-primitive-neutral-700);
 
   /* ===== TEXT COLORS ===== */
@@ -443,17 +446,17 @@
   --sl-color-patrol-drekar-subtle: var(--sl-primitive-drekar-50);
   --sl-color-patrol-drekar-muted: var(--sl-primitive-drekar-100);
 
-  --sl-color-patrol-falkar: var(--sl-primitive-falkar-500);
+  --sl-color-patrol-falkar: var(--sl-primitive-falkar-600); /* -500 fails AA with white (sc-600) */
   --sl-color-patrol-falkar-foreground: var(--sl-primitive-falkar-on);
-  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-600);
-  --sl-color-patrol-falkar-active: var(--sl-primitive-falkar-700);
+  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-700);
+  --sl-color-patrol-falkar-active: var(--sl-primitive-falkar-800);
   --sl-color-patrol-falkar-subtle: var(--sl-primitive-falkar-50);
   --sl-color-patrol-falkar-muted: var(--sl-primitive-falkar-100);
 
-  --sl-color-patrol-drott: var(--sl-primitive-drott-500);
+  --sl-color-patrol-drott: var(--sl-primitive-drott-600); /* -500 fails AA with white (sc-600) */
   --sl-color-patrol-drott-foreground: var(--sl-primitive-drott-on);
-  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-600);
-  --sl-color-patrol-drott-active: var(--sl-primitive-drott-700);
+  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-700);
+  --sl-color-patrol-drott-active: var(--sl-primitive-drott-800);
   --sl-color-patrol-drott-subtle: var(--sl-primitive-drott-50);
   --sl-color-patrol-drott-muted: var(--sl-primitive-drott-100);
 
@@ -471,10 +474,10 @@
   --sl-color-patrol-rover-subtle: var(--sl-primitive-rover-50);
   --sl-color-patrol-rover-muted: var(--sl-primitive-rover-100);
 
-  --sl-color-patrol-adrir: var(--sl-primitive-adrir-500);
+  --sl-color-patrol-adrir: var(--sl-primitive-adrir-600); /* -500 fails AA with white (sc-600) */
   --sl-color-patrol-adrir-foreground: var(--sl-primitive-adrir-on);
-  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-600);
-  --sl-color-patrol-adrir-active: var(--sl-primitive-adrir-700);
+  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-700);
+  --sl-color-patrol-adrir-active: var(--sl-primitive-adrir-800);
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-50);
   --sl-color-patrol-adrir-muted: var(--sl-primitive-adrir-100);
 
@@ -497,8 +500,14 @@
   --sl-color-overlay-backdrop: 0 0% 0% / 0.6;
 
   /* ===== FOCUS RING ===== */
-  --sl-color-focus-ring: var(--sl-primitive-green-500) / 0.3;
-  --sl-color-focus-ring-error: var(--sl-primitive-error-500) / 0.3;
+  /* Opaque, and a bare triplet like every colour token: use it as
+     `hsl(var(--sl-color-focus-ring))`. It follows border-focus, so the dark
+     block retunes it, and it ignores the patrol accent on purpose: several
+     patrol colours are under 3:1 on a light surface. Against the background:
+     light 5.27:1 (green-500 on white), dark 7.72:1 (green-400 on surface).
+     The old 30% alpha ring was 1.52:1. */
+  --sl-color-focus-ring: var(--sl-color-border-focus);
+  --sl-color-focus-ring-error: var(--sl-color-error);
 
   /* ===== SPACING SEMANTIC ===== */
   --sl-spacing-page: var(--sl-primitive-space-32);
@@ -579,8 +588,14 @@
   --sl-shadow-dropdown: var(--sl-primitive-shadow-lg);
   --sl-shadow-modal: var(--sl-primitive-shadow-xl);
   --sl-shadow-tooltip: var(--sl-primitive-shadow-base);
-  --sl-shadow-focus: 0 0 0 3px var(--sl-color-focus-ring);
-  --sl-shadow-focus-error: 0 0 0 3px var(--sl-color-focus-ring-error);
+  /* A 2px surface-coloured gap, then a 2px ring. The gap keeps the ring
+     visible on a control filled with the same colour (a primary button). The
+     ring colour must sit inside hsl(): a bare triplet here makes the whole
+     box-shadow invalid, which is how focus was invisible until sc-549. */
+  --sl-shadow-focus:
+    0 0 0 2px hsl(var(--sl-color-surface)), 0 0 0 4px hsl(var(--sl-color-focus-ring));
+  --sl-shadow-focus-error:
+    0 0 0 2px hsl(var(--sl-color-surface)), 0 0 0 4px hsl(var(--sl-color-focus-ring-error));
 
   /* ===== TRANSITION SEMANTIC ===== */
   --sl-transition-fast: var(--sl-primitive-duration-fast) var(--sl-primitive-ease-out);
@@ -673,10 +688,14 @@
   --sl-card-transition: var(--sl-transition-base);
 
   /* ===== INPUT COMPONENT ===== */
+  /* The border is the only edge a text field, textarea, select or combobox
+     has, so WCAG 1.4.11 wants 3:1 against what it sits on (TOK-04).
+     border-strong is 3.66:1 on the light surface and 3.76:1 on the dark one;
+     plain border (1.38 / 1.67) is for cards and dividers, never for a field. */
   --sl-input-background: var(--sl-color-surface);
   --sl-input-background-disabled: var(--sl-color-background-secondary);
-  --sl-input-border: var(--sl-color-border);
-  --sl-input-border-hover: var(--sl-color-border-hover);
+  --sl-input-border: var(--sl-color-border-strong);
+  --sl-input-border-hover: var(--sl-color-border-strong-hover);
   --sl-input-border-focus: var(--sl-color-border-focus);
   --sl-input-border-error: var(--sl-color-error);
   --sl-input-text: var(--sl-color-text-primary);
@@ -833,6 +852,7 @@
   --sl-color-border-focus: var(--sl-primitive-green-400);
   --sl-color-border-subtle: 150 8% 20%;
   --sl-color-border-strong: 150 8% 45%;
+  --sl-color-border-strong-hover: 150 8% 58%;
   --sl-color-border-inverse: var(--sl-primitive-neutral-300);
 
   /* ===== TEXT COLORS (Dark) ===== */
@@ -867,12 +887,14 @@
   --sl-color-patrol-drekar-hover: var(--sl-primitive-drekar-300);
   --sl-color-patrol-drekar-subtle: var(--sl-primitive-drekar-900);
 
-  --sl-color-patrol-falkar: var(--sl-primitive-falkar-400);
-  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-300);
+  /* Same as light: lighter steps fail AA with white text (sc-600) */
+  --sl-color-patrol-falkar: var(--sl-primitive-falkar-600);
+  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-700);
   --sl-color-patrol-falkar-subtle: var(--sl-primitive-falkar-900);
 
-  --sl-color-patrol-drott: var(--sl-primitive-drott-400);
-  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-300);
+  /* Same as light: lighter steps fail AA with white text (sc-600) */
+  --sl-color-patrol-drott: var(--sl-primitive-drott-600);
+  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-700);
   --sl-color-patrol-drott-subtle: var(--sl-primitive-drott-900);
 
   --sl-color-patrol-rekkar: var(--sl-primitive-rekkar-400);
@@ -883,8 +905,9 @@
   --sl-color-patrol-rover-hover: var(--sl-primitive-rover-300);
   --sl-color-patrol-rover-subtle: var(--sl-primitive-rover-900);
 
-  --sl-color-patrol-adrir: var(--sl-primitive-adrir-400);
-  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-300);
+  /* Same as light: lighter steps fail AA with white text (sc-600) */
+  --sl-color-patrol-adrir: var(--sl-primitive-adrir-600);
+  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-700);
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-900);
 
   /* ===== HEIÐURSORÐLA TILE COLORS (Dark) ===== */
@@ -1003,11 +1026,6 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   DARK MODE — prefers-color-scheme overrides for new tokens
-   Only colour tokens are overridden; non-colour tokens are theme-agnostic.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════════════════════════
    CONTENT TYPE — Viðburður
    A Viðburður needs an identity that is neither the green of a Dagskrá nor the
    neutral of a Verkefni, so a leader can tell the three apart at a glance
@@ -1031,35 +1049,15 @@
   --sl-color-cycle-text: var(--sl-primitive-rekkar-900);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Primary border shifts lighter for visibility on dark backgrounds */
-    /* The old green-600: green-600 is darker since sc-586, too dark to read
-       as a border on a dark surface. */
-    --sl-color-primary-border: 142 50% 35%;
-    /* Primary text lightened for readability on dark primary-subtle bg */
-    --sl-color-primary-text: var(--sl-primitive-green-200);
-    /* Raised surface on dark is a slightly lighter shade */
-    --sl-color-surface-raised: 0 0% 14%;
-    /* Sunken surface on dark is a slightly darker shade */
-    --sl-color-surface-sunken: 0 0% 8%;
-    /* Viðburður lightens so it reads on a dark surface */
-    --sl-color-event: var(--sl-primitive-adrir-400);
-    --sl-color-event-subtle: 270 38% 19%;
-    --sl-color-event-text: var(--sl-primitive-adrir-200);
-    --sl-color-cycle: var(--sl-primitive-rekkar-400);
-    --sl-color-cycle-subtle: 177 40% 16%;
-    --sl-color-cycle-text: var(--sl-primitive-rekkar-200);
-  }
-}
+/* Dark values for the tokens declared in the two `:root` blocks above.
+   They sit here, after those blocks, because `[data-theme="dark"]` has the
+   same specificity as `:root`, so source order decides.
 
-/* The same tokens, for the in-app theme toggle.
-   Two things make this block necessary rather than redundant.
-
-   The dark block far above cannot carry them: a later `:root` redeclares them,
-   and `:root` and the dark selector have identical specificity, so source
-   order decides and the light values win. Hence repeating them *after* that
-   `:root`.
+   Dark mode comes only from the class or attribute ThemeProvider sets on
+   <html>. There is deliberately no OS colour-scheme media query: the one
+   that used to be here fired whenever the OS was dark, even when the user
+   had picked Ljóst, and put dark text on dark raised surfaces (1.02:1,
+   sc-550). Following the OS is ThemeProvider's job.
 
    And the selector has to be the same pair the rest of the file uses.
    `ThemeProvider` adds `class="dark"` for dark mode and never sets

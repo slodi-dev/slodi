@@ -47,7 +47,9 @@ const meta = {
       description: {
         component:
           "One item in Dagskrárbankinn. Like and favourite state come from the real " +
-          "LikesProvider/FavoritesProvider; the like request is answered by the Storybook fetch mock.",
+          "LikesProvider/FavoritesProvider; the like request is answered by the Storybook fetch mock. " +
+          "The favourite (bookmark) button is hidden while FAVOURITES_ENABLED is off " +
+          "(lib/feature-flags.ts); see WithFavouriteButton.",
       },
     },
   },
@@ -128,6 +130,23 @@ export const LikeRequestFails: Story = {
       description: {
         story:
           "The like endpoint returns 500: click the heart and the optimistic count rolls back.",
+      },
+    },
+  },
+};
+
+/**
+ * The "Vista í möppu" bookmark. Hidden on the site while FAVOURITES_ENABLED is
+ * off (UX-01); this keeps the button covered for when it comes back.
+ */
+export const WithFavouriteButton: Story = {
+  args: { showFavourite: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Favourites are hidden on the site until they have a backend (FAVOURITES_ENABLED, " +
+          "UX-01). With the flag off a click saves to localStorage only and sends nothing.",
       },
     },
   },
