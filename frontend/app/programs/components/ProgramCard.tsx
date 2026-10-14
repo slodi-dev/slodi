@@ -20,8 +20,19 @@ import {
   formatIcelandicNumber,
 } from "@/lib/format";
 import { HiddenChip, hiddenDimClass } from "@/components/HiddenMark/HiddenMark";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import { cn } from "@/lib/util";
 import styles from "./ProgramCard.module.css";
+
+/**
+ * The card's rendered width, so the optimiser serves a card-sized variant.
+ * Follows the bank layout (ProgramsPage + ProgramGrid CSS): one column to
+ * 640px, two to 1024px beside a 240px filter rail, then three beside a 268px
+ * rail inside a 1600px page, which caps a card at about 412px. The old
+ * "33vw" made a 1440px laptop at 2x fetch the 1080px variant for a ~360px card.
+ */
+const CARD_IMAGE_SIZES =
+  "(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 36vw, (max-width: 1600px) 25vw, 412px";
 
 export interface ProgramCardProps {
   id: string;
@@ -215,11 +226,13 @@ export default function ProgramCard({
       {/* ── Hero image ──────────────────────────────────────────── */}
       <div className={cn(styles.media, hidden && hiddenDimClass)}>
         {image ? (
+          // Pasted URLs from other hosts skip the optimiser (lib/image-hosts).
           <Image
             src={image}
             alt={name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes={CARD_IMAGE_SIZES}
+            unoptimized={!isOptimisableImageUrl(image)}
             className={styles.image}
           />
         ) : (

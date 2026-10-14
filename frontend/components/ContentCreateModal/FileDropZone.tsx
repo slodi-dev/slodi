@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import React, { useRef, useState } from "react";
 import styles from "./ContentCreateModal.module.css";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import { cn } from "@/lib/util";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadFile } from "@/services/uploads.service";
@@ -269,8 +271,17 @@ export default function FileDropZone({
                     setDragOver(null);
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- blob URL, not optimisable */}
-                  <img className={styles.shotImg} src={img.url} alt="" />
+                  {/* Tiles are minmax(140px, 1fr) in the modal; width/height
+                      only fix the 4:3 box, the CSS sizes it. */}
+                  <Image
+                    className={styles.shotImg}
+                    src={img.url}
+                    alt=""
+                    width={200}
+                    height={150}
+                    sizes="200px"
+                    unoptimized={!isOptimisableImageUrl(img.url)}
+                  />
                   {/*
                     Every image carries its position, not just the first. A
                     lone „Forsíðumynd" badge says which one leads but leaves

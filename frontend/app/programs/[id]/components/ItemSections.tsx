@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { formatIcelandicDate } from "@/lib/format";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import { cn } from "@/lib/util";
 import type { ContentComment, Program } from "@/services/programs.service";
 import type { ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
@@ -189,7 +190,15 @@ export default function ItemSections({
                   aria-label={`Sýna mynd ${i + 1}: ${img.alt}`}
                   onClick={() => onHeroIndexChange(i)}
                 >
-                  <Image src={img.url} alt="" fill sizes="150px" unoptimized />
+                  {/* Tiles are minmax(150px, 1fr) in a column of at most 760px, so
+                      never wider than ~185px. */}
+                  <Image
+                    src={img.url}
+                    alt=""
+                    fill
+                    sizes="185px"
+                    unoptimized={!isOptimisableImageUrl(img.url)}
+                  />
                 </button>
               ))}
             </div>

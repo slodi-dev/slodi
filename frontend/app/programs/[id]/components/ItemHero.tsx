@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import { cn } from "@/lib/util";
 
 import styles from "../efnissida.module.css";
@@ -81,16 +82,23 @@ export default function ItemHero({
     >
       <div className={styles.media}>
         {/*
-          Content images are Azure blob URLs and `next.config.ts` only allows
-          that one host through the optimiser. Anything else would throw at
-          render, so unoptimized is the safe default for author-supplied URLs.
+          Uploaded pictures are blob URLs on the host `next.config.ts` lets
+          through the optimiser, so a phone gets a resized WebP instead of the
+          original (up to 10 MB). A pasted URL from another site is not on the
+          allowlist and loads straight from its host. The frame is 100% wide
+          and at most 320px tall (efnissida.module.css), so `sizes` is the
+          column width. The first picture is the page's LCP element: eager,
+          preloaded (`priority`) and, since the item is fetched on the
+          client and the URL is found late, high fetch priority as well.
         */}
         <Image
           src={current.url}
           alt={current.alt}
           fill
           sizes="(max-width: 1079px) 100vw, 760px"
-          unoptimized
+          priority={clamped === 0}
+          fetchPriority={clamped === 0 ? "high" : undefined}
+          unoptimized={!isOptimisableImageUrl(current.url)}
         />
       </div>
 

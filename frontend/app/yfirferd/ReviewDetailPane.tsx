@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Modal from "@/components/Modal/Modal";
 import AuthorStandingPanel from "./AuthorStandingPanel";
@@ -15,6 +16,7 @@ import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import styles from "./yfirferd.module.css";
 import { cn } from "@/lib/util";
 import { countIs, formatIcelandicDate } from "@/lib/format";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 
 /** The type accent, so a Verkefni looks the same wherever a leader meets it. */
 const TYPE_CLASS: Record<string, string> = {
@@ -186,10 +188,17 @@ export default function ReviewDetailPane({
       {detail.image && (
         <section>
           <h3 className={styles.sectionTitle}>Mynd</h3>
-          {/* Plain <img>: the pane shows one image at a time and the URL is a
-              blob URL the optimiser is not configured for. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={styles.image} src={detail.image} alt="" />
+          {/* Natural size (width/height 0 + CSS auto), clamped by .image, as
+              the plain <img> was; but a blob upload now arrives resized. */}
+          <Image
+            className={styles.image}
+            src={detail.image}
+            alt=""
+            width={0}
+            height={0}
+            sizes="(max-width: 900px) 100vw, 640px"
+            unoptimized={!isOptimisableImageUrl(detail.image)}
+          />
         </section>
       )}
 

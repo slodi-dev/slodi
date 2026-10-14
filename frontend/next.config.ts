@@ -13,12 +13,20 @@ const nextConfig: NextConfig = {
     // Only the public blob container. Content images are uploaded straight to
     // Azure and stored as blob URLs, so nothing else needs optimizing — and a
     // wildcard here would expose the Next.js image endpoint to SSRF and
-    // bandwidth abuse.
+    // bandwidth abuse. Components ask `isOptimisableImageUrl`
+    // (lib/image-hosts.ts) whether a URL may go through the optimiser; foreign
+    // URLs stay `unoptimized` and load straight from their host.
+    //
+    // Keep this a literal: the production Docker stage copies only
+    // next.config.* (no lib/), so an import here crashes `next start`.
+    // lib/image-hosts.test.ts holds the two in step.
     remotePatterns: [
       {
         protocol: "https",
         hostname: "slodiblobstorage.blob.core.windows.net",
+        port: "",
         pathname: "/content-images/**",
+        search: "",
       },
     ],
     // Limit cached variants to common screen widths — reduces cache storage per image.
