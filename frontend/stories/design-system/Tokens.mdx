@@ -3,7 +3,6 @@ import {
   TokenSummary,
   ColorTable,
   PrimitiveRamps,
-  ThemeMatrix,
   PatrolColors,
   SpacingTokens,
   RadiusTokens,
@@ -34,18 +33,14 @@ What components use. Remember to wrap them: `hsl(var(--sl-color-…))`.
 
 <ColorTable group="semantic-color" />
 
-## Named themes
-
-Semantic colours that forest-night, campfire or northern-lights override, across all five themes.
-
-<ThemeMatrix />
-
 ## Patrol colours
 
 The six sveit colours. Picking one in **Sveit** on the toolbar (or in Stillingar in the app)
 overrides `--sl-color-primary` with it.
 
 <PatrolColors />
+
+The badges as they render, with live contrast, are in **Design system / Patrol badges**.
 
 <ColorTable group="patrol" />
 
@@ -56,6 +51,11 @@ Raw ramps. Components should not reference these directly.
 <PrimitiveRamps />
 
 ## Component colour tokens
+
+Form controls (text fields, textareas, selects, search, comboboxes) take their edge from
+`--sl-input-border*`, which sits on `--sl-color-border-strong` so the only boundary of the
+control clears 3:1 (WCAG 1.4.11). `--sl-color-border` is for cards and dividers. See
+**Design system / Form controls** for every state measured live.
 
 <ColorTable group="component-color" />
 

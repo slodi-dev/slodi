@@ -86,7 +86,7 @@
   font-family: var(--sl-font-family-body);
   color: hsl(var(--sl-color-text-primary));
   background: hsl(var(--sl-color-background));
-  border: 2px solid hsl(var(--sl-color-border));
+  border: 2px solid hsl(var(--sl-input-border));
   border-radius: var(--sl-radius-input);
   transition:
     border-color var(--sl-transition-fast),
@@ -94,7 +94,7 @@
 }
 
 .input:hover {
-  border-color: hsl(var(--sl-color-border-hover));
+  border-color: hsl(var(--sl-input-border-hover));
 }
 
 .input:focus {

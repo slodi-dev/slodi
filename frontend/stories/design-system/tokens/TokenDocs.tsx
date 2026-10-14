@@ -194,38 +194,6 @@ export function PrimitiveRamps() {
   );
 }
 
-/** Semantic tokens that a named theme overrides, side by side across all five themes. */
-export function ThemeMatrix() {
-  const overridden = tokenSet.names.filter(
-    (name) =>
-      name.startsWith("--sl-color-") &&
-      THEMES.some(
-        (t) =>
-          tokenSet.byTheme[t].get(name)?.declared !== tokenSet.byTheme.light.get(name)?.declared
-      ) &&
-      (["forest-night", "campfire", "northern-lights"] as ThemeName[]).some(
-        (t) =>
-          tokenSet.byTheme[t].get(name)?.declared !== tokenSet.byTheme.light.get(name)?.declared
-      )
-  );
-  return (
-    <Table head={["Token", ...THEMES]}>
-      {overridden.map((name) => (
-        <tr key={name}>
-          <td>
-            <code style={{ whiteSpace: "nowrap" }}>{name}</code>
-          </td>
-          {THEMES.map((t) => (
-            <td key={t}>
-              <Swatch token={tokenSet.byTheme[t].get(name)} />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </Table>
-  );
-}
-
 /** Patrol colours: the base swatch with its foreground, plus the full state ramp. */
 export function PatrolColors() {
   const patrols = ["drekar", "falkar", "drott", "rekkar", "rover", "adrir"];

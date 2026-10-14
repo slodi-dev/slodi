@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useLikes } from "@/contexts/LikesContext";
+import { formatIcelandicNumber } from "@/lib/format";
 import styles from "./LikeButton.module.css";
 
 interface LikeButtonProps {
@@ -35,7 +36,7 @@ export default function LikeButton({
       type="button"
       className={`${styles.likeButton} ${styles[size]} ${liked ? styles.liked : ""} ${className || ""}`}
       onClick={handleClick}
-      aria-label={`${liked ? "Taka rokkstig til baka" : "Gefa rokkstig"}, ${likeCountValue} rokkstig`}
+      aria-label={`${liked ? "Taka rokkstig til baka" : "Gefa rokkstig"}, ${formatIcelandicNumber(likeCountValue)} rokkstig`}
       aria-pressed={liked}
     >
       <svg
@@ -50,7 +51,7 @@ export default function LikeButton({
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
-      {showCount && <span className={styles.count}>{likeCountValue}</span>}
+      {showCount && <span className={styles.count}>{formatIcelandicNumber(likeCountValue)}</span>}
     </button>
   );
 }
