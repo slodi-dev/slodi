@@ -5,13 +5,14 @@ import {
   DEFAULT_FILTERS,
   filtersToParams,
   paramsToFilters,
+  parsePage,
 } from "../useProgramFilters";
 import type { Program } from "@/services/programs.service";
 
 // ── Mock next/navigation ─────────────────────────────────────────────────────
 
 const mockReplace = vi.fn();
-const mockSearchParams = new URLSearchParams();
+let mockSearchParams = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => mockSearchParams,
@@ -344,5 +345,77 @@ describe("filtersToParams / paramsToFilters round-trip", () => {
     const params = new URLSearchParams({ durationMin: "abc" });
     const result = paramsToFilters(params);
     expect(result.durationMin).toBeUndefined();
+  });
+});
+
+// ── Page (sc-615) ────────────────────────────────────────────────────────────
+
+describe("useProgramFilters page", () => {
+  beforeEach(() => {
+    mockReplace.mockClear();
+    mockSearchParams = new URLSearchParams();
+  });
+
+  it("starts on the page the URL names, and writes nothing on mount", () => {
+    mockSearchParams = new URLSearchParams("page=4&search=leikur");
+    const { result } = renderHook(() => useProgramFilters([]));
+
+    expect(result.current.page).toBe(4);
+    expect(result.current.filters.search).toBe("leikur");
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("writes the page to the URL with replace, and leaves page 1 out", () => {
+    const { result } = renderHook(() => useProgramFilters([]));
+
+    act(() => result.current.setPage(3));
+    expect(mockReplace).toHaveBeenLastCalledWith("/programs?page=3", { scroll: false });
+
+    act(() => result.current.setPage(1));
+    expect(mockReplace).toHaveBeenLastCalledWith("/programs", { scroll: false });
+  });
+
+  it("goes back to page 1 when a filter changes", () => {
+    const { result } = renderHook(() => useProgramFilters([]));
+
+    act(() => result.current.setPage(3));
+    act(() => result.current.setFilters({ ages: ["Drekaskátar"] }));
+
+    expect(result.current.page).toBe(1);
+    expect(mockReplace).toHaveBeenLastCalledWith("/programs?ages=Drekask%C3%A1tar", {
+      scroll: false,
+    });
+  });
+
+  it("keeps the page when a filter is set to the value it already has", () => {
+    // The search box echoes its value back after its debounce, on mount too.
+    mockSearchParams = new URLSearchParams("page=2&search=leikur");
+    const { result } = renderHook(() => useProgramFilters([]));
+    const before = result.current.filters;
+
+    act(() => result.current.setFilters({ search: "leikur" }));
+
+    expect(result.current.page).toBe(2);
+    expect(result.current.filters).toBe(before);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("clearAll goes back to page 1", () => {
+    mockSearchParams = new URLSearchParams("page=5&freeOnly=1");
+    const { result } = renderHook(() => useProgramFilters([]));
+
+    act(() => result.current.clearAll());
+
+    expect(result.current.page).toBe(1);
+    expect(mockReplace).toHaveBeenLastCalledWith("/programs", { scroll: false });
+  });
+
+  it("reads only a whole page number above 1 from the URL", () => {
+    expect(parsePage(null)).toBe(1);
+    expect(parsePage("0")).toBe(1);
+    expect(parsePage("-2")).toBe(1);
+    expect(parsePage("2.5")).toBe(1);
+    expect(parsePage("abc")).toBe(1);
+    expect(parsePage("7")).toBe(7);
   });
 });

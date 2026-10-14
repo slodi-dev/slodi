@@ -57,11 +57,12 @@ vi.mock("@/hooks/useProgramFilters", async (importOriginal) => ({
   useProgramFilters: () => ({
     filters: DEFAULT_FILTERS,
     setFilters: vi.fn(),
+    page: 1,
+    setPage: vi.fn(),
     activeChips: [],
     clearAll: vi.fn(),
   }),
 }));
-vi.mock("@/hooks/useUserWorkspace", () => ({ useUserWorkspace: () => ({ workspaceId: null }) }));
 vi.mock("@/hooks/useDefaultWorkspaceId", () => ({ useDefaultWorkspaceId: () => "ws-1" }));
 vi.mock("@/hooks/useWorkspaceRole", () => ({ useWorkspaceRole: () => ({ role: "editor" }) }));
 const getToken = async () => "t";
