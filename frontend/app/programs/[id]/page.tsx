@@ -20,6 +20,7 @@ import { useProgram } from "@/hooks/useProgram";
 import { useProgramActions } from "@/hooks/useProgramActions";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
+import { publicMediaUrl } from "@/lib/private-network";
 import { cn } from "@/lib/util";
 import { createComment, deleteComment } from "@/services/comments.service";
 import { deleteBankContent, type ContentComment } from "@/services/programs.service";
@@ -81,8 +82,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
        Items created before the list have only `image`, which is the same thing
        with one entry — so no migration, and both shapes read the same here. */
     const listed = program?.media?.images ?? [];
-    if (listed.length) return listed.map((i) => ({ url: i.url, alt: "" }));
-    return program?.image ? [{ url: program.image, alt: "" }] : [];
+    const urls = listed.length ? listed.map((i) => i.url) : [program?.image];
+    // A picture on a private address is dropped, not shown broken: loading it
+    // would make Chrome ask the visitor for local network access.
+    return urls.flatMap((url) => {
+      const safe = publicMediaUrl(url);
+      return safe ? [{ url: safe, alt: "" }] : [];
+    });
   }, [program?.media?.images, program?.image]);
   if (error) return <ProgramDetailError error={error} />;
   if (isLoading) return <ProgramDetailSkeleton />;

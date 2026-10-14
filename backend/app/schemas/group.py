@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
 
 from app.domain.enums import GroupRole
 from app.domain.group_constraints import IMG_MAX, NAME_MAX, NAME_MIN
+from app.domain.private_network import check_public_url
 
 NameStr = Annotated[
     str,
@@ -24,11 +25,24 @@ class GroupBase(BaseModel):
     image: ImageStr | None = None
 
 
-class GroupCreate(GroupBase):
+class _PublicImage(BaseModel):
+    """Input-only: no localhost/private-address image (app/domain/private_network.py).
+
+    Not on `GroupBase`, which `GroupOut` shares: a group saved before this
+    check must still be readable.
+    """
+
+    @field_validator("image", check_fields=False)
+    @classmethod
+    def validate_public_image(cls, v: str | None) -> str | None:
+        return check_public_url(v)
+
+
+class GroupCreate(GroupBase, _PublicImage):
     pass
 
 
-class GroupUpdate(BaseModel):
+class GroupUpdate(_PublicImage):
     model_config = ConfigDict(str_strip_whitespace=True)
     name: NameStr | None = None
     image: ImageStr | None = None
