@@ -15,6 +15,11 @@ import {
   formatAgeGroups,
   formatIcelandicDate,
   formatIcelandicDateShort,
+  formatIcelandicDateTime,
+  formatIcelandicDecimal,
+  formatFileSize,
+  pluralIs,
+  countIs,
 } from "./format";
 
 // ── formatMinutes ───────────────────────────────────────────────────────────────
@@ -353,5 +358,118 @@ describe("formatIcelandicNumber", () => {
 describe("formatPrice grouping", () => {
   it("writes a four-figure price the Icelandic way", () => {
     expect(formatPrice(1500)).toBe("1.500 kr.");
+  });
+});
+
+// ── Plurals ─────────────────────────────────────────────────────────────────────
+
+describe("pluralIs", () => {
+  const word = (n: number) => pluralIs(n, "eining", "einingar");
+
+  it("takes the singular for a number ending in 1", () => {
+    for (const n of [1, 21, 31, 101, 121, 1001]) expect(word(n)).toBe("eining");
+  });
+
+  it("takes the plural for a number ending in 11", () => {
+    for (const n of [11, 111, 211, 1011]) expect(word(n)).toBe("einingar");
+  });
+
+  it("takes the plural for zero and every other ending", () => {
+    for (const n of [0, 2, 5, 10, 12, 20, 22, 100]) expect(word(n)).toBe("einingar");
+  });
+
+  it("follows the absolute value of a negative", () => {
+    expect(word(-1)).toBe("eining");
+    expect(word(-11)).toBe("einingar");
+  });
+
+  it("takes the plural for any shown fraction", () => {
+    expect(word(1.5)).toBe("einingar");
+    expect(word(21.1)).toBe("einingar");
+    expect(word(0.5)).toBe("einingar");
+  });
+
+  it("judges a decimal as countIs prints it, rounded to two places", () => {
+    expect(word(1.004)).toBe("eining");
+    expect(word(10.999)).toBe("einingar");
+  });
+});
+
+describe("countIs", () => {
+  it("puts the number and the agreeing noun together", () => {
+    expect(countIs(1, "eining", "einingar")).toBe("1 eining");
+    expect(countIs(21, "eining", "einingar")).toBe("21 eining");
+    expect(countIs(11, "eining", "einingar")).toBe("11 einingar");
+    expect(countIs(111, "eining", "einingar")).toBe("111 einingar");
+    expect(countIs(0, "eining", "einingar")).toBe("0 einingar");
+  });
+
+  it("groups thousands the Icelandic way", () => {
+    expect(countIs(5003, "eining", "einingar")).toBe("5.003 einingar");
+    expect(countIs(1001, "eining", "einingar")).toBe("1.001 eining");
+  });
+
+  it("writes a fraction with a decimal comma", () => {
+    expect(countIs(1.5, "klukkustund", "klukkustundir")).toBe("1,5 klukkustundir");
+    expect(countIs(1.004, "klukkustund", "klukkustundir")).toBe("1 klukkustund");
+  });
+});
+
+describe("formatParticipants with Icelandic plurals", () => {
+  it("uses the singular for 21", () => {
+    expect(formatParticipants(21, 21)).toBe("21 þátttakandi");
+    expect(formatParticipants(11, 11)).toBe("11 þátttakendur");
+  });
+});
+
+describe("formatDurationLabel with Icelandic plurals", () => {
+  it("uses the singular for 21 minutes and 21 hours", () => {
+    expect(formatDurationLabel(21, 21)).toBe("Lengd: 21 mínúta");
+    expect(formatDurationLabel(21 * 60, 21 * 60)).toBe("Lengd: 21 klukkustund");
+  });
+});
+
+// ── Decimals, file sizes, date-time ─────────────────────────────────────────────
+
+describe("formatIcelandicDecimal", () => {
+  it("uses a comma for the decimal and full stops for thousands", () => {
+    expect(formatIcelandicDecimal(1234.5)).toBe("1.234,5");
+    expect(formatIcelandicDecimal(1234567.891)).toBe("1.234.567,89");
+  });
+
+  it("drops trailing zeros", () => {
+    expect(formatIcelandicDecimal(2.5, 2)).toBe("2,5");
+    expect(formatIcelandicDecimal(3, 2)).toBe("3");
+  });
+
+  it("rounds to the given number of places", () => {
+    expect(formatIcelandicDecimal(1.26, 1)).toBe("1,3");
+    expect(formatIcelandicDecimal(1.26, 0)).toBe("1");
+  });
+
+  it("keeps the sign, but never on a rounded zero", () => {
+    expect(formatIcelandicDecimal(-1.5)).toBe("-1,5");
+    expect(formatIcelandicDecimal(-0.001)).toBe("0");
+  });
+});
+
+describe("formatFileSize", () => {
+  it("picks the unit and writes the decimal with a comma", () => {
+    expect(formatFileSize(512)).toBe("512 B");
+    expect(formatFileSize(34 * 1024)).toBe("34 kB");
+    expect(formatFileSize(1.25 * 1024 * 1024)).toBe("1,3 MB");
+    expect(formatFileSize(3 * 1024 * 1024)).toBe("3 MB");
+  });
+});
+
+describe("formatIcelandicDateTime", () => {
+  it("writes the short date and a 24-hour time", () => {
+    expect(formatIcelandicDateTime(new Date(2026, 8, 14, 9, 5))).toBe("14. sept. 2026 kl. 09:05");
+    expect(formatIcelandicDateTime(new Date(2026, 11, 1, 23, 59))).toBe("1. des. 2026 kl. 23:59");
+  });
+
+  it("returns an empty string for nothing or nonsense", () => {
+    expect(formatIcelandicDateTime(null)).toBe("");
+    expect(formatIcelandicDateTime("not a date")).toBe("");
   });
 });

@@ -5,6 +5,7 @@ import SkeletonCard from "@/components/ui/SkeletonCard";
 import ProgramCard from "./ProgramCard";
 import type { Program } from "@/services/programs.service";
 import styles from "./ProgramGrid.module.css";
+import { countIs, pluralIs } from "@/lib/format";
 
 interface ProgramGridProps {
   programs: Program[];
@@ -129,7 +130,8 @@ export default function ProgramGrid({
   return (
     <>
       <div role="status" aria-live="polite" aria-atomic="true" className="sl-sr-only">
-        {programs.length} atriði fundust
+        {countIs(programs.length, "atriði", "atriði")}{" "}
+        {pluralIs(programs.length, "fannst", "fundust")}
       </div>
       <ul className={styles.grid} aria-label="Dagskrá">
         {programs.map((program) => (

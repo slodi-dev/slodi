@@ -26,6 +26,28 @@ const eslintConfig = [
     ],
   },
   {
+    // Chrome has no is-IS locale data, so toLocale*() and Intl silently print
+    // English ("5,003", "September"). Icelandic dates, numbers and plurals go
+    // through lib/format.ts (docs/ux-conventions.md, rule 2).
+    files: ["**/*.{js,jsx,mjs,ts,tsx}"],
+    ignores: ["lib/format.ts", "lib/format.test.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name=/^toLocale(Date|Time)?String$/]",
+          message:
+            "Use formatIcelandicDate, formatIcelandicDateShort, formatIcelandicDateTime, formatIcelandicNumber or formatIcelandicDecimal from @/lib/format. Chrome falls back to English for is-IS.",
+        },
+        {
+          selector: "MemberExpression[object.name='Intl']",
+          message:
+            "Use the helpers in @/lib/format instead of Intl. Chrome has no is-IS data and falls back to English.",
+        },
+      ],
+    },
+  },
+  {
     // Playwright fixtures hand their value over with a callback named `use`,
     // which the React hooks rule mistakes for React's `use()`.
     files: ["e2e/**"],

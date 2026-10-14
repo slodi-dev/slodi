@@ -5,6 +5,7 @@ import { getNeighbors, listAllDevlogs } from "@/lib/devlogs";
 import { promises as fs } from "fs";
 import Link from "next/link";
 import styles from "./devpost.module.css";
+import { formatIcelandicDate } from "@/lib/format";
 
 export const runtime = "nodejs";
 export const dynamic = "force-static";
@@ -41,13 +42,10 @@ function parseFrontMatter(src: string): {
   };
 }
 
-const DATE_FORMATTER = new Intl.DateTimeFormat("is-IS", { dateStyle: "long" });
-
+// Not Intl: the runtime may lack is-IS data and fall back to English.
 function formatDate(d?: string): string | undefined {
   if (!d) return undefined;
-  const dt = new Date(d);
-  if (isNaN(dt.getTime())) return d;
-  return DATE_FORMATTER.format(dt);
+  return formatIcelandicDate(d) || d;
 }
 
 export default async function DevPostPage({

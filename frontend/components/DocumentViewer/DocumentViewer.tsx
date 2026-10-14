@@ -8,19 +8,13 @@ import { cn } from "@/lib/util";
 import { documentBlobName, getDownloadUrl } from "@/services/uploads.service";
 
 import styles from "./DocumentViewer.module.css";
+import { formatFileSize } from "@/lib/format";
 
 export type ViewableDocument = {
   name: string;
   url: string;
   content_type?: string | null;
 };
-
-/** Formats to `1,2 MB` — Icelandic uses a comma for the decimal mark. */
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
-}
 
 /** What the browser can render on its own, without a plugin or a converter. */
 function previewKind(type: string, name: string): "pdf" | "image" | "text" | "none" {
@@ -154,7 +148,7 @@ export default function DocumentViewer({
 
         <div className={styles.bar}>
           <p className={styles.meta}>
-            {size !== null ? formatBytes(size) : ""}
+            {size !== null ? formatFileSize(size) : ""}
             {size !== null && type ? " · " : ""}
             {type}
           </p>

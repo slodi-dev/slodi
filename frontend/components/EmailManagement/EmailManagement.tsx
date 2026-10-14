@@ -15,6 +15,7 @@ import {
   type TemplateInfo,
 } from "@/services/emails.service";
 import styles from "./EmailManagement.module.css";
+import { countIs, formatIcelandicDateTime } from "@/lib/format";
 
 const STATUS_LABELS: Record<EmailDraft["status"], string> = {
   draft: "Drög",
@@ -80,14 +81,7 @@ function usesBlockEditor(template: string): boolean {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("is-IS", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatIcelandicDateTime(iso) || "—";
 }
 
 export default function EmailManagement() {
@@ -338,7 +332,7 @@ export default function EmailManagement() {
       <section className={styles.section}>
         <div className={styles.toolbar}>
           <span className={styles.totalCount}>
-            {templates.length} {templates.length === 1 ? "sniðmát" : "sniðmát"}
+            {countIs(templates.length, "sniðmát", "sniðmát")}
           </span>
         </div>
 
@@ -640,9 +634,7 @@ export default function EmailManagement() {
       {/* Drafts */}
       <section className={styles.section}>
         <div className={styles.toolbar}>
-          <span className={styles.totalCount}>
-            {drafts.length} {drafts.length === 1 ? "póstur" : "póstar"}
-          </span>
+          <span className={styles.totalCount}>{countIs(drafts.length, "póstur", "póstar")}</span>
         </div>
 
         {/* Scrolls sideways on a phone, so it takes focus: arrow keys scroll it. */}
