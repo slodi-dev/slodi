@@ -73,13 +73,18 @@ jobs:
           title: "Lint & Build — ${{ github.repository }}"
           description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"
 
-  # Every Storybook story rendered in real Chromium in four forms (light/dark ×
-  # phone/desktop). Fails on render errors, failing play functions, console.error
-  # and, where enabled, axe violations. Design: docs/ui-quality-pipeline.md.
-  storybook-tests:
-    name: Storybook tests
+  # Every Storybook story rendered in real Chromium in six forms (light / dark /
+  # patrol accent × phone/desktop), one theme per matrix job so the themes run in
+  # parallel. Fails on render errors, failing play functions, console.error and,
+  # where enabled, axe violations. Design: docs/ui-quality-pipeline.md.
+  storybook-tests-theme:
+    name: Storybook tests (${{ matrix.theme }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        theme: [light, dark, patrol]
     steps:
       - uses: actions/checkout@v5
 
@@ -110,8 +115,26 @@ jobs:
             npx playwright install --with-deps chromium
           fi
 
-      - name: Stories as tests (4 forms)
+      - name: Stories as tests (${{ matrix.theme }}, phone + desktop)
         run: npm run test:stories
+        env:
+          STORYBOOK_THEMES: ${{ matrix.theme }}
+
+  # The required check. Branch protection names "Storybook tests", so the matrix
+  # reports through this one job: green only if every theme passed.
+  storybook-tests:
+    name: Storybook tests
+    needs: storybook-tests-theme
+    if: always()
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Every theme passed
+        run: |
+          echo "Matrix result: ${{ needs.storybook-tests-theme.result }}"
+          test "${{ needs.storybook-tests-theme.result }}" = "success"
 
       - name: Notify Discord
         if: always()

@@ -18,7 +18,7 @@ It is plain CSS: no Tailwind and no component library. Three layers do all the w
 - **Legacy base** — `frontend/app/globals.css`. Reset plus the old shadcn token set (`--background`, `--primary`…). Being retired; do not use in new code.
 - **Primitives** — `frontend/components/Button`, `Modal`, `Alert`, `TypeBadge`, `components/ui/*`. The building blocks — see **Design system / Primitives**.
 - **Components** — `frontend/components/**`, `frontend/app/**/components/**`. Feature components, each with a `Component.module.css` beside it. See **Components**.
-- **Theme switching** — `frontend/components/ThemeProvider`. Sets `class="dark"` or `data-theme="…"` on `<html>`, and overrides `--sl-color-primary` for a patrol colour.
+- **Theme switching** — `frontend/components/ThemeProvider`. Sets `class="dark"` on `<html>` for dark mode, and overrides `--sl-color-primary` for a patrol colour.
 - **Token checker** — `frontend/scripts/check-tokens.mjs`. Finds undefined tokens, unwrapped colour tokens and legacy tokens. Run it on what you touch.
 
 ## Three tiers of tokens
@@ -30,7 +30,7 @@ It is plain CSS: no Tailwind and no component library. Three layers do all the w
 3. **Component** — one component's knobs: `--sl-button-background-primary`,
    `--sl-input-border-focus`.
 
-Dark mode and the named themes only override the semantic tier; component tokens follow.
+Dark mode only overrides the semantic tier; component tokens follow.
 
 ## Rules that bite
 
@@ -47,7 +47,7 @@ Dark mode and the named themes only override the semantic tier; component tokens
 
 ## Using this Storybook
 
-- **Þema** (toolbar) switches light, dark, forest-night, campfire and northern-lights.
+- **Þema** (toolbar) switches light and dark, the two themes the app has.
   It goes through the real `ThemeProvider`, so stories render exactly as in the app.
 - **Sveit** (toolbar) applies a patrol colour as the primary accent, as the settings page does.
 - The **Accessibility** panel runs axe on every story.
@@ -66,4 +66,4 @@ this branch. Stories that show one say so in their docs, naming the story id. Th
   whole `box-shadow` is dropped and keyboard focus has no visible ring. The Tokens page
   flags it under Shadows.
 - **sc-553 — legacy tokens in Button.** `components/Button` reads `--primary`,
-  `--foreground`, `--error`… so it ignores patrol colours and named themes.
+  `--foreground`, `--error`… so it ignores patrol colours.

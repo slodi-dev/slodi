@@ -57,7 +57,7 @@
 .note {
   width: 100%;
   padding: var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-border));
+  border: 1px solid hsl(var(--sl-input-border));
   border-radius: var(--sl-radius-input);
   background: hsl(var(--sl-color-background));
   color: hsl(var(--sl-color-text-primary));

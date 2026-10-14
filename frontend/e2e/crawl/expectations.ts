@@ -81,15 +81,16 @@ export const ENTRIES: Entry[] = [
     why: "A hidden item is 404 for anyone but its author and moderators; the page says so.",
   },
 
-  // ── Palette ─────────────────────────────────────────────────────────────
+  // ── Favourites ──────────────────────────────────────────────────────────
   {
-    route: "/palette",
-    personas: "all",
-    axe: [{ rule: "color-contrast", target: /patrolBadge/ }],
-    bug: "sc-600",
+    // Hidden behind FAVOURITES_ENABLED (UX-01). Private, so a signed-out
+    // visitor is sent to log in before the 404 and is not listed here.
+    route: "/programs/favorites",
+    personas: ["member", "editor", "admin"],
+    api: [{ status: 404, path: /^\/programs\/favorites$/ }],
     why:
-      "White on the Fálkar and Drótt patrol colours is under 4.5:1. The patrol colours are " +
-      "each patrol's identity, so the fix is a design call.",
+      "Favourites are hidden until they have a backend: the page code stays, but while " +
+      "FAVOURITES_ENABLED (lib/feature-flags.ts) is off the route is a 404. The crawl checks it stays so.",
   },
 
   // ── Leikir ──────────────────────────────────────────────────────────────

@@ -30,16 +30,16 @@ steps 1, 4 and 6.
 |---|---|---|
 | S1 | opens the dagskrárbanki and finds "Hnútakeppni" | its card, with a like count of 0 |
 | S2 | likes it from the card | the heart filled and the count at 1, immediately |
-| S3 | opens the item | `Líkar` filled and the count at 1 |
+| S3 | opens the item | `Taka rokkstig til baka` (filled, pressed) and the count at 1 |
 | S4 | presses `Deila verkefni` and copies the link | the link on her clipboard |
-| S5 | opens the link in a new tab | `Líkar` filled and the count at 1 |
-| S6 | opens the link signed out, in a fresh browser _(as a Public Visitor; manual)_ | the count at 1, and `Líkar` disabled with "Skráðu þig inn til að líka við" |
+| S5 | opens the link in a new tab | `Taka rokkstig til baka` (filled, pressed) and the count at 1 |
+| S6 | opens the link signed out, in a fresh browser _(as a Public Visitor; manual)_ | the count at 1, and the rokkstig button disabled with "Skráðu þig inn til að gefa rokkstig" |
 
 ## What it guards
 
 - **sc-531.** Likes show 0 on a direct link: S5 and S6 open the item with no
   bank page loaded first, which is where `LikesContext` had nothing cached.
-  - Before the fix, S5 failed: the new tab showed `Líkar við` with 0. The
+  - Before the fix, S5 failed: the new tab showed the item as not liked, with 0. The
     item page registered the like as (not liked, 0) before the item had
     loaded, and `initLike` kept the first value it got.
   - Now `LikesContext` registers only like data that came from the server,
@@ -48,8 +48,10 @@ steps 1, 4 and 6.
     the item past the browser cache, so a link opened in a new tab within the
     minute `/content/{id}` is cacheable does not get the pre-like copy.
   - S5 is a normal `step`.
-- efnissida `SPEC.md`: `Líkar` (♡ + count) and `Deila` on the item page; a
-  signed-out `Líkar` is disabled with its reason, never hidden.
+- efnissida `SPEC.md`: `Gefa rokkstig` (♡ + count) and `Deila` on the item page; a
+  signed-out rokkstig button is disabled with its reason, never hidden. The
+  like action is called rokkstig everywhere (decision 2026-10-12), so the card
+  and the item page name the button the same way, count included.
 
 ## Fixture
 

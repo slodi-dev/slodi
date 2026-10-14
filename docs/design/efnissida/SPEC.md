@@ -145,15 +145,15 @@ Two variants, and this is the fix for the empty-hero problem:
 
 Title block in both: kind rule `▌`, `TypeBadge`, `h1` title, byline „eftir {höfundur} · {dagsetning}", then the action row.
 
-Actions: `Líkar` (♡ + count), `Deila`, `Bæta við vinnusvæði`, `Breyta` (author/ moderator/workspace-admin only), `⋯` overflow → `Eyða`, `Tilkynna`.
+Actions: `Gefa rokkstig` (♡ + count), `Deila`, `Bæta við vinnusvæði`, `Breyta` (author/ moderator/workspace-admin only), `⋯` overflow → `Eyða`, `Tilkynna`.
 
-States per action: default / hover / active / focus-visible / disabled-with-reason / pending. `Líkar` when signed out is **disabled with its reason on the control** („Skráðu þig inn til að líka við"), never hidden — same rule as the suspended FAB.
+States per action: default / hover / active / focus-visible / disabled-with-reason / pending. The rokkstig button when signed out is **disabled with its reason on the control** („Skráðu þig inn til að gefa rokkstig"), never hidden — same rule as the suspended FAB.
 
 ### `EfnissidaFacts` — *reshaped from* `ProgramQuickInfo`
 
 The six facts. Same data, three presentations (sidebar / strip / 2-col grid).
 
-Rows: `Lengd`, `Undirbúningur`, `Aldur`, `Staðsetning`, `Hópstærð`, `Verð`. Below a divider: `Búið til`, `Líkar`, `Athugasemdir`, then `Tilkynna efni`.
+Rows: `Lengd`, `Undirbúningur`, `Aldur`, `Staðsetning`, `Hópstærð`, `Verð`. Below a divider: `Búið til`, `Rokkstig`, `Athugasemdir`, then `Tilkynna efni`.
 
 - Semantics: a `<dl>`. Each fact is `<dt>` label + `<dd>` value — not a table, not divs.
 - **Empty facts are omitted, not shown as „—".** Six rows of dashes tells the reader nothing and pushes the real values down. If *every* fact is empty the whole panel is omitted and the tabs move up.
@@ -236,9 +236,11 @@ Kind-independent:
 - Facts: `Lengd` · `Undirbúningur` · `Aldur` · `Staðsetning` · `Hópstærð` · `Verð`
 - Facts panel heading: `Stuttar upplýsingar`
 - Tabs: `Yfirlit` · `Leiðbeiningar` · `Búnaður` · `Athugasemdir`
-- Actions: `Líkar við` / `Fjarlægja líkar` · `Bæta við vinnusvæði` · `Tilkynna efni` · `Eyða`
+- Actions: `Gefa rokkstig` / `Taka rokkstig til baka` · `Bæta við vinnusvæði` · `Tilkynna efni` · `Eyða`
+- Like (rokkstig) button `aria-label`: `Gefa rokkstig, {n} rokkstig` / `Taka rokkstig til baka, {n} rokkstig`, with `aria-pressed`; `{n}` through `formatIcelandicNumber`. _Rokkstig_ is neuter and the same in singular and plural (1 rokkstig, 21 rokkstig), so no plural rule is needed. Bank sort option: `Flest rokkstig`.
+- **Decision 2026-10-12:** the like action is called **rokkstig** everywhere (cards, item page, sort, tooltips), not „Líkar við". It fits the scout theme. Code and API names stay `like` / `likes`.
 - Disabled-empty tab: `Engar leiðbeiningar fylgja` · `Enginn búnaður tilgreindur`
-- Signed-out like: `Skráðu þig inn til að líka við`
+- Signed-out like: `Skráðu þig inn til að gefa rokkstig`
 - Comments empty: `Engar athugasemdir enn. Vertu fyrst til að segja eitthvað.`
 - Report confirmation (`aria-live`): `Takk fyrir. Teymið skoðar þetta.`
 

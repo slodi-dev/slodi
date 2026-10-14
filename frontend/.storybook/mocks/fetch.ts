@@ -113,7 +113,8 @@ function defaultRoutes(): MockRoute[] {
     },
     { match: /\/tags/, body: tags },
 
-    // Favourites (FavoritesContext talks to a Next route that does not exist yet)
+    // Favourites (FavoritesContext talks to a Next route that does not exist yet;
+    // it sends nothing while FAVOURITES_ENABLED is off)
     { match: /^\/api\/users\/me\/favorites/, status: 204 },
 
     // Moderation

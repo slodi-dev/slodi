@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramActions } from "@/hooks/useProgramActions";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
+import { formatIcelandicNumber } from "@/lib/format";
 import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
 import { cn } from "@/lib/util";
 import { createComment, deleteComment } from "@/services/comments.service";
@@ -149,13 +150,14 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           className={cn(styles.btn, isLiked && styles.liked)}
           onClick={toggleLike}
           disabled={!isAuthenticated}
-          title={isAuthenticated ? undefined : "Skráðu þig inn til að líka við"}
-          aria-label={isLiked ? "Fjarlægja líkar" : "Líkar við"}
+          title={isAuthenticated ? undefined : "Skráðu þig inn til að gefa rokkstig"}
+          aria-label={`${isLiked ? "Taka rokkstig til baka" : "Gefa rokkstig"}, ${formatIcelandicNumber(likeCount)} rokkstig`}
+          aria-pressed={isLiked}
         >
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 21.2 3.9 13a5.4 5.4 0 0 1 0-7.7 5.4 5.4 0 0 1 7.7 0l.4.4.4-.4a5.4 5.4 0 0 1 7.7 0 5.4 5.4 0 0 1 0 7.7z" />
           </svg>
-          {likeCount}
+          {formatIcelandicNumber(likeCount)}
         </button>
         <button type="button" className={styles.btn} onClick={handleShare}>
           Deila {copy.dative}

@@ -1,13 +1,14 @@
 # Slóði
 
+[![Backend CI](https://github.com/slodi-dev/slodi/actions/workflows/backend-ci.yml/badge.svg?branch=main)](https://github.com/slodi-dev/slodi/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/slodi-dev/slodi/actions/workflows/frontend-ci.yml/badge.svg?branch=main)](https://github.com/slodi-dev/slodi/actions/workflows/frontend-ci.yml)
+[![Journeys](https://github.com/slodi-dev/slodi/actions/workflows/journeys.yml/badge.svg?branch=main)](https://github.com/slodi-dev/slodi/actions/workflows/journeys.yml)
+[![slodi.is](https://img.shields.io/website?url=https%3A%2F%2Fslodi.is&label=slodi.is)](https://slodi.is)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-brightgreen.svg)](https://www.python.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
-[![GitHub issues](https://img.shields.io/github/issues/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/pulls)
-[![Last commit](https://img.shields.io/github/last-commit/slodi-dev/slodi)](https://github.com/slodi-dev/slodi/commits/main)
+[![Last commit](https://img.shields.io/github/last-commit/slodi-dev/slodi/main)](https://github.com/slodi-dev/slodi/commits/main)
 
 Slóði er Gilwell-verkefni sem [Halldór Valberg Aðalbjargarson](https://github.com/halldorvalberg) og [Signý Kristín Sigurjónsdóttir](https://github.com/signyk) sjá um. Það er opinn hugbúnaður sem er hannaður til að auðvelda dagskrárgerð fyrir skátaforingja. Kerfið styður foringja og hópa við að búa til, deila og stjórna viðfangsefnum og tryggir um leið að skátar fái fjölbreytta og vel samsetta dagskrá.
 
@@ -102,7 +103,6 @@ Slóði er samfélagsdrifið verkefni. Framlög frá forriturum, hönnuðum og s
 
 Slóði er þróaður fyrir og með skátasamfélaginu.
 
-- Taktu þátt í umræðunum á [GitHub Discussions](https://github.com/slodi-dev/slodi/discussions)
 - Tilkynntu villur og óskaðu eftir nýjum eiginleikum í [Issues](https://github.com/slodi-dev/slodi/issues)
 - Leggðu til hugmyndir, þýðingar eða dagskrárefni
 
@@ -110,7 +110,8 @@ Slóði er þróaður fyrir og með skátasamfélaginu.
 
 Þú getur fylgst með verkefninu og nálgast vefsíðuna á:
 
-- [www.sloði.is](https://slodi.is)
+- Vefsíðan: [slodi.is](https://slodi.is)
+- Vefþjónustan (API) og skjölun hennar: [api.slodi.is/docs](https://api.slodi.is/docs)
 
 Á vefsíðunni verða birtar uppfærslur, leiðbeiningar og að lokum endanleg útgáfa af Slóða.
 
