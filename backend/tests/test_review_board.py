@@ -89,6 +89,61 @@ def test_who_can_open_the_board(mock_db_session, permissions, expected):
         assert client.get("/moderation/queue").status_code == expected
 
 
+@pytest.mark.parametrize(
+    "permissions,expected",
+    [
+        (Permissions.viewer, status.HTTP_403_FORBIDDEN),
+        (Permissions.member, status.HTTP_403_FORBIDDEN),
+        (Permissions.moderator, status.HTTP_200_OK),
+        (Permissions.admin, status.HTTP_200_OK),
+    ],
+)
+def test_the_badge_count_is_behind_the_same_gate_as_the_board(
+    mock_db_session, permissions, expected
+):
+    """The sidebar badge is a moderation read like any other.
+
+    It is the cheapest endpoint on the board and the one rendered most often,
+    which makes it the easiest place to forget a permission check — and how
+    much is queued is itself a fact about the bank a member should not have.
+    """
+    client = _client(mock_db_session, _user(permissions))
+    with patch(
+        "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
+    ) as c:
+        c.return_value = 3
+        assert client.get("/moderation/unreviewed-count").status_code == expected
+
+
+def test_the_badge_count_reports_the_number(mock_db_session):
+    client = _client(mock_db_session, _user(Permissions.moderator))
+    with patch(
+        "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
+    ) as c:
+        c.return_value = 12
+        assert client.get("/moderation/unreviewed-count").json() == {"count": 12}
+
+
+def test_the_badge_count_does_not_fetch_the_queue(mock_db_session):
+    """The whole point of the endpoint: a number, not a page.
+
+    If this ever starts calling `queue`, the sidebar is back to paying for rows
+    it throws away on every authenticated page render.
+    """
+    client = _client(mock_db_session, _user(Permissions.moderator))
+    with (
+        patch("app.services.moderation.ModerationService.queue", new_callable=AsyncMock) as q,
+        patch("app.services.moderation.ModerationService.count", new_callable=AsyncMock) as n,
+        patch(
+            "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
+        ) as c,
+    ):
+        c.return_value = 0
+        client.get("/moderation/unreviewed-count")
+        q.assert_not_awaited()
+        n.assert_not_awaited()
+
+
 # ── Decisions ────────────────────────────────────────────────────────────────
 
 
