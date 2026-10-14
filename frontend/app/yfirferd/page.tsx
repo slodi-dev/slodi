@@ -215,15 +215,17 @@ export default function YfirferdPage() {
     async (item: ReviewQueueItem, action: Action) => {
       let note: string | undefined;
       if (action === "reject" || action === "hide") {
-        const answer =
-          window.prompt(
-            action === "reject"
-              ? `Af hverju er „${item.name}“ hafnað? Höfundur sér þetta.`
-              : `Af hverju er „${item.name}“ falið?`
-          ) ?? undefined;
+        const answer = window.prompt(
+          action === "reject"
+            ? `Af hverju er „${item.name}“ hafnað? Höfundur sér þetta.`
+            : `Af hverju er „${item.name}“ falið?`
+        );
+        // Cancel is `null`, and it means cancel — for hiding too, where an
+        // empty answer is still a valid "hide without a reason".
+        if (answer === null) return;
         // A rejection needs a reason — the backend refuses one without.
-        if (action === "reject" && !answer?.trim()) return;
-        note = answer;
+        if (action === "reject" && !answer.trim()) return;
+        note = answer || undefined;
       }
       setBusyId(item.id);
       try {

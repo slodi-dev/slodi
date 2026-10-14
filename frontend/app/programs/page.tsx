@@ -13,7 +13,6 @@ import FilterSidebar, { FilterDrawer } from "@/components/filters/FilterSidebar"
 import ActiveFilterBar from "@/components/filters/ActiveFilterBar";
 import styles from "./programs.module.css";
 import usePrograms from "@/hooks/usePrograms";
-import { useUserWorkspace } from "@/hooks/useUserWorkspace";
 import { useProgramFilters } from "@/hooks/useProgramFilters";
 import type { FilterState } from "@/hooks/useProgramFilters";
 import { useAuth } from "@/hooks/useAuth";
@@ -71,9 +70,16 @@ function ProgramsPageInner() {
   // The array argument is now only there for the hook's own unique-value
   // helpers, which this page no longer uses: the option lists come from the
   // server's facets, and filtering happens there too.
-  const { filters, setFilters, activeChips, clearAll } = useProgramFilters([]);
-
-  const [currentPage, setCurrentPage] = useState(1);
+  // The page is kept with the filters, in the URL; changing a filter goes
+  // back to the first page in the same render, so in the same fetch.
+  const {
+    filters,
+    setFilters,
+    page: currentPage,
+    setPage: setCurrentPage,
+    activeChips,
+    clearAll,
+  } = useProgramFilters([]);
 
   const query: ContentQuery = useMemo(
     () => ({
@@ -96,14 +102,6 @@ function ProgramsPageInner() {
     [filters]
   );
 
-  // Narrowing the bank has to send you back to the front of it. Staying on
-  // page seven of a result set that now holds four items shows an empty grid
-  // and reads as "nothing matched".
-  const queryKey = JSON.stringify(query);
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [queryKey]);
-
   // Fetch one page, filtered and sorted by the server.
   const {
     programs,
@@ -117,9 +115,6 @@ function ProgramsPageInner() {
     page: currentPage,
     pageSize: PROGRAMS_PER_PAGE,
   });
-
-  // User's private workspace (retained for future toggle)
-  const { workspaceId: userWorkspaceId } = useUserWorkspace();
 
   // ── Auth & workspace role ──────────────────────────────────────────────
   const { user, getToken } = useAuth();
@@ -147,7 +142,6 @@ function ProgramsPageInner() {
 
   // ── WHERE TO POST new programs ──────────────────────────────────────────
   const postWorkspaceId = defaultWorkspaceId ?? "";
-  void userWorkspaceId; // retained for future toggle
 
   // ── Edit / delete handlers ─────────────────────────────────────────────
 
@@ -196,6 +190,16 @@ function ProgramsPageInner() {
   const totalItems = total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / PROGRAMS_PER_PAGE));
   const itemsPerPage = PROGRAMS_PER_PAGE;
+
+  // A shared or old link can name a page past the end of what the bank now
+  // holds for those filters. Land on the last page rather than an empty grid.
+  // Not on an error or an empty result: their count of 0 says nothing about
+  // which page exists.
+  useEffect(() => {
+    if (!programsLoading && !programsError && totalItems > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [programsLoading, programsError, totalItems, currentPage, totalPages, setCurrentPage]);
 
   const handleProgramCreated = async () => {
     setShowNewProgram(false);

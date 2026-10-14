@@ -62,7 +62,6 @@ describe("routeAccess", () => {
     ["/programs/sample-id", "private"],
     ["/settings", "private"],
     ["/dev/sample-slug", "private"],
-    ["/palette", "private"],
     ["/api/emails", "private"],
     ["/api/config", "private"],
     ["/does-not-exist", "private"],

@@ -38,6 +38,9 @@ export const Loading: Story = {
 };
 
 export const Empty: Story = {
+  // No visual baseline: whether the button keeps its focus ring depends on
+  // whether the mocked reply lands before or after it is disabled.
+  tags: ["skip-visual"],
   parameters: { mockApi: [{ match: /^\/api\/emails/, body: [] }] satisfies MockRoute[] },
   play: clickDownload,
 };

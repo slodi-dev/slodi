@@ -18,6 +18,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o storybook-static",
     "test:stories": "vitest run --project \"storybook-*\"",
+    "test:visual": "bash scripts/visual.sh",
+    "test:visual:update": "bash scripts/visual.sh --update-snapshots",
     "check:tokens": "node scripts/check-tokens.mjs",
     "check:stories": "node scripts/check-stories.mjs"
   },

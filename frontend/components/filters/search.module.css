@@ -44,7 +44,7 @@
   line-height: var(--sl-line-height-normal, 1.5);
   color: hsl(var(--sl-color-text-primary, 0 0% 10%));
   background: hsl(var(--sl-color-surface, 0 0% 100%));
-  border: 1px solid hsl(var(--sl-color-border, 0 0% 85%) / var(--sl-primitive-opacity-30, 0.3));
+  border: 1px solid hsl(var(--sl-input-border));
   border-radius: var(--sl-radius-input, 6px);
   outline: none;
   transition:
@@ -64,6 +64,10 @@
   -webkit-appearance: none;
   appearance: none;
   display: none;
+}
+
+.searchInput:hover {
+  border-color: hsl(var(--sl-input-border-hover));
 }
 
 /* Focus State */
