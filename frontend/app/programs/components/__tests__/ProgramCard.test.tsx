@@ -259,4 +259,17 @@ describe("ProgramCard — hidden items (moderator view)", () => {
       "data-hidden"
     );
   });
+
+  it("hides the favourite button by default while FAVOURITES_ENABLED is off (UX-01)", () => {
+    render(<ProgramCard {...createProps()} />);
+    expect(screen.queryByRole("button", { name: /í möppu/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the favourite button when showFavourite is set", () => {
+    render(<ProgramCard {...createProps({ showFavourite: true })} />);
+    const button = screen.getByRole("button", { name: "Vista Test Program í möppu" });
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    button.click();
+    expect(mockToggleFavorite).toHaveBeenCalledTimes(1);
+  });
 });
