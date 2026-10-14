@@ -1,4 +1,4 @@
-import { describe, expect, it, afterEach } from "vitest";
+import { describe, expect, it, afterEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 
 import ThemeProvider from "../index";
@@ -61,5 +61,27 @@ describe("ThemeProvider in a browser that blocks storage", () => {
       </ThemeProvider>
     );
     expect(screen.getByText("Dagskrárvefurinn")).toBeInTheDocument();
+  });
+});
+
+describe("ThemeProvider with a retired named theme in storage", () => {
+  afterEach(() => {
+    window.localStorage.clear();
+    document.documentElement.className = "";
+    document.documentElement.removeAttribute("data-theme");
+  });
+
+  it("falls back to the OS preference and clears the stale data-theme", async () => {
+    window.localStorage.setItem("slodi-theme", "forest-night");
+    document.documentElement.setAttribute("data-theme", "forest-night");
+    render(
+      <ThemeProvider>
+        <p>Dagskrárvefurinn</p>
+      </ThemeProvider>
+    );
+    // matchMedia above reports light.
+    await vi.waitFor(() => expect(window.localStorage.getItem("slodi-theme")).toBe("light"));
+    expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 });

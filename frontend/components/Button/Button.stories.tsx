@@ -21,7 +21,7 @@ const meta = {
         component:
           "The system button. **Known issue (sc-553):** it still reads the legacy shadcn tokens " +
           "(`--primary`, `--foreground`, `--error`…) from `globals.css` instead of `--sl-*`, so it " +
-          "ignores the patrol colour and the named themes — switch the Sveit toolbar to `drekar` " +
+          "ignores the patrol colour — switch the Sveit toolbar to `drekar` " +
           "and compare `primary` with any `--sl-color-primary` surface. Its focus ring is also a " +
           "faint 2px legacy shadow; see the `FocusRing` story.",
       },

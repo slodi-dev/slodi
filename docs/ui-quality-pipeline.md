@@ -185,7 +185,7 @@ Decisions taken 2026-10-11:
   The legacy tokens Button still reads (`globals.css`) follow. A handful of
   components that hard-coded white or a grey on a token now use the token.
 - **Structure.** `<dl>` grouping in ItemFacts, listbox/option structure in
-  TagPicker, labels (file input, palette samples), focusable scroll regions
+  TagPicker, labels (file input, the then /palette samples), focusable scroll regions
   (admin tables, game leaderboard), no `aria-label` on plain divs, underlined
   in-text links.
 - **Drawers.** The header drawer is `inert` when closed and a modal dialog
