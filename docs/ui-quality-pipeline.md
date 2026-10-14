@@ -37,16 +37,29 @@ real Chromium (Vitest browser mode, Playwright provider). A story fails on:
 - an axe violation (WCAG A/AA). A story with a known violation opts out with
   `a11y: { test: "todo" }` and a comment naming the rule.
 
-**Four forms.** Every story runs four times: light and dark, at phone (390px)
-and desktop (1280px) width. `vitest.config.ts` defines one Vitest project per
-form (`storybook-light-phone` … `storybook-dark-desktop`). Each passes different
-`initialGlobals` to the Storybook plugin: `theme` goes through the real
-`ThemeProvider` the same way as the toolbar, and `viewport` names one of the two
-viewports in `preview.tsx`. The plugin sets the browser size from it.
+**Six forms.** Every story runs six times: in three themes (light, dark, and
+light with the Fálkar patrol colour as `--sl-color-primary`), each at phone
+(390px) and desktop (1280px) width. `vitest.config.ts` defines one Vitest
+project per form (`storybook-light-phone` … `storybook-patrol-desktop`). Each
+passes different `initialGlobals` to the Storybook plugin: `theme` and `patrol`
+go through the real `ThemeProvider` the same way as the toolbar, and `viewport`
+names one of the two viewports in `preview.tsx`. The plugin sets the browser
+size from it. `STORYBOOK_THEMES=dark` (or `light,patrol`) runs only those
+themes; CI runs one theme per matrix job and the required "Storybook tests"
+check passes only if all three do.
+
+**Per-theme opt-outs.** A story that fails in one theme only gets the tag
+`skip-<theme>` (`skip-dark`, `skip-patrol`), so it still runs in the others,
+with a comment naming the rule and its Shortcut story. A gap with one cause in
+the tokens for a whole theme is listed instead as `knownA11yGaps` on that theme
+in `vitest.config.ts`: those axe rules are off for that theme's tests only, and
+render, play and every other rule still fail. Today the only one is
+`color-contrast` in the patrol theme (sc-629): the patrol colours used as
+primary are below 4.5:1, and without it 103 of 764 patrol tests fail.
 
 **a11y.** `error` globally since step 4's first pass (see below): every story
-is clean in all four forms except three Heiðursorðla story files, which are
-`todo` with the remaining rule named.
+is clean in all six forms (patrol: except `color-contrast`, above) except three
+Heiðursorðla story files, which are `todo` with the remaining rule named.
 
 **Every component has stories.** `scripts/check-stories.mjs` fails when a
 `.tsx` under `components/` or `app/` is not imported by any story. Route files
@@ -56,7 +69,8 @@ the reason.
 
 ```bash
 cd frontend
-npm run test:stories                                   # all stories, 4 forms
+npm run test:stories                                   # all stories, 6 forms
+STORYBOOK_THEMES=dark npm run test:stories             # one theme, both widths
 npx vitest run --project storybook-dark-phone          # one form
 npx vitest run --project "storybook-*" components/Modal  # one component
 npm run check:stories
