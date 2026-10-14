@@ -500,8 +500,14 @@
   --sl-color-overlay-backdrop: 0 0% 0% / 0.6;
 
   /* ===== FOCUS RING ===== */
-  --sl-color-focus-ring: var(--sl-primitive-green-500) / 0.3;
-  --sl-color-focus-ring-error: var(--sl-primitive-error-500) / 0.3;
+  /* Opaque, and a bare triplet like every colour token: use it as
+     `hsl(var(--sl-color-focus-ring))`. It follows border-focus, so the dark
+     block retunes it, and it ignores the patrol accent on purpose: several
+     patrol colours are under 3:1 on a light surface. Against the background:
+     light 5.27:1 (green-500 on white), dark 7.72:1 (green-400 on surface).
+     The old 30% alpha ring was 1.52:1. */
+  --sl-color-focus-ring: var(--sl-color-border-focus);
+  --sl-color-focus-ring-error: var(--sl-color-error);
 
   /* ===== SPACING SEMANTIC ===== */
   --sl-spacing-page: var(--sl-primitive-space-32);
@@ -582,8 +588,14 @@
   --sl-shadow-dropdown: var(--sl-primitive-shadow-lg);
   --sl-shadow-modal: var(--sl-primitive-shadow-xl);
   --sl-shadow-tooltip: var(--sl-primitive-shadow-base);
-  --sl-shadow-focus: 0 0 0 3px var(--sl-color-focus-ring);
-  --sl-shadow-focus-error: 0 0 0 3px var(--sl-color-focus-ring-error);
+  /* A 2px surface-coloured gap, then a 2px ring. The gap keeps the ring
+     visible on a control filled with the same colour (a primary button). The
+     ring colour must sit inside hsl(): a bare triplet here makes the whole
+     box-shadow invalid, which is how focus was invisible until sc-549. */
+  --sl-shadow-focus:
+    0 0 0 2px hsl(var(--sl-color-surface)), 0 0 0 4px hsl(var(--sl-color-focus-ring));
+  --sl-shadow-focus-error:
+    0 0 0 2px hsl(var(--sl-color-surface)), 0 0 0 4px hsl(var(--sl-color-focus-ring-error));
 
   /* ===== TRANSITION SEMANTIC ===== */
   --sl-transition-fast: var(--sl-primitive-duration-fast) var(--sl-primitive-ease-out);
@@ -1072,11 +1084,6 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   DARK MODE — prefers-color-scheme overrides for new tokens
-   Only colour tokens are overridden; non-colour tokens are theme-agnostic.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════════════════════════
    CONTENT TYPE — Viðburður
    A Viðburður needs an identity that is neither the green of a Dagskrá nor the
    neutral of a Verkefni, so a leader can tell the three apart at a glance
@@ -1100,45 +1107,23 @@
   --sl-color-cycle-text: var(--sl-primitive-rekkar-900);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Primary border shifts lighter for visibility on dark backgrounds */
-    /* The old green-600: green-600 is darker since sc-586, too dark to read
-       as a border on a dark surface. */
-    --sl-color-primary-border: 142 50% 35%;
-    /* Primary text lightened for readability on dark primary-subtle bg */
-    --sl-color-primary-text: var(--sl-primitive-green-200);
-    /* Raised surface on dark is a slightly lighter shade */
-    --sl-color-surface-raised: 0 0% 14%;
-    /* Sunken surface on dark is a slightly darker shade */
-    --sl-color-surface-sunken: 0 0% 8%;
-    /* Viðburður lightens so it reads on a dark surface */
-    --sl-color-event: var(--sl-primitive-adrir-400);
-    --sl-color-event-subtle: 270 38% 19%;
-    --sl-color-event-text: var(--sl-primitive-adrir-200);
-    --sl-color-cycle: var(--sl-primitive-rekkar-400);
-    --sl-color-cycle-subtle: 177 40% 16%;
-    --sl-color-cycle-text: var(--sl-primitive-rekkar-200);
-  }
-}
+/* Dark values for the tokens declared in the two `:root` blocks above.
+   They sit here, after those blocks, because `[data-theme="dark"]` has the
+   same specificity as `:root`, so source order decides.
 
-/* The same tokens, for the in-app theme toggle.
-   Two things make this block necessary rather than redundant.
+   Dark mode comes only from the class or attribute ThemeProvider sets on
+   <html>. There is deliberately no OS colour-scheme media query: the one
+   that used to be here fired whenever the OS was dark, even when the user
+   had picked Ljóst, and put dark text on dark raised surfaces (1.02:1,
+   sc-550). Following the OS is ThemeProvider's job.
 
-   The dark block far above cannot carry them: a later `:root` redeclares them,
-   and `:root` and the dark selector have identical specificity, so source
-   order decides and the light values win. Hence repeating them *after* that
-   `:root`.
-
-   And the selector has to be the same pair the rest of the file uses.
-   `ThemeProvider` adds `class="dark"` for plain dark mode and only sets
-   `data-theme` for the *named* themes (forest-night, campfire,
-   northern-lights) — so a block matching `[data-theme="dark"]` alone never
-   fires for the ordinary toggle. That left `--sl-color-primary-text` at
-   green-800 in dark mode, which is what painted a dark-green ring on a dark
-   surface in the create chooser. */
+   Forest Night and Northern Lights are dark themes with light text, and they
+   used to get these values only from that media query. They are listed here
+   so they keep them whatever the OS says. */
 :root.dark,
-[data-theme="dark"] {
+[data-theme="dark"],
+[data-theme="forest-night"],
+[data-theme="northern-lights"] {
   --sl-color-primary-border: 142 50% 35%;
   --sl-color-primary-text: var(--sl-primitive-green-200);
   --sl-color-surface-raised: 0 0% 14%;
