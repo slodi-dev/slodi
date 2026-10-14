@@ -13,6 +13,7 @@ import {
   formatPrice,
   formatPriceLabel,
   formatAgeGroup,
+  countIs,
   getAgeGroupPatrol,
   formatIcelandicDate,
 } from "@/lib/format";
@@ -381,7 +382,10 @@ export default function ProgramCard({
               </li>
             ))}
             {overflowTagCount > 0 && (
-              <li className={styles.tagMore} aria-label={`${overflowTagCount} fleiri flokkar`}>
+              <li
+                className={styles.tagMore}
+                aria-label={countIs(overflowTagCount, "flokkur í viðbót", "flokkar í viðbót")}
+              >
                 +{overflowTagCount}
               </li>
             )}

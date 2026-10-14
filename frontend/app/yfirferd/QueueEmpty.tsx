@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import styles from "./yfirferd.module.css";
-import { formatIcelandicNumber } from "@/lib/format";
+import { countIs, formatIcelandicNumber } from "@/lib/format";
 
 /**
  * What the rail says when it has nothing to show.
@@ -66,7 +66,7 @@ export default function QueueEmpty({
       </p>
       <p className={styles.emptySub}>
         {done > 0
-          ? `Þú afgreiddir ${formatIcelandicNumber(done)} ${done === 1 ? "einingu" : "einingar"} í þessari lotu.`
+          ? `Þú afgreiddir ${countIs(done, "einingu", "einingar")} í þessari lotu.`
           : filtered
             ? "Prófaðu að víkka síuna."
             : "Ekkert efni bíður yfirferðar."}

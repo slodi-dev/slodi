@@ -163,7 +163,7 @@ describe("ProgramCard", () => {
 
     // Overflow indicator should have aria-label
     const overflow = screen.getByText("+2");
-    expect(overflow.closest("[aria-label]")).toHaveAttribute("aria-label", "2 fleiri flokkar");
+    expect(overflow.closest("[aria-label]")).toHaveAttribute("aria-label", "2 flokkar í viðbót");
   });
 
   it("hides edit/delete buttons when canEdit and canDelete are false", () => {

@@ -11,6 +11,7 @@ import usePrograms from "@/hooks/usePrograms";
 import TagCreateInput from "./TagCreateInput";
 import TagRow from "./TagRow";
 import styles from "./TagManagement.module.css";
+import { countIs } from "@/lib/format";
 
 const PAGE_SIZE = 20;
 
@@ -135,7 +136,7 @@ export default function TagManagement() {
           aria-label="Leita að flokkum"
         />
         <span className={styles.totalCount} aria-live="polite">
-          {filteredTags.length} {filteredTags.length === 1 ? "flokkur" : "flokkar"}
+          {countIs(filteredTags.length, "flokkur", "flokkar")}
         </span>
       </div>
 

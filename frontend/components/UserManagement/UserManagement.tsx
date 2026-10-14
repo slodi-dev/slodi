@@ -16,6 +16,7 @@ import {
   type WorkspaceRole,
 } from "@/services/workspaces.service";
 import styles from "./UserManagement.module.css";
+import { countIs } from "@/lib/format";
 
 // Ranked order, lowest first — the same order the picker offers them in.
 // `admin` is not offered: platform admin comes only from ADMIN_EMAILS, and the
@@ -175,9 +176,7 @@ export default function UserManagement() {
           onChange={(e) => handleSearchChange(e.target.value)}
           aria-label="Leita að notanda"
         />
-        <span className={styles.totalCount}>
-          {total} {total === 1 ? "notandi" : "notendur"}
-        </span>
+        <span className={styles.totalCount}>{countIs(total, "notandi", "notendur")}</span>
       </div>
 
       {error && (

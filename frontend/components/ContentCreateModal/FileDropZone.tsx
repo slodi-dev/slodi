@@ -5,6 +5,7 @@ import styles from "./ContentCreateModal.module.css";
 import { cn } from "@/lib/util";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadFile } from "@/services/uploads.service";
+import { countIs } from "@/lib/format";
 
 export type Attachment = { name: string; url: string; content_type?: string };
 
@@ -180,8 +181,8 @@ export default function FileDropZone({
     if (added.length) onAddDocuments(added);
 
     const parts = [
-      pictures.length ? `${pictures.length} mynd${pictures.length === 1 ? "" : "ir"}` : null,
-      added.length ? `${added.length} skjal${added.length === 1 ? "" : "i"}` : null,
+      pictures.length ? countIs(pictures.length, "mynd", "myndir") : null,
+      added.length ? countIs(added.length, "skjal", "skjöl") : null,
     ].filter(Boolean);
     if (parts.length) setSaid(`${parts.join(" og ")} komin inn.`);
 

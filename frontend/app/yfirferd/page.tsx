@@ -28,7 +28,7 @@ import QueueProgress from "./QueueProgress";
 import QueueEmpty from "./QueueEmpty";
 import styles from "./yfirferd.module.css";
 import { cn } from "@/lib/util";
-import { formatIcelandicDateShort } from "@/lib/format";
+import { countIs, formatIcelandicDateShort, formatIcelandicNumber, pluralIs } from "@/lib/format";
 
 type Tab = "content" | "reports";
 type Action = "approve" | "reject" | "hide" | "unhide";
@@ -248,7 +248,7 @@ export default function YfirferdPage() {
               hide: `„${item.name}“ falið.`,
               unhide: `„${item.name}“ birt aftur.`,
             }[action]
-          } ${left} bíða.`
+          } ${formatIcelandicNumber(left)} ${pluralIs(left, "bíður", "bíða")}.`
         );
         setDoneThisSession((n) => n + 1);
         setUndoable({ item, hadBeenHidden: item.hidden_at !== null });
@@ -610,7 +610,7 @@ export default function YfirferdPage() {
                     stamp={formatIcelandicDateShort(item.created_at)}
                     flags={[
                       item.open_report_count > 0
-                        ? `${item.open_report_count} tilkynning${item.open_report_count === 1 ? "" : "ar"}`
+                        ? countIs(item.open_report_count, "tilkynning", "tilkynningar")
                         : null,
                       item.hidden_at ? "Falið" : null,
                       // Only once there is a decision behind the name — a

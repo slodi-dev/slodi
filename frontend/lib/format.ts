@@ -74,28 +74,25 @@ export function formatMinutes(minutes: number): string {
  *
  * - `0` → `"0 mínútur"`
  * - `1` → `"1 mínúta"`
+ * - `21` → `"21 mínúta"`
  * - `30` → `"30 mínútur"`
  * - `60` → `"1 klukkustund"`
  * - `90` → `"1 klukkustund 30 mínútur"`
  * - `120` → `"2 klukkustundir"`
  */
 function formatMinutesFull(minutes: number): string {
-  if (minutes < 60) {
-    if (minutes === 1) return "1 mínúta";
-    return `${minutes} mínútur`;
-  }
+  if (minutes < 60) return countIs(minutes, "mínúta", "mínútur");
 
   const hours = Math.floor(minutes / 60);
   const remaining = minutes % 60;
 
-  const hourWord = hours === 1 ? "1 klukkustund" : `${hours} klukkustundir`;
+  const hourWord = countIs(hours, "klukkustund", "klukkustundir");
 
   if (remaining === 0) {
     return hourWord;
   }
 
-  const minuteWord = remaining === 1 ? "1 mínúta" : `${remaining} mínútur`;
-  return `${hourWord} ${minuteWord}`;
+  return `${hourWord} ${countIs(remaining, "mínúta", "mínútur")}`;
 }
 
 // ── Duration ────────────────────────────────────────────────────────────────────
@@ -161,17 +158,18 @@ export function formatPrepTimeLabel(min: number | undefined, max: number | undef
  * Format participant count with correct Icelandic plurals.
  *
  * - `1` → `"1 þátttakandi"`
+ * - `21` → `"21 þátttakandi"`
  * - `5` → `"5 þátttakendur"`
  * - Range → `"5–15 þátttakendur"`
  */
 export function formatParticipants(min: number | undefined, max: number | undefined): string {
   if (min === undefined && max === undefined) return "";
 
-  const participantWord = (n: number) => (n === 1 ? "þátttakandi" : "þátttakendur");
+  const participants = (n: number) => countIs(n, "þátttakandi", "þátttakendur");
 
-  if (min === undefined) return `${max} ${participantWord(max!)}`;
-  if (max === undefined) return `${min} ${participantWord(min)}`;
-  if (min === max) return `${min} ${participantWord(min)}`;
+  if (min === undefined) return participants(max!);
+  if (max === undefined) return participants(min);
+  if (min === max) return participants(min);
   return `${min}–${max} þátttakendur`;
 }
 
@@ -279,6 +277,24 @@ export function formatIcelandicDate(value: string | Date | null | undefined): st
   return `${date.getDate()}. ${MONTHS_IS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+/**
+ * A date and time: `14. sept. 2026 kl. 09:05`, on the 24-hour clock.
+ *
+ * For lists where two things on the same day need telling apart (email
+ * drafts). Local time, like the other date helpers.
+ */
+export function formatIcelandicDateTime(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = toDate(value);
+  if (!date) return "";
+  const day = `${date.getDate()}. ${MONTHS_IS_SHORT[date.getMonth()]} ${date.getFullYear()}`;
+  return `${day} kl. ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
 /** `14. sept.` — for a list rail, where the year is noise and width is scarce. */
 export function formatIcelandicDateShort(value: string | Date | null | undefined): string {
   if (!value) return "";
@@ -301,4 +317,65 @@ export function formatIcelandicNumber(value: number): string {
   const sign = value < 0 ? "-" : "";
   const digits = Math.abs(Math.trunc(value)).toString();
   return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/**
+ * A number that may have a fraction, as Icelandic writes it: `1.234,5`.
+ *
+ * Full stops group the thousands and a comma marks the decimal, rounded to at
+ * most `maxFractionDigits` places with trailing zeros dropped (`2,50` → `2,5`,
+ * `3,00` → `3`). The hand-rolled twin of `toLocaleString("is-IS",
+ * { maximumFractionDigits })`, for the reason given on `formatIcelandicNumber`.
+ */
+export function formatIcelandicDecimal(value: number, maxFractionDigits = 2): string {
+  const fixed = Math.abs(value).toFixed(maxFractionDigits);
+  const [whole, fraction = ""] = fixed.split(".");
+  const trimmed = fraction.replace(/0+$/, "");
+  // -0,001 rounds to 0, and "-0" is not a number anyone writes.
+  const sign = value < 0 && Number(fixed) !== 0 ? "-" : "";
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return sign + grouped + (trimmed ? `,${trimmed}` : "");
+}
+
+/** Decimal places `countIs` shows, and so the precision `pluralIs` judges at. */
+const COUNT_FRACTION_DIGITS = 2;
+
+/**
+ * The Icelandic singular or plural for a count: `one` when the number ends in
+ * 1 but not in 11, otherwise `many`.
+ *
+ * - `1`, `21`, `101`, `1.001` → `one` ("eining")
+ * - `0`, `2`, `11`, `111`, `12` → `many` ("einingar")
+ *
+ * **Decimals:** the number is judged as `countIs` would print it, rounded to two
+ * places. If that is a whole number (`1.004` → `1`), the whole-number rule
+ * applies. Any real fraction (`1,5`, `21,1`) takes the plural: "1,5
+ * klukkustundir". Negative numbers follow their absolute value.
+ *
+ * Returns the word only. Use `countIs` to get the number with it.
+ */
+export function pluralIs(n: number, one: string, many: string): string {
+  const shown = Math.abs(Number(n.toFixed(COUNT_FRACTION_DIGITS)));
+  if (!Number.isInteger(shown)) return many;
+  return shown % 10 === 1 && shown % 100 !== 11 ? one : many;
+}
+
+/**
+ * A count and its noun in agreement, with the number written the Icelandic
+ * way: `countIs(21, "eining", "einingar")` → `"21 eining"`,
+ * `countIs(5003, "eining", "einingar")` → `"5.003 einingar"`.
+ *
+ * See `pluralIs` for the rule, including how decimals behave.
+ */
+export function countIs(n: number, one: string, many: string): string {
+  return `${formatIcelandicDecimal(n, COUNT_FRACTION_DIGITS)} ${pluralIs(n, one, many)}`;
+}
+
+/**
+ * A file size with an Icelandic decimal comma: `512 B`, `34 kB`, `1,2 MB`.
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${formatIcelandicNumber(bytes)} B`;
+  if (bytes < 1024 * 1024) return `${formatIcelandicNumber(Math.round(bytes / 1024))} kB`;
+  return `${formatIcelandicDecimal(bytes / (1024 * 1024), 1)} MB`;
 }

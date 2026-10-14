@@ -18,7 +18,7 @@ import { useProgramFilters } from "@/hooks/useProgramFilters";
 import type { FilterState } from "@/hooks/useProgramFilters";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchMySuspension } from "@/services/suspensions.service";
-import { formatIcelandicDate, formatIcelandicNumber } from "@/lib/format";
+import { countIs, formatIcelandicDate } from "@/lib/format";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { PROGRAMS_PER_PAGE } from "@/constants/config";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
@@ -246,8 +246,7 @@ function ProgramsPageInner() {
 
   // The server counts with the filters applied, so this is the honest total
   // whether or not anything is narrowed — no more "200 of 10.004" hedging.
-  const countLabel =
-    totalItems === 1 ? "1 eining" : `${formatIcelandicNumber(totalItems)} einingar`;
+  const countLabel = countIs(totalItems, "eining", "einingar");
 
   return (
     <div className={styles.page}>

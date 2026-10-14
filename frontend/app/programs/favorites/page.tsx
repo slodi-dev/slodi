@@ -9,6 +9,7 @@ import ProgramGrid from "../components/ProgramGrid";
 import ProgramSort, { type SortOption } from "../components/ProgramSort";
 import styles from "../program.module.css";
 import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
+import { countIs } from "@/lib/format";
 
 export default function FavoriteProgramsPage() {
   const { getToken } = useAuth();
@@ -93,7 +94,7 @@ export default function FavoriteProgramsPage() {
           <div className={styles.headerBottom}>
             <div className={styles.resultSummary}>
               <p className={styles.resultCount}>
-                {favoritePrograms.length} {favoritePrograms.length === 1 ? "dagskrá" : "dagskrár"}
+                {countIs(favoritePrograms.length, "dagskrá", "dagskrár")}
               </p>
             </div>
             <div className={styles.sortContainer}>

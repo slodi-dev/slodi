@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import styles from "./ContentCreateModal.module.css";
 import { cn } from "@/lib/util";
+import { countIs, formatIcelandicNumber } from "@/lib/format";
 
 /**
  * Pick merkimiðar from the vocabulary. Never add to it.
@@ -88,7 +89,9 @@ export default function TagPicker({
       >
         Merkimiðar
         <span className={styles.pickerCount}>
-          {selected.length > 0 ? `· ${selected.length} valdir` : `· ${available.length} í boði`}
+          {selected.length > 0
+            ? `· ${countIs(selected.length, "valinn", "valdir")}`
+            : `· ${formatIcelandicNumber(available.length)} í boði`}
         </span>
         <svg
           className={styles.pickerChev}
