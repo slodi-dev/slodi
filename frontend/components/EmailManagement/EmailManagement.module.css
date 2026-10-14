@@ -229,7 +229,7 @@
 
 .warning {
   font-size: var(--sl-text-caption);
-  color: hsl(var(--sl-color-warning));
+  color: hsl(var(--sl-color-warning-text));
 }
 
 .accessDenied {

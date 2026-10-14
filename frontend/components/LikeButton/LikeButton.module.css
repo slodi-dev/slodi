@@ -21,7 +21,7 @@
 
 .likeButton:hover {
   background: hsl(var(--color-background-secondary));
-  border-color: hsl(var(--color-border-hover, var(--color-border)));
+  border-color: hsl(var(--sl-color-border-hover));
   transform: translateY(-1px);
 }
 

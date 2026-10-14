@@ -185,7 +185,7 @@
 
 .statusInProgress {
   background: hsl(var(--sl-color-warning-subtle));
-  color: hsl(var(--sl-color-warning));
+  color: hsl(var(--sl-color-warning-text));
 }
 
 .statusReady {
