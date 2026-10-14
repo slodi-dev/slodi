@@ -123,6 +123,9 @@ export const ValidationErrors: Story = {
 };
 
 export const SaveFails: Story = {
+  // No visual baseline: whether the submit button keeps its focus ring depends
+  // on whether the mocked 422 lands before or after it is disabled.
+  tags: ["skip-visual"],
   parameters: {
     // The failed request is logged by the app on purpose; nothing else may log.
     allowedConsoleErrors: [/^\[API 422\]/],

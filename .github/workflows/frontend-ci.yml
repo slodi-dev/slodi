@@ -121,3 +121,71 @@ jobs:
           status: ${{ job.status }}
           title: "Storybook tests — ${{ github.repository }}"
           description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"
+
+  # A screenshot of every story (light theme, desktop width) compared with the
+  # baselines in frontend/visual/__screenshots__/. Runs in the official
+  # Playwright image so font rendering matches the baselines, which are made in
+  # the same image (`npm run test:visual:update`). On a difference, the
+  # expected/actual/diff PNGs are uploaded as the "visual-diff" artifact.
+  # Design: docs/ui-quality-pipeline.md, layer 2.
+  visual-regression:
+    name: Visual regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      # Must match the installed Playwright (checked below).
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Playwright matches the image
+        run: |
+          installed="$(node -p 'require("@playwright/test/package.json").version')"
+          if [ "$installed" != "1.64.0" ]; then
+            echo "::error::Playwright $installed is installed but the job runs the v1.64.0 image. Update the image tag here and regenerate the baselines (npm run test:visual:update)."
+            exit 1
+          fi
+
+      - name: Build Storybook
+        run: npm run build-storybook -- --quiet
+
+      - name: Screenshots of every story
+        run: npx playwright test -c playwright.visual.config.ts
+
+      - name: Summary of changed stories
+        if: failure()
+        run: |
+          {
+            echo "### Visual regression: stories that look different"
+            echo
+            find visual-results/artifacts -name '*-diff.png' -printf '- %f\n' | sed 's/-diff\.png$//' | sort
+            echo
+            echo "Download the **visual-diff** artifact for expected / actual / diff images."
+            echo "If the change is intended, run \`npm run test:visual:update\` in \`frontend/\` and commit the new baselines."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload diff images
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff
+          path: frontend/visual-results/
+          retention-days: 14
+
+      - name: Notify Discord
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Visual regression — ${{ github.repository }}"
+          description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"
