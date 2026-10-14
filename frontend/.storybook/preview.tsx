@@ -84,9 +84,30 @@ const withAppProviders: Decorator = (Story, context) => {
   );
 };
 
+/**
+ * A whole theme with a known axe gap (one root cause in the tokens, not in any
+ * story) switches that rule off for that theme's test run only. The list comes
+ * from the test project's `knownA11yGaps` global (vitest.config.ts, next to the
+ * theme and the story that tracks it); no toolbar sets it, so the a11y panel
+ * in Storybook still shows everything. Every other rule still fails.
+ */
+const withKnownThemeGaps: NonNullable<Preview["beforeEach"]> = (context) => {
+  const ruleIds = context.globals.knownA11yGaps as string[] | undefined;
+  if (!ruleIds?.length) return;
+  const a11y = (context.parameters.a11y ?? {}) as { config?: { rules?: object[] } };
+  context.parameters.a11y = {
+    ...a11y,
+    config: {
+      ...a11y.config,
+      rules: [...(a11y.config?.rules ?? []), ...ruleIds.map((id) => ({ id, enabled: false }))],
+    },
+  };
+};
+
 const preview: Preview = {
   tags: ["autodocs"],
   decorators: [withAppProviders],
+  beforeEach: withKnownThemeGaps,
   globalTypes: {
     theme: {
       description: "Theme — set exactly as ThemeProvider sets it",
@@ -126,10 +147,12 @@ const preview: Preview = {
       },
     },
     a11y: {
-      // Every story fails on an axe violation, in all four forms. A story with
-      // a known violation opts out with `a11y: { test: "todo" }` in its meta
-      // (report only, in the a11y panel) and a comment naming the rule and
-      // its story; there are none left outside Heiðursorðla.
+      // Every story fails on an axe violation, in every form (vitest.config.ts).
+      // A story with a known violation in one theme only opts out of that
+      // theme with the tag `skip-<theme>` (`skip-dark`, `skip-patrol`); one
+      // that fails everywhere uses `a11y: { test: "todo" }` (report only, in
+      // the a11y panel). Either way with a comment naming the rule and its
+      // story; there are none left outside Heiðursorðla.
       test: "error",
     },
     viewport: {
