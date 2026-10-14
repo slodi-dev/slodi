@@ -16,6 +16,7 @@ import {
   formatAgeGroup,
   getAgeGroupPatrol,
   formatIcelandicDate,
+  formatIcelandicNumber,
 } from "@/lib/format";
 import { HiddenChip, hiddenDimClass } from "@/components/HiddenMark/HiddenMark";
 import { cn } from "@/lib/util";
@@ -403,7 +404,7 @@ export default function ProgramCard({
           type="button"
           className={`${styles.actionButton} ${styles.likeButton} ${isLiked ? styles.liked : ""}`}
           onClick={handleLike}
-          aria-label={`${isLiked ? "Taka rokkstig til baka" : "Gefa rokkstig"} ${name}, ${likeCount} rokkstig`}
+          aria-label={`${isLiked ? "Taka rokkstig til baka" : "Gefa rokkstig"} ${name}, ${formatIcelandicNumber(likeCount)} rokkstig`}
           aria-pressed={isLiked}
         >
           <svg
@@ -421,7 +422,7 @@ export default function ProgramCard({
               d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
             />
           </svg>
-          <span className={styles.likeCount}>{likeCount}</span>
+          <span className={styles.likeCount}>{formatIcelandicNumber(likeCount)}</span>
         </button>
 
         {/* Favorite button (hidden behind FAVOURITES_ENABLED, UX-01) */}
