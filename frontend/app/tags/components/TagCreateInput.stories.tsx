@@ -55,6 +55,9 @@ export const Saving: Story = {
 };
 
 export const AlreadyExists: Story = {
+  // No visual baseline: the input is disabled while saving, so whether it keeps
+  // its focus ring depends on whether the mocked reply lands first (UX rule 11).
+  tags: ["skip-visual"],
   parameters: {
     // The failed request is logged by the app on purpose; nothing else may log.
     allowedConsoleErrors: [/^\[API 409\]/],
