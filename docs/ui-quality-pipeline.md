@@ -90,6 +90,56 @@ about 14 PRs a month. In fact layer 1 counts 378 stories, so a full run is
 about 1,500 snapshots: 3 PRs a month. Self-hosting costs only CI minutes and
 the baseline PNGs in git.
 
+It starts with one form, light theme at desktop width (380 baselines, 15 MB).
+More forms are one line each in `FORMS` (`frontend/playwright.visual.config.ts`).
+
+```bash
+cd frontend
+npm run test:visual                          # build Storybook, compare (as CI does)
+npm run test:visual -- --grep alert          # some stories
+npm run test:visual:update                   # accept the current look as the baseline
+VISUAL_SKIP_BUILD=1 npm run test:visual      # reuse storybook-static/
+```
+
+Both scripts need Docker. They run `frontend/scripts/visual.sh`, which builds
+Storybook on the host. Then it runs Playwright in
+`mcr.microsoft.com/playwright:v<installed version>-noble`, the same image as the
+CI job. Never make baselines outside the image: fonts and anti-aliasing differ
+between operating systems, and every story would fail.
+
+**Approving a change.** If a story's look changes on purpose, run
+`npm run test:visual:update` and commit the changed PNGs under
+`frontend/visual/__screenshots__/` with the change. Reviewers see the before and
+after in the PR's Files tab. A full update also deletes baselines whose story is
+gone. A normal run fails on them.
+
+**When CI fails.** The "Visual regression" job lists the stories that changed in
+its summary. It also uploads the `visual-diff` artifact, which holds
+`*-expected.png`, `*-actual.png` and `*-diff.png` for each changed story, plus
+Playwright's HTML report (`html/index.html`).
+
+**What keeps it deterministic** (`frontend/visual/stories.visual.ts`):
+
+- `Date.now()` is fixed at 2026-06-15 12:00 UTC. `performance.now()` and the
+  requestAnimationFrame timestamp never move, so tickers and the clicker are
+  drawn at t = 0.
+- Animation frames are held until the story has finished and the network is
+  idle. After that, a loop that runs once per frame (the canvas games) gets
+  exactly 3 frames.
+- `Math.random` is seeded. CSS animations and transitions are stopped, and the
+  caret is hidden.
+- Every request outside the Storybook server is aborted. The API is already
+  mocked (`.storybook/mocks/fetch.ts`).
+- The test waits for Storybook's `finished` phase, which comes after `play` and
+  `afterEach`. It then waits for fonts and images.
+- Tolerance is 0 pixels. A 1px border change in Alert fails 6 stories.
+
+A story that can't be made deterministic opts out with `tags: ["skip-visual"]`
+and a comment saying why. Two stories do this: `EmailListDownloadButton/Empty`
+and `ContentCreateModal/SaveFails`. In both, whether the button keeps its focus
+ring depends on whether the mocked reply arrives before or after the button is
+disabled.
+
 ## Layer 3: route crawler and journeys (PR + nightly)
 
 This layer runs on the journey stack (`docker-compose.e2e.yml`, seeded data,
@@ -124,7 +174,7 @@ the bank, one program page, `/leikir`). It runs in the deploy workflow next to
 |---|---|---|---|---|
 | 1 | `check-tokens` in CI; stories as tests in 4 forms; every component has stories; a11y `error` for clean primitives | ½ day | sc-582 | Done, see below |
 | 2 | Route crawler + 2 journeys | 1–2 days | sc-583 | Done, see below |
-| 3 | Visual regression | 1 day | sc-584 | Backlog |
+| 3 | Visual regression | 1 day | sc-584 | Light/desktop done, see layer 2; more forms to follow |
 | 4 | a11y `error` group by group; post-deploy smoke | ongoing | sc-585 | a11y done but Heiðursorðla, see below; smoke to do |
 
 ### Step 1, as built
@@ -213,4 +263,6 @@ Decisions taken 2026-10-11:
 ## Open questions
 
 - Visual baselines: commit PNGs to the repo (simple), or keep them in Git LFS?
-  1,500 PNGs is roughly 50–100 MB per full refresh.
+  For now, plain git (sc-584). One form is 380 PNGs and 15 MB, and only the
+  changed PNGs are added on an update. Revisit before all 4 forms (about
+  60 MB) are on.
