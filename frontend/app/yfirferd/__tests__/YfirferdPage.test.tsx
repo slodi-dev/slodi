@@ -210,6 +210,44 @@ describe("sweeping the queue", () => {
     );
   });
 
+  it("cancelling the hide prompt hides nothing", async () => {
+    const prompt = vi.spyOn(window, "prompt").mockReturnValue(null);
+    render(<YfirferdPage />);
+    await screen.findByText("Hlaupaleikur");
+
+    await userEvent.keyboard("f");
+
+    expect(prompt).toHaveBeenCalled();
+    expect(setContentHidden).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /Taka aftur/ })).not.toBeInTheDocument();
+    prompt.mockRestore();
+  });
+
+  it("cancelling the reject prompt rejects nothing", async () => {
+    const prompt = vi.spyOn(window, "prompt").mockReturnValue(null);
+    render(<YfirferdPage />);
+    await screen.findByText("Hlaupaleikur");
+
+    await userEvent.keyboard("h");
+
+    expect(prompt).toHaveBeenCalled();
+    expect(reviewContent).not.toHaveBeenCalled();
+    prompt.mockRestore();
+  });
+
+  it("hides without a reason when the prompt is confirmed empty", async () => {
+    const prompt = vi.spyOn(window, "prompt").mockReturnValue("");
+    render(<YfirferdPage />);
+    await screen.findByText("Hlaupaleikur");
+
+    await userEvent.keyboard("f");
+
+    await waitFor(() =>
+      expect(setContentHidden).toHaveBeenCalledWith("c1", true, undefined, expect.anything())
+    );
+    prompt.mockRestore();
+  });
+
   it("says the queue is clear rather than showing nothing at all", async () => {
     fetchReviewQueue.mockResolvedValue({ items: [], total: 0 });
     render(<YfirferdPage />);
