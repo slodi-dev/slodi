@@ -1,0 +1,714 @@
+/* Lab variations of the dashboard side nav. Every colour goes through a token, so each look
+   works in light, dark and the patrol themes. Phone or desktop is decided by the width of
+   .shell (a container query), so a phone-sized frame gets the drawer even in a wide window.
+
+   Each look sets the --nav-* custom properties on .shell (bare HSL triplets, wrapped where
+   they are used); the shared rules below only read them. */
+
+.shell {
+  container: sl-shell / inline-size;
+  position: relative;
+  isolation: isolate;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--sl-font-family-body);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-background));
+
+  --nav-w: 15rem;
+  --nav-w-collapsed: 4.5rem;
+  --nav-bg: var(--sl-color-surface);
+  --nav-edge: var(--sl-color-border);
+  --nav-fg: var(--sl-color-text-secondary);
+  --nav-fg-strong: var(--sl-color-text-primary);
+  --nav-hover: var(--sl-color-surface-hover);
+  --nav-active-bg: var(--sl-color-primary-subtle);
+  --nav-active-fg: var(--sl-color-primary-text);
+  --menu-bg: var(--sl-color-primary-text);
+  --menu-fg: var(--sl-color-text-inverse);
+  --bar-h: 3.5rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  height: 100%;
+}
+
+/* ── Skip link: off screen until focused ── */
+.skipLink {
+  position: absolute;
+  top: var(--sl-spacing-sm);
+  left: var(--sl-spacing-sm);
+  z-index: var(--sl-z-tooltip);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+  transform: translateY(-300%);
+}
+.skipLink:focus {
+  transform: none;
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* Phone-only pieces, off on desktop. */
+.phoneBar,
+.backdrop {
+  display: none;
+}
+
+/* ── The nav column ── */
+.drawer {
+  position: relative;
+  z-index: var(--sl-z-sticky);
+  width: var(--nav-w);
+  min-height: 0;
+  background: hsl(var(--nav-bg));
+  border-right: 1px solid hsl(var(--nav-edge));
+  color: hsl(var(--nav-fg));
+  transition: width var(--sl-transition-base);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.navBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+  padding: var(--sl-spacing-md) var(--sl-spacing-sm);
+  overflow-y: auto;
+}
+
+.groupBottom {
+  margin-top: auto;
+}
+
+.navFoot {
+  padding: var(--sl-spacing-sm);
+  border-top: 1px solid hsl(var(--nav-edge));
+}
+
+/* Group headings are for screen readers, except in the groups look. */
+.heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.list {
+  position: relative;
+  display: grid;
+  gap: var(--sl-spacing-gap-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── One nav entry: link, disabled item, or the collapse toggle ── */
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3rem; /* 48px touch target (docs/ux-conventions.md §8) */
+  padding: 0 var(--sl-spacing-sm);
+  border: 0;
+  border-radius: var(--sl-radius-button);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-medium);
+  line-height: var(--sl-line-height-tight);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
+}
+
+.item:hover {
+  background: hsl(var(--nav-hover));
+  color: hsl(var(--nav-fg-strong));
+}
+
+.item:focus-visible,
+.menuButton:focus-visible {
+  /* The transparent outline shows up in forced-colours mode, where box-shadow is dropped. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+.active,
+.active:hover {
+  background: hsl(var(--nav-active-bg));
+  color: hsl(var(--nav-active-fg));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.disabled {
+  cursor: default;
+}
+.disabled:hover {
+  background: transparent;
+  color: hsl(var(--nav-fg));
+}
+.disabled .icon svg {
+  opacity: var(--sl-opacity-muted);
+}
+
+.icon {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+}
+.icon svg {
+  width: var(--sl-size-icon-md);
+  height: var(--sl-size-icon-md);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.soon {
+  flex: none;
+  padding: 0 var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--nav-edge));
+  border-radius: var(--sl-radius-pill);
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-medium);
+  line-height: var(--sl-line-height-normal);
+  white-space: nowrap;
+}
+
+.here {
+  display: none;
+}
+
+.badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 var(--sl-spacing-xs);
+  box-sizing: border-box;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-error-text));
+  color: hsl(var(--sl-color-text-inverse));
+  box-shadow: 0 0 0 2px hsl(var(--nav-bg));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  line-height: 1;
+}
+
+/* ── The page beside the nav ── */
+.content {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+.content:focus {
+  outline: none;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--menu-bg));
+  color: hsl(var(--menu-fg));
+  box-shadow: var(--sl-shadow-card);
+  cursor: pointer;
+}
+.menuButton svg {
+  width: var(--sl-size-icon-md);
+  height: var(--sl-size-icon-md);
+}
+
+/* ═════ Desktop: expanded or collapsed ═════ */
+@container sl-shell (min-width: 768px) {
+  .shell[data-collapsed="true"] .drawer {
+    width: var(--nav-w-collapsed);
+  }
+
+  /* Collapsed, nothing scrolls, so the labels can pop out to the right. */
+  .shell[data-collapsed="true"] .navBody {
+    overflow: visible;
+  }
+
+  .shell[data-collapsed="true"] .item {
+    justify-content: center;
+    width: 3rem;
+    margin-inline: auto;
+    padding: 0;
+  }
+
+  .shell[data-collapsed="true"] .soon,
+  .shell[data-collapsed="true"] .here {
+    display: none;
+  }
+
+  .shell[data-collapsed="true"] .group + .group {
+    padding-top: var(--sl-spacing-sm);
+    border-top: 1px solid hsl(var(--nav-edge));
+  }
+
+  /* The label stays in the DOM for screen readers and shows as a tip on hover or focus. */
+  .shell[data-collapsed="true"] .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .shell[data-collapsed="true"] .item:hover .label,
+  .shell[data-collapsed="true"] .item:focus-visible .label {
+    top: 50%;
+    left: calc(100% + var(--sl-spacing-sm));
+    z-index: var(--sl-z-tooltip);
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: var(--sl-tooltip-padding);
+    overflow: visible;
+    clip: auto;
+    border-radius: var(--sl-tooltip-radius);
+    background: hsl(var(--sl-tooltip-background));
+    color: hsl(var(--sl-tooltip-text));
+    box-shadow: var(--sl-tooltip-shadow);
+    font-size: var(--sl-tooltip-font-size);
+    font-weight: var(--sl-font-weight-medium);
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+}
+
+/* ═════ Phone: the nav is a drawer behind a menu button ═════ */
+@container sl-shell (max-width: 767.98px) {
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phoneBar {
+    display: block;
+    position: absolute;
+    top: var(--sl-spacing-sm);
+    left: var(--sl-spacing-sm);
+    z-index: var(--sl-z-popover);
+  }
+
+  .content {
+    flex: 1;
+    padding-top: 4rem; /* clears the floating 48px button */
+  }
+
+  .drawer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--sl-z-drawer);
+    box-sizing: border-box;
+    width: min(18rem, 85%);
+    padding-top: 4rem;
+    border-right: 0;
+    /* Closed, it is also hidden, which takes its links out of the tab order and the
+       accessibility tree. Visibility flips after the slide-out, so the animation shows. */
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition:
+      transform var(--sl-transition-base),
+      visibility 0s linear var(--sl-primitive-duration-base);
+  }
+
+  .shell[data-open="true"] .drawer {
+    visibility: visible;
+    transform: none;
+    box-shadow: var(--sl-shadow-modal);
+    transition: transform var(--sl-transition-base);
+  }
+
+  .backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: var(--sl-z-overlay);
+    background: hsl(var(--sl-color-overlay-base));
+  }
+
+  /* No collapsing on a phone. */
+  .navFoot {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   A · Rail: narrow column, icon above a small label. Collapsed, icons only.
+   ══════════════════════════════════════════════════════════════════════ */
+.rail {
+  --nav-w: 7rem;
+  --nav-w-collapsed: 4.5rem;
+}
+
+.rail .item {
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sl-spacing-xs);
+  min-height: 3.5rem;
+  padding: var(--sl-spacing-xs);
+  text-align: center;
+}
+.rail .item:hover,
+.rail .active,
+.rail .active:hover {
+  background: transparent;
+}
+.rail .icon {
+  width: 3.5rem;
+  border-radius: var(--sl-radius-pill);
+  transition: background-color var(--sl-transition-fast);
+}
+.rail .item:hover .icon {
+  background: hsl(var(--nav-hover));
+}
+.rail .active .icon,
+.rail .active:hover .icon {
+  background: hsl(var(--nav-active-bg));
+  color: hsl(var(--nav-active-fg));
+}
+.rail .label {
+  flex: none;
+  max-width: 100%;
+  font-size: var(--sl-text-xs);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.rail .soon {
+  padding: 0 var(--sl-spacing-xs);
+  font-size: var(--sl-text-xs);
+}
+.rail .navBody {
+  gap: var(--sl-spacing-stack-xs);
+  padding-inline: var(--sl-spacing-xs);
+}
+.rail .group + .group {
+  padding-top: var(--sl-spacing-xs);
+  border-top: 1px solid hsl(var(--nav-edge));
+}
+
+@container sl-shell (min-width: 768px) {
+  .rail[data-collapsed="true"] .item {
+    min-height: 3rem;
+    padding: 0;
+  }
+  .rail[data-collapsed="true"] .icon {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+/* On a phone the rail's drawer is a grid of tiles. */
+@container sl-shell (max-width: 767.98px) {
+  .rail .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sl-spacing-gap-sm);
+  }
+  .rail .item {
+    min-height: 5rem;
+    border-radius: var(--sl-radius-card);
+    background: hsl(var(--sl-color-surface-secondary));
+  }
+  .rail .active,
+  .rail .active:hover {
+    background: hsl(var(--nav-active-bg));
+    box-shadow: inset 0 0 0 2px hsl(var(--nav-active-fg));
+  }
+  .rail .active:focus-visible {
+    box-shadow: var(--sl-shadow-focus);
+  }
+  .rail .label {
+    font-size: var(--sl-text-caption);
+  }
+  .rail .navBody {
+    padding-inline: var(--sl-spacing-sm);
+  }
+  .rail .group + .group {
+    border-top: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   B · Groups: section headings, active item a solid pill.
+   ══════════════════════════════════════════════════════════════════════ */
+.groups {
+  --nav-w: 16rem;
+  --nav-bg: var(--sl-color-surface-secondary);
+  --nav-edge: var(--sl-color-border-subtle);
+  --nav-hover: var(--sl-color-surface-active);
+  --nav-active-bg: var(--sl-color-primary-text);
+  --nav-active-fg: var(--sl-color-text-inverse);
+}
+
+.groups .navBody {
+  gap: var(--sl-spacing-stack-md);
+}
+
+.groups .heading {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0 0 var(--sl-spacing-xs);
+  padding: 0 var(--sl-spacing-sm);
+  overflow: visible;
+  clip: auto;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.08em;
+  line-height: var(--sl-line-height-normal);
+  text-transform: uppercase;
+}
+
+@container sl-shell (min-width: 768px) {
+  .groups[data-collapsed="true"] .heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .groups[data-collapsed="true"] .navBody {
+    gap: var(--sl-spacing-stack-sm);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   C · Trail: the items are waypoints on a dashed trail. The active one is
+   filled in, ringed like a painted trail marker, and says "Þú ert hér".
+   ══════════════════════════════════════════════════════════════════════ */
+.trail {
+  --nav-w: 17rem;
+}
+
+.trail .list::before {
+  content: "";
+  position: absolute;
+  top: var(--sl-spacing-sm);
+  bottom: var(--sl-spacing-sm);
+  left: calc(var(--sl-spacing-sm) + 1rem - 1px);
+  border-left: 2px dashed hsl(var(--sl-color-border-strong));
+}
+
+.trail .icon {
+  box-sizing: border-box;
+  border: 2px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--nav-bg));
+}
+.trail .icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.trail .active,
+.trail .active:hover {
+  background: transparent;
+  color: hsl(var(--sl-color-primary-text));
+}
+.trail .active .icon {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  box-shadow:
+    0 0 0 2px hsl(var(--nav-bg)),
+    0 0 0 5px hsl(var(--sl-color-accent));
+}
+
+.trail .here {
+  display: inline;
+  flex: none;
+  color: hsl(var(--sl-color-primary-text));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@container sl-shell (min-width: 768px) {
+  .trail[data-collapsed="true"] .list::before {
+    left: calc(50% - 1px);
+  }
+  .trail[data-collapsed="true"] .group + .group {
+    border-top: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   D · Night: dark forest in both themes, the active item lit by a
+   campfire-yellow mark.
+   ══════════════════════════════════════════════════════════════════════ */
+.night {
+  --nav-bg: var(--sl-primitive-forest-900);
+  --nav-edge: var(--sl-primitive-forest-700);
+  --nav-fg: var(--sl-primitive-neutral-300);
+  --nav-fg-strong: var(--sl-primitive-neutral-0);
+  --nav-hover: var(--sl-primitive-forest-800);
+  --nav-active-bg: var(--sl-primitive-forest-700);
+  --nav-active-fg: var(--sl-primitive-neutral-0);
+  --menu-bg: var(--sl-primitive-forest-900);
+  --menu-fg: var(--sl-primitive-neutral-0);
+}
+
+.night .active::before {
+  content: "";
+  position: absolute;
+  top: var(--sl-spacing-sm);
+  bottom: var(--sl-spacing-sm);
+  left: 0;
+  width: 4px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-primitive-drekar-400));
+}
+.night .active .icon {
+  color: hsl(var(--sl-primitive-drekar-300));
+}
+
+@container sl-shell (min-width: 768px) {
+  .night[data-collapsed="true"] .active::before {
+    top: auto;
+    bottom: 0;
+    left: var(--sl-spacing-sm);
+    right: var(--sl-spacing-sm);
+    width: auto;
+    height: 3px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   E · Top bar: on a phone, a bar across the top with the menu button and
+   the page you're on. On desktop the active item is a raised card.
+   ══════════════════════════════════════════════════════════════════════ */
+.topbar {
+  --nav-bg: var(--sl-color-background-secondary);
+  --nav-edge: var(--sl-color-border-subtle);
+  --nav-hover: var(--sl-color-surface-hover);
+  --nav-active-bg: var(--sl-color-surface);
+  --nav-active-fg: var(--sl-color-primary-text);
+  --menu-bg: var(--sl-color-surface);
+  --menu-fg: var(--sl-color-text-primary);
+}
+
+.topbar .active,
+.topbar .active:hover {
+  box-shadow:
+    var(--sl-shadow-card),
+    inset 0 0 0 1px hsl(var(--sl-color-border-subtle));
+}
+.topbar .active:focus-visible {
+  box-shadow: var(--sl-shadow-focus);
+}
+
+.barTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-sm);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--sl-text-body);
+}
+.barBrand {
+  color: hsl(var(--sl-color-primary-text));
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+}
+.barPage {
+  overflow: hidden;
+  padding-left: var(--sl-spacing-sm);
+  border-left: 1px solid hsl(var(--sl-color-border-strong));
+  color: hsl(var(--sl-color-text-secondary));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container sl-shell (max-width: 767.98px) {
+  .topbar .phoneBar {
+    position: relative;
+    top: auto;
+    left: auto;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--sl-spacing-sm);
+    height: var(--bar-h);
+    padding: 0 var(--sl-spacing-sm) 0 var(--sl-spacing-xs);
+    border-bottom: 1px solid hsl(var(--sl-color-border));
+    background: hsl(var(--sl-color-surface));
+  }
+  .topbar .menuButton {
+    box-shadow: none;
+  }
+  .topbar .menuButton:hover {
+    background: hsl(var(--sl-color-surface-hover));
+  }
+  .topbar .content {
+    padding-top: 0;
+  }
+  .topbar .drawer,
+  .topbar .backdrop {
+    top: var(--bar-h);
+  }
+  .topbar .drawer {
+    padding-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .item,
+  .rail .icon {
+    transition-duration: 1ms;
+    transition-delay: 0s;
+  }
+}
