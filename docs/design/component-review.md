@@ -64,7 +64,11 @@ once a variation is picked it is **promoted** into the real component and its la
   mín, Félagið, Færnimerki), bottom left is the items in the chosen collection, and the main
   body is the plan.
 - **PlanCalendar grid**: no issues. The today circle is now centred on the number and uses the
-  primary colour (fixed on #194). The day entries are in `Lab/PlanCalendar`.
+  primary colour (fixed on #194). Day entries: **D · Staða** picked (the month as a
+  planning-status map); the other looks are scrapped and `Lab/PlanCalendar` now explores Staða
+  variations with playful icons and badges. Design input: a month is a regular weekly fundur per
+  flokkur (same weekday and time) plus exceptions — fös–sun útilegur as one spanning bar,
+  single-day events, cancelled or moved fundir.
 - **PlanGrid**: the grid itself is good. The ATH and INNKAUP columns came from a spreadsheet and
   are in `Lab/PlanGrid`: ATH becomes the week's endurmat or a reminder, INNKAUP becomes the
   week's collected búnaður with owned/needed ticks.
