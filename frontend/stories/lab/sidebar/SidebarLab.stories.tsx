@@ -1,8 +1,8 @@
-import type { CSSProperties, ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { fn } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import DashboardSidebar from "@/components/DashboardSidebar/DashboardSidebar";
-import SidebarLab, { type SidebarLook } from "./SidebarLab";
+import SidebarLab, { type SidebarLabProps, type SidebarLook } from "./SidebarLab";
 
 const LOOK_OPTIONS: SidebarLook[] = ["rail", "groups", "trail", "night", "topbar"];
 
@@ -100,12 +100,12 @@ const LOOKS: { look: SidebarLook; name: string; idea: string }[] = [
   {
     look: "groups",
     name: "B · Groups",
-    idea: "Items sorted under headings (Skipuleggja, Bankinn, Stjórnun, Þú), the active item a solid pill.",
+    idea: "Items sorted under headings (Skipuleggja, Bankinn, Umsjón, Mínar síður), the active item a solid pill that slides to the new item when the page changes. Collapsed, short rules stand in for the headings.",
   },
   {
     look: "trail",
     name: "C · Trail",
-    idea: "Items are waypoints on a dashed trail; the active one is filled in, ringed like a painted trail marker, and says “Þú ert hér”.",
+    idea: "A hiking map: the items are waypoints on a dashed trail that draws itself in, the groups are place names along it, and unbuilt items are dashed waypoints. The active one is filled in and ringed in trail-marker yellow; the ring walks to the next waypoint and a “Þú ert hér” tag hops in beside it.",
   },
   {
     look: "night",
@@ -254,6 +254,129 @@ export const TrailPhone: Story = {
   name: "C · Trail, phone drawer",
   args: { look: "trail", drawerOpen: true },
   globals: PHONE,
+};
+
+/** Pages the motion demo can jump between, spread over the groups so the marker travels. */
+const DEMO_PAGES = [
+  { path: "/dashboard", label: "Stjórnborð" },
+  { path: "/programs", label: "Dagskrárbankinn" },
+  { path: "/yfirferd", label: "Yfirferð" },
+  { path: "/settings", label: "Stillingar" },
+];
+
+const demoBar: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "var(--sl-spacing-sm)",
+  padding: "var(--sl-spacing-sm) var(--sl-spacing-md)",
+  borderBottom: "1px solid hsl(var(--sl-color-border))",
+  background: "hsl(var(--sl-color-surface))",
+  fontSize: "var(--sl-text-body-sm)",
+};
+const demoButton = (pressed = false): CSSProperties => ({
+  minHeight: "2.5rem",
+  padding: "0 var(--sl-spacing-sm)",
+  border: "1px solid hsl(var(--sl-color-border-strong))",
+  borderRadius: "var(--sl-radius-button)",
+  background: pressed ? "hsl(var(--sl-color-primary-text))" : "hsl(var(--sl-color-surface))",
+  color: pressed ? "hsl(var(--sl-color-text-inverse))" : "hsl(var(--sl-color-text-primary))",
+  font: "inherit",
+  cursor: "pointer",
+});
+
+/**
+ * The nav with buttons that change the active page and the badge count from outside, the way
+ * a route change or a new notification would, so the motion can be watched.
+ */
+function MotionDemo(props: SidebarLabProps) {
+  const [path, setPath] = useState("/programs");
+  const [badge, setBadge] = useState(2);
+  const [run, setRun] = useState(0);
+  return (
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }}>
+      <div style={demoBar}>
+        <div role="group" aria-label="Active page" style={{ display: "contents" }}>
+          <span style={{ color: "hsl(var(--sl-color-text-secondary))" }}>Go to</span>
+          {DEMO_PAGES.map((page) => (
+            <button
+              key={page.path}
+              type="button"
+              style={demoButton(page.path === path)}
+              aria-pressed={page.path === path}
+              onClick={() => setPath(page.path)}
+            >
+              {page.label}
+            </button>
+          ))}
+        </div>
+        <button type="button" style={demoButton()} onClick={() => setBadge((n) => n + 1)}>
+          Badge +1
+        </button>
+        <button type="button" style={demoButton()} onClick={() => setBadge(0)}>
+          Clear badge
+        </button>
+        {props.look === "trail" && (
+          <button type="button" style={demoButton()} onClick={() => setRun((n) => n + 1)}>
+            Redraw the trail
+          </button>
+        )}
+      </div>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <SidebarLab key={run} {...props} activePath={path} badgeCount={badge} onNavigate={setPath}>
+          <MockPage />
+        </SidebarLab>
+      </div>
+    </div>
+  );
+}
+
+/** Clicks through the demo pages and the badge, checking the nav follows each change. */
+const playMotion: Story["play"] = async ({ canvasElement, step }) => {
+  const canvas = within(canvasElement);
+  const nav = () => canvasElement.querySelector("nav") as HTMLElement;
+  const current = () => nav().querySelector('[aria-current="page"]');
+
+  for (const page of ["Stjórnborð", "Stillingar", "Yfirferð", "Dagskrárbankinn"]) {
+    await step(`Go to ${page}`, async () => {
+      await userEvent.click(canvas.getByRole("button", { name: page }));
+      await waitFor(() => expect(current()).toHaveTextContent(page));
+    });
+  }
+  await step("The badge count goes up, then clears", async () => {
+    await userEvent.click(canvas.getByRole("button", { name: "Badge +1" }));
+    await waitFor(() => expect(nav()).toHaveTextContent("3 ný"));
+    await userEvent.click(canvas.getByRole("button", { name: "Clear badge" }));
+    await waitFor(() => expect(nav()).not.toHaveTextContent("ný"));
+    await userEvent.click(canvas.getByRole("button", { name: "Badge +1" }));
+    await waitFor(() => expect(nav()).toHaveTextContent("1 ný"));
+  });
+  // Let the slide and the pops finish, so the accessibility check sees the settled nav.
+  await new Promise((resolve) => setTimeout(resolve, 500));
+};
+
+export const GroupsAnimations: Story = {
+  name: "B · Groups, animations",
+  args: { look: "groups" },
+  render: (args) => <MotionDemo {...args} />,
+  play: playMotion,
+};
+
+export const TrailAnimations: Story = {
+  name: "C · Trail, animations",
+  args: { look: "trail" },
+  render: (args) => <MotionDemo {...args} />,
+  play: async (context) => {
+    await playMotion(context);
+    await context.step("The trail redraws", async () => {
+      const canvas = within(context.canvasElement);
+      await userEvent.click(canvas.getByRole("button", { name: "Redraw the trail" }));
+      await waitFor(() =>
+        expect(context.canvasElement.querySelector("nav svg path")).toBeInTheDocument()
+      );
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  },
 };
 
 export const NightDesktop: Story = { name: "D · Night, desktop", args: { look: "night" } };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -44,6 +44,13 @@ export interface SidebarLabProps {
   drawerOpen?: boolean;
   /** Accessible name of the nav. Only needs changing when several are on one page. */
   navLabel?: string;
+  /**
+   * Overrides `usePathname()` for the active item. Lets a story move the active page without
+   * a router, so the motion between items can be watched.
+   */
+  activePath?: string;
+  /** Called with the item's path when a nav link is clicked. */
+  onNavigate?: (path: string) => void;
   /** The page beside the nav. */
   children?: React.ReactNode;
 }
@@ -67,8 +74,12 @@ interface NavGroup {
 }
 
 /**
- * The items and gates of `components/DashboardSidebar`, sorted into the three groups the
- * user suggested (Skipuleggja / Bankinn / Stjórnun) plus the personal items at the bottom.
+ * The items and gates of `components/DashboardSidebar`, sorted into three groups
+ * (Skipuleggja / Bankinn / Umsjón) plus the personal items at the bottom.
+ *
+ * The admin group is "Umsjón" so that "Stjórnun" stays the name of one item, the same word
+ * as the heading of the page it opens. The personal group is "Mínar síður", the phrase
+ * Icelandic sites use for your own account pages, in the same voice as "Merkin mín".
  */
 const NAV_GROUPS: NavGroup[] = [
   { id: "home", items: [{ label: "Slóði", path: "/", icon: Home }] },
@@ -98,7 +109,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: "admin",
-    heading: "Stjórnun",
+    heading: "Umsjón",
     items: [
       { label: "Greining", path: "/analytics", icon: BarChart3, disabled: true },
       { label: "Stjórnun", path: "/admin", icon: Shield, permissionRequired: "admin" },
@@ -106,7 +117,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: "you",
-    heading: "Þú",
+    heading: "Mínar síður",
     bottom: true,
     items: [
       { label: "Prófíll", path: "/profile", icon: User, disabled: true },
@@ -156,23 +167,148 @@ function useIsPhone(ref: React.RefObject<HTMLElement | null>) {
   return isPhone;
 }
 
+/** A box in the coordinates of the scrolling nav body, so it scrolls with the items. */
+interface Box {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+interface NavGeometry {
+  /** Where the sliding marker sits: the active item (groups) or its waypoint (trail). */
+  marker: Box | null;
+  /** Centres of the waypoints, top to bottom. Trail look only. */
+  waypoints: { x: number; y: number }[];
+  width: number;
+}
+
+/**
+ * Measures the active item and the waypoints inside the nav body, and measures again
+ * whenever the body resizes, which covers the collapse animation and the phone drawer.
+ */
+function useNavGeometry(
+  bodyRef: React.RefObject<HTMLElement | null>,
+  look: SidebarLook,
+  activePath: string,
+  collapsed: boolean
+) {
+  const [geometry, setGeometry] = useState<NavGeometry | null>(null);
+  const tracks = look === "groups" || look === "trail";
+
+  const measure = useCallback(() => {
+    const body = bodyRef.current;
+    if (!body || !tracks) return;
+    const origin = body.getBoundingClientRect();
+    const toBox = (el: Element): Box => {
+      const rect = el.getBoundingClientRect();
+      return {
+        top: rect.top - origin.top + body.scrollTop,
+        left: rect.left - origin.left + body.scrollLeft,
+        width: rect.width,
+        height: rect.height,
+      };
+    };
+    const active = body.querySelector('[aria-current="page"]');
+    const markerEl = look === "trail" ? active?.querySelector("[data-waypoint]") : active;
+    const waypoints =
+      look === "trail"
+        ? Array.from(body.querySelectorAll("[data-waypoint]"), (el) => {
+            const box = toBox(el);
+            return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+          })
+        : [];
+    setGeometry({
+      marker: markerEl ? toBox(markerEl) : null,
+      waypoints,
+      width: body.clientWidth,
+    });
+  }, [bodyRef, look, tracks]);
+
+  // Measure again when the active page or the collapsed state changes.
+  useLayoutEffect(() => {
+    measure();
+  }, [measure, activePath, collapsed]);
+
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body || !tracks) return;
+    const observer = new ResizeObserver(() => measure());
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [bodyRef, measure, tracks]);
+
+  return geometry;
+}
+
+/**
+ * The trail through the waypoints. Short legs run straight from marker to marker; a long
+ * leg (the climb to the pinned items at the bottom) bows out a little, like a path on a map.
+ */
+function trailPath(points: { x: number; y: number }[]) {
+  if (points.length < 2) return "";
+  const r = (n: number) => Math.round(n * 10) / 10;
+  let d = `M ${r(points[0].x)} ${r(points[0].y)}`;
+  points.slice(1).forEach((to, index) => {
+    const from = points[index];
+    const dy = to.y - from.y;
+    const bow = Math.min(Math.max((dy - 72) * 0.1, 0), 10) * (index % 2 ? -1 : 1);
+    d +=
+      ` C ${r(from.x + bow)} ${r(from.y + dy / 3)},` +
+      ` ${r(to.x + bow)} ${r(to.y - dy / 3)}, ${r(to.x)} ${r(to.y)}`;
+  });
+  return d;
+}
+
+/** The dashed trail, drawn in from the top each time it mounts. */
+function Trail({ geometry }: { geometry: NavGeometry }) {
+  const maskId = `${useId()}-reveal`;
+  const d = trailPath(geometry.waypoints);
+  if (!d) return null;
+  const height = geometry.waypoints[geometry.waypoints.length - 1].y + 2;
+  return (
+    <svg
+      className={styles.trailMap}
+      width={geometry.width}
+      height={height}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <mask id={maskId} maskUnits="userSpaceOnUse" className={styles.trailMask}>
+        {/* A solid copy of the path that unrolls, revealing the dashes beneath it. */}
+        <path d={d} pathLength={1} className={styles.trailReveal} />
+      </mask>
+      <path d={d} className={styles.trailCasing} mask={`url(#${maskId})`} />
+      <path d={d} className={styles.trailLine} mask={`url(#${maskId})`} />
+    </svg>
+  );
+}
+
 function NavEntry({
   item,
   active,
   badge,
+  badgePops,
   onNavigate,
 }: {
   item: NavItem;
   active: boolean;
   badge: number;
-  onNavigate: () => void;
+  /** Whether the count has changed since the nav mounted, so a new count pops in. */
+  badgePops: boolean;
+  onNavigate: (path: string) => void;
 }) {
   const Icon = item.icon;
   const content = (
     <>
-      <span className={styles.icon} aria-hidden="true">
+      <span className={styles.icon} aria-hidden="true" data-waypoint="">
         <Icon />
-        {badge > 0 && <span className={styles.badge}>{badge}</span>}
+        {badge > 0 && (
+          // Keyed on the count, so each new count mounts afresh and replays the pop.
+          <span key={badge} className={`${styles.badge} ${badgePops ? styles.badgePop : ""}`}>
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
       </span>
       <span className={styles.label}>
         {item.label}
@@ -205,7 +341,7 @@ function NavEntry({
       href={item.path}
       className={`${styles.item} ${active ? styles.active : ""}`}
       aria-current={active ? "page" : undefined}
-      onClick={onNavigate}
+      onClick={() => onNavigate(item.path)}
     >
       {content}
     </Link>
@@ -229,16 +365,41 @@ export default function SidebarLab({
   onCollapsedChange,
   drawerOpen = false,
   navLabel = "Aðalvalmynd",
+  activePath,
+  onNavigate,
   children,
 }: SidebarLabProps) {
-  const pathname = usePathname() ?? "/";
+  const routerPath = usePathname();
+  const pathname = activePath ?? routerPath ?? "/";
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
   const [open, setOpen] = useState(drawerOpen);
+  // Set by the first collapse or expand, so the labels fade in only after a real toggle.
+  const [toggled, setToggled] = useState(false);
+  // Bumped each time the nav opens (drawer or expand), which remounts and redraws the trail.
+  const [trailRun, setTrailRun] = useState(0);
+
+  // The badge pops only when its count changes after mount, not on the first paint.
+  const [shownBadge, setShownBadge] = useState(badgeCount);
+  const [badgePops, setBadgePops] = useState(false);
+  if (shownBadge !== badgeCount) {
+    setShownBadge(badgeCount);
+    setBadgePops(true);
+  }
 
   const shellRef = useRef<HTMLDivElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const navBodyRef = useRef<HTMLDivElement>(null);
   const isPhone = useIsPhone(shellRef);
+  const geometry = useNavGeometry(navBodyRef, look, pathname, isCollapsed);
+  // The marker slides only once it has been placed, so it doesn't fly in from the corner.
+  const [markerPlaced, setMarkerPlaced] = useState(false);
+  const hasMarker = Boolean(geometry?.marker);
+  useEffect(() => {
+    if (!hasMarker || markerPlaced) return;
+    const frame = requestAnimationFrame(() => setMarkerPlaced(true));
+    return () => cancelAnimationFrame(frame);
+  }, [hasMarker, markerPlaced]);
   const drawerActive = open && isPhone;
 
   const close = useCallback(() => setOpen(false), []);
@@ -257,7 +418,19 @@ export default function SidebarLab({
   const toggleCollapsed = () => {
     const next = !isCollapsed;
     setIsCollapsed(next);
+    setToggled(true);
+    if (!next) setTrailRun((run) => run + 1);
     onCollapsedChange?.(next);
+  };
+
+  const toggleDrawer = () => {
+    if (!open) setTrailRun((run) => run + 1);
+    setOpen(!open);
+  };
+
+  const navigate = (path: string) => {
+    close();
+    onNavigate?.(path);
   };
 
   const groups = NAV_GROUPS.map((group) => ({
@@ -289,7 +462,8 @@ export default function SidebarLab({
                 item={item}
                 active={isActivePath(pathname, item.path)}
                 badge={item.path === "/badges" ? badgeCount : 0}
-                onNavigate={close}
+                badgePops={badgePops}
+                onNavigate={navigate}
               />
             </li>
           ))}
@@ -307,6 +481,8 @@ export default function SidebarLab({
       className={`${styles.shell} ${styles[look]}`}
       data-collapsed={isCollapsed}
       data-open={open}
+      data-toggled={toggled}
+      data-marker={markerPlaced && hasMarker ? "placed" : undefined}
     >
       <div className={styles.layout}>
         <a href={`#${contentId}`} className={styles.skipLink}>
@@ -318,7 +494,7 @@ export default function SidebarLab({
             ref={menuButtonRef}
             type="button"
             className={styles.menuButton}
-            onClick={() => setOpen((value) => !value)}
+            onClick={toggleDrawer}
             aria-expanded={open}
             aria-controls={drawerId}
             aria-label={open ? "Loka valmynd" : "Opna valmynd"}
@@ -337,7 +513,21 @@ export default function SidebarLab({
 
         <div ref={drawerRef} id={drawerId} className={styles.drawer}>
           <nav aria-label={navLabel} className={styles.nav}>
-            <div className={styles.navBody}>{groups.map(renderGroup)}</div>
+            <div ref={navBodyRef} className={styles.navBody}>
+              {look === "trail" && geometry && <Trail key={trailRun} geometry={geometry} />}
+              {geometry?.marker && (
+                <span
+                  className={styles.marker}
+                  aria-hidden="true"
+                  style={{
+                    width: geometry.marker.width,
+                    height: geometry.marker.height,
+                    transform: `translate(${geometry.marker.left}px, ${geometry.marker.top}px)`,
+                  }}
+                />
+              )}
+              {groups.map(renderGroup)}
+            </div>
             <div className={styles.navFoot}>
               <button
                 type="button"

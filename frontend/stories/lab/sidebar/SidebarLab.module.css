@@ -80,6 +80,7 @@
 }
 
 .navBody {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -89,8 +90,32 @@
   overflow-y: auto;
 }
 
+/* The groups sit above the sliding marker and the trail. */
+.group {
+  position: relative;
+  z-index: 1;
+}
+
 .groupBottom {
   margin-top: auto;
+}
+
+/* The sliding marker: the pill in the groups look, the ring in the trail look. Placed by
+   JS in nav-body coordinates; it slides only once it has been placed the first time. */
+.marker {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.shell[data-marker="placed"] .marker {
+  transition:
+    transform var(--sl-transition-base),
+    width var(--sl-transition-base),
+    height var(--sl-transition-base);
 }
 
 .navFoot {
@@ -230,7 +255,12 @@
   box-shadow: 0 0 0 2px hsl(var(--nav-bg));
   font-size: var(--sl-text-xs);
   font-weight: var(--sl-primitive-font-weight-bold);
+  font-variant-numeric: tabular-nums;
   line-height: 1;
+}
+/* A new count pops in. Scale only, so the number is always fully legible. */
+.badgePop {
+  animation: badge-pop var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out);
 }
 
 /* ── The page beside the nav ── */
@@ -319,6 +349,14 @@
     font-weight: var(--sl-font-weight-medium);
     pointer-events: none;
     transform: translateY(-50%);
+    animation: tip-in var(--sl-transition-fast);
+  }
+
+  /* After a real expand, the labels, headings and tags fade in as the column widens. */
+  .shell[data-toggled="true"][data-collapsed="false"] .label,
+  .shell[data-toggled="true"][data-collapsed="false"] .heading,
+  .shell[data-toggled="true"][data-collapsed="false"] .soon {
+    animation: nav-fade-in var(--sl-transition-base);
   }
 }
 
@@ -366,6 +404,18 @@
     transform: none;
     box-shadow: var(--sl-shadow-modal);
     transition: transform var(--sl-transition-base);
+    /* Opening, it slides a touch past its edge and settles back. */
+    animation: drawer-in var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out);
+  }
+  /* Fills the sliver left of the drawer while it overshoots. */
+  .drawer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 100%;
+    bottom: 0;
+    width: var(--sl-spacing-md);
+    background: hsl(var(--nav-bg));
   }
 
   .backdrop {
@@ -374,6 +424,7 @@
     inset: 0;
     z-index: var(--sl-z-overlay);
     background: hsl(var(--sl-color-overlay-base));
+    animation: nav-fade-in var(--sl-transition-base);
   }
 
   /* No collapsing on a phone. */
@@ -478,38 +529,74 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   B · Groups: section headings, active item a solid pill.
+   B · Groups: section headings, the active item a solid pill that slides
+   from item to item when the page changes.
    ══════════════════════════════════════════════════════════════════════ */
 .groups {
   --nav-w: 16rem;
   --nav-bg: var(--sl-color-surface-secondary);
   --nav-edge: var(--sl-color-border-subtle);
-  --nav-hover: var(--sl-color-surface-active);
+  /* surface-active is the same shade as surface-secondary in light, so hover went unseen. */
+  --nav-hover: var(--sl-color-surface-tertiary);
+  --nav-pressed: var(--sl-color-border-subtle);
   --nav-active-bg: var(--sl-color-primary-text);
   --nav-active-fg: var(--sl-color-text-inverse);
 }
 
+/* Rhythm: 4px between items, 8px from a heading to its items, 20px between groups. */
 .groups .navBody {
-  gap: var(--sl-spacing-stack-md);
+  gap: var(--sl-primitive-space-5);
+  padding-top: var(--sl-spacing-md);
 }
 
+.groups .item {
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-base),
+    transform var(--sl-transition-fast);
+}
+.groups .item:not(.disabled):not(.active):active {
+  background: hsl(var(--nav-pressed));
+  transform: scale(0.98);
+}
+
+/* The heading's first letter lines up with the icons beneath it. */
 .groups .heading {
   position: static;
   width: auto;
   height: auto;
-  margin: 0 0 var(--sl-spacing-xs);
-  padding: 0 var(--sl-spacing-sm);
+  margin: 0 0 var(--sl-spacing-gap-sm);
+  padding: 0 calc(var(--sl-spacing-sm) + (2rem - var(--sl-size-icon-md)) / 2);
   overflow: visible;
   clip: auto;
   color: hsl(var(--sl-color-text-secondary));
   font-size: var(--sl-text-overline);
   font-weight: var(--sl-font-weight-semibold);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--sl-primitive-letter-spacing-widest);
   line-height: var(--sl-line-height-normal);
   text-transform: uppercase;
 }
 
+/* The pill. Before it has been measured, the active item paints its own. */
+.groups .marker {
+  display: block;
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--nav-active-bg));
+  box-shadow: var(--sl-shadow-card);
+}
+.groups[data-marker="placed"] .active,
+.groups[data-marker="placed"] .active:hover {
+  background: transparent;
+}
+.groups .active .badge {
+  box-shadow: 0 0 0 2px hsl(var(--nav-active-bg));
+}
+
 @container sl-shell (min-width: 768px) {
+  .groups .item {
+    min-height: 2.75rem;
+  }
+
   .groups[data-collapsed="true"] .heading {
     position: absolute;
     width: 1px;
@@ -522,34 +609,147 @@
   .groups[data-collapsed="true"] .navBody {
     gap: var(--sl-spacing-stack-sm);
   }
+  .groups[data-collapsed="true"] .item {
+    min-height: 3rem;
+  }
+  /* Collapsed, a short centred rule stands in for each heading. */
+  .groups[data-collapsed="true"] .group + .group {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .groups[data-collapsed="true"] .group + .group::before {
+    content: "";
+    display: block;
+    width: 1.5rem;
+    height: 2px;
+    margin: 0 auto var(--sl-spacing-stack-sm);
+    border-radius: var(--sl-radius-pill);
+    background: hsl(var(--sl-color-border));
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   C · Trail: the items are waypoints on a dashed trail. The active one is
-   filled in, ringed like a painted trail marker, and says "Þú ert hér".
+   C · Trail: a hiking map. The items are waypoints on a dashed trail that
+   draws itself in; the groups are place names along it. The active
+   waypoint is filled in and ringed in trail-marker yellow, the ring walks
+   to the next waypoint when the page changes, and a "Þú ert hér" tag
+   hops into place beside it.
    ══════════════════════════════════════════════════════════════════════ */
 .trail {
   --nav-w: 17rem;
+  /* The yellow of the painted trail stakes: darker in light, brighter in dark. */
+  --trail-ink: var(--sl-color-accent-hover);
+  --trail-ring: var(--sl-color-accent);
 }
 
-.trail .list::before {
+/* Faint contour lines round a hill off the bottom corner, fading out upwards. */
+.trail .nav {
+  position: relative;
+}
+.trail .nav::before {
   content: "";
   position: absolute;
-  top: var(--sl-spacing-sm);
-  bottom: var(--sl-spacing-sm);
-  left: calc(var(--sl-spacing-sm) + 1rem - 1px);
-  border-left: 2px dashed hsl(var(--sl-color-border-strong));
+  inset: 0;
+  pointer-events: none;
+  background: repeating-radial-gradient(
+    circle at 115% 100%,
+    transparent 0 1.5rem,
+    hsl(var(--sl-color-border-subtle)) 1.5rem calc(1.5rem + 1px)
+  );
+  mask-image: linear-gradient(to top, hsl(var(--sl-color-text-primary)), transparent 70%);
+}
+.trail .navBody,
+.trail .navFoot {
+  position: relative;
 }
 
+.trail .trailMap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.trail .trailMask {
+  mask-type: alpha;
+}
+.trail .trailReveal {
+  fill: none;
+  stroke: hsl(var(--sl-color-text-primary));
+  stroke-width: 16;
+  stroke-dasharray: 1 1;
+  animation: trail-draw var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out) both;
+}
+/* A soft band under the dashes, like a route picked out on a printed map. */
+.trail .trailCasing {
+  fill: none;
+  stroke: hsl(var(--trail-ink));
+  stroke-opacity: 0.16;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+.trail .trailLine {
+  fill: none;
+  stroke: hsl(var(--trail-ink));
+  stroke-width: 2.5;
+  stroke-dasharray: 3 6;
+  stroke-linecap: round;
+}
+
+/* Place names: italic and spaced out, set in the label column. */
+.trail .heading {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0 0 var(--sl-spacing-xs);
+  padding: 0 0 0 calc(var(--sl-spacing-sm) + 2rem + var(--sl-spacing-gap-sm));
+  overflow: visible;
+  clip: auto;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-overline);
+  font-style: italic;
+  font-weight: var(--sl-font-weight-medium);
+  letter-spacing: var(--sl-primitive-letter-spacing-widest);
+  line-height: var(--sl-line-height-normal);
+  text-transform: uppercase;
+}
+
+/* Each waypoint has a halo in the nav colour, so the trail stops just short of it. */
 .trail .icon {
   box-sizing: border-box;
   border: 2px solid hsl(var(--sl-color-border-strong));
   border-radius: var(--sl-radius-pill);
   background: hsl(var(--nav-bg));
+  box-shadow: 0 0 0 3px hsl(var(--nav-bg));
+  transition:
+    background-color var(--sl-transition-base),
+    border-color var(--sl-transition-base),
+    color var(--sl-transition-base),
+    transform var(--sl-transition-fast);
 }
 .trail .icon svg {
   width: 1rem;
   height: 1rem;
+}
+.trail .item:hover {
+  background: transparent;
+}
+.trail .item:not(.disabled):hover .icon {
+  border-color: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-primary-text));
+}
+.trail .item:not(.disabled):active .icon {
+  transform: scale(0.9);
+}
+.trail .item:not(.disabled):hover .label {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+/* Not built yet: a waypoint on a trail still to be laid. */
+.trail .disabled .icon {
+  border-style: dashed;
 }
 
 .trail .active,
@@ -563,25 +763,85 @@
   color: hsl(var(--sl-color-text-inverse));
   box-shadow:
     0 0 0 2px hsl(var(--nav-bg)),
-    0 0 0 5px hsl(var(--sl-color-accent));
+    0 0 0 5px hsl(var(--trail-ring));
+  animation: waypoint-arrive var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out);
+}
+.trail .active:hover .icon {
+  color: hsl(var(--sl-color-text-inverse));
+}
+/* A soft ping from the waypoint as it becomes the one you're on. */
+.trail .active .icon::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid hsl(var(--trail-ring));
+  border-radius: var(--sl-radius-pill);
+  opacity: 0;
+  pointer-events: none;
+  animation: waypoint-ping var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out);
 }
 
+/* The ring that walks between waypoints. Before it is measured, the active one wears it. */
+.trail .marker {
+  display: block;
+  z-index: 2;
+  border-radius: var(--sl-radius-pill);
+  box-shadow:
+    0 0 0 2px hsl(var(--nav-bg)),
+    0 0 0 5px hsl(var(--trail-ring));
+}
+.trail[data-marker="placed"] .active .icon {
+  box-shadow: none;
+}
+
+/* "Þú ert hér": a map label with a point towards the waypoint. */
 .trail .here {
-  display: inline;
+  position: relative;
+  display: inline-flex;
   flex: none;
-  color: hsl(var(--sl-color-primary-text));
+  align-items: center;
+  height: 1.25rem;
+  margin-left: var(--sl-spacing-xs);
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
   font-size: var(--sl-text-xs);
   font-weight: var(--sl-font-weight-semibold);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-wide);
+  line-height: 1;
+  white-space: nowrap;
+  transform-origin: left center;
+  animation: here-hop var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out);
+}
+.trail .here::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  border: 0.3125rem solid transparent;
+  border-right-color: hsl(var(--sl-color-primary-text));
+  border-left-width: 0;
+  transform: translateY(-50%);
 }
 
 @container sl-shell (min-width: 768px) {
-  .trail[data-collapsed="true"] .list::before {
-    left: calc(50% - 1px);
+  .trail[data-collapsed="true"] .heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
   }
+  /* Collapsed, the trail runs unbroken down the middle; no rules between groups. */
   .trail[data-collapsed="true"] .group + .group {
+    padding-top: 0;
     border-top: 0;
+  }
+  .trail[data-collapsed="true"] .navBody {
+    gap: var(--sl-spacing-stack-xs);
   }
 }
 
@@ -704,11 +964,101 @@
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   Motion. Every animation is short (150–350ms), runs on transform or
+   opacity only where text is involved, and never blocks a click.
+   ══════════════════════════════════════════════════════════════════════ */
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translate(-0.25rem, -50%);
+  }
+}
+
+@keyframes nav-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes drawer-in {
+  0% {
+    transform: translateX(-100%);
+  }
+  70% {
+    transform: translateX(0.5rem);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* The trail unrolls from the top. pathLength="1" makes the offset a fraction. */
+@keyframes trail-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes waypoint-arrive {
+  0% {
+    transform: scale(0.85);
+  }
+  55% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes waypoint-ping {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes here-hop {
+  0% {
+    transform: translateY(-0.375rem) scale(0.9);
+  }
+  55% {
+    transform: translateY(0.0625rem) scale(1.02);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* Reduced motion: nothing animates or slides. The tokens already drop to 0ms; this also
+   stops the keyframe animations and the transitions timed with primitive durations.
+   1ms rather than none, so transitionend still fires for anything waiting on it. */
 @media (prefers-reduced-motion: reduce) {
-  .drawer,
-  .item,
-  .rail .icon {
-    transition-duration: 1ms;
-    transition-delay: 0s;
+  .shell *,
+  .shell *::before,
+  .shell *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
   }
 }
