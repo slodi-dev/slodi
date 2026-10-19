@@ -147,27 +147,79 @@
 
 /* ===== ACTIVE CHIP ===== */
 
+/* One chip, several greens. Each tone sets the same three variables, so a chip
+   changes meaning without changing shape (Lab/ActiveChip, 2026-10-19). */
 .activeChip {
+  --chip-bg: var(--sl-color-primary-subtle);
+  --chip-fg: var(--sl-color-success-text);
+  --chip-edge: var(--sl-color-primary-subtle);
   display: inline-flex;
   align-items: center;
-  gap: var(--sl-spacing-gap-xs, 0.25rem);
-  padding: var(--sl-primitive-space-1, 0.25rem) var(--sl-spacing-inset-sm, 0.75rem);
-  background-color: hsl(var(--sl-color-primary-subtle, 142 50% 96%));
-  color: hsl(var(--sl-color-success-text, 142 50% 22%));
-  border-radius: var(--sl-radius-chip, 9999px);
-  font-size: var(--sl-text-caption, 0.875rem);
+  gap: var(--sl-spacing-gap-xs);
+  padding: var(--sl-primitive-space-1) var(--sl-spacing-inset-sm);
+  background-color: hsl(var(--chip-bg));
+  color: hsl(var(--chip-fg));
+  border: 1px solid hsl(var(--chip-edge));
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-caption);
   font-family: var(--sl-font-family-body);
-  line-height: var(--sl-line-height-body, 1.5);
+  line-height: var(--sl-line-height-body);
   max-width: 100%;
+}
+
+/* Picked from a set. Full strength. */
+.activeChipSelected {
+  --chip-bg: var(--sl-color-primary);
+  --chip-fg: var(--sl-color-text-inverse);
+  --chip-edge: var(--sl-color-primary);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+/* Offered but not applied. */
+.activeChipSuggested {
+  --chip-bg: var(--sl-color-surface);
+  --chip-fg: var(--sl-color-primary-text);
+  --chip-edge: var(--sl-color-primary-border);
+  border-style: dashed;
+}
+
+/* A fact about the item, not clickable. */
+.activeChipStatus {
+  --chip-bg: var(--sl-color-surface);
+  --chip-fg: var(--sl-color-success-text);
+  --chip-edge: var(--sl-color-success-text);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* A category or færnimerki that should stand out. */
+.activeChipDeep {
+  --chip-bg: var(--sl-color-primary-active);
+  --chip-fg: var(--sl-color-text-inverse);
+  --chip-edge: var(--sl-color-primary-active);
 }
 
 /* Static status chip marking content a moderator has hidden. Dashed border and
    an eye-slash icon so the state never rests on colour alone. */
 .activeChipHidden {
-  background-color: hsl(var(--sl-color-surface-tertiary));
-  color: hsl(var(--sl-color-text-secondary));
-  border: 1px dashed hsl(var(--sl-color-border-strong));
+  --chip-bg: var(--sl-color-surface-tertiary);
+  --chip-fg: var(--sl-color-text-secondary);
+  --chip-edge: var(--sl-color-border-strong);
+  border-style: dashed;
   font-weight: var(--sl-font-weight-medium);
+}
+
+.activeChipCount {
+  min-width: 1.5em;
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--chip-fg));
+  color: hsl(var(--chip-bg));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  text-align: center;
 }
 
 .activeChipIcon {
@@ -192,7 +244,7 @@
   border: none;
   background: none;
   cursor: pointer;
-  color: hsl(var(--sl-color-success-text, 142 50% 22%));
+  color: inherit;
   border-radius: var(--sl-primitive-radius-full, 9999px);
   flex-shrink: 0;
   line-height: 1;
@@ -200,12 +252,12 @@
 }
 
 .activeChipRemove:hover {
-  background-color: hsl(var(--sl-color-primary-muted, 142 50% 90%));
+  background-color: hsl(var(--chip-fg) / 0.12);
 }
 
 .activeChipRemove:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 32%));
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--sl-shadow-focus);
 }
 
 .activeChipRemoveIcon {

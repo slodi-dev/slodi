@@ -9,13 +9,30 @@ interface ActiveChipProps {
   /** Omit for a static, non-removable chip (a status label rather than a filter). */
   onRemove?: () => void;
   /**
-   * `hidden` is the muted, dashed, eye-slashed status chip used to mark content
-   * a moderator has hidden. The icon and the label carry the meaning; the
-   * colour only supports them.
+   * What the chip means. The shape stays the same; the green changes (picked in
+   * Lab/ActiveChip, 2026-10-19):
+   * - `active` — an applied filter you can remove (the default).
+   * - `selected` — the one picked from a set, e.g. ALLT / DAGSKRÁ / LEIKUR. Full strength.
+   * - `suggested` — offered but not applied: "add this filter", an optional tag. Dashed.
+   * - `status` — a fact about the item, not clickable: "Staðfest".
+   * - `deep` — a category or færnimerki that should stand out.
+   * - `hidden` — the muted, dashed, eye-slashed chip marking content a moderator
+   *   has hidden. The icon and the label carry the meaning; the colour only supports them.
    */
-  tone?: "active" | "hidden";
+  tone?: "active" | "selected" | "suggested" | "status" | "deep" | "hidden";
+  /** A number in its own bubble, e.g. how many items match. */
+  count?: number;
   className?: string;
 }
+
+const TONE_CLASS: Record<NonNullable<ActiveChipProps["tone"]>, string | undefined> = {
+  active: undefined,
+  selected: styles.activeChipSelected,
+  suggested: styles.activeChipSuggested,
+  status: styles.activeChipStatus,
+  deep: styles.activeChipDeep,
+  hidden: styles.activeChipHidden,
+};
 
 /**
  * A chip. With `onRemove` it is a removable filter chip for the active filter
@@ -25,12 +42,11 @@ export default function ActiveChip({
   label,
   onRemove,
   tone = "active",
+  count,
   className,
 }: ActiveChipProps) {
   return (
-    <span
-      className={cn(styles.activeChip, tone === "hidden" && styles.activeChipHidden, className)}
-    >
+    <span className={cn(styles.activeChip, TONE_CLASS[tone], className)}>
       {tone === "hidden" && (
         <svg
           className={styles.activeChipIcon}
@@ -50,6 +66,7 @@ export default function ActiveChip({
         </svg>
       )}
       <span className={styles.activeChipLabel}>{label}</span>
+      {count !== undefined && <span className={styles.activeChipCount}>{count}</span>}
       {onRemove && (
         <button
           type="button"
