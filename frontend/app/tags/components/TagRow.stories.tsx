@@ -1,21 +1,20 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { tags } from "@/stories/fixtures";
 import TagRow from "./TagRow";
+import { SAMPLE_TAGS } from "./tagStoryMocks";
 
 const meta = {
   title: "Components/Stjórnun/TagRow",
   component: TagRow,
   args: {
-    tag: tags[0],
+    tag: SAMPLE_TAGS[0],
+    usageCount: 23,
     isEditing: false,
-    isDeleting: false,
-    contentCount: 12,
     onEdit: fn(),
+    onCancelEdit: fn(),
+    validateName: () => null,
+    onRename: fn(async () => {}),
     onRequestDelete: fn(),
-    onSave: fn(async () => {}),
-    onDelete: fn(async () => {}),
-    onCancel: fn(),
   },
   decorators: [
     (Story) => (
@@ -28,9 +27,8 @@ const meta = {
     docs: {
       description: {
         component:
-          "One row of the tag table: view, edit and confirm-delete states. Known issue sc-549 " +
-          "(story `components-stjórnun-tagrow--editing`): the edit input's focus ring uses " +
-          "`--sl-input-shadow-focus`, which resolves to an invalid box-shadow.",
+          "One tag on the tag page: its name and how many items use it, renamed in place. " +
+          "„Eyða“ opens the page's confirmation dialog.",
       },
     },
   },
@@ -41,18 +39,18 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const Unused: Story = { args: { contentCount: 0 } };
+/** The search text marked in the name. */
+export const SearchHit: Story = { args: { query: "líf" } };
 
-export const CountUnknown: Story = { args: { contentCount: undefined } };
+/** Exactly what was typed in the field: highlighted and marked „Er til“. */
+export const ExactMatch: Story = { args: { query: "Útilíf", isMatch: true } };
+
+export const Unused: Story = { args: { usageCount: 0 } };
+
+export const CountUnknown: Story = { args: { usageCount: null } };
 
 export const Editing: Story = { args: { isEditing: true } };
 
-export const ConfirmDelete: Story = { args: { isDeleting: true } };
-
-export const ConfirmDeleteUnused: Story = { args: { isDeleting: true, contentCount: 0 } };
-
 export const LongName: Story = {
-  args: {
-    tag: { id: "t-long", name: "samfélagsverkefni-og-umhverfisvernd-í-nærumhverfinu-2026" },
-  },
+  args: { tag: SAMPLE_TAGS[12], usageCount: 2 },
 };

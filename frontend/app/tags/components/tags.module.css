@@ -1,0 +1,424 @@
+/* The tag-management page (Lab/Tag management, look A · Find or create). Every colour, size and
+   space is a token, so it works in light, dark and the patrol themes. The narrow layout keys off
+   the page's own width (a container query), so it behaves the same on a phone and in a narrow
+   column. Shared by TagManagement, TagCreateInput, TagNameField, TagRow and TagDeleteDialog. */
+
+.page {
+  /* 44px hit area; 48px at phone width (UX rule 8). */
+  --hit: calc(var(--sl-size-button-md) + var(--sl-spacing-xs));
+  max-width: var(--sl-content-max-width);
+  margin: 0 auto;
+  padding: var(--sl-spacing-inset-lg) var(--sl-spacing-inset-md);
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* The size container for the page content. The delete dialog is outside it: it covers the
+   viewport, so its phone layout follows the viewport (media query below). */
+.body {
+  container: tagpage / inline-size;
+  display: grid;
+  gap: var(--sl-spacing-md);
+}
+
+/* ── Header ── */
+.header {
+  display: grid;
+  gap: var(--sl-spacing-xs);
+}
+.title {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-2);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+}
+.lede,
+.total {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  color: hsl(var(--sl-color-text-link));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+/* ── Buttons ── */
+.primaryBtn,
+.secondaryBtn,
+.quietBtn,
+.dangerBtn,
+.deleteBtn,
+.noticeClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  padding: 0 var(--sl-spacing-inset-sm);
+  border-radius: var(--sl-button-radius);
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+.primaryBtn {
+  border: 1px solid hsl(var(--sl-button-border-primary));
+  background: hsl(var(--sl-button-background-primary));
+  color: hsl(var(--sl-button-text-primary));
+}
+.primaryBtn:hover:not(:disabled) {
+  background: hsl(var(--sl-button-background-primary-hover));
+}
+.secondaryBtn {
+  justify-self: start;
+  border: 1px solid hsl(var(--sl-color-primary-border));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-primary-text));
+}
+.quietBtn {
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+}
+.secondaryBtn:hover,
+.quietBtn:hover:not([aria-disabled="true"]) {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.quietBtn[aria-disabled="true"] {
+  cursor: default;
+  opacity: var(--sl-opacity-disabled);
+}
+/* The row's "Eyða": red outline, since it only opens the dialog. */
+.dangerBtn {
+  border: 1px solid hsl(var(--sl-color-error));
+  background: transparent;
+  color: hsl(var(--sl-color-error-text));
+}
+.dangerBtn:hover {
+  background: hsl(var(--sl-color-error-subtle));
+}
+/* The dialog's "Eyða merkimiða": filled red, it does the deleting. */
+.deleteBtn {
+  border: 1px solid hsl(var(--sl-button-background-danger));
+  background: hsl(var(--sl-button-background-danger));
+  color: hsl(var(--sl-button-text-danger));
+}
+.deleteBtn:hover:not(:disabled) {
+  border-color: hsl(var(--sl-button-background-danger-hover));
+  background: hsl(var(--sl-button-background-danger-hover));
+}
+.primaryBtn:disabled,
+.deleteBtn:disabled {
+  cursor: progress;
+  opacity: var(--sl-opacity-disabled);
+}
+
+/* One focus style for everything: --sl-shadow-focus, with a transparent outline that shows up
+   in forced-colours mode. The dialog is inside the page, so it gets it too. */
+.page :is(button, input, a):focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* ── Name field (create and rename) ── */
+.field {
+  display: grid;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+}
+.fieldLabel {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+}
+.fieldRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-sm);
+}
+.input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  min-height: var(--hit);
+  padding: 0 var(--sl-input-padding-x);
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-input-radius);
+  background: hsl(var(--sl-input-background));
+  color: hsl(var(--sl-input-text));
+  font: inherit;
+  /* 16px at least, so iOS doesn't zoom when it's tapped. */
+  font-size: var(--sl-input-font-size);
+}
+.input:hover {
+  border-color: hsl(var(--sl-input-border-hover));
+}
+.input[aria-invalid="true"] {
+  border-color: hsl(var(--sl-input-border-error));
+}
+.page .input[aria-invalid="true"]:focus-visible {
+  box-shadow: var(--sl-shadow-focus-error);
+}
+.fieldMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sl-spacing-sm);
+}
+.hint,
+.counter,
+.resultCount {
+  margin: 0;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.counter {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.counterOver {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-error-text));
+}
+.fieldError {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-error-text));
+}
+.fieldError:empty {
+  display: none;
+}
+.renameField {
+  grid-column: 1 / -1;
+}
+.resultCount:empty {
+  display: none;
+}
+
+/* ── Status line ── */
+.noticeEmpty:empty {
+  display: none;
+}
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  padding: var(--sl-spacing-xs) var(--sl-spacing-xs) var(--sl-spacing-xs) var(--sl-spacing-inset-sm);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-body-sm);
+}
+.noticeText {
+  flex: 1 1 14rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.noticeClose {
+  min-width: var(--hit);
+  border: 1px solid transparent;
+  background: transparent;
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+/* ── Load states ── */
+.skeleton {
+  display: grid;
+  gap: var(--sl-spacing-sm);
+}
+.skeletonBlock {
+  display: block;
+  height: var(--hit);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-secondary));
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.skeletonBlock[data-n="1"] {
+  width: 85%;
+}
+.skeletonBlock[data-n="2"] {
+  width: 92%;
+}
+.skeletonBlock[data-n="3"] {
+  width: 78%;
+}
+@keyframes pulse {
+  50% {
+    opacity: var(--sl-opacity-muted);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeletonBlock {
+    animation: none;
+  }
+}
+.loadError {
+  display: grid;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-inset-md);
+  border: 1px solid hsl(var(--sl-color-error));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-error-subtle));
+}
+.loadErrorTitle,
+.loadErrorBody,
+.emptyTitle,
+.emptyBody {
+  margin: 0;
+}
+.loadErrorTitle,
+.emptyTitle {
+  font-weight: var(--sl-font-weight-semibold);
+}
+.loadErrorTitle {
+  color: hsl(var(--sl-color-error-text));
+}
+.empty {
+  display: grid;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-inset-lg) var(--sl-spacing-inset-md);
+  border: 1px dashed hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-sm);
+  overflow-wrap: anywhere;
+}
+.empty .secondaryBtn {
+  white-space: normal;
+}
+.emptyBody {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── Rows ── */
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid hsl(var(--sl-color-border));
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--sl-spacing-sm) var(--sl-spacing-md);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-xs);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+.rowMatch {
+  background: hsl(var(--sl-color-primary-subtle));
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary));
+}
+.rowName {
+  font-weight: var(--sl-font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+.flag {
+  margin-left: var(--sl-spacing-sm);
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  white-space: nowrap;
+}
+.mark {
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: inherit;
+}
+.usage {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: nowrap;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-sm);
+}
+
+/* ── Pages ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-sm);
+}
+.pageInfo {
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Delete dialog ── */
+.dialogBody {
+  display: grid;
+  gap: var(--sl-spacing-sm);
+}
+.dialogText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.dialogName {
+  font-weight: var(--sl-font-weight-semibold);
+}
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sl-spacing-sm);
+  margin-top: var(--sl-spacing-sm);
+}
+
+/* ══ Phone width ══ */
+@container tagpage (max-width: 40rem) {
+  /* A container can't query itself, so the larger target is set on what's inside it. */
+  .body > * {
+    --hit: var(--sl-size-button-lg);
+  }
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .row .actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .row .usage {
+    white-space: normal;
+    text-align: end;
+  }
+  .fieldRow > .input {
+    flex-basis: 100%;
+  }
+}
+
+/* The dialog is outside the container, so it follows the viewport. */
+@media (max-width: 40rem) {
+  .dialogBody {
+    --hit: var(--sl-size-button-lg);
+  }
+  .dialogActions > * {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .input,
+  .quietBtn {
+    border-width: 2px;
+  }
+}

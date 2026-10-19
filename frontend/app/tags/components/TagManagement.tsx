@@ -1,212 +1,371 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useTags } from "@/hooks/useTags";
-import { updateTag, deleteTag } from "@/services/tags.service";
-import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
-import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
-import { hasPermission } from "@/services/users.service";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import usePrograms from "@/hooks/usePrograms";
-import TagCreateInput from "./TagCreateInput";
-import TagRow from "./TagRow";
-import styles from "./TagManagement.module.css";
 import { countIs } from "@/lib/format";
+import { deleteTag, TagRequestError, updateTag, type Tag } from "@/services/tags.service";
+import { hasPermission } from "@/services/users.service";
+import { useTagList } from "../hooks/useTagList";
+import { useTagListUrl, useWriteTagListUrl } from "../hooks/useTagListUrl";
+import { useTagUsage } from "../hooks/useTagUsage";
+import { sameName, searchTags, validateTagName } from "../tagRules";
+import TagCreateInput from "./TagCreateInput";
+import TagDeleteDialog from "./TagDeleteDialog";
+import TagRow from "./TagRow";
+import styles from "./tags.module.css";
 
 const PAGE_SIZE = 20;
 
+/** Focus `fallback` if the element that had focus has just been removed. */
+function rescueFocus(fallback: React.RefObject<HTMLElement | null>) {
+  setTimeout(() => {
+    const active = document.activeElement;
+    if (!active || active === document.body) fallback.current?.focus();
+  }, 0);
+}
+
+/**
+ * The moderators' page for the bank's shared merkimiðar: one field that
+ * searches and creates, rename in place, and delete behind a confirmation.
+ *
+ * Gated by platform permission rather than workspace role: the vocabulary is
+ * shared by the whole bank, so a rename reaches every item in it. That belongs
+ * to Dagskrárstjórnarteymið, not to an editor of one workspace.
+ */
 export default function TagManagement() {
-  const defaultWorkspaceId = useDefaultWorkspaceId();
   const { user, isLoading: authLoading, getToken } = useAuth();
-  const { isLoading: roleLoading } = useWorkspaceRole(defaultWorkspaceId);
-  const { tags, loading, error, refetch } = useTags();
-  const { programs } = usePrograms(defaultWorkspaceId);
+  const isModerator = hasPermission(user?.permissions, "moderator");
+  const list = useTagList(!authLoading && isModerator);
+  const url = useTagListUrl();
+  const { query, setQuery } = url;
 
-  // Count how many programs use each tag
-  const tagUsageCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    if (programs) {
-      for (const program of programs) {
-        for (const tag of program.tags || []) {
-          counts[tag.id] = (counts[tag.id] || 0) + 1;
-        }
-      }
-    }
-    return counts;
-  }, [programs]);
-
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [page, setPage] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<{ tag: Tag; trigger: HTMLElement } | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const noticeSeq = useRef(0);
+  const fieldRef = useRef<HTMLInputElement>(null);
+  const formId = useId();
 
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const say = useCallback((text: string) => {
+    setNotice({ key: ++noticeSeq.current, text });
+  }, []);
+  const dismissNotice = useCallback(() => setNotice(null), []);
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      setDebouncedSearch(value);
-      setPage(0);
-    }, 300);
+  const matches = useMemo(() => searchTags(list.tags, query), [list.tags, query]);
+  const exactMatch = query.trim() ? matches.find((t) => sameName(t.name, query)) : undefined;
+  const pageCount = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
+  const page = Math.min(url.page, pageCount);
+  const shown = useMemo(
+    () => matches.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [matches, page]
+  );
+  const usage = useTagUsage(useMemo(() => shown.map((t) => t.id), [shown]));
+
+  useWriteTagListUrl(url.writeUrl, query, page, list.status === "ready");
+
+  const handleCreated = (tag: Tag) => {
+    list.add(tag);
+    usage.setCount(tag.id, 0);
+    say(`„${tag.name}“ bætt við.`);
   };
 
-  // Client-side filtering
-  const filteredTags = useMemo(() => {
-    if (!tags) return [];
-    const q = debouncedSearch.trim().toLowerCase();
-    if (!q) return tags;
-    return tags.filter((tag) => tag.name.toLowerCase().includes(q));
-  }, [tags, debouncedSearch]);
+  const rename = async (tag: Tag, name: string) => {
+    const saved = await updateTag(tag.id, name, getToken);
+    const newName = typeof saved?.name === "string" ? saved.name : name;
+    list.replace({ ...tag, name: newName });
+    setEditingId(null);
+    say(`„${tag.name}“ heitir nú „${newName}“.`);
+    // The renamed tag may no longer match the search, and its row is gone.
+    rescueFocus(fieldRef);
+  };
 
-  // Pagination
-  const totalPages = Math.ceil(filteredTags.length / PAGE_SIZE);
-  const paginatedTags = useMemo(
-    () => filteredTags.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
-    [filteredTags, page]
-  );
+  const closeDelete = () => {
+    const trigger = deleting?.trigger;
+    setDeleting(null);
+    setTimeout(() => trigger?.focus(), 0);
+  };
 
-  const handleCreated = useCallback(() => {
-    refetch();
-  }, [refetch]);
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    const { tag } = deleting;
+    try {
+      await deleteTag(tag.id, getToken);
+    } catch (err) {
+      // Already gone is what the reader asked for.
+      if (!(err instanceof TagRequestError && err.status === 404)) throw err;
+    }
+    list.remove(tag.id);
+    setDeleting(null);
+    say(`„${tag.name}“ eytt.`);
+    // Its row is gone with its button, so focus goes back to the field.
+    setTimeout(() => fieldRef.current?.focus(), 0);
+  };
 
-  const handleSave = useCallback(
-    async (tagId: string, newName: string) => {
-      await updateTag(tagId, newName, getToken);
-      setEditingId(null);
-      await refetch();
-    },
-    [refetch, getToken]
-  );
-
-  const handleDelete = useCallback(
-    async (tagId: string) => {
-      await deleteTag(tagId, getToken);
-      setDeletingId(null);
-      await refetch();
-    },
-    [refetch, getToken]
-  );
-
-  // Access control. Platform permission rather than workspace role: the tag
-  // vocabulary is shared by the whole bank, so a rename reaches every entry in
-  // it. That belongs to Dagskrárstjórnarteymið, not to an editor of one
-  // workspace — and with open submission every new account is a viewer of the
-  // bank anyway, so the workspace check was never the line it looked like.
   if (authLoading) {
     return (
-      <section className={styles.section}>
-        <p className={styles.loading}>Hleð...</p>
-      </section>
+      <PageShell>
+        <PageHeader total={null} />
+        <LoadingState />
+      </PageShell>
     );
   }
 
-  if (!hasPermission(user?.permissions, "moderator")) {
+  if (!isModerator) {
     return (
-      <section className={styles.section}>
-        <div className={styles.accessDenied}>
-          <p>Merkimiðar eru í umsjón Dagskrárstjórnarteymisins.</p>
+      <PageShell>
+        <PageHeader total={null} />
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>Merkimiðar eru í umsjón Dagskrárstjórnarteymisins.</p>
+          <Link href="/programs" className={styles.link}>
+            Fara í dagskrárbankann
+          </Link>
         </div>
-      </section>
+      </PageShell>
     );
   }
 
-  if (roleLoading) {
+  if (list.status === "error") {
     return (
-      <section className={styles.section}>
-        <p className={styles.loading}>Hleð...</p>
-      </section>
+      <PageShell>
+        <PageHeader total={null} />
+        <div role="alert" className={styles.loadError}>
+          <p className={styles.loadErrorTitle}>Ekki tókst að sækja merkimiðana.</p>
+          <p className={styles.loadErrorBody}>Athugaðu nettenginguna og reyndu aftur.</p>
+          <button type="button" className={styles.secondaryBtn} onClick={() => list.retry()}>
+            Reyna aftur
+          </button>
+        </div>
+      </PageShell>
     );
   }
 
+  const searching = query.trim().length > 0;
   return (
-    <section className={styles.section}>
-      <h1 className={styles.heading}>Flokkar</h1>
-
-      <TagCreateInput onCreated={handleCreated} />
-
-      <div className={styles.toolbar}>
-        <input
-          type="search"
-          className={styles.searchInput}
-          placeholder="Leita að flokkum..."
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          aria-label="Leita að flokkum"
+    <PageShell
+      overlay={
+        <TagDeleteDialog
+          key={deleting?.tag.id ?? "closed"}
+          tag={deleting?.tag ?? null}
+          usageCount={deleting ? usage.counts[deleting.tag.id] : null}
+          onCancel={closeDelete}
+          onConfirm={confirmDelete}
         />
-        <span className={styles.totalCount} aria-live="polite">
-          {countIs(filteredTags.length, "flokkur", "flokkar")}
-        </span>
-      </div>
+      }
+    >
+      <PageHeader total={list.status === "ready" ? list.tags.length : null} />
+      <TagCreateInput
+        tags={list.tags}
+        value={query}
+        onValueChange={setQuery}
+        onCreated={handleCreated}
+        inputRef={fieldRef}
+        formId={formId}
+      />
+      <NoticeBar notice={notice} onDismiss={dismissNotice} returnFocusTo={fieldRef} />
 
-      {error && (
-        <p className={styles.error} role="alert">
-          {error.message}
-        </p>
-      )}
-
-      {loading ? (
-        <p className={styles.loading}>Hleð flokkum...</p>
-      ) : filteredTags.length === 0 ? (
-        <div className={styles.emptyState}>
-          <p>
-            {debouncedSearch.trim()
-              ? "Engir flokkar fundust."
-              : "Engir flokkar fundust. Búðu til fyrsta flokkinn!"}
-          </p>
-        </div>
+      {list.status === "loading" ? (
+        <LoadingState />
       ) : (
         <>
-          <ul className={styles.tagList} role="list">
-            {paginatedTags.map((tag) => (
-              <TagRow
-                key={tag.id}
-                tag={tag}
-                isEditing={editingId === tag.id}
-                isDeleting={deletingId === tag.id}
-                contentCount={tagUsageCounts[tag.id] ?? 0}
-                onEdit={() => {
-                  setDeletingId(null);
-                  setEditingId(tag.id);
-                }}
-                onRequestDelete={() => {
-                  setEditingId(null);
-                  setDeletingId(tag.id);
-                }}
-                onSave={(newName) => handleSave(tag.id, newName)}
-                onDelete={() => handleDelete(tag.id)}
-                onCancel={() => {
-                  setEditingId(null);
-                  setDeletingId(null);
-                }}
-              />
-            ))}
-          </ul>
-
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
-              <button
-                className={styles.pageBtn}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-              >
-                &#8592; Fyrri
-              </button>
-              <span className={styles.pageInfo}>
-                Síða {page + 1} af {totalPages}
-              </span>
-              <button
-                className={styles.pageBtn}
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-              >
-                Næsta &#8594;
-              </button>
-            </div>
+          {/* Announced politely, and only while searching, so typing isn't drowned in numbers. */}
+          <p className={styles.resultCount} aria-live="polite">
+            {searching ? `Leitin skilar ${countIs(matches.length, "merkimiða", "merkimiðum")}` : ""}
+          </p>
+          {matches.length === 0 ? (
+            <EmptyState query={query.trim()} formId={formId} />
+          ) : (
+            <ul className={styles.rows}>
+              {shown.map((tag) => (
+                <TagRow
+                  key={tag.id}
+                  tag={tag}
+                  usageCount={usage.counts[tag.id]}
+                  query={query}
+                  isMatch={exactMatch?.id === tag.id}
+                  isEditing={editingId === tag.id}
+                  onEdit={() => setEditingId(tag.id)}
+                  onCancelEdit={() => setEditingId(null)}
+                  validateName={(name) => validateTagName(name, list.tags, tag.id)}
+                  onRename={(name) => rename(tag, name)}
+                  onRequestDelete={(trigger) => setDeleting({ tag, trigger })}
+                />
+              ))}
+            </ul>
           )}
+          {pageCount > 1 ? (
+            <Pagination page={page} pageCount={pageCount} onPage={url.setPage} />
+          ) : null}
         </>
       )}
+    </PageShell>
+  );
+}
+
+/**
+ * The page frame. The content sits in a size container, so its layout follows the page's own
+ * width; the dialog (`overlay`) is a viewport overlay, so it sits outside and follows the viewport.
+ */
+function PageShell({
+  children,
+  overlay,
+}: {
+  children: React.ReactNode;
+  overlay?: React.ReactNode;
+}) {
+  return (
+    <section className={styles.page}>
+      <div className={styles.body}>{children}</div>
+      {overlay}
     </section>
+  );
+}
+
+function PageHeader({ total }: { total: number | null }) {
+  return (
+    <header className={styles.header}>
+      <h1 className={styles.title}>Merkimiðar</h1>
+      <p className={styles.lede}>
+        Sameiginlegur orðaforði bankans. Ný nöfn og breytingar ná til allra eininga sem bera
+        merkimiðann.
+      </p>
+      {total !== null ? (
+        <p className={styles.total}>{countIs(total, "merkimiði", "merkimiðar")}</p>
+      ) : null}
+    </header>
+  );
+}
+
+/** UX rule 11: shaped like the rows it stands in for; static under reduced motion. */
+function LoadingState() {
+  return (
+    <div role="status" className={styles.skeleton}>
+      <span className="sl-sr-only">Hleð merkimiðum…</span>
+      {Array.from({ length: 6 }, (_, i) => (
+        <span key={i} aria-hidden="true" className={styles.skeletonBlock} data-n={i % 4} />
+      ))}
+    </div>
+  );
+}
+
+/** Nothing matches: offers to create the searched name with the field's own submit. */
+function EmptyState({ query, formId }: { query: string; formId: string }) {
+  if (query) {
+    return (
+      <div className={styles.empty}>
+        <p className={styles.emptyTitle}>Enginn merkimiði heitir „{query}“.</p>
+        <button type="submit" form={formId} className={styles.secondaryBtn}>
+          Búa til „{query}“
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.empty}>
+      <p className={styles.emptyTitle}>Engir merkimiðar enn.</p>
+      <p className={styles.emptyBody}>
+        Merkimiðar hjálpa foringjum að finna efni í bankanum. Skrifaðu nafn í reitinn hér fyrir ofan
+        og ýttu á Enter til að búa til þann fyrsta.
+      </p>
+    </div>
+  );
+}
+
+function Pagination({
+  page,
+  pageCount,
+  onPage,
+}: {
+  page: number;
+  pageCount: number;
+  onPage: (page: number) => void;
+}) {
+  // aria-disabled rather than disabled, so focus stays put on the first and last page.
+  return (
+    <nav className={styles.pagination} aria-label="Síður">
+      <button
+        type="button"
+        className={styles.quietBtn}
+        aria-disabled={page === 1}
+        onClick={() => page > 1 && onPage(page - 1)}
+      >
+        <span aria-hidden="true">← </span>Fyrri
+      </button>
+      <span className={styles.pageInfo}>
+        Síða {page} af {pageCount}
+      </span>
+      <button
+        type="button"
+        className={styles.quietBtn}
+        aria-disabled={page === pageCount}
+        onClick={() => page < pageCount && onPage(page + 1)}
+      >
+        Næsta<span aria-hidden="true"> →</span>
+      </button>
+    </nav>
+  );
+}
+
+// ── Status line ───────────────────────────────────────────────────────────────
+
+interface Notice {
+  key: number;
+  text: string;
+}
+
+const NOTICE_MS = 10_000;
+
+/**
+ * The page's one status region (UX rule 4): what the last create, rename or
+ * delete did. It clears after ten seconds, paused while the pointer or focus
+ * is on it. No "Afturkalla": the backend can't undo a delete.
+ */
+function NoticeBar({
+  notice,
+  onDismiss,
+  returnFocusTo,
+}: {
+  notice: Notice | null;
+  onDismiss: () => void;
+  returnFocusTo: React.RefObject<HTMLElement | null>;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (!notice || paused) return;
+    const timer = setTimeout(onDismiss, NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice, paused, onDismiss]);
+
+  return (
+    <div
+      ref={boxRef}
+      role="status"
+      className={notice ? styles.notice : styles.noticeEmpty}
+      onFocus={() => setPaused(true)}
+      onBlur={(e) => {
+        if (!boxRef.current?.contains(e.relatedTarget as Node)) setPaused(false);
+      }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {notice ? (
+        <>
+          <p className={styles.noticeText}>{notice.text}</p>
+          <button
+            type="button"
+            className={styles.noticeClose}
+            onClick={() => {
+              onDismiss();
+              returnFocusTo.current?.focus();
+            }}
+          >
+            <span aria-hidden="true">✕</span>
+            <span className="sl-sr-only">Loka</span>
+          </button>
+        </>
+      ) : null}
+    </div>
   );
 }
