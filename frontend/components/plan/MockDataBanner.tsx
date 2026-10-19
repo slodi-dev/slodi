@@ -10,9 +10,6 @@ import styles from "./MockDataBanner.module.css";
  * up in a thread, and a leader believes their term is already planned. So the
  * banner is sticky rather than a one-line note at the top — it stays on screen
  * while you scroll the grid, which is where the screenshot gets taken.
- *
- * The mock seasons also carry "GERVIGÖGN" in their own names, so even a crop
- * that loses this banner keeps the label.
  */
 export type MockReason =
   /** `?mock=1` — fixtures pinned regardless of what the API says. */

@@ -67,7 +67,7 @@ describe("useSeasons", () => {
 
     await waitFor(() => expect(result.current.isMock).toBe(true), { timeout: 4000 });
     expect(result.current.seasons.length).toBeGreaterThan(0);
-    expect(result.current.seasons[0].name).toContain("GERVIGÖGN");
+    expect(result.current.seasons[0].name).toBe("Starfsárið 2026–2027");
     // A handled failure is not a failure to report.
     expect(result.current.error).toBeNull();
     expect(result.current.isLoading).toBe(false);
