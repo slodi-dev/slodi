@@ -1,0 +1,226 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Lab/BlockPalette/About" />
+
+# BlockPalette lab
+
+The BlockPalette is the dagskrárbankinn rail on the left of the Vinnubekkur, where a leader picks
+blocks for a fundur. This lab asks two questions. What should each block show? And how should the
+list be organised?
+
+The shell stays as it is, because the user likes it: collections top left, blocks below them, the
+plan in the main body. Every direction keeps the same split, the same 296px column, "Bæta við",
+dragging, the search and the collections.
+
+Stories: **Lab → BlockPalette → Directions**. _Comparison_ shows the current rail first. Each
+direction then has a default (in the shell, beside the bench), filtered, no results, no fundur
+selected, long titles, phone and dark. _Icon mapping_ is the reference sheet for A, and
+_Playground_ has controls.
+
+## What the leader is deciding
+
+A leader at the rail is trying to fill a gap in a fundur. They are asking, roughly in this order:
+
+1. **Is it one of ours?** Something the sveit has run before, or something new to read first?
+2. **Does it fit the gap?** The right part of the fundur (setning, verkefni, slit) and the
+   minutes left.
+3. **Does it fit the theme and the scouts?** The fundur's theme, and the age group.
+4. **What does it cost me?** Equipment, prep time, and anything the last endurmat warned about.
+5. **Where will it go when I press the button?**
+
+Each element below is judged by which of these questions it answers, or by the noise it adds.
+
+## Inventory: the current rail
+
+- **Collections:** Allt, Sveitin mín, Félagið, Færnimerki — _Keep._ They answer question 1, whose material it is, before anything else. They are also the shell's top-left anchor. One catch: _Færnimerki_ is a different axis (a kind of programme, not who made it), so a færnimerki block made by the sveit sits in two collections. The hints ("Það sem við höfum búið til") help the first time and are noise after that, so B and C drop them.
+
+- **Search** — _Keep, and widen._ A leader often knows what they want ("hnútar"). Today it searches the title and theme only, while the block's equipment (`needs`) is in the data but can't be searched or seen. The field is under 44px and 14px, so iOS zooms when it's tapped (rule 8). All directions make it 44px, 16px, with an icon, a clear button and a result count read out politely ("6 blokkir passa").
+
+- **Type chips:** ALLT, DAGSKRÁ, LEIKUR, SETNING, SLIT — _Keep in A–C; replaced in D._ They answer the first half of question 2 ("I need a slit"). Three problems: **Endurmat is missing**, so "Endurmat foringja" is only reachable under ALLT. The uppercase overline is about 11px and the chips are under 44px. And the selected chip is white on `--sl-color-primary`, about 3.3:1, which fails AA. A–C add Endurmat, use sentence case, put a 44px button round a smaller pill, and fill the selected chip with `-text`. D removes them because the grouping does the same job.
+
+- **Drag handle** ⠿ — _Keep._ Drag is the fast path (SPEC §0). A handle of its own keeps "Bæta við" a plain click. At 40% opacity it is under 3:1 and nearly invisible, so the lab shows it at full secondary colour.
+
+- **Colour stripe** — _Keep only as a second signal._ It ties a bank item to its row on the sheet (same kind colour, SPEC §1), and that link is worth keeping. But it is the **only** place the type shows on an item, which is colour alone (WCAG 1.4.1). The colours have no learned meaning, and two of them are the same patrol colours that mean **age groups** on ProgramCard: a yellow stripe can read as "for drekaskátar". Every direction keeps the colour and adds a word or an icon.
+
+- **Title** — _Keep._ The thing being picked. It has to wrap, never truncate: Icelandic compounds are long and the end of a title is often what tells two blocks apart ("Hjálp í viðlögum (1/2)").
+
+- **Minutes** — _Keep._ Question 2: does it fit what's left. It's the second most used fact, so B keeps it beside the title when everything else is hidden.
+
+- **Theme** (the tag) — _Keep._ Question 3, and the spec is firm that a block brings its theme with it (B3, BlockLibraryItem: "þemalínan alltaf sýnileg"). It's text only today; A gives it an icon so a column of blocks can be scanned by topic.
+
+- **"notað N×"** — _Keep, lower down._ Question 1 again, as trust: 31 times is a tradition, once means read it first. It's the cheapest useful signal, but it's lower priority than minutes and theme. "12×" doesn't go through `countIs` (rule 2). The lab says "notað 12 sinnum" / "notað 31 sinni". B moves it into the hover line and the details.
+
+- **"Bæta við"** — _Keep._ The non-drag path, required by SPEC §0, and the keyboard path. It's about 22px tall with a fine pointer, under the 44px target. Disabled, it fades to 40% and is hard to read. The reason is visible text above the list (good, rule 9), but nothing links it to the buttons. The lab makes it 44px, outlined in `-text`, legible when disabled, and connected to the reason with `aria-describedby`.
+
+- **"Búa til nýja blokk… / Kemur síðar"** — _Keep for now; question it._ Rule 9 allows a feature that isn't built to show if it says "Kemur síðar", and sc-148 is next in the spec. But it takes about 68px of a crowded rail on every screen for something no one can do. If sc-148 isn't close, removing it is the better fit for rule 9 ("absent or marked").
+
+### Missing, and whether it should come
+
+- **Where "Bæta við" adds to** — _Add (all directions)._ Question 5, and the biggest gap. "Bæta við" adds to the _active_ fundur. Until a sheet is touched, that's the first fundur in the data, which is a **past** fundur scrolled out of view above the fold marker (see PlanBench › WithBank). Nothing on the rail says so. Every direction shows "Bætist við: Flokksfundur Refa" above the list.
+
+- **Already on this fundur** — _Add (all directions)._ It's in the spec (BlockLibraryItem, "Þegar á fundinum") and stops a double add. The lab shows it as a small badge. The button stays enabled, because running something twice can be on purpose.
+
+- **Endurmat came with it** — _Add (all directions)._ B3: a reused block should bring what the sveit learned. An "Endurmat fylgir" badge says there's a warning to read. B shows the text itself in the details.
+
+- **Age group fit** — _Add as a filter, later._ The bank already knows it (ProgramCard's age badges), and a rekka block in a drekaskáta fundur is wrong. A sveit is mostly one age band, though, so a badge on every item would be the same word fifty times. It belongs as a default filter set from the sveit, not per item. For now it shows in B's details.
+
+- **Prep time** — _Details only._ It matters when the fundur is tonight. Most blocks don't have it, so a slot for it on every item is noise. B's details show it.
+
+- **Equipment** (`needs`) — _Searchable, and in details._ It's in the data and hidden today. Searching "áttavit" should find the blocks that need compasses. B's details list it.
+
+- **Participants** — _Leave out._ The sveit's size doesn't change between blocks, so it rarely decides anything. Add it only if blocks get real minimums (team games).
+
+- **Result count** — _Add._ A screen reader can't tell that a filter did anything without it (PaletteSearch: "Niðurstöðutalan er lesin upp"). It's also a cheap visible check that the filter took.
+
+- **A next step when nothing matches** — _Add._ PaletteEmptyState: an empty state always has the next action. "Hreinsa leit og síur" resets the search, the collection and the type in one press.
+
+## The directions
+
+### A · Icons: tell blocks apart before you read
+
+**The story.** Every block carries a picture: its own image if it has one, or its theme's icon on
+a tint of its type. A leader looking for "something outdoors" sees the tents before reading a
+word.
+
+**Hierarchy.** Picture → title → type (icon and word), minutes, theme → how often it's been used and
+the badges, with "Bæta við" beside them.
+
+**Why it looks that way.** The 40px tile sits where the eye starts on each row, so it's the first
+filter. The **theme** gets the big picture because topic is what leaders scan for. The **type**
+is about where the block goes, so it rides inline with its word, where it's read with the
+minutes. The tile keeps the type's colour as a tint and a 1px ring, so the link to the sheet's
+stripe survives without colour doing the work alone.
+
+**Drops / adds.** Adds the type as a word and an icon, the theme icon, the Endurmat chip, and the
+badges. Drops nothing. The collection hints stay, because A is the "explain everything" direction.
+
+**Trade-offs.** It's the tallest row (about 100px), so about three blocks show in a 44rem rail against six
+today. The type chips wrap to two rows. An icon set has to be kept up as themes are
+added, and an unmapped theme falls back to neutral shapes instead of a guess. Photos at 40px
+rarely read, so they help only when the image is clear.
+
+### B · Minimal list: the fastest path for someone who knows the bank
+
+**The story.** Title and minutes, nothing else, so a leader who knows the bank finds and adds in
+one pass. Everything else is one hover, one focus or one press away.
+
+**Hierarchy.** Title → minutes → "Bæta við". On hover or focus, one line with the type, theme and
+use count. On expand, everything: type, theme, age, equipment, prep, use count, the last endurmat,
+and whether it's on the fundur.
+
+**Why it looks that way.** A 44px row with the title as the button that opens the details.
+About twice as many blocks fit as in A, and close to today's six. The collection hints go too, so the list starts
+higher. The colour stripe stays as the only type cue in the closed row. That's acceptable here
+because the type is in the peek and the details as a word, and because the chips filter by type.
+
+**Drops / adds.** Drops theme, use count and badges from the closed row. Adds the expand with
+every field the bank has, including the ones no other direction shows (age, equipment, prep, the
+endurmat text).
+
+**Trade-offs.** It's the worst for browsing: a leader who doesn't know what they want gets titles
+only. The hover line is information only, so touch loses it, but the expand covers it (rule 8 is
+about actions). The theme, which the spec wants always visible, is hidden in the closed row. That's
+the cost of the speed, and the reason this is a direction to test, not a default.
+
+### C · Card grid: browse when you don't know yet
+
+**The story.** Two columns of small cards with a picture, like a smaller version of the bank's
+ProgramCard grid. For the evening a leader opens the rail looking for an idea.
+
+**Hierarchy.** Picture → title → minutes and type → use count and badges → a full-width "Bæta
+við".
+
+**Why it looks that way.** At 64px a picture finally reads, so C is where images earn their place.
+The picture is also the **drag handle**, the biggest thing on the card and the easiest to grab.
+The collections become a 2 × 2 grid to echo the cards and save three lines. The type's colour is
+the card's top edge.
+
+**Drops / adds.** Drops the theme as text (the icon carries it) and the collection hints. Adds the
+picture and a full-width button.
+
+**Trade-offs.** At 130px a card wraps long titles into four or five lines (see _long titles_), and
+the two columns go out of step. Only about four cards fit above the fold, two of them cut off. It's the least like the
+sheet, so less of what a leader sees in the bank carries over to the row they'll get.
+
+### D · By section: group by where it goes in the fundur
+
+**The story.** Blocks grouped by the part of the fundur they fit: **Setning**, **Verkefni fundar**,
+**Slit**. These are the sheet's own section names, so the bank is laid out like the fundur it fills.
+
+**Hierarchy.** Section → title → minutes and theme (plus the type word where two types share a
+section) → use count and badges → "Bæta við".
+
+**Why it looks that way.** The type chips answered "which part of the fundur?" one press at a time.
+The sections answer it at a glance and are always visible, so the chips go. Section headers stick
+while their list scrolls, can be collapsed, and give a count. In Setning every block is a setning,
+so the word would be noise. In Verkefni fundar (dagskrá and leikur) and Slit (slit and endurmat)
+it's shown.
+
+**Drops / adds.** Drops the type chips. Adds section headers with counts and collapse. Endurmat
+finds its place under Slit, which is where it goes on the sheet.
+
+**Trade-offs.** The Verkefni fundar section holds most of the bank, so the grouping helps least
+where the list is longest. There's no way to see only the leikir without the dagskrá. If that
+matters, a chip row inside that one section could bring it back. It's the most coupled to the
+sheet's structure, which is good while the sections stay fixed.
+
+## Icons: the mapping
+
+See the _Icon mapping_ story for every icon on its tint.
+
+**Type** (when it runs): Setning `Sunrise` · Dagskrá `BookOpen` · Leikur `Dices` · Slit `Moon` ·
+Endurmat `MessagesSquare` · Annað (custom) `Puzzle`.
+
+**Theme** (what it's about): Útilíf `Tent` · Ratleikni `Compass` · Hreyfing `Footprints` ·
+Hefðir `Flag` · Umhyggja `Heart` · Matur `Flame` · Endurmat `MessagesSquare` · any other theme
+`Shapes` (the fallback).
+
+- **Slit is a moon, not a sunset.** Lucide's `Sunset` is `Sunrise` mirrored, and the two can't
+  be told apart at 16px.
+- **Hreyfing is footprints.** Lucide has no running figure, and footprints read as "on foot".
+- **Endurmat** uses the same icon as type and as theme, because an endurmat block's theme is the
+  endurmat.
+- An unknown theme gets neutral shapes. No icon is better than a misleading one, and the theme
+  name still shows as text.
+
+### Why icons, and not colour alone
+
+- **WCAG 1.4.1.** Colour can't be the only carrier of meaning. Today the type is only a 3px
+  stripe.
+- **The colours already mean something else.** The stripe uses patrol colours, and on ProgramCard
+  the same colours mean **age groups**. The primary and secondary greens are close enough to look
+  the same to many people, and the dark theme moves every tint.
+- **Colour has no meaning of its own.** Yellow has to be learned as "setning". A sunrise doesn't.
+- **Shape survives greyscale**, print, a sunlit phone screen and colour blindness.
+- **Colour stays, as a second signal.** It's the tile's tint and ring, the card's top edge, and
+  the row stripe. It ties a bank item to its row on the sheet, but it doesn't have to carry the
+  meaning alone.
+
+### Images
+
+An item with an image shows it in the tile, cropped square, with the type's ring. Every other
+item gets its theme icon. In the lab, three blocks have stand-in SVG pictures (`thumbs/`). In the
+real bank they'd come from the item's image, as on ProgramCard. At 40px (A) a photo is a hint at
+best. At 64px (C) it starts to read. A mix of photos and icons looks uneven, which is another
+reason icons should be the default and images the exception.
+
+## Rules every direction follows
+
+- "Bæta við" and dragging from the handle, both dispatching the bench's own intents
+  (`blockAsLidur`, `dragId.library`), so they behave as in the real rail.
+- Search and the four collections, in the same place.
+- With no fundur selected, every "Bæta við" is disabled, and the reason is visible text above the
+  list ("Veldu fund á bekknum…"), linked with `aria-describedby` (rule 9). The list becomes
+  focusable then, so it can still be scrolled with the keyboard.
+- 44px targets everywhere (`--bp-target`), not only on coarse pointers, and a visible 2px focus
+  ring.
+- `--sl-*` tokens only (`npm run check:tokens` is clean). Filled and outlined controls use the
+  `-text` tier, so they pass AA in light, dark and patrol.
+- Counts go through `countIs`: "13 blokkir", "notað 31 sinni".
+- Transitions collapse to 1ms under `prefers-reduced-motion`.
+
+## Lining up with the FundurSheet lab
+
+The sheet lab (Lab → FundurSheet) keeps the kind stripe on rows and the section names Setning /
+Verkefni fundar / Slit. All four directions use the same kind colours. D uses the same sections in
+the same order, so a block moves from a bank section to the sheet section with the same name.
