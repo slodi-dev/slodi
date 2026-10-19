@@ -145,7 +145,7 @@
 
 /* ── C · bubbles: the value rides above each handle ── */
 .bubbles .slider {
-  margin-top: var(--sl-spacing-lg);
+  margin-top: var(--sl-spacing-xl);
 }
 .bubble {
   position: absolute;
@@ -158,6 +158,48 @@
   font-size: var(--sl-text-xs);
   font-weight: var(--sl-font-weight-semibold);
   white-space: nowrap;
+}
+
+/* The bubble is a field: same look, a dashed underline on the number says "you can type here". */
+.bubbleField {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+  cursor: text;
+}
+.bubbleField:focus-within {
+  box-shadow: var(--sl-shadow-focus);
+}
+.lean-left {
+  transform: translateX(-85%);
+}
+.lean-right {
+  transform: translateX(-15%);
+}
+.bubbleInput {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dashed currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  /* 16px on phones so iOS doesn't zoom when the value is tapped (UX rule 8). */
+  font-size: max(var(--sl-text-xs), 1rem);
+  text-align: center;
+  appearance: textfield;
+}
+.bubbleInput:focus {
+  outline: none;
+  border-bottom-style: solid;
+}
+.bubbleInput::placeholder {
+  color: inherit;
+  opacity: 0.85;
+}
+.bubbleInput::-webkit-inner-spin-button,
+.bubbleInput::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 /* ── D · presets: one tap for the common ranges, slider for the rest ── */

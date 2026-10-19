@@ -83,12 +83,33 @@ export default function RangeLab({
       />
       {layout === "bubbles" && (
         <>
-          <output className={styles.bubble} style={{ left: `${pct(lo)}%` }}>
-            {minText}
-          </output>
-          <output className={styles.bubble} style={{ left: `${pct(hi)}%` }}>
-            {maxText}
-          </output>
+          {/* When the handles are close, the two values lean apart instead of overlapping. */}
+          <BubbleField
+            id={`${id}-lo`}
+            ariaLabel={`${label}: lágmark`}
+            value={minValue}
+            placeholder={`${min}`}
+            unit={unit}
+            min={min}
+            max={max}
+            step={step}
+            left={pct(lo)}
+            lean={pct(hi) - pct(lo) < 22 ? "left" : "center"}
+            onCommit={(v) => onChange(v === undefined ? undefined : Math.min(v, hi), maxValue)}
+          />
+          <BubbleField
+            id={`${id}-hi`}
+            ariaLabel={`${label}: hámark`}
+            value={maxValue}
+            placeholder={`${max}+`}
+            unit={unit}
+            min={min}
+            max={max}
+            step={step}
+            left={pct(hi)}
+            lean={pct(hi) - pct(lo) < 22 ? "right" : "center"}
+            onCommit={(v) => onChange(minValue, v === undefined ? undefined : Math.max(v, lo))}
+          />
         </>
       )}
     </div>
@@ -211,6 +232,74 @@ function NumberField({
         onKeyDown={(e) => e.key === "Enter" && commit()}
       />
       {unit && <span className={styles.unit}>{unit}</span>}
+    </label>
+  );
+}
+
+/**
+ * The value riding on a handle, editable in place: click (or Tab to) it and type. Commits on
+ * blur or Enter like NumberField; Escape puts the old value back. Empty means "no limit".
+ */
+function BubbleField({
+  id,
+  ariaLabel,
+  value,
+  placeholder,
+  unit,
+  min,
+  max,
+  step,
+  left,
+  lean,
+  onCommit,
+}: {
+  id: string;
+  ariaLabel: string;
+  value: number | undefined;
+  placeholder: string;
+  unit?: string;
+  min: number;
+  max: number;
+  step: number;
+  left: number;
+  lean: "left" | "center" | "right";
+  onCommit: (v: number | undefined) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (value === undefined ? "" : String(value));
+  const commit = () => {
+    if (draft === null) return;
+    const n = Number(draft);
+    onCommit(draft.trim() === "" || Number.isNaN(n) ? undefined : Math.max(min, Math.min(max, n)));
+    setDraft(null);
+  };
+  return (
+    <label
+      className={`${styles.bubble} ${styles.bubbleField} ${styles[`lean-${lean}`]}`}
+      style={{ left: `${left}%` }}
+      htmlFor={id}
+    >
+      <input
+        id={id}
+        className={styles.bubbleInput}
+        type="number"
+        inputMode="numeric"
+        aria-label={ariaLabel}
+        min={min}
+        max={max}
+        step={step}
+        placeholder={placeholder}
+        value={shown}
+        // Grow with the number, so "5" and "120" both sit snugly in the bubble.
+        style={{ width: `${Math.max(shown.length || placeholder.length, 1) + 0.5}ch` }}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setDraft(null);
+        }}
+      />
+      {unit && <span aria-hidden="true">{unit}</span>}
     </label>
   );
 }

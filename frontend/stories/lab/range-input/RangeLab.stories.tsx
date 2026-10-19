@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, userEvent, within } from "storybook/test";
 import RangeInput from "@/components/ui/RangeInput";
 import RangeLab, { type RangeLabProps, type RangeLayout } from "./RangeLab";
 
@@ -75,7 +76,7 @@ const LOOKS: { layout: RangeLayout; name: string; idea: string }[] = [
   {
     layout: "bubbles",
     name: "C · Values on the handles",
-    idea: "The value rides on each handle; no fields, arrow keys for precision.",
+    idea: "The value rides on each handle, and you can click it and type: drag for speed, type for precision.",
   },
   {
     layout: "presets",
@@ -159,6 +160,30 @@ export const OtherFilters: Story = {
       </section>
     </div>
   ),
+};
+
+/** C on its own: drag a handle, or click its value and type. Enter commits, Escape reverts. */
+export const ValuesOnHandles: Story = {
+  name: "C · Values on the handles",
+  render: () => (
+    <Live layout="bubbles" label="Lengd" min={0} max={180} step={5} unit="mín" start={[15, 60]} />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const lo = canvas.getByRole("spinbutton", { name: "Lengd: lágmark" });
+    await userEvent.clear(lo);
+    await userEvent.type(lo, "25{Enter}");
+    await expect(canvas.getByRole("slider", { name: "Lengd: lágmark" })).toHaveValue("25");
+    const hi = canvas.getByRole("spinbutton", { name: "Lengd: hámark" });
+    await userEvent.clear(hi);
+    await userEvent.type(hi, "999{Enter}");
+    // Clamped to the top of the scale.
+    await expect(canvas.getByRole("slider", { name: "Lengd: hámark" })).toHaveValue("180");
+    await userEvent.clear(lo);
+    await userEvent.type(lo, "40{Escape}");
+    await userEvent.tab();
+    await expect(canvas.getByRole("slider", { name: "Lengd: lágmark" })).toHaveValue("25");
+  },
 };
 
 export const Playground: Story = { name: "Playground" };
