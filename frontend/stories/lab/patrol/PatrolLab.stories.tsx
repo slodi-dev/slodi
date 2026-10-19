@@ -9,6 +9,8 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
  * Both panels are drawn on fixed light and dark surfaces, so they can be compared side by side
  * whatever the toolbar theme says.
  */
+/* Dróttskátar moved from teal (168°) to green and Rekkaskátar from teal (177°) to blue:
+   the two were 9° apart and read as the same colour (review 2026-10-19). */
 const meta = {
   title: "Lab/PatrolBadges",
   tags: ["skip-visual"],
@@ -34,14 +36,14 @@ const PATROLS: { key: string; name: string; ink: Shades; white: Shades }[] = [
   {
     key: "drott",
     name: "Dróttskátar",
-    ink: { light: "168 48% 43.0%", dark: "168 48% 57.0%" },
-    white: { light: "168 48% 31.5%", dark: "168 48% 34.5%" },
+    ink: { light: "122 42% 45.0%", dark: "122 42% 59.0%" },
+    white: { light: "122 42% 33.5%", dark: "122 42% 36.5%" },
   },
   {
     key: "rekkar",
     name: "Rekkaskátar",
-    ink: { light: "177 56% 40.5%", dark: "177 56% 54.5%" },
-    white: { light: "177 56% 29.5%", dark: "177 56% 32.5%" },
+    ink: { light: "208 62% 55.0%", dark: "208 62% 69.0%" },
+    white: { light: "208 62% 42.5%", dark: "208 62% 45.5%" },
   },
   {
     key: "rover",

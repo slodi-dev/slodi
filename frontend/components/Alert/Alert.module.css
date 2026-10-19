@@ -1,38 +1,69 @@
+/* The "stamp": a dashed frame in the status colour on its subtle tint, like a mark
+   in the scout handbook. Icon and title carry the colour; the message stays in
+   body text colour so it reads easily. */
 .alert {
+  display: flex;
+  gap: var(--sl-alert-gap);
+  align-items: flex-start;
   padding: var(--sl-alert-padding);
+  border: 2px dashed hsl(var(--alert-border));
   border-radius: var(--sl-alert-radius);
-  border-left: 4px solid;
+  background-color: hsl(var(--alert-background));
+  color: hsl(var(--sl-color-text-primary));
   font-size: var(--sl-alert-font-size);
   font-family: var(--sl-font-family-body);
   line-height: var(--sl-line-height-body);
 }
 
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: hsl(var(--alert-text));
+}
+
+.icon svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.content {
+  min-width: 0;
+}
+
+.content > :last-child {
+  margin-bottom: 0;
+}
+
 /* Optional leading title on its own line */
 .alertTitle {
+  margin: 0 0 var(--sl-spacing-xs);
+  color: hsl(var(--alert-text));
+  font-size: var(--sl-text-body-sm);
   font-weight: var(--sl-font-weight-emphasis);
-  margin: 0 0 var(--sl-alert-gap);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .alert--success {
-  background-color: hsl(var(--sl-alert-background-success));
-  border-left-color: hsl(var(--sl-alert-border-success));
-  color: hsl(var(--sl-alert-text-success));
+  --alert-background: var(--sl-alert-background-success);
+  --alert-border: var(--sl-alert-border-success);
+  --alert-text: var(--sl-alert-text-success);
 }
 
 .alert--warning {
-  background-color: hsl(var(--sl-alert-background-warning));
-  border-left-color: hsl(var(--sl-alert-border-warning));
-  color: hsl(var(--sl-alert-text-warning));
+  --alert-background: var(--sl-alert-background-warning);
+  --alert-border: var(--sl-alert-border-warning);
+  --alert-text: var(--sl-alert-text-warning);
 }
 
 .alert--error {
-  background-color: hsl(var(--sl-alert-background-error));
-  border-left-color: hsl(var(--sl-alert-border-error));
-  color: hsl(var(--sl-alert-text-error));
+  --alert-background: var(--sl-alert-background-error);
+  --alert-border: var(--sl-alert-border-error);
+  --alert-text: var(--sl-alert-text-error);
 }
 
 .alert--info {
-  background-color: hsl(var(--sl-alert-background-info));
-  border-left-color: hsl(var(--sl-alert-border-info));
-  color: hsl(var(--sl-alert-text-info));
+  --alert-background: var(--sl-alert-background-info);
+  --alert-border: var(--sl-alert-border-info);
+  --alert-text: var(--sl-alert-text-info);
 }

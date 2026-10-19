@@ -720,8 +720,8 @@
   --sl-badge-font-weight: var(--sl-font-weight-emphasis);
 
   /* ===== ALERT COMPONENT ===== */
-  --sl-alert-padding: var(--sl-spacing-inset-md);
-  --sl-alert-radius: var(--sl-radius-card);
+  --sl-alert-padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  --sl-alert-radius: var(--sl-radius-md);
   --sl-alert-font-size: var(--sl-text-body-sm);
   --sl-alert-gap: var(--sl-spacing-gap-sm);
 
