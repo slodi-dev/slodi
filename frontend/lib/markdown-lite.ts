@@ -83,9 +83,11 @@ function renderInline(md: string): string {
       t = t.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
 
       parts[i] = t;
-    } else if ((i - 1) % 4 === 0) {
-      // this is a delimiter captured group → ignore
-    } else if ((i - 2) % 4 === 0) {
+    } else if (i % 2 === 1) {
+      // The backtick delimiters on either side of a code span: drop them, or
+      // they render around the <code> element.
+      parts[i] = "";
+    } else {
       // code content
       parts[i] = `<code>${escapeHtml(parts[i])}</code>`;
     }

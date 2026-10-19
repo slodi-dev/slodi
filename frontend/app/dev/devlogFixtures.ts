@@ -1,14 +1,11 @@
-import type { DevlogLabPost } from "./DevlogLab";
+import type { DevlogMeta } from "@/lib/devlogs";
 
-/**
- * The fixture posts from app/dev/DevlogClient.stories.tsx, plus a few more in the same voice so
- * the timeline has several months to group. Newest first, as lib/devlogs.ts returns them.
- */
+/** Story fixtures for the devlog list and post. Newest first, as lib/devlogs.ts returns them. */
 
 /** "Today" for the stories, so the "Nýtt" marker doesn't drift as the calendar moves. */
 export const TODAY = "2026-10-12";
 
-export const LONG_TITLE_POST: DevlogLabPost = {
+export const LONG_TITLE_POST: DevlogMeta = {
   slug: "langt",
   title:
     "Mjög langur titill á þróunarfærslu sem lýsir öllum breytingunum á dagskrárbankanum, síunum og yfirferðinni í einu",
@@ -19,7 +16,7 @@ export const LONG_TITLE_POST: DevlogLabPost = {
     "Þessi samantekt er viljandi löng til að sjá hvernig kortið brotnar þegar textinn nær yfir margar línur og fer langt út fyrir það sem venjuleg færsla myndi innihalda.",
 };
 
-export const POSTS: DevlogLabPost[] = [
+export const POSTS: DevlogMeta[] = [
   {
     slug: "yfirferd-komin",
     title: "Yfirferð er komin í loftið",
@@ -52,6 +49,10 @@ export const POSTS: DevlogLabPost[] = [
     tags: ["sveitir", "útgáfa"],
     summary: "Hver sveit heldur nú utan um sína dagskrá og sína foringja á einum stað.",
   },
+];
+
+/** An older page, as `/api/devlogs` returns it. */
+export const OLDER_POSTS: DevlogMeta[] = [
   {
     slug: "hradari-leit",
     title: "Leitin í bankanum er orðin hraðari",
@@ -70,5 +71,20 @@ export const POSTS: DevlogLabPost[] = [
   },
 ];
 
-/** The server has more than the first page: the list offers older posts. */
-export const TOTAL_WITH_MORE = POSTS.length + 5;
+/** A post body in Markdown, for the post view. */
+export const POST_MARKDOWN = `Frá og með deginum í dag fer ný dagskrá ekki beint í bankann. Hún fer fyrst til Dagskrárstjórnarteymisins, sem les hana yfir, gefur ábendingar og samþykkir hana þegar hún er tilbúin.
+
+## Af hverju yfirferð?
+
+Bankinn á að vera staður sem þú getur treyst. Þegar þú finnur ratleik fyrir Drekaskáta viltu vita að einhver hefur lesið öryggisleiðbeiningarnar og að aldursbilið stemmi.
+
+- Þú sérð stöðuna á þinni dagskrá á yfirlitinu þínu.
+- Ábendingar birtast við dagskrána sjálfa, ekki í tölvupósti.
+- Drög eru áfram þín eigin þar til þú sendir þau í yfirferð með \`Senda í yfirferð\`.
+
+> Markmiðið er ekki að stoppa hugmyndir, heldur að hjálpa þeim alla leið.
+
+## Hvað kemur næst?
+
+Næst tengjum við yfirferðina við [leikjatorgið](https://slodi.is/leikir), svo leikir fari sömu leið og önnur dagskrá.
+`;
