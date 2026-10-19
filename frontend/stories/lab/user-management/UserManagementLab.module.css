@@ -18,11 +18,8 @@
 
 @container (max-width: 40rem) {
   .toolbar,
-  .cards,
   .split,
-  .bulk,
-  .pager,
-  .tableScroll {
+  .pager {
     --um-target: var(--sl-size-button-lg);
   }
 }
@@ -52,9 +49,6 @@
 .email {
   color: hsl(var(--sl-color-text-secondary));
   overflow-wrap: anywhere;
-}
-.nowrap {
-  white-space: nowrap;
 }
 p.name,
 p.email {
@@ -183,9 +177,6 @@ p.email {
   width: var(--sl-size-icon-sm);
   height: var(--sl-size-icon-sm);
 }
-.full {
-  width: 100%;
-}
 .buttonPrimary {
   background: hsl(var(--sl-button-background-primary));
   color: hsl(var(--sl-button-text-primary));
@@ -219,48 +210,15 @@ p.email {
   color: hsl(var(--sl-color-text-inverse));
 }
 
-.select {
-  min-height: var(--um-target);
-  max-width: 100%;
-  padding: 0 var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-input-border));
-  border-radius: var(--sl-radius-input);
-  background: hsl(var(--sl-input-background));
-  color: hsl(var(--sl-input-text));
-  font: inherit;
-  cursor: pointer;
-}
-@container (max-width: 40rem) {
-  .cards .select,
-  .bulk .select {
-    font-size: var(--sl-text-body);
-  }
-}
-
-.field,
-.inlineField {
+.field {
   display: flex;
   flex-direction: column;
   gap: var(--sl-spacing-xs);
   min-width: 0;
 }
-.inlineField {
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-}
 .fieldLabel {
   font-size: var(--sl-text-xs);
   font-weight: var(--sl-font-weight-semibold);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.lockedRole {
-  display: inline-flex;
-  flex-direction: column;
-}
-.reason {
-  font-size: var(--sl-text-xs);
   color: hsl(var(--sl-color-text-secondary));
 }
 
@@ -315,152 +273,7 @@ p.email {
   font-size: var(--sl-text-body-sm);
 }
 
-/* ── A · Tafla: dense table, sticky header ── */
-
-.tableScroll {
-  max-height: 32rem;
-  overflow: auto;
-  border: 1px solid hsl(var(--sl-table-border));
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-table-background));
-}
-.table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-.th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: 0 var(--sl-spacing-sm);
-  background: hsl(var(--sl-table-header-background));
-  border-bottom: 1px solid hsl(var(--sl-table-border));
-  color: hsl(var(--sl-table-header-text));
-  font-size: var(--sl-text-xs);
-  font-weight: var(--sl-font-weight-semibold);
-  text-align: left;
-  white-space: nowrap;
-}
-.thText {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--um-target);
-}
-.sortButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sl-spacing-xs);
-  min-height: var(--um-target);
-  margin: 0 calc(var(--sl-spacing-xs) * -1);
-  padding: 0 var(--sl-spacing-xs);
-  border: 0;
-  border-radius: var(--sl-radius-xs);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.sortButton:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-.sortIcon {
-  width: 0.875rem;
-  height: 0.875rem;
-  color: hsl(var(--sl-color-text-secondary));
-}
-.sortIconActive {
-  color: hsl(var(--sl-color-text-primary));
-}
-.td {
-  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
-  border-bottom: 1px solid hsl(var(--sl-table-border));
-  font-weight: var(--sl-font-weight-normal);
-  text-align: left;
-  vertical-align: middle;
-}
-th.td {
-  min-width: 12rem;
-  max-width: 22rem;
-}
-.tr:last-child .td {
-  border-bottom: 0;
-}
-.tr:hover .td {
-  background: hsl(var(--sl-table-row-hover));
-}
-.selfRow .td {
-  background: hsl(var(--sl-color-surface-secondary));
-}
-.emailCol {
-  max-width: 20rem;
-}
-.emailInline {
-  display: none;
-}
-@container (max-width: 48rem) {
-  /* Too narrow for its own column: the email moves under the name. */
-  .emailCol {
-    display: none;
-  }
-  .emailInline {
-    display: block;
-    font-size: var(--sl-text-xs);
-  }
-}
-
-/* ── B · Spjöld: cards ── */
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
-  gap: var(--sl-spacing-sm);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-sm);
-  min-width: 0;
-  padding: var(--sl-spacing-md);
-  border: 1px solid hsl(var(--sl-card-border));
-  border-radius: var(--sl-radius-card);
-  background: hsl(var(--sl-card-background));
-}
-.cardSuspended {
-  border-style: dashed;
-  border-color: hsl(var(--sl-color-warning-text));
-}
-.cardHead {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sl-spacing-sm);
-}
-.cardWho {
-  flex: 1;
-  min-width: 0;
-}
-.cardMeta {
-  margin: 0;
-  font-size: var(--sl-text-xs);
-  color: hsl(var(--sl-color-text-secondary));
-}
-.cardActions {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--sl-spacing-sm);
-  margin-top: auto;
-  padding-top: var(--sl-spacing-sm);
-  border-top: 1px solid hsl(var(--sl-color-border-subtle));
-}
-.cardActions .field {
-  flex: 1;
-}
-
-/* ── Shared by C and D ── */
+/* ── Shared by the list and the detail panel ── */
 
 .truncate {
   display: block;
@@ -512,9 +325,6 @@ th.td {
 }
 .textInput:focus-visible {
   border-color: hsl(var(--sl-input-border-focus));
-}
-.iconButton {
-  padding: 0;
 }
 
 /* ── C · Skipt: list + detail ── */
@@ -947,189 +757,6 @@ th.td {
   }
 }
 
-/* ── D · Val: checkbox rows with a sticky action bar ── */
-
-.bulk {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--sl-color-surface));
-}
-.bulk {
-  --um-cols: 1.25rem minmax(0, 1fr) 13rem 7.5rem;
-}
-.bulkHead,
-.bulkRow {
-  display: grid;
-  grid-template-columns: var(--um-cols);
-  align-items: center;
-  gap: var(--sl-spacing-xs) var(--sl-spacing-md);
-  padding: 0 var(--sl-spacing-md);
-}
-.bulkHead {
-  min-height: var(--um-target);
-  border-bottom: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-md) var(--sl-radius-md) 0 0;
-  background: hsl(var(--sl-color-surface-secondary));
-}
-.bulkHead .checkLabel {
-  grid-column: 1 / 3;
-  font-weight: var(--sl-font-weight-semibold);
-}
-.bulkHeadCols {
-  display: contents;
-  font-size: var(--sl-text-xs);
-  font-weight: var(--sl-font-weight-semibold);
-  color: hsl(var(--sl-color-text-secondary));
-}
-.bulkList {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.bulkList > li + li {
-  border-top: 1px solid hsl(var(--sl-color-border-subtle));
-}
-.bulkRow {
-  min-height: calc(var(--um-target) + var(--sl-spacing-sm));
-  padding-block: var(--sl-spacing-sm);
-  cursor: pointer;
-  transition: background var(--sl-transition-fast);
-}
-label.bulkRow:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-/* Chosen: a tint plus a bar, so it isn't colour alone. Text keeps its own tokens on the tint. */
-.bulkRowChosen,
-label.bulkRowChosen:hover {
-  background: hsl(var(--sl-color-primary-subtle));
-  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary-text));
-}
-.bulkRow:has(.checkbox:focus-visible) {
-  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-border-focus));
-}
-.bulkRowLocked {
-  cursor: default;
-}
-.checkLabel {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-sm);
-  min-width: 0;
-  min-height: var(--um-target);
-  cursor: pointer;
-}
-.checkbox,
-.checkSpacer {
-  flex: none;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin: 0;
-  accent-color: hsl(var(--sl-color-primary-text));
-  cursor: pointer;
-}
-.bulkWho {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: var(--sl-line-height-tight);
-  gap: 2px;
-}
-.bulkWho .email {
-  font-size: var(--sl-text-xs);
-}
-.bulkRole {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.bulkStatus {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-xs);
-}
-.failedBadge {
-  padding: 0 var(--sl-spacing-xs);
-  border-radius: var(--sl-radius-badge);
-  background: hsl(var(--sl-color-error-subtle));
-  color: hsl(var(--sl-color-error-text));
-  font-size: var(--sl-text-xs);
-  font-weight: var(--sl-font-weight-semibold);
-}
-
-.failure {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sl-spacing-sm);
-  margin: var(--sl-spacing-sm);
-  padding: var(--sl-spacing-sm) var(--sl-spacing-xs) var(--sl-spacing-sm) var(--sl-spacing-md);
-  border: 1px solid hsl(var(--sl-alert-border-error));
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-alert-background-error));
-  color: hsl(var(--sl-alert-text-error));
-}
-.failure:focus {
-  outline: none;
-}
-.failure:focus-visible {
-  box-shadow: var(--sl-shadow-focus);
-}
-.failureIcon {
-  flex: none;
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-  margin-top: 0.2em;
-}
-.failureBody {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--sl-spacing-xs);
-  min-width: 0;
-}
-.failureTitle {
-  margin: 0;
-  font-weight: var(--sl-font-weight-semibold);
-}
-.failure .nameList {
-  color: inherit;
-}
-.failureActions {
-  display: flex;
-  gap: var(--sl-spacing-sm);
-  margin-top: var(--sl-spacing-xs);
-}
-.failure .buttonGhost {
-  color: inherit;
-}
-
-/* The action bar sticks to the bottom of the screen while there is a selection. */
-.actionBar {
-  position: sticky;
-  bottom: var(--sl-spacing-sm);
-  z-index: var(--sl-z-sticky);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-sm);
-  margin: var(--sl-spacing-sm);
-  padding: var(--sl-spacing-sm) var(--sl-spacing-sm) var(--sl-spacing-sm) var(--sl-spacing-md);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--sl-color-surface-raised));
-  box-shadow: var(--sl-shadow-dropdown);
-  animation: barIn var(--sl-transition-fast);
-}
-.barCount {
-  margin: 0;
-  font-weight: var(--sl-font-weight-semibold);
-  white-space: nowrap;
-}
-.barSpacer {
-  flex: 1;
-}
 @keyframes barIn {
   from {
     opacity: 0;
@@ -1142,66 +769,10 @@ label.bulkRowChosen:hover {
     transform: translateY(-0.5rem);
   }
 }
-/* A toast that arrives while the bar is up sits above it, not on it. */
-.root:has(.actionBar) .toastRegion {
-  bottom: calc(var(--um-target) + var(--sl-spacing-sm) * 4 + 2px);
-}
-
-@container (max-width: 40rem) {
-  .bulk {
-    --um-cols: 1.25rem minmax(0, 1fr);
-  }
-  .bulkHeadCols {
-    display: none;
-  }
-  .bulkRole,
-  .bulkStatus {
-    grid-column: 2;
-  }
-  .bulkRole {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0 var(--sl-spacing-sm);
-    font-size: var(--sl-text-xs);
-  }
-  .bulkRow {
-    align-items: start;
-  }
-  .bulkRow > .checkbox,
-  .bulkRow > .checkSpacer {
-    margin-top: 0.1rem;
-  }
-  /* On a phone the bar sits at the top, under the thumb's way to the list. */
-  .actionBar {
-    order: -1;
-    top: 0;
-    bottom: auto;
-    margin: 0;
-    border-width: 0 0 1px;
-    border-radius: var(--sl-radius-md) var(--sl-radius-md) 0 0;
-    animation-name: barInTop;
-  }
-  .actionBar .button {
-    flex: 1 1 auto;
-  }
-  .barSpacer {
-    display: none;
-  }
-  .barCount {
-    flex: 1 1 100%;
-  }
-  .root:has(.actionBar) .toastRegion {
-    bottom: var(--sl-spacing-sm);
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .actionBar {
-    animation: none;
-  }
   .splitItem,
-  .radio,
-  .bulkRow {
+  .radio {
     transition-duration: 1ms;
   }
 }
@@ -1239,24 +810,6 @@ label.bulkRowChosen:hover {
   display: flex;
   flex-direction: column;
   gap: var(--sl-spacing-xs);
-}
-.skeleton_tafla,
-.skeleton_val {
-  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-sm);
-}
-.skeleton_spjold {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
-  gap: var(--sl-spacing-sm);
-}
-.skeleton_spjold .skeletonRow {
-  min-height: 9rem;
-  align-items: flex-start;
-  padding: var(--sl-spacing-md);
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-card);
 }
 .skeleton_skipt {
   display: grid;
@@ -1322,14 +875,6 @@ label.bulkRowChosen:hover {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: var(--sl-radius-avatar);
-}
-.boneCheck {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-.boneControl {
-  width: 7rem;
-  height: 2rem;
 }
 @keyframes pulse {
   50% {
@@ -1434,15 +979,6 @@ label.bulkRowChosen:hover {
 }
 .dialogBody p {
   margin: 0;
-}
-.nameList {
-  margin: 0;
-  padding-left: var(--sl-spacing-md);
-  color: hsl(var(--sl-color-text-secondary));
-}
-.nameListMore {
-  margin-left: calc(var(--sl-spacing-md) * -1);
-  list-style: none;
 }
 .dialogActions {
   display: flex;

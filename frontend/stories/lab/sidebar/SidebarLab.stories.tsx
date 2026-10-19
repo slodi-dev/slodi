@@ -4,20 +4,23 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import DashboardSidebar from "@/components/DashboardSidebar/DashboardSidebar";
 import SidebarLab, { type SidebarLabProps, type SidebarLook } from "./SidebarLab";
 
-const LOOK_OPTIONS: SidebarLook[] = ["rail", "groups", "trail", "night", "topbar"];
+const LOOK_OPTIONS: SidebarLook[] = ["groups"];
 
 /**
  * Side nav variations. Each one is the whole dashboard shell (nav, drawer, menu button and
  * page), so the phone drawer can be compared too. Phone or desktop follows the width of the
  * shell rather than the window, so the drawer and its menu button also show in a narrow frame
- * on a wide screen. See Lab → Um tilraunastofuna.
+ * on a wide screen. See Lab → About the lab.
+ *
+ * Picked: B · Groups; the other directions (A Rail, C Trail, D Night, E Top bar) were removed
+ * on 2026-10-19.
  */
 const meta = {
   title: "Lab/Sidebar",
   component: SidebarLab,
   tags: ["skip-visual"],
   args: {
-    look: "trail",
+    look: "groups",
     userRole: "editor",
     userPermissions: "moderator",
     badgeCount: 2,
@@ -93,29 +96,9 @@ function MockPage() {
 
 const LOOKS: { look: SidebarLook; name: string; idea: string }[] = [
   {
-    look: "rail",
-    name: "A · Rail",
-    idea: "A narrow column with a small label under each icon; collapsed, icons only with the label as a tip on hover or focus. On a phone the drawer is a grid of tiles.",
-  },
-  {
     look: "groups",
     name: "B · Groups",
     idea: "Items sorted under headings (Skipuleggja, Bankinn, Umsjón, Mínar síður), the active item a solid pill that slides to the new item when the page changes. Collapsed, short rules stand in for the headings.",
-  },
-  {
-    look: "trail",
-    name: "C · Trail",
-    idea: "A hiking map: the items are waypoints on a dashed trail that draws itself in, the groups are place names along it, and unbuilt items are dashed waypoints. The active one is filled in and ringed in trail-marker yellow; the ring walks to the next waypoint and a “Þú ert hér” tag hops in beside it.",
-  },
-  {
-    look: "night",
-    name: "D · Night",
-    idea: "A dark forest sidebar in both themes, the active item lit by a campfire-yellow mark.",
-  },
-  {
-    look: "topbar",
-    name: "E · Top bar",
-    idea: "On a phone, a bar across the top with the menu button and the page you are on, instead of a floating button. On desktop the active item is a raised card.",
   },
 ];
 
@@ -161,7 +144,7 @@ const frames: CSSProperties = {
   alignItems: "flex-start",
 };
 
-/** Every look next to the current sidebar, at desktop and phone width. */
+/** The picked look next to the current sidebar, at desktop and phone width. */
 export const Comparison: Story = {
   parameters: { docs: { story: { height: "1200px" } } },
   render: (args) => (
@@ -223,17 +206,6 @@ export const Comparison: Story = {
   ),
 };
 
-export const RailDesktop: Story = { name: "A · Rail, desktop", args: { look: "rail" } };
-export const RailCollapsed: Story = {
-  name: "A · Rail, collapsed",
-  args: { look: "rail", collapsed: true },
-};
-export const RailPhone: Story = {
-  name: "A · Rail, phone drawer",
-  args: { look: "rail", drawerOpen: true },
-  globals: PHONE,
-};
-
 export const GroupsDesktop: Story = { name: "B · Groups, desktop", args: { look: "groups" } };
 export const GroupsCollapsed: Story = {
   name: "B · Groups, collapsed",
@@ -242,17 +214,6 @@ export const GroupsCollapsed: Story = {
 export const GroupsPhone: Story = {
   name: "B · Groups, phone drawer",
   args: { look: "groups", drawerOpen: true },
-  globals: PHONE,
-};
-
-export const TrailDesktop: Story = { name: "C · Trail, desktop", args: { look: "trail" } };
-export const TrailCollapsed: Story = {
-  name: "C · Trail, collapsed",
-  args: { look: "trail", collapsed: true },
-};
-export const TrailPhone: Story = {
-  name: "C · Trail, phone drawer",
-  args: { look: "trail", drawerOpen: true },
   globals: PHONE,
 };
 
@@ -292,7 +253,6 @@ const demoButton = (pressed = false): CSSProperties => ({
 function MotionDemo(props: SidebarLabProps) {
   const [path, setPath] = useState("/programs");
   const [badge, setBadge] = useState(2);
-  const [run, setRun] = useState(0);
   return (
     <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }}>
       <div style={demoBar}>
@@ -316,14 +276,9 @@ function MotionDemo(props: SidebarLabProps) {
         <button type="button" style={demoButton()} onClick={() => setBadge(0)}>
           Clear badge
         </button>
-        {props.look === "trail" && (
-          <button type="button" style={demoButton()} onClick={() => setRun((n) => n + 1)}>
-            Redraw the trail
-          </button>
-        )}
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
-        <SidebarLab key={run} {...props} activePath={path} badgeCount={badge} onNavigate={setPath}>
+        <SidebarLab {...props} activePath={path} badgeCount={badge} onNavigate={setPath}>
           <MockPage />
         </SidebarLab>
       </div>
@@ -360,45 +315,6 @@ export const GroupsAnimations: Story = {
   args: { look: "groups" },
   render: (args) => <MotionDemo {...args} />,
   play: playMotion,
-};
-
-export const TrailAnimations: Story = {
-  name: "C · Trail, animations",
-  args: { look: "trail" },
-  render: (args) => <MotionDemo {...args} />,
-  play: async (context) => {
-    await playMotion(context);
-    await context.step("The trail redraws", async () => {
-      const canvas = within(context.canvasElement);
-      await userEvent.click(canvas.getByRole("button", { name: "Redraw the trail" }));
-      await waitFor(() =>
-        expect(context.canvasElement.querySelector("nav svg path")).toBeInTheDocument()
-      );
-    });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  },
-};
-
-export const NightDesktop: Story = { name: "D · Night, desktop", args: { look: "night" } };
-export const NightCollapsed: Story = {
-  name: "D · Night, collapsed",
-  args: { look: "night", collapsed: true },
-};
-export const NightPhone: Story = {
-  name: "D · Night, phone drawer",
-  args: { look: "night", drawerOpen: true },
-  globals: PHONE,
-};
-
-export const TopbarDesktop: Story = { name: "E · Top bar, desktop", args: { look: "topbar" } };
-export const TopbarCollapsed: Story = {
-  name: "E · Top bar, collapsed",
-  args: { look: "topbar", collapsed: true },
-};
-export const TopbarPhone: Story = {
-  name: "E · Top bar, phone drawer",
-  args: { look: "topbar", drawerOpen: true },
-  globals: PHONE,
 };
 
 /** One look with every control, for tweaking. Admin sees every item. */

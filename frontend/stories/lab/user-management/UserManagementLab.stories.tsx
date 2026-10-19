@@ -8,9 +8,12 @@ import UserManagementLab, { type LabUser, type UserManagementLook } from "./User
 /**
  * User management variations. The current table can only change a permission (instantly, with no
  * confirmation and no undo) and delete; it has no filter, no suspension and no history, and its
- * small controls fail the touch-target rule on a phone. These try four layouts that all cover
- * search, a permission filter, a confirmed promotion, suspend/reinstate with "Afturkalla", and
- * the empty, loading and error states. See Lab → About the lab.
+ * small controls fail the touch-target rule on a phone. These layouts cover search, a permission
+ * filter, a confirmed promotion, suspend/reinstate with "Afturkalla", and the empty, loading and
+ * error states. See Lab → About the lab.
+ *
+ * Picked: C · Split; the other directions (A Table, B Cards, D Bulk) were removed on
+ * 2026-10-19.
  */
 
 /* ── Fixtures: made-up members of a made-up scout group ── */
@@ -204,14 +207,14 @@ const currentApi: MockRoute[] = [
 
 /* ── Meta ── */
 
-const LOOK_OPTIONS: UserManagementLook[] = ["tafla", "spjold", "skipt", "val"];
+const LOOK_OPTIONS: UserManagementLook[] = ["skipt"];
 
 const meta = {
   title: "Lab/UserManagement",
   component: UserManagementLab,
   tags: ["skip-visual"],
   args: {
-    look: "tafla",
+    look: "skipt",
     users: LAB_USERS,
     currentUserId: ME,
     state: "ready",
@@ -236,24 +239,9 @@ type Story = StoryObj<typeof meta>;
 
 const LOOKS: { look: UserManagementLook; name: string; idea: string }[] = [
   {
-    look: "tafla",
-    name: "A · Table",
-    idea: "A dense table with a sticky header and sortable columns, for admins at a desk.",
-  },
-  {
-    look: "spjold",
-    name: "B · Cards",
-    idea: "One card per person with the role picker and suspend button at the bottom; built for phones.",
-  },
-  {
     look: "skipt",
     name: "C · Split",
     idea: "List on the left, the chosen person's role, access and history on the right; on a phone the panel replaces the list.",
-  },
-  {
-    look: "val",
-    name: "D · Bulk",
-    idea: "Checkbox rows and one action bar; changes to many people confirm with a count.",
   },
 ];
 
@@ -268,7 +256,7 @@ const idea = {
 } as const;
 const wide = { maxWidth: "72rem" } as const;
 
-/** The current component first, then each look with the same people. */
+/** The current component first, then the picked look with the same people. */
 export const Comparison: Story = {
   name: "Comparison",
   parameters: { auth: "admin", mockApi: currentApi },
@@ -283,11 +271,7 @@ export const Comparison: Story = {
         <section key={l.look}>
           <h3 style={heading}>{l.name}</h3>
           <p style={idea}>{l.idea}</p>
-          <UserManagementLab
-            {...args}
-            look={l.look}
-            defaultSelectedId={l.look === "skipt" ? "lu-3" : undefined}
-          />
+          <UserManagementLab {...args} look={l.look} defaultSelectedId="lu-3" />
         </section>
       ))}
     </div>
@@ -299,7 +283,7 @@ export const Comparison: Story = {
 const phone = { viewport: { value: "phone", isRotated: false } };
 
 function storiesFor(look: UserManagementLook, name: string) {
-  const base = { look, defaultSelectedId: look === "skipt" ? "lu-3" : undefined };
+  const base = { look, defaultSelectedId: "lu-3" };
   const render: Story["render"] = (args) => (
     <div style={wide}>
       <UserManagementLab {...args} />
@@ -333,33 +317,12 @@ function storiesFor(look: UserManagementLook, name: string) {
   };
 }
 
-const table = storiesFor("tafla", "A · Table");
-export const Table: Story = table.populated;
-export const TableEmpty: Story = table.empty;
-export const TableLoading: Story = table.loading;
-export const TableError: Story = table.error;
-export const TablePhone: Story = table.phone;
-
-const cards = storiesFor("spjold", "B · Cards");
-export const Cards: Story = cards.populated;
-export const CardsEmpty: Story = cards.empty;
-export const CardsLoading: Story = cards.loading;
-export const CardsError: Story = cards.error;
-export const CardsPhone: Story = cards.phone;
-
 const split = storiesFor("skipt", "C · Split");
 export const Split: Story = split.populated;
 export const SplitEmpty: Story = split.empty;
 export const SplitLoading: Story = split.loading;
 export const SplitError: Story = split.error;
 export const SplitPhone: Story = split.phone;
-
-const bulk = storiesFor("val", "D · Bulk");
-export const Bulk: Story = bulk.populated;
-export const BulkEmpty: Story = bulk.empty;
-export const BulkLoading: Story = bulk.loading;
-export const BulkError: Story = bulk.error;
-export const BulkPhone: Story = bulk.phone;
 
 /* ── C · Split: keyboard and detail states ── */
 
@@ -478,74 +441,6 @@ export const SplitDetailStates: Story = {
       ))}
     </div>
   ),
-};
-
-/* ── D · Bulk: the whole round trip, and a batch the API half refuses ── */
-
-const ACTION_BAR = { name: "Aðgerðir fyrir valda notendur" } as const;
-
-/** Select everyone on the page, freeze them (with the count in the dialog), then undo it all. */
-export const BulkFreezeUndo: Story = {
-  name: "D · Bulk: select all, freeze, undo",
-  args: { look: "val" },
-  render: (args) => (
-    <div style={wide}>
-      <UserManagementLab {...args} />
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const frozenBefore = canvas.getAllByText("Frystur").length;
-    const selectAll = canvas.getByRole("checkbox", { name: "Velja alla á síðunni" });
-
-    await userEvent.click(within(canvas.getAllByRole("listitem")[0]).getByRole("checkbox"));
-    await expect(selectAll).toBePartiallyChecked();
-    await userEvent.click(selectAll);
-    await expect(selectAll).toBeChecked();
-
-    const bar = await canvas.findByRole("region", ACTION_BAR);
-    await expect(bar).toHaveTextContent(/Valin: \d+ notend/);
-    await userEvent.click(within(bar).getByRole("button", { name: "Frysta aðgang" }));
-
-    const dialog = await canvas.findByRole("dialog");
-    await expect(dialog).toHaveTextContent(/Frysta aðgang hjá \d+ notendum\?/);
-    await expect(dialog).toHaveTextContent(/og \d+ í viðbót/);
-    await userEvent.click(within(dialog).getByRole("button", { name: /^Frysta hjá/ }));
-
-    const undo = await canvas.findByRole("button", { name: "Afturkalla" }, { timeout: 3000 });
-    await expect(canvas.getAllByText("Frystur").length).toBeGreaterThan(frozenBefore);
-    await expect(canvas.queryByRole("region", ACTION_BAR)).not.toBeInTheDocument();
-
-    await userEvent.click(undo);
-    await waitFor(() => expect(canvas.getAllByText("Frystur")).toHaveLength(frozenBefore));
-    await expect(canvas.getByText(/^Afturkallað hjá \d+ notendum\.$/)).toBeInTheDocument();
-  },
-};
-
-/** The API refuses two of the batch: the rest change, and the two are named with "Reyna aftur". */
-export const BulkPartialFailure: Story = {
-  name: "D · Bulk: partial failure",
-  args: { look: "val", failIds: ["lu-9", "lu-13"] },
-  render: (args) => (
-    <div style={wide}>
-      <UserManagementLab {...args} />
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("checkbox", { name: "Velja alla á síðunni" }));
-    const bar = await canvas.findByRole("region", ACTION_BAR);
-    await userEvent.click(within(bar).getByRole("button", { name: "Frysta aðgang" }));
-    const dialog = await canvas.findByRole("dialog");
-    await userEvent.click(within(dialog).getByRole("button", { name: /^Frysta hjá/ }));
-
-    const alert = await canvas.findByRole("alert", {}, { timeout: 3000 });
-    await expect(alert).toHaveTextContent("Ekki tókst að frysta aðgang hjá 2 notendum.");
-    await expect(alert).toHaveTextContent("Bergur Logi Árnason");
-    await expect(alert).toHaveTextContent("Jökull Máni Haraldsson");
-    await expect(canvas.getAllByText("Mistókst")).toHaveLength(2);
-    await expect(canvas.getByRole("button", { name: "Afturkalla" })).toBeInTheDocument();
-  },
 };
 
 /** The chosen look, with controls, for tweaking. Changing a control remounts it with fresh data. */

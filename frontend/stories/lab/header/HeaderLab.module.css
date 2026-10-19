@@ -383,17 +383,34 @@
   }
 }
 
-/* ── Logo variations (A2, B2): the Slóði mark in front of the wordmark ── */
+/* ── Logo variations (A2, B2): the Slóði mark in front of the wordmark ──
+   The mark is as tall as the wordmark's capitals (cap height to baseline). Both are sized from
+   one font size on .brand, and the wordmark is set larger than in A and B so the mark can stay
+   a readable size without making the bar taller. */
+.wordmarkLogo .brand {
+  font-size: var(--sl-text-heading-3);
+}
+.bandLogo .brand {
+  font-size: var(--sl-text-heading-4);
+}
+@media (min-width: 768px) {
+  .wordmarkLogo .brand {
+    font-size: var(--sl-text-heading-2);
+  }
+  .bandLogo .brand {
+    font-size: var(--sl-text-heading-3);
+  }
+}
+.wordmarkLogo .brandName,
+.bandLogo .brandName {
+  font-size: 1em;
+}
 .logo {
   display: block;
   flex: none;
   width: auto;
-  height: var(--sl-primitive-space-8);
-}
-@media (min-width: 768px) {
-  .wordmarkLogo .logo {
-    height: var(--sl-primitive-space-9);
-  }
+  /* The cap height of Roboto Condensed, the heading font. */
+  height: 0.71em;
 }
 /* A2 renders both marks; the theme shows one. Dark is `class="dark"` on <html> (ThemeProvider)
    or a `data-theme="dark"` wrapper, the same pair the token file matches. */
@@ -407,11 +424,6 @@
 :global(:root.dark) .logoForDark,
 :global([data-theme="dark"]) .logoForDark {
   display: block;
-}
-@media (max-width: 767px) {
-  .bandLogo .logo {
-    height: var(--sl-primitive-space-7);
-  }
 }
 /* B2 keeps a deep green band in dark mode. There --sl-color-primary turns mint (green-400) and
    the white mark on it is about 2.2:1; on green-700 white is about 8:1. */
@@ -432,116 +444,4 @@
 }
 .bandLogo .closeButton:hover {
   background: var(--hdr-hover);
-}
-
-/* ── C · Trail: a signpost wordmark with two peaks, a dashed trail over contour lines ── */
-.trail .inner {
-  padding-bottom: var(--sl-spacing-sm);
-}
-.motif {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: var(--sl-spacing-lg);
-  pointer-events: none;
-}
-.contour {
-  fill: none;
-  stroke: hsl(var(--sl-color-border));
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-.trailPath {
-  fill: none;
-  stroke: hsl(var(--sl-color-primary));
-  stroke-width: 2;
-  stroke-dasharray: 6 7;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-.peaks {
-  width: 1.75rem;
-  height: 1.125rem;
-  fill: hsl(var(--sl-color-primary));
-}
-.trail .brandName {
-  text-transform: uppercase;
-  letter-spacing: var(--sl-primitive-letter-spacing-widest);
-}
-.trail .link[aria-current="page"]::before {
-  content: "";
-  width: 0.5em;
-  height: 0.5em;
-  border-radius: var(--sl-radius-pill);
-  background: hsl(var(--sl-color-primary));
-}
-.trail .account {
-  border: 2px dashed hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-primary-text));
-}
-.trail .account:hover {
-  background: hsl(var(--sl-color-primary-subtle));
-}
-
-/* ── D · Overlay: no bar at all; floats over the landing hero, the action is a raised chip ── */
-.overlay {
-  --hdr-bg: transparent;
-  --hdr-muted: hsl(var(--sl-color-text-primary));
-  --hdr-hover: hsl(var(--sl-color-surface) / 0.7);
-}
-.overlay .brandName {
-  font-size: var(--sl-text-heading-4);
-}
-.overlay .link {
-  font-weight: var(--sl-font-weight-semibold);
-}
-.overlay .link[aria-current="page"] {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.4em;
-}
-.overlay .account {
-  background: hsl(var(--sl-color-surface));
-  color: hsl(var(--sl-color-text-primary));
-  box-shadow: var(--sl-shadow-card);
-}
-.overlay .account:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-.overlay .menuButton {
-  border-color: transparent;
-  background: hsl(var(--sl-color-surface));
-  box-shadow: var(--sl-shadow-card);
-}
-
-/* ── E · Split: pages on the left, the account action as a solid button on the right ── */
-.split {
-  --hdr-bg: hsl(var(--sl-color-surface));
-  border-bottom: 1px solid hsl(var(--sl-color-border));
-}
-.split .account {
-  padding: 0 var(--sl-spacing-lg);
-  border-radius: var(--sl-radius-button);
-  background: hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-text-inverse));
-}
-.split .account:hover {
-  background: hsl(var(--sl-color-primary-hover));
-}
-.split .phoneAccount {
-  padding: 0 var(--sl-spacing-md);
-}
-.split .link[aria-current="page"] {
-  background: hsl(var(--sl-color-primary-subtle));
-  color: hsl(var(--sl-color-primary-text));
-}
-@media (min-width: 768px) {
-  .split .nav {
-    flex: 1;
-    justify-content: space-between;
-    margin-left: var(--sl-spacing-sm);
-    padding-left: var(--sl-spacing-md);
-    border-left: 1px solid var(--hdr-line);
-  }
 }

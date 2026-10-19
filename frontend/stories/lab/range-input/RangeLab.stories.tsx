@@ -5,16 +5,20 @@ import RangeInput from "@/components/ui/RangeInput";
 import RangeLab, { type RangeLabProps, type RangeLayout } from "./RangeLab";
 
 /**
- * RangeInput's two full-width number fields are too wide and clunky. These pair a two-handled
- * slider with small number fields: drag either handle in or out, or type a value, and the
- * other stays in step. The track always shows the lowest and highest possible value.
+ * RangeInput's two full-width number fields are too wide and clunky. This pairs a two-handled
+ * slider with values that ride on the handles: drag either handle in or out, or click its value
+ * and type, and the other stays in step. The track always shows the lowest and highest possible
+ * value.
+ *
+ * Picked: C · Values on the handles; the other directions (A stacked, B inline, D presets) were
+ * removed on 2026-10-19.
  */
 const meta = {
   title: "Lab/RangeInput",
   component: RangeLab,
   tags: ["skip-visual"],
   args: {
-    layout: "stacked",
+    layout: "bubbles",
     label: "Lengd",
     min: 0,
     max: 180,
@@ -25,19 +29,12 @@ const meta = {
     onChange: () => {},
   },
   argTypes: {
-    layout: { control: "inline-radio", options: ["stacked", "inline", "bubbles", "presets"] },
+    layout: { control: "inline-radio", options: ["bubbles"] },
   },
 } satisfies Meta<typeof RangeLab>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
-
-const PRESETS = [
-  { label: "Undir 15 mín", max: 15 },
-  { label: "15–30", min: 15, max: 30 },
-  { label: "30–60", min: 30, max: 60 },
-  { label: "Yfir 60", min: 60 },
-];
 
 function Live(
   props: Omit<RangeLabProps, "onChange" | "minValue" | "maxValue"> & { start?: [number?, number?] }
@@ -64,24 +61,9 @@ function Live(
 
 const LOOKS: { layout: RangeLayout; name: string; idea: string }[] = [
   {
-    layout: "stacked",
-    name: "A · Slider and fields",
-    idea: "Slider on top, the scale under it, two small fields below.",
-  },
-  {
-    layout: "inline",
-    name: "B · Fields at the ends",
-    idea: "One line: field, slider, field. The most compact.",
-  },
-  {
     layout: "bubbles",
     name: "C · Values on the handles",
     idea: "The value rides on each handle, and you can click it and type: drag for speed, type for precision.",
-  },
-  {
-    layout: "presets",
-    name: "D · Presets and slider",
-    idea: "The common ranges in one tap, the slider for the rest.",
   },
 ];
 
@@ -115,7 +97,7 @@ function Current() {
   );
 }
 
-/** Every layout at filter-sidebar width, all live: drag, type, or use the arrow keys. */
+/** The current control and the picked layout at filter-sidebar width, all live: drag, type, or use the arrow keys. */
 export const Comparison: Story = {
   name: "Comparison",
   render: () => (
@@ -137,7 +119,6 @@ export const Comparison: Story = {
             step={5}
             unit="mín"
             start={[15, 60]}
-            presets={PRESETS}
           />
         </section>
       ))}
@@ -145,18 +126,18 @@ export const Comparison: Story = {
   ),
 };
 
-/** The other two filters that use RangeInput, in layout A. */
+/** The other two filters that use RangeInput, in layout C. */
 export const OtherFilters: Story = {
   name: "Other filters",
   render: () => (
     <div style={{ display: "grid", gap: "var(--sl-spacing-xl)" }}>
       <section>
         <p style={heading}>Participants</p>
-        <Live layout="stacked" label="Fjöldi" min={1} max={60} unit="" start={[undefined, 20]} />
+        <Live layout="bubbles" label="Fjöldi" min={1} max={60} unit="" start={[undefined, 20]} />
       </section>
       <section>
         <p style={heading}>Prep time</p>
-        <Live layout="stacked" label="Undirbúningur" min={0} max={120} step={5} unit="mín" />
+        <Live layout="bubbles" label="Undirbúningur" min={0} max={120} step={5} unit="mín" />
       </section>
     </div>
   ),

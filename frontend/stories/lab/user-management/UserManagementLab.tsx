@@ -1,23 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent, KeyboardEvent, ReactNode } from "react";
-import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowUp,
-  ArrowUpDown,
-  Lock,
-  Search,
-  TriangleAlert,
-  UserRound,
-  X,
-} from "lucide-react";
+import type { FormEvent, KeyboardEvent, ReactNode } from "react";
+import { ArrowLeft, Lock, Search, UserRound } from "lucide-react";
 import { countIs, formatIcelandicDate } from "@/lib/format";
 import type { User, UserPermissions } from "@/services/users.service";
 import styles from "./UserManagementLab.module.css";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
-export type UserManagementLook = "tafla" | "spjold" | "skipt" | "val";
+export type UserManagementLook = "skipt";
 export type LabLoadState = "ready" | "loading" | "error";
 export type PermissionFilter = UserPermissions | "all";
 
@@ -52,14 +42,14 @@ export interface UserManagementLabProps {
   onRetry?: () => void;
   defaultQuery?: string;
   defaultPermission?: PermissionFilter;
-  /** `skipt` only: the user open in the detail panel. */
+  /** The user open in the detail panel. */
   defaultSelectedId?: string;
   pageSize?: number;
-  /** Lab only: ids the fake API refuses on the first try, to show a partial failure. */
+  /** Lab only: ids the fake API refuses on the first try, to show a failed save. */
   failIds?: string[];
-  /** Lab only: how long the fake API takes, in ms, for C and D. */
+  /** Lab only: how long the fake API takes, in ms. */
   latencyMs?: number;
-  /** Lab only, `skipt`: render just the detail panel of `defaultSelectedId`. */
+  /** Lab only: render just the detail panel of `defaultSelectedId`. */
   panelOnly?: boolean;
   /**
    * Called with the query string the real page would write with `router.replace`
@@ -147,9 +137,6 @@ const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boo
 
 /* ── State shared by every look ────────────────────────────────────────────── */
 
-type SortKey = "name" | "email" | "permissions" | "lastSeen";
-type SortDir = "asc" | "desc";
-
 interface ConfirmRequest {
   title: string;
   body: ReactNode;
@@ -159,11 +146,8 @@ interface ConfirmRequest {
   onCancel?: () => void;
 }
 
-/** What a batch call to the (fake) API did: who changed, and who it refused. */
-export interface BatchResult {
-  done: LabUser[];
-  failed: LabUser[];
-}
+/** What the (fake) API did with one change. */
+type SaveResult = "saved" | "refused";
 
 interface Toast {
   key: number;
@@ -178,7 +162,6 @@ function useUserManagement(props: UserManagementLabProps) {
   const [query, setQuery] = useState(props.defaultQuery ?? "");
   const [permission, setPermission] = useState<PermissionFilter>(props.defaultPermission ?? "all");
   const [page, setPage] = useState(0);
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "name", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(props.defaultSelectedId ?? null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -205,15 +188,8 @@ function useUserManagement(props: UserManagementLabProps) {
   const filtered = useMemo(() => {
     const list =
       permission === "all" ? matching : matching.filter((u) => u.permissions === permission);
-    const sign = sort.dir === "asc" ? 1 : -1;
-    const by: Record<SortKey, (a: LabUser, b: LabUser) => number> = {
-      name: (a, b) => compareIs(a.name, b.name),
-      email: (a, b) => compareIs(a.email, b.email),
-      permissions: (a, b) => RANK[a.permissions] - RANK[b.permissions] || compareIs(a.name, b.name),
-      lastSeen: (a, b) => (a.lastSeenAt ?? "").localeCompare(b.lastSeenAt ?? ""),
-    };
-    return [...list].sort((a, b) => sign * by[sort.key](a, b));
-  }, [matching, permission, sort]);
+    return [...list].sort((a, b) => compareIs(a.name, b.name));
+  }, [matching, permission]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount - 1);
@@ -233,108 +209,7 @@ function useUserManagement(props: UserManagementLabProps) {
   /** Self and platform admins can't be changed from here, so they're never targets. */
   const isLocked = (u: LabUser) => u.id === currentUserId || u.permissions === "admin";
 
-  const commit = (ids: Set<string>, change: (u: LabUser) => LabUser, message: string) => {
-    const before = users;
-    setUsers((prev) => prev.map((u) => (ids.has(u.id) ? change(u) : u)));
-    setToast({
-      key: Date.now(),
-      message,
-      undo: () => {
-        setUsers(before);
-        setToast({ key: Date.now(), message: "Afturkallað." });
-      },
-    });
-  };
-
   const nothingChanged = () => setToast({ key: Date.now(), message: "Engin breyting." });
-
-  const changeRole = (ids: string[], to: UserPermissions) => {
-    const targets = users.filter((u) => ids.includes(u.id) && !isLocked(u) && u.permissions !== to);
-    if (targets.length === 0) return nothingChanged();
-    const at = new Date().toISOString();
-    const apply = () =>
-      commit(
-        new Set(targets.map((u) => u.id)),
-        (u) => ({
-          ...u,
-          permissions: to,
-          history: [...u.history, { at, text: `Réttindi: ${LABEL[u.permissions]} → ${LABEL[to]}` }],
-        }),
-        targets.length === 1
-          ? `${targets[0].name} er nú ${LABEL_LOWER[to]}.`
-          : `Réttindum breytt hjá ${countIs(targets.length, "notanda", "notendum")}.`
-      );
-
-    const promotes =
-      RANK[to] >= RANK.moderator && targets.some((u) => RANK[u.permissions] < RANK[to]);
-    if (targets.length === 1 && !promotes) return apply();
-
-    // UX rule 5: promoting to moderator always confirms; a change to many confirms with a count.
-    setConfirm({
-      title:
-        targets.length === 1
-          ? "Gera að umsjónarmanni dagskrár?"
-          : `Breyta réttindum hjá ${countIs(targets.length, "notanda", "notendum")}?`,
-      body: (
-        <>
-          <p>
-            {targets.length === 1
-              ? `${targets[0].name} verður ${LABEL_LOWER[to]}.`
-              : `Ný réttindi: ${LABEL[to]}.`}
-          </p>
-          {promotes && <p>{PROMOTE_WARNING}</p>}
-          {targets.length > 1 && <NameList users={targets} />}
-        </>
-      ),
-      confirmLabel:
-        targets.length === 1
-          ? "Gera að umsjónarmanni"
-          : `Breyta hjá ${countIs(targets.length, "notanda", "notendum")}`,
-      tone: "primary",
-      onConfirm: apply,
-    });
-  };
-
-  const setSuspended = (ids: string[], suspend: boolean) => {
-    const wanted = suspend ? "active" : "suspended";
-    const targets = users.filter((u) => ids.includes(u.id) && !isLocked(u) && u.status === wanted);
-    if (targets.length === 0) return nothingChanged();
-    const at = new Date().toISOString();
-    const verb = suspend ? "frystur" : "virkjaður aftur";
-    const apply = () =>
-      commit(
-        new Set(targets.map((u) => u.id)),
-        (u) => ({
-          ...u,
-          status: suspend ? "suspended" : "active",
-          history: [...u.history, { at, text: `Aðgangur ${verb}` }],
-        }),
-        targets.length === 1
-          ? `Aðgangur ${verb}: ${targets[0].name}.`
-          : `Aðgangur ${verb} hjá ${countIs(targets.length, "notanda", "notendum")}.`
-      );
-    // One user: reversible, so it happens at once with "Afturkalla". Many: confirm with a count.
-    if (targets.length === 1) return apply();
-    const n = countIs(targets.length, "notanda", "notendum");
-    setConfirm({
-      title: suspend ? `Frysta aðgang hjá ${n}?` : `Virkja aðgang aftur hjá ${n}?`,
-      body: (
-        <>
-          <p>
-            {suspend
-              ? "Þau komast ekki inn í Slóða fyrr en aðgangurinn er virkjaður aftur. Efnið þeirra helst óbreytt."
-              : "Þau komast strax inn aftur með sömu réttindi og áður."}
-          </p>
-          <NameList users={targets} />
-        </>
-      ),
-      confirmLabel: suspend ? "Frysta aðgang" : "Virkja aftur",
-      tone: suspend ? "danger" : "primary",
-      onConfirm: apply,
-    });
-  };
-
-  /* ── Async versions for C and D: a fake API call, partial failure, undo per batch ── */
 
   /** Opens the confirm dialog and resolves with the answer. */
   const askConfirm = (request: Omit<ConfirmRequest, "onConfirm" | "onCancel">) =>
@@ -349,80 +224,60 @@ function useUserManagement(props: UserManagementLabProps) {
     });
 
   /**
-   * Sends one batch. Whoever the API accepts changes at once, and the toast's "Afturkalla"
-   * puts every one of them back as they were. Whoever it refuses comes back in `failed`.
+   * Sends one change to the (fake) API. If it goes through, the user changes at once and the
+   * toast's "Afturkalla" puts them back as they were. A user in `failIds` is refused once.
    */
-  const runBatch = async (
-    targets: LabUser[],
+  const send = async (
+    target: LabUser,
     change: (u: LabUser) => LabUser,
-    describe: (done: LabUser[]) => string
-  ): Promise<BatchResult> => {
+    message: string
+  ): Promise<SaveResult> => {
     await new Promise((r) => setTimeout(r, latencyMs));
-    const failed = targets.filter((u) => failIds?.includes(u.id) && !refused.current.has(u.id));
-    for (const u of failed) refused.current.add(u.id);
-    const done = targets.filter((u) => !failed.includes(u));
-    if (done.length === 0) return { done, failed };
-
-    const before = new Map(done.map((u) => [u.id, u]));
-    setUsers((prev) => prev.map((u) => (before.has(u.id) ? change(u) : u)));
-    const failNote = failed.length
-      ? ` Ekki tókst hjá ${countIs(failed.length, "notanda", "notendum")}.`
-      : "";
+    if (failIds?.includes(target.id) && !refused.current.has(target.id)) {
+      refused.current.add(target.id);
+      return "refused";
+    }
+    setUsers((prev) => prev.map((u) => (u.id === target.id ? change(u) : u)));
     setToast({
       key: Date.now(),
-      message: describe(done) + failNote,
+      message,
       undo: () => {
-        setUsers((prev) => prev.map((u) => before.get(u.id) ?? u));
-        setToast({
-          key: Date.now(),
-          message:
-            done.length === 1
-              ? "Afturkallað."
-              : `Afturkallað hjá ${countIs(done.length, "notanda", "notendum")}.`,
-        });
+        setUsers((prev) => prev.map((u) => (u.id === target.id ? target : u)));
+        setToast({ key: Date.now(), message: "Afturkallað." });
       },
     });
-    return { done, failed };
+    return "saved";
   };
 
-  const changeRoleBatch = async (
-    ids: string[],
+  const changeRole = async (
+    id: string,
     to: UserPermissions,
-    options: { confirmed?: boolean; onStart?: () => void } = {}
-  ): Promise<BatchResult | null> => {
-    const targets = users.filter((u) => ids.includes(u.id) && !isLocked(u) && u.permissions !== to);
-    if (targets.length === 0) {
+    options: { onStart?: () => void } = {}
+  ): Promise<SaveResult | null> => {
+    const target = users.find((u) => u.id === id && !isLocked(u) && u.permissions !== to);
+    if (!target) {
       nothingChanged();
       return null;
     }
-    const promotes =
-      RANK[to] >= RANK.moderator && targets.some((u) => RANK[u.permissions] < RANK[to]);
-    // UX rule 5: promoting to moderator always confirms; a change to many confirms with a count.
-    if (!options.confirmed && (targets.length > 1 || promotes)) {
-      const n = countIs(targets.length, "notanda", "notendum");
+    // UX rule 5: promoting to moderator always confirms.
+    if (RANK[to] >= RANK.moderator && RANK[target.permissions] < RANK[to]) {
       const ok = await askConfirm({
-        title:
-          targets.length === 1 ? "Gera að umsjónarmanni dagskrár?" : `Breyta réttindum hjá ${n}?`,
+        title: "Gera að umsjónarmanni dagskrár?",
         body: (
           <>
-            <p>
-              {targets.length === 1
-                ? `${targets[0].name} verður ${LABEL_LOWER[to]}.`
-                : `Ný réttindi: ${LABEL[to]}.`}
-            </p>
-            {promotes && <p>{PROMOTE_WARNING}</p>}
-            {targets.length > 1 && <NameList users={targets} />}
+            <p>{`${target.name} verður ${LABEL_LOWER[to]}.`}</p>
+            <p>{PROMOTE_WARNING}</p>
           </>
         ),
-        confirmLabel: targets.length === 1 ? "Gera að umsjónarmanni" : `Breyta hjá ${n}`,
+        confirmLabel: "Gera að umsjónarmanni",
         tone: "primary",
       });
       if (!ok) return null;
     }
     options.onStart?.();
     const at = new Date().toISOString();
-    return runBatch(
-      targets,
+    return send(
+      target,
       (u) => ({
         ...u,
         permissions: to,
@@ -431,50 +286,28 @@ function useUserManagement(props: UserManagementLabProps) {
           { at, text: `Réttindi: ${LABEL[u.permissions]} → ${LABEL[to]}`, by: "Þú" },
         ],
       }),
-      (done) =>
-        done.length === 1
-          ? `${done[0].name} er nú ${LABEL_LOWER[to]}.`
-          : `Réttindum breytt hjá ${countIs(done.length, "notanda", "notendum")}.`
+      `${target.name} er nú ${LABEL_LOWER[to]}.`
     );
   };
 
-  const suspendBatch = async (
-    ids: string[],
+  /** Reversible, so it happens at once, with "Afturkalla" in the toast. */
+  const setSuspended = async (
+    id: string,
     suspend: boolean,
     options: { reason?: string; onStart?: () => void } = {}
-  ): Promise<BatchResult | null> => {
+  ): Promise<SaveResult | null> => {
     const wanted = suspend ? "active" : "suspended";
-    const targets = users.filter((u) => ids.includes(u.id) && !isLocked(u) && u.status === wanted);
-    if (targets.length === 0) {
+    const target = users.find((u) => u.id === id && !isLocked(u) && u.status === wanted);
+    if (!target) {
       nothingChanged();
       return null;
-    }
-    // One user: reversible, so it happens at once with "Afturkalla". Many: confirm with a count.
-    if (targets.length > 1) {
-      const n = countIs(targets.length, "notanda", "notendum");
-      const ok = await askConfirm({
-        title: suspend ? `Frysta aðgang hjá ${n}?` : `Virkja aðgang aftur hjá ${n}?`,
-        body: (
-          <>
-            <p>
-              {suspend
-                ? "Þau komast ekki inn í Slóða fyrr en aðgangurinn er virkjaður aftur. Efnið þeirra helst óbreytt."
-                : "Þau komast strax inn aftur með sömu réttindi og áður."}
-            </p>
-            <NameList users={targets} />
-          </>
-        ),
-        confirmLabel: suspend ? `Frysta hjá ${n}` : `Virkja hjá ${n}`,
-        tone: suspend ? "danger" : "primary",
-      });
-      if (!ok) return null;
     }
     options.onStart?.();
     const at = new Date().toISOString();
     const reason = options.reason?.trim() || undefined;
     const verb = suspend ? "frystur" : "virkjaður aftur";
-    return runBatch(
-      targets,
+    return send(
+      target,
       (u) => ({
         ...u,
         status: suspend ? "suspended" : "active",
@@ -484,10 +317,7 @@ function useUserManagement(props: UserManagementLabProps) {
           { at, text: reason ? `Aðgangur ${verb}: ${reason}` : `Aðgangur ${verb}`, by: "Þú" },
         ],
       }),
-      (done) =>
-        done.length === 1
-          ? `Aðgangur ${verb}: ${done[0].name}.`
-          : `Aðgangur ${verb} hjá ${countIs(done.length, "notanda", "notendum")}.`
+      `Aðgangur ${verb}: ${target.name}.`
     );
   };
 
@@ -516,9 +346,6 @@ function useUserManagement(props: UserManagementLabProps) {
     pageCount,
     pageSize,
     setPage,
-    sort,
-    toggleSort: (key: SortKey) =>
-      setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" })),
     selectedId,
     setSelectedId,
     confirm,
@@ -529,8 +356,6 @@ function useUserManagement(props: UserManagementLabProps) {
     isSelf: (u: LabUser) => u.id === currentUserId,
     changeRole,
     setSuspended,
-    changeRoleBatch,
-    suspendBatch,
     resetFilters,
   };
 }
@@ -552,7 +377,7 @@ export default function UserManagementLab(props: UserManagementLabProps) {
     m.setConfirm(null);
   };
 
-  if (props.panelOnly && look === "skipt") {
+  if (props.panelOnly) {
     const user = m.users.find((u) => u.id === m.selectedId);
     return (
       <div className={cx(styles.root, styles[look])}>
@@ -564,15 +389,12 @@ export default function UserManagementLab(props: UserManagementLabProps) {
   }
 
   let body: ReactNode;
-  if (state === "loading") body = <Skeleton look={look} />;
+  if (state === "loading") body = <Skeleton />;
   else if (state === "error")
     body = <LoadError detail={props.errorDetail} onRetry={props.onRetry} />;
   else if (props.users.length === 0) body = <NoUsers />;
   else if (m.filtered.length === 0) body = <NoMatch onReset={m.resetFilters} query={m.query} />;
-  else if (look === "tafla") body = <TableLook m={m} />;
-  else if (look === "spjold") body = <CardsLook m={m} />;
-  else if (look === "skipt") body = <SplitLook m={m} />;
-  else body = <BulkLook m={m} />;
+  else body = <SplitLook m={m} />;
 
   const showSummary = ready && props.users.length > 0;
 
@@ -652,195 +474,6 @@ function Avatar({ name }: { name: string }) {
     <span className={styles.avatar} aria-hidden="true">
       {initials(name)}
     </span>
-  );
-}
-
-function NameList({ users }: { users: LabUser[] }) {
-  const shown = users.slice(0, 5);
-  return (
-    <ul className={styles.nameList}>
-      {shown.map((u) => (
-        <li key={u.id}>{u.name}</li>
-      ))}
-      {users.length > shown.length && (
-        <li className={styles.nameListMore}>og {users.length - shown.length} í viðbót</li>
-      )}
-    </ul>
-  );
-}
-
-/** Why a row has no controls: visible text, not a tooltip (UX rule 9). */
-function lockReason(m: Model, u: LabUser): string {
-  return m.isSelf(u) ? "Eigin aðgangur" : "Stillt í kerfinu";
-}
-
-function RoleSelect({ m, user, id }: { m: Model; user: LabUser; id?: string }) {
-  if (m.isLocked(user)) {
-    return (
-      <span className={styles.lockedRole}>
-        {LABEL[user.permissions]}
-        <span className={styles.reason}>{lockReason(m, user)}</span>
-      </span>
-    );
-  }
-  return (
-    <select
-      id={id}
-      className={styles.select}
-      value={user.permissions}
-      onChange={(e) => m.changeRole([user.id], e.target.value as UserPermissions)}
-      aria-label={id ? undefined : `Réttindi: ${user.name}`}
-    >
-      {GRANTABLE.map((p) => (
-        <option key={p} value={p}>
-          {LABEL[p]}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function SuspendButton({ m, user, full }: { m: Model; user: LabUser; full?: boolean }) {
-  if (m.isLocked(user)) return null;
-  const suspended = user.status === "suspended";
-  return (
-    <button
-      type="button"
-      className={cx(
-        styles.button,
-        suspended ? styles.buttonSecondary : styles.buttonDangerQuiet,
-        full && styles.full
-      )}
-      onClick={() => m.setSuspended([user.id], !suspended)}
-      aria-label={`${suspended ? "Virkja aðgang aftur" : "Frysta aðgang"}: ${user.name}`}
-    >
-      {suspended ? "Virkja aftur" : "Frysta"}
-    </button>
-  );
-}
-
-/* ── A · Tafla: dense sortable table ───────────────────────────────────────── */
-
-const SORT_LABEL: Record<SortKey, string> = {
-  name: "nafni",
-  email: "netfangi",
-  permissions: "réttindum",
-  lastSeen: "síðustu innskráningu",
-};
-
-function SortHeader({ m, k, children }: { m: Model; k: SortKey; children: ReactNode }) {
-  const active = m.sort.key === k;
-  const Icon = !active ? ArrowUpDown : m.sort.dir === "asc" ? ArrowUp : ArrowDown;
-  return (
-    <th
-      scope="col"
-      className={cx(styles.th, k === "email" && styles.emailCol)}
-      aria-sort={active ? (m.sort.dir === "asc" ? "ascending" : "descending") : undefined}
-    >
-      <button type="button" className={styles.sortButton} onClick={() => m.toggleSort(k)}>
-        {children}
-        <Icon className={cx(styles.sortIcon, active && styles.sortIconActive)} aria-hidden="true" />
-      </button>
-    </th>
-  );
-}
-
-function TableLook({ m }: { m: Model }) {
-  return (
-    <div className={styles.tableScroll} role="region" aria-label="Notendatafla" tabIndex={0}>
-      <table className={styles.table}>
-        <caption className={styles.srOnly}>
-          Notendur, raðað eftir {SORT_LABEL[m.sort.key]},{" "}
-          {m.sort.dir === "asc" ? "hækkandi" : "lækkandi"}
-        </caption>
-        <thead>
-          <tr>
-            <SortHeader m={m} k="name">
-              Nafn
-            </SortHeader>
-            <SortHeader m={m} k="email">
-              Netfang
-            </SortHeader>
-            <SortHeader m={m} k="permissions">
-              Réttindi
-            </SortHeader>
-            <SortHeader m={m} k="lastSeen">
-              Síðast inni
-            </SortHeader>
-            <th scope="col" className={styles.th}>
-              <span className={styles.thText}>Staða</span>
-            </th>
-            <th scope="col" className={styles.th}>
-              <span className={styles.srOnly}>Aðgerðir</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {m.visible.map((u) => (
-            <tr key={u.id} className={cx(styles.tr, m.isSelf(u) && styles.selfRow)}>
-              <th scope="row" className={styles.td}>
-                <span className={styles.name}>{u.name}</span>
-                {m.isSelf(u) && <SelfBadge />}
-                <span className={cx(styles.email, styles.emailInline)}>{u.email}</span>
-              </th>
-              <td className={cx(styles.td, styles.emailCol, styles.email)}>{u.email}</td>
-              <td className={styles.td}>
-                <RoleSelect m={m} user={u} />
-              </td>
-              <td className={cx(styles.td, styles.nowrap)}>{lastSeen(u)}</td>
-              <td className={styles.td}>
-                <StatusBadge user={u} />
-              </td>
-              <td className={styles.td}>
-                <SuspendButton m={m} user={u} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* ── B · Spjöld: card list for phones ──────────────────────────────────────── */
-
-function CardsLook({ m }: { m: Model }) {
-  const id = useId();
-  return (
-    <ul className={styles.cards}>
-      {m.visible.map((u) => (
-        <li
-          key={u.id}
-          className={cx(styles.card, u.status === "suspended" && styles.cardSuspended)}
-        >
-          <div className={styles.cardHead}>
-            <Avatar name={u.name} />
-            <div className={styles.cardWho}>
-              <p className={styles.name}>
-                {u.name}
-                {m.isSelf(u) && <SelfBadge />}
-              </p>
-              <p className={styles.email}>{u.email}</p>
-            </div>
-            <StatusBadge user={u} />
-          </div>
-          <p className={styles.cardMeta}>Síðast inni: {lastSeen(u)}</p>
-          <div className={styles.cardActions}>
-            {m.isLocked(u) ? (
-              <RoleSelect m={m} user={u} />
-            ) : (
-              <div className={styles.field}>
-                <label htmlFor={`${id}-${u.id}`} className={styles.fieldLabel}>
-                  Réttindi
-                </label>
-                <RoleSelect m={m} user={u} id={`${id}-${u.id}`} />
-              </div>
-            )}
-            <SuspendButton m={m} user={u} />
-          </div>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -1033,21 +666,21 @@ function UserDetail({
       return;
     }
     setRoleNote(null);
-    const result = await m.changeRoleBatch([user.id], value, { onStart: () => setBusy("role") });
+    const result = await m.changeRole(user.id, value, { onStart: () => setBusy("role") });
     setBusy(null);
-    if (result?.failed.length) setRoleError("Ekki tókst að vista réttindin. Reyndu aftur.");
+    if (result === "refused") setRoleError("Ekki tókst að vista réttindin. Reyndu aftur.");
     else if (result) setDraft(null);
   };
 
   const toggleAccess = async (e: FormEvent) => {
     e.preventDefault();
     setAccessError(null);
-    const result = await m.suspendBatch([user.id], !suspended, {
+    const result = await m.setSuspended(user.id, !suspended, {
       reason,
       onStart: () => setBusy("access"),
     });
     setBusy(null);
-    if (result?.failed.length) {
+    if (result === "refused") {
       setAccessError(
         suspended
           ? "Ekki tókst að virkja aðganginn aftur. Reyndu aftur."
@@ -1281,396 +914,32 @@ function UserDetail({
   );
 }
 
-/* ── D · Val: checkbox rows with a sticky action bar ───────────────────────── */
-
-type BulkAction = "role" | "freeze" | "reinstate";
-
-const BULK_BUSY: Record<BulkAction, string> = {
-  role: "Breyti…",
-  freeze: "Frysti…",
-  reinstate: "Virki…",
-};
-
-const BULK_FAILED: Record<BulkAction, string> = {
-  role: "breyta réttindum",
-  freeze: "frysta aðgang",
-  reinstate: "virkja aðgang aftur",
-};
-
-interface BulkFailure {
-  action: BulkAction;
-  role?: UserPermissions;
-  users: LabUser[];
-}
-
-function BulkLook({ m }: { m: Model }) {
-  const [chosen, setChosen] = useState<Set<string>>(new Set());
-  const [anchor, setAnchor] = useState<string | null>(null);
-  const [busy, setBusy] = useState<BulkAction | null>(null);
-  const [failure, setFailure] = useState<BulkFailure | null>(null);
-  const [roleDialog, setRoleDialog] = useState(false);
-  const allRef = useRef<HTMLInputElement>(null);
-  const failureRef = useRef<HTMLDivElement>(null);
-
-  const selectable = m.visible.filter((u) => !m.isLocked(u));
-  // Act only on what can be seen: a selection hidden by a later filter is ignored.
-  const targets = m.filtered.filter((u) => chosen.has(u.id));
-  const onPage = selectable.filter((u) => chosen.has(u.id)).length;
-  const all = selectable.length > 0 && onPage === selectable.length;
-  const some = onPage > 0 && !all;
-  const failedIds = new Set(failure?.users.map((u) => u.id));
-
-  useEffect(() => {
-    if (allRef.current) allRef.current.indeterminate = some;
-  }, [some]);
-
-  const toggleAll = () =>
-    setChosen((prev) => {
-      const next = new Set(prev);
-      for (const u of selectable) {
-        if (all) next.delete(u.id);
-        else next.add(u.id);
-      }
-      return next;
-    });
-
-  /** A click toggles one row; a shift-click sets every row from the last click to this one. */
-  const onRowChange = (uid: string, e: ChangeEvent<HTMLInputElement>) => {
-    const on = e.target.checked;
-    const shift = (e.nativeEvent as MouseEvent).shiftKey;
-    const from = anchor ? selectable.findIndex((u) => u.id === anchor) : -1;
-    const to = selectable.findIndex((u) => u.id === uid);
-    const range =
-      shift && from !== -1 && to !== -1
-        ? selectable.slice(Math.min(from, to), Math.max(from, to) + 1).map((u) => u.id)
-        : [uid];
-    setChosen((prev) => {
-      const next = new Set(prev);
-      for (const id of range) {
-        if (on) next.add(id);
-        else next.delete(id);
-      }
-      return next;
-    });
-    setAnchor(uid);
-  };
-
-  const clear = () => {
-    setChosen(new Set());
-    setAnchor(null);
-  };
-
-  const run = async (
-    action: BulkAction,
-    ids: string[],
-    send: (onStart: () => void) => Promise<BatchResult | null>,
-    role?: UserPermissions
-  ) => {
-    setFailure(null);
-    const result = await send(() => setBusy(action));
-    setBusy(null);
-    if (!result) return;
-    setChosen((prev) => new Set([...prev].filter((id) => !ids.includes(id))));
-    if (result.failed.length) {
-      setFailure({ action, role, users: result.failed });
-      requestAnimationFrame(() => failureRef.current?.focus());
-    } else {
-      // The bar goes with the selection, so focus goes back to the top of the list.
-      requestAnimationFrame(() => allRef.current?.focus());
-    }
-  };
-
-  const freeze = (ids: string[]) =>
-    run("freeze", ids, (onStart) => m.suspendBatch(ids, true, { onStart }));
-  const reinstate = (ids: string[]) =>
-    run("reinstate", ids, (onStart) => m.suspendBatch(ids, false, { onStart }));
-  const changeRole = (ids: string[], role: UserPermissions) =>
-    run("role", ids, (onStart) => m.changeRoleBatch(ids, role, { confirmed: true, onStart }), role);
-
-  const retry = () => {
-    if (!failure) return;
-    const ids = failure.users.map((u) => u.id);
-    if (failure.action === "freeze") freeze(ids);
-    else if (failure.action === "reinstate") reinstate(ids);
-    else if (failure.role) changeRole(ids, failure.role);
-  };
-
-  const ids = targets.map((u) => u.id);
-  const anyActive = targets.some((u) => u.status === "active");
-  const anySuspended = targets.some((u) => u.status === "suspended");
-  const showBar = targets.length > 0 || busy !== null;
-
-  return (
-    <div className={styles.bulk}>
-      <p className={styles.srOnly} aria-live="polite">
-        {targets.length > 0 ? `Valin: ${countIs(targets.length, "notandi", "notendur")}` : ""}
-      </p>
-      <div className={styles.bulkHead}>
-        <label className={styles.checkLabel}>
-          <input
-            ref={allRef}
-            type="checkbox"
-            className={styles.checkbox}
-            checked={all}
-            onChange={toggleAll}
-            disabled={selectable.length === 0}
-          />
-          Velja alla á síðunni
-        </label>
-        <span className={styles.bulkHeadCols} aria-hidden="true">
-          <span>Réttindi</span>
-          <span>Staða</span>
-        </span>
-      </div>
-
-      {failure && (
-        <div ref={failureRef} className={styles.failure} role="alert" tabIndex={-1}>
-          <TriangleAlert className={styles.failureIcon} aria-hidden="true" />
-          <div className={styles.failureBody}>
-            <p className={styles.failureTitle}>
-              Ekki tókst að {BULK_FAILED[failure.action]} hjá{" "}
-              {countIs(failure.users.length, "notanda", "notendum")}.
-            </p>
-            <NameList users={failure.users} />
-            <div className={styles.failureActions}>
-              <button
-                type="button"
-                className={cx(styles.button, styles.buttonSecondary)}
-                onClick={retry}
-                disabled={busy !== null}
-              >
-                {busy ? BULK_BUSY[busy] : "Reyna aftur"}
-              </button>
-            </div>
-          </div>
-          <button
-            type="button"
-            className={cx(styles.button, styles.buttonGhost, styles.iconButton)}
-            aria-label="Loka"
-            onClick={() => setFailure(null)}
-          >
-            <X className={styles.buttonIcon} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      <ul className={styles.bulkList}>
-        {m.visible.map((u) => {
-          const locked = m.isLocked(u);
-          const isChosen = chosen.has(u.id);
-          const cells = (
-            <>
-              <span className={styles.bulkWho}>
-                <span className={styles.splitNameLine}>
-                  <span className={styles.name}>{u.name}</span>
-                  {m.isSelf(u) && <SelfBadge />}
-                </span>
-                <span className={styles.email}>{u.email}</span>
-              </span>
-              <span className={styles.bulkRole}>
-                {LABEL[u.permissions]}
-                {locked && <span className={styles.reason}>{lockReason(m, u)}</span>}
-              </span>
-              <span className={styles.bulkStatus}>
-                <StatusBadge user={u} />
-                {failedIds.has(u.id) && <span className={styles.failedBadge}>Mistókst</span>}
-              </span>
-            </>
-          );
-          return (
-            <li key={u.id}>
-              {locked ? (
-                <div className={cx(styles.bulkRow, styles.bulkRowLocked)}>
-                  <span className={styles.checkSpacer} aria-hidden="true" />
-                  {cells}
-                </div>
-              ) : (
-                <label className={cx(styles.bulkRow, isChosen && styles.bulkRowChosen)}>
-                  <input
-                    type="checkbox"
-                    className={styles.checkbox}
-                    checked={isChosen}
-                    onChange={(e) => onRowChange(u.id, e)}
-                  />
-                  {cells}
-                </label>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-
-      {showBar && (
-        <div className={styles.actionBar} role="region" aria-label="Aðgerðir fyrir valda notendur">
-          <p className={styles.barCount}>Valin: {countIs(targets.length, "notandi", "notendur")}</p>
-          <button
-            type="button"
-            className={cx(styles.button, styles.buttonGhost)}
-            onClick={clear}
-            disabled={busy !== null}
-          >
-            Hreinsa val
-          </button>
-          <span className={styles.barSpacer} />
-          <button
-            type="button"
-            className={cx(styles.button, styles.buttonSecondary)}
-            onClick={() => setRoleDialog(true)}
-            disabled={busy !== null}
-          >
-            {busy === "role" ? BULK_BUSY.role : "Breyta réttindum…"}
-          </button>
-          {anySuspended && (
-            <button
-              type="button"
-              className={cx(styles.button, styles.buttonSecondary)}
-              onClick={() => reinstate(ids)}
-              disabled={busy !== null}
-            >
-              {busy === "reinstate" ? BULK_BUSY.reinstate : "Virkja aftur"}
-            </button>
-          )}
-          {(anyActive || busy === "freeze") && (
-            <button
-              type="button"
-              className={cx(styles.button, styles.buttonDanger)}
-              onClick={() => freeze(ids)}
-              disabled={busy !== null}
-            >
-              {busy === "freeze" ? BULK_BUSY.freeze : "Frysta aðgang"}
-            </button>
-          )}
-        </div>
-      )}
-
-      <BulkRoleDialog
-        open={roleDialog}
-        users={targets}
-        onClose={() => setRoleDialog(false)}
-        onConfirm={(role) => {
-          setRoleDialog(false);
-          changeRole(ids, role);
-        }}
-      />
-    </div>
-  );
-}
-
-/** "Breyta réttindum…": pick the new role, see the count and the names, then confirm. */
-function BulkRoleDialog({
-  open,
-  users,
-  onClose,
-  onConfirm,
-}: {
-  open: boolean;
-  users: LabUser[];
-  onClose: () => void;
-  onConfirm: (role: UserPermissions) => void;
-}) {
-  const id = useId();
-  const [role, setRole] = useState<UserPermissions>("member");
-  const changing = users.filter((u) => u.permissions !== role);
-  const promotes = role === "moderator" && changing.length > 0;
-  const n = countIs(users.length, "notanda", "notendum");
-
-  return (
-    <Modal open={open} onClose={onClose} labelledBy={`${id}-t`}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onConfirm(role);
-        }}
-      >
-        <h2 id={`${id}-t`} className={styles.dialogTitle}>
-          Breyta réttindum hjá {n}
-        </h2>
-        <div className={styles.dialogBody}>
-          <fieldset className={styles.radios}>
-            <legend className={styles.fieldLabel}>Ný réttindi</legend>
-            {GRANTABLE.map((p) => (
-              <label key={p} className={cx(styles.radio, role === p && styles.radioChecked)}>
-                <input
-                  type="radio"
-                  name={`${id}-role`}
-                  value={p}
-                  checked={role === p}
-                  onChange={() => setRole(p)}
-                />
-                <span>
-                  <span className={styles.radioLabel}>{LABEL[p]}</span>
-                  <span className={styles.radioHint}>{DESCRIPTION[p]}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          {promotes && <p>{PROMOTE_WARNING}</p>}
-          <NameList users={users} />
-          {changing.length < users.length && (
-            <p className={styles.sectionText}>
-              {changing.length === 0
-                ? `Öll valin eru þegar ${LABEL_LOWER[role]}.`
-                : `Þegar með þessi réttindi: ${countIs(users.length - changing.length, "notandi", "notendur")}. Þeim er ekki breytt.`}
-            </p>
-          )}
-        </div>
-        <div className={styles.dialogActions}>
-          <button type="button" className={cx(styles.button, styles.buttonGhost)} onClick={onClose}>
-            Hætta við
-          </button>
-          <button type="submit" className={cx(styles.button, styles.buttonPrimary)}>
-            {changing.length > 0
-              ? `Breyta hjá ${countIs(changing.length, "notanda", "notendum")}`
-              : "Breyta réttindum"}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
 /* ── States ────────────────────────────────────────────────────────────────── */
 
-function Skeleton({ look }: { look: UserManagementLook }) {
+function Skeleton() {
   const rows = Array.from({ length: 6 }, (_, i) => i);
   return (
     <div>
       <p role="status" className={styles.srOnly}>
         Sæki notendur…
       </p>
-      <div className={cx(styles.skeleton, styles[`skeleton_${look}`])} aria-hidden="true">
-        {look === "skipt" ? (
-          <>
-            <div className={styles.skeletonList}>
-              {rows.map((i) => (
-                <div key={i} className={styles.skeletonRow}>
-                  <span className={cx(styles.bone, styles.boneAvatar)} />
-                  <span className={styles.boneStack}>
-                    <span className={cx(styles.bone, styles.boneLong)} />
-                    <span className={cx(styles.bone, styles.boneShort)} />
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className={styles.skeletonPanel}>
-              <span className={cx(styles.bone, styles.boneTitle)} />
-              <span className={cx(styles.bone, styles.boneLong)} />
-              <span className={cx(styles.bone, styles.boneBlock)} />
-            </div>
-          </>
-        ) : (
-          rows.map((i) => (
+      <div className={cx(styles.skeleton, styles.skeleton_skipt)} aria-hidden="true">
+        <div className={styles.skeletonList}>
+          {rows.map((i) => (
             <div key={i} className={styles.skeletonRow}>
-              {look === "val" && <span className={cx(styles.bone, styles.boneCheck)} />}
-              {look === "spjold" && <span className={cx(styles.bone, styles.boneAvatar)} />}
+              <span className={cx(styles.bone, styles.boneAvatar)} />
               <span className={styles.boneStack}>
                 <span className={cx(styles.bone, styles.boneLong)} />
                 <span className={cx(styles.bone, styles.boneShort)} />
               </span>
-              <span className={cx(styles.bone, styles.boneControl)} />
             </div>
-          ))
-        )}
+          ))}
+        </div>
+        <div className={styles.skeletonPanel}>
+          <span className={cx(styles.bone, styles.boneTitle)} />
+          <span className={cx(styles.bone, styles.boneLong)} />
+          <span className={cx(styles.bone, styles.boneBlock)} />
+        </div>
       </div>
     </div>
   );

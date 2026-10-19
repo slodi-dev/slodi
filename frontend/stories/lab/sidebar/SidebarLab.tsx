@@ -28,7 +28,7 @@ import {
 import { useDrawerFocus } from "@/hooks/useDrawerFocus";
 import styles from "./SidebarLab.module.css";
 
-export type SidebarLook = "rail" | "groups" | "trail" | "night" | "topbar";
+export type SidebarLook = "groups";
 
 export interface SidebarLabProps {
   /** Which lab variation to render. */
@@ -66,7 +66,7 @@ interface NavItem {
 
 interface NavGroup {
   id: string;
-  /** Section heading. Shown in the groups look, screen-reader only in the others. */
+  /** Section heading. Shown when expanded; screen-reader only when the nav is collapsed. */
   heading?: string;
   /** Pinned to the bottom of the nav. */
   bottom?: boolean;
@@ -175,55 +175,35 @@ interface Box {
   height: number;
 }
 
-interface NavGeometry {
-  /** Where the sliding marker sits: the active item (groups) or its waypoint (trail). */
-  marker: Box | null;
-  /** Centres of the waypoints, top to bottom. Trail look only. */
-  waypoints: { x: number; y: number }[];
-  width: number;
-}
-
 /**
- * Measures the active item and the waypoints inside the nav body, and measures again
- * whenever the body resizes, which covers the collapse animation and the phone drawer.
+ * Measures where the sliding marker goes (the active item, in nav-body coordinates), and
+ * measures again whenever the body resizes, which covers the collapse animation and the
+ * phone drawer.
  */
-function useNavGeometry(
+function useMarkerBox(
   bodyRef: React.RefObject<HTMLElement | null>,
-  look: SidebarLook,
   activePath: string,
   collapsed: boolean
 ) {
-  const [geometry, setGeometry] = useState<NavGeometry | null>(null);
-  const tracks = look === "groups" || look === "trail";
+  const [marker, setMarker] = useState<Box | null>(null);
 
   const measure = useCallback(() => {
     const body = bodyRef.current;
-    if (!body || !tracks) return;
-    const origin = body.getBoundingClientRect();
-    const toBox = (el: Element): Box => {
-      const rect = el.getBoundingClientRect();
-      return {
-        top: rect.top - origin.top + body.scrollTop,
-        left: rect.left - origin.left + body.scrollLeft,
-        width: rect.width,
-        height: rect.height,
-      };
-    };
+    if (!body) return;
     const active = body.querySelector('[aria-current="page"]');
-    const markerEl = look === "trail" ? active?.querySelector("[data-waypoint]") : active;
-    const waypoints =
-      look === "trail"
-        ? Array.from(body.querySelectorAll("[data-waypoint]"), (el) => {
-            const box = toBox(el);
-            return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
-          })
-        : [];
-    setGeometry({
-      marker: markerEl ? toBox(markerEl) : null,
-      waypoints,
-      width: body.clientWidth,
+    if (!active) {
+      setMarker(null);
+      return;
+    }
+    const origin = body.getBoundingClientRect();
+    const rect = active.getBoundingClientRect();
+    setMarker({
+      top: rect.top - origin.top + body.scrollTop,
+      left: rect.left - origin.left + body.scrollLeft,
+      width: rect.width,
+      height: rect.height,
     });
-  }, [bodyRef, look, tracks]);
+  }, [bodyRef]);
 
   // Measure again when the active page or the collapsed state changes.
   useLayoutEffect(() => {
@@ -232,56 +212,13 @@ function useNavGeometry(
 
   useEffect(() => {
     const body = bodyRef.current;
-    if (!body || !tracks) return;
+    if (!body) return;
     const observer = new ResizeObserver(() => measure());
     observer.observe(body);
     return () => observer.disconnect();
-  }, [bodyRef, measure, tracks]);
+  }, [bodyRef, measure]);
 
-  return geometry;
-}
-
-/**
- * The trail through the waypoints. Short legs run straight from marker to marker; a long
- * leg (the climb to the pinned items at the bottom) bows out a little, like a path on a map.
- */
-function trailPath(points: { x: number; y: number }[]) {
-  if (points.length < 2) return "";
-  const r = (n: number) => Math.round(n * 10) / 10;
-  let d = `M ${r(points[0].x)} ${r(points[0].y)}`;
-  points.slice(1).forEach((to, index) => {
-    const from = points[index];
-    const dy = to.y - from.y;
-    const bow = Math.min(Math.max((dy - 72) * 0.1, 0), 10) * (index % 2 ? -1 : 1);
-    d +=
-      ` C ${r(from.x + bow)} ${r(from.y + dy / 3)},` +
-      ` ${r(to.x + bow)} ${r(to.y - dy / 3)}, ${r(to.x)} ${r(to.y)}`;
-  });
-  return d;
-}
-
-/** The dashed trail, drawn in from the top each time it mounts. */
-function Trail({ geometry }: { geometry: NavGeometry }) {
-  const maskId = `${useId()}-reveal`;
-  const d = trailPath(geometry.waypoints);
-  if (!d) return null;
-  const height = geometry.waypoints[geometry.waypoints.length - 1].y + 2;
-  return (
-    <svg
-      className={styles.trailMap}
-      width={geometry.width}
-      height={height}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <mask id={maskId} maskUnits="userSpaceOnUse" className={styles.trailMask}>
-        {/* A solid copy of the path that unrolls, revealing the dashes beneath it. */}
-        <path d={d} pathLength={1} className={styles.trailReveal} />
-      </mask>
-      <path d={d} className={styles.trailCasing} mask={`url(#${maskId})`} />
-      <path d={d} className={styles.trailLine} mask={`url(#${maskId})`} />
-    </svg>
-  );
+  return marker;
 }
 
 function NavEntry({
@@ -301,7 +238,7 @@ function NavEntry({
   const Icon = item.icon;
   const content = (
     <>
-      <span className={styles.icon} aria-hidden="true" data-waypoint="">
+      <span className={styles.icon} aria-hidden="true">
         <Icon />
         {badge > 0 && (
           // Keyed on the count, so each new count mounts afresh and replays the pop.
@@ -318,12 +255,6 @@ function NavEntry({
       {item.disabled && (
         <span className={styles.soon} aria-hidden="true">
           Kemur síðar
-        </span>
-      )}
-      {/* Only the trail look shows it; aria-current already says it to screen readers. */}
-      {active && (
-        <span className={styles.here} aria-hidden="true">
-          Þú ert hér
         </span>
       )}
     </>
@@ -375,8 +306,6 @@ export default function SidebarLab({
   const [open, setOpen] = useState(drawerOpen);
   // Set by the first collapse or expand, so the labels fade in only after a real toggle.
   const [toggled, setToggled] = useState(false);
-  // Bumped each time the nav opens (drawer or expand), which remounts and redraws the trail.
-  const [trailRun, setTrailRun] = useState(0);
 
   // The badge pops only when its count changes after mount, not on the first paint.
   const [shownBadge, setShownBadge] = useState(badgeCount);
@@ -391,10 +320,10 @@ export default function SidebarLab({
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const navBodyRef = useRef<HTMLDivElement>(null);
   const isPhone = useIsPhone(shellRef);
-  const geometry = useNavGeometry(navBodyRef, look, pathname, isCollapsed);
+  const marker = useMarkerBox(navBodyRef, pathname, isCollapsed);
   // The marker slides only once it has been placed, so it doesn't fly in from the corner.
   const [markerPlaced, setMarkerPlaced] = useState(false);
-  const hasMarker = Boolean(geometry?.marker);
+  const hasMarker = Boolean(marker);
   useEffect(() => {
     if (!hasMarker || markerPlaced) return;
     const frame = requestAnimationFrame(() => setMarkerPlaced(true));
@@ -419,12 +348,10 @@ export default function SidebarLab({
     const next = !isCollapsed;
     setIsCollapsed(next);
     setToggled(true);
-    if (!next) setTrailRun((run) => run + 1);
     onCollapsedChange?.(next);
   };
 
   const toggleDrawer = () => {
-    if (!open) setTrailRun((run) => run + 1);
     setOpen(!open);
   };
 
@@ -437,10 +364,6 @@ export default function SidebarLab({
     ...group,
     items: group.items.filter((item) => canSee(item, userRole, userPermissions)),
   })).filter((group) => group.items.length > 0);
-
-  const activeLabel = groups
-    .flatMap((group) => group.items)
-    .find((item) => isActivePath(pathname, item.path))?.label;
 
   const renderGroup = (group: NavGroup) => {
     const headingId = `${uid}-${group.id}`;
@@ -501,28 +424,19 @@ export default function SidebarLab({
           >
             {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </button>
-          {look === "topbar" && (
-            <p className={styles.barTitle}>
-              <span className={styles.barBrand}>Slóði</span>
-              {activeLabel && activeLabel !== "Slóði" && (
-                <span className={styles.barPage}>{activeLabel}</span>
-              )}
-            </p>
-          )}
         </div>
 
         <div ref={drawerRef} id={drawerId} className={styles.drawer}>
           <nav aria-label={navLabel} className={styles.nav}>
             <div ref={navBodyRef} className={styles.navBody}>
-              {look === "trail" && geometry && <Trail key={trailRun} geometry={geometry} />}
-              {geometry?.marker && (
+              {marker && (
                 <span
                   className={styles.marker}
                   aria-hidden="true"
                   style={{
-                    width: geometry.marker.width,
-                    height: geometry.marker.height,
-                    transform: `translate(${geometry.marker.left}px, ${geometry.marker.top}px)`,
+                    width: marker.width,
+                    height: marker.height,
+                    transform: `translate(${marker.left}px, ${marker.top}px)`,
                   }}
                 />
               )}

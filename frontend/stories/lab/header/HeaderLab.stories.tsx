@@ -7,7 +7,10 @@ import HeaderLab, { type HeaderLook } from "./HeaderLab";
 /**
  * Header variations for the public pages (landing, Um Slóða, Leikir). Every look carries the
  * real header's links: Heim, Um Slóða, Leikir, Github, then Stjórnborð when signed in or
- * Innskráning when not. See Lab → Um tilraunastofuna.
+ * Innskráning when not. See Lab → About the lab.
+ *
+ * Picked: A · Wordmark, A2 · Wordmark + logo, B · Band and B2 · Band + logo; the other
+ * directions (C Trail, D Overlay, E Split) were removed on 2026-10-19.
  */
 const meta = {
   title: "Lab/Header",
@@ -21,7 +24,7 @@ const meta = {
   argTypes: {
     look: {
       control: "inline-radio",
-      options: ["wordmark", "wordmarkLogo", "band", "bandLogo", "trail", "overlay", "split"],
+      options: ["wordmark", "wordmarkLogo", "band", "bandLogo"],
     },
     signedIn: { control: "boolean" },
     skipTo: { control: false },
@@ -53,21 +56,6 @@ const LOOKS: { look: HeaderLook; name: string; idea: string }[] = [
     name: "B2 · Band + logo",
     idea: "B with the white Slóði mark; the band stays deep green in dark mode so the mark reads.",
   },
-  {
-    look: "trail",
-    name: "C · Trail",
-    idea: "A signpost wordmark with two peaks and a dashed trail over contour lines.",
-  },
-  {
-    look: "overlay",
-    name: "D · Overlay",
-    idea: "No bar at all: the header floats over the landing hero, the action is a raised chip.",
-  },
-  {
-    look: "split",
-    name: "E · Split",
-    idea: "Pages on the left, the account action as a solid green button on the right.",
-  },
 ];
 
 const MAIN_ID = "efni";
@@ -95,24 +83,14 @@ const bodyText: CSSProperties = {
   color: "hsl(var(--sl-color-text-secondary))",
 };
 
-/**
- * A stand-in for the top of the landing page, so each look is seen against content. The
- * overlay look sits inside the hero, the others above it.
- */
-function LandingTop({ look, header }: { look: HeaderLook | "current"; header: ReactNode }) {
-  const hero = <p style={heroText}>Meira en bara dagskrárvefur</p>;
-  if (look === "overlay") {
-    return (
-      <div style={heroStyle}>
-        {header}
-        {hero}
-      </div>
-    );
-  }
+/** A stand-in for the top of the landing page, so each look is seen against content. */
+function LandingTop({ header }: { header: ReactNode }) {
   return (
     <>
       {header}
-      <div style={heroStyle}>{hero}</div>
+      <div style={heroStyle}>
+        <p style={heroText}>Skipuleggðu fundi, útilegur og dagskrárhringi á einum stað.</p>
+      </div>
     </>
   );
 }
@@ -121,10 +99,7 @@ function LandingTop({ look, header }: { look: HeaderLook | "current"; header: Re
 function Page({ look, signedIn }: { look: HeaderLook; signedIn?: boolean }) {
   return (
     <>
-      <LandingTop
-        look={look}
-        header={<HeaderLab look={look} signedIn={signedIn} skipTo={MAIN_ID} />}
-      />
+      <LandingTop header={<HeaderLab look={look} signedIn={signedIn} skipTo={MAIN_ID} />} />
       <main id={MAIN_ID}>
         <p style={bodyText}>
           Safnaðu saman dagskrárhugmyndum, settu saman skipulagða dagskrá og greindu fjölbreytni.
@@ -163,7 +138,7 @@ export const Comparison: Story = {
           </h2>
           <p style={idea}>What the public pages use today.</p>
         </div>
-        <LandingTop look="current" header={<Header />} />
+        <LandingTop header={<Header />} />
       </section>
       {LOOKS.map((l) => (
         <section key={l.look} style={section} aria-labelledby={`hdr-${l.look}`}>
@@ -174,7 +149,6 @@ export const Comparison: Story = {
             <p style={idea}>{l.idea}</p>
           </div>
           <LandingTop
-            look={l.look}
             header={
               <HeaderLab look={l.look} signedIn={false} navLabel={`Aðalvalmynd (${l.name})`} />
             }
@@ -219,8 +193,7 @@ const phone = (look: HeaderLook): Story => ({
     const dialog = await canvas.findByRole("dialog", { name: "Valmynd" });
     const close = within(dialog).getByRole("button", { name: "Loka valmynd" });
     await waitFor(() => expect(close).toHaveFocus());
-    const login = look === "split" ? "Skrá inn" : "Innskráning";
-    await expect(within(dialog).getByRole("link", { name: login })).toBeVisible();
+    await expect(within(dialog).getByRole("link", { name: "Innskráning" })).toBeVisible();
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(toggle).toHaveFocus());
   },
@@ -314,21 +287,6 @@ export const LogoInLightAndDark: Story = {
     </div>
   ),
 };
-
-export const TrailSignedOut: Story = { name: "C · Trail: signed out", ...signedOut("trail") };
-export const TrailSignedIn: Story = { name: "C · Trail: signed in", ...signedIn("trail") };
-export const TrailPhone: Story = { name: "C · Trail: phone", ...phone("trail") };
-
-export const OverlaySignedOut: Story = {
-  name: "D · Overlay: signed out",
-  ...signedOut("overlay"),
-};
-export const OverlaySignedIn: Story = { name: "D · Overlay: signed in", ...signedIn("overlay") };
-export const OverlayPhone: Story = { name: "D · Overlay: phone", ...phone("overlay") };
-
-export const SplitSignedOut: Story = { name: "E · Split: signed out", ...signedOut("split") };
-export const SplitSignedIn: Story = { name: "E · Split: signed in", ...signedIn("split") };
-export const SplitPhone: Story = { name: "E · Split: phone", ...phone("split") };
 
 /** Any look, with controls. `signedIn` left unset follows the mocked Auth0 session. */
 export const Playground: Story = {

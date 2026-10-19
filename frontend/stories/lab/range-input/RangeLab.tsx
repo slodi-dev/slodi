@@ -3,7 +3,7 @@
 import React, { useId, useState } from "react";
 import styles from "./RangeLab.module.css";
 
-export type RangeLayout = "stacked" | "inline" | "bubbles" | "presets";
+export type RangeLayout = "bubbles";
 
 export interface RangeLabProps {
   layout: RangeLayout;
@@ -19,12 +19,12 @@ export interface RangeLabProps {
   unit?: string;
   /** Accessible name of the whole control, e.g. "Lengd". */
   label: string;
-  presets?: { label: string; min?: number; max?: number }[];
 }
 
 /**
- * Lab copy of `components/ui/RangeInput`: a two-handled slider plus number fields that stay in
- * step. A handle at the end of the track means "no limit", so the filter is off on that side.
+ * Lab copy of `components/ui/RangeInput`: a two-handled slider whose values ride on the handles
+ * and can be typed into. A handle at the end of the track means "no limit", so the filter is off
+ * on that side.
  */
 export default function RangeLab({
   layout,
@@ -36,7 +36,6 @@ export default function RangeLab({
   onChange,
   unit,
   label,
-  presets,
 }: RangeLabProps) {
   const id = useId();
   const lo = minValue ?? min;
@@ -81,53 +80,34 @@ export default function RangeLab({
         aria-label={`${label}: hámark`}
         aria-valuetext={maxValue === undefined ? "Ekkert hámark" : maxText}
       />
-      {layout === "bubbles" && (
-        <>
-          {/* When the handles are close, the two values lean apart instead of overlapping. */}
-          <BubbleField
-            id={`${id}-lo`}
-            ariaLabel={`${label}: lágmark`}
-            value={minValue}
-            placeholder={`${min}`}
-            unit={unit}
-            min={min}
-            max={max}
-            step={step}
-            left={pct(lo)}
-            lean={pct(hi) - pct(lo) < 22 ? "left" : "center"}
-            onCommit={(v) => onChange(v === undefined ? undefined : Math.min(v, hi), maxValue)}
-          />
-          <BubbleField
-            id={`${id}-hi`}
-            ariaLabel={`${label}: hámark`}
-            value={maxValue}
-            placeholder={`${max}+`}
-            unit={unit}
-            min={min}
-            max={max}
-            step={step}
-            left={pct(hi)}
-            lean={pct(hi) - pct(lo) < 22 ? "right" : "center"}
-            onCommit={(v) => onChange(minValue, v === undefined ? undefined : Math.max(v, lo))}
-          />
-        </>
-      )}
+      {/* When the handles are close, the two values lean apart instead of overlapping. */}
+      <BubbleField
+        id={`${id}-lo`}
+        ariaLabel={`${label}: lágmark`}
+        value={minValue}
+        placeholder={`${min}`}
+        unit={unit}
+        min={min}
+        max={max}
+        step={step}
+        left={pct(lo)}
+        lean={pct(hi) - pct(lo) < 22 ? "left" : "center"}
+        onCommit={(v) => onChange(v === undefined ? undefined : Math.min(v, hi), maxValue)}
+      />
+      <BubbleField
+        id={`${id}-hi`}
+        ariaLabel={`${label}: hámark`}
+        value={maxValue}
+        placeholder={`${max}+`}
+        unit={unit}
+        min={min}
+        max={max}
+        step={step}
+        left={pct(hi)}
+        lean={pct(hi) - pct(lo) < 22 ? "right" : "center"}
+        onCommit={(v) => onChange(minValue, v === undefined ? undefined : Math.max(v, lo))}
+      />
     </div>
-  );
-
-  const field = (which: "lo" | "hi") => (
-    <NumberField
-      id={`${id}-${which}`}
-      label={which === "lo" ? "Frá" : "Til"}
-      ariaLabel={`${label}: ${which === "lo" ? "lágmark" : "hámark"}`}
-      value={which === "lo" ? minValue : maxValue}
-      placeholder={which === "lo" ? `${min}` : `${max}+`}
-      unit={unit}
-      min={min}
-      max={max}
-      step={step}
-      onCommit={(v) => (which === "lo" ? onChange(v, maxValue) : onChange(minValue, v))}
-    />
   );
 
   const scale = (
@@ -139,106 +119,16 @@ export default function RangeLab({
 
   return (
     <div className={`${styles.range} ${styles[layout]}`} role="group" aria-label={label}>
-      {layout === "presets" && presets && (
-        <div className={styles.presets}>
-          {presets.map((p) => {
-            const on = p.min === minValue && p.max === maxValue;
-            return (
-              <button
-                key={p.label}
-                type="button"
-                className={styles.preset}
-                aria-pressed={on}
-                onClick={() => (on ? onChange(undefined, undefined) : onChange(p.min, p.max))}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {layout === "inline" ? (
-        <div className={styles.inlineRow}>
-          {field("lo")}
-          {slider}
-          {field("hi")}
-        </div>
-      ) : (
-        <>
-          {slider}
-          {scale}
-          {layout !== "bubbles" && (
-            <div className={styles.fields}>
-              {field("lo")}
-              <span className={styles.dash} aria-hidden="true">
-                –
-              </span>
-              {field("hi")}
-            </div>
-          )}
-        </>
-      )}
+      {slider}
+      {scale}
     </div>
-  );
-}
-
-/** A narrow number field that commits on blur or Enter, so typing "1" on the way to "15" doesn't jump the slider. */
-function NumberField({
-  id,
-  label,
-  ariaLabel,
-  value,
-  placeholder,
-  unit,
-  min,
-  max,
-  step,
-  onCommit,
-}: {
-  id: string;
-  label: string;
-  ariaLabel: string;
-  value: number | undefined;
-  placeholder: string;
-  unit?: string;
-  min: number;
-  max: number;
-  step: number;
-  onCommit: (v: number | undefined) => void;
-}) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const commit = () => {
-    if (draft === null) return;
-    const n = Number(draft);
-    onCommit(draft.trim() === "" || Number.isNaN(n) ? undefined : Math.max(min, Math.min(max, n)));
-    setDraft(null);
-  };
-  return (
-    <label className={styles.field} htmlFor={id}>
-      <span className={styles.fieldLabel}>{label}</span>
-      <input
-        id={id}
-        className={styles.input}
-        type="number"
-        inputMode="numeric"
-        aria-label={ariaLabel}
-        min={min}
-        max={max}
-        step={step}
-        placeholder={placeholder}
-        value={draft ?? (value === undefined ? "" : String(value))}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => e.key === "Enter" && commit()}
-      />
-      {unit && <span className={styles.unit}>{unit}</span>}
-    </label>
   );
 }
 
 /**
  * The value riding on a handle, editable in place: click (or Tab to) it and type. Commits on
- * blur or Enter like NumberField; Escape puts the old value back. Empty means "no limit".
+ * blur or Enter, so typing "1" on the way to "15" doesn't jump the slider; Escape puts the old
+ * value back. Empty means "no limit".
  */
 function BubbleField({
   id,

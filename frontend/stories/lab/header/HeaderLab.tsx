@@ -9,14 +9,7 @@ import { useDrawerFocus } from "@/hooks/useDrawerFocus";
 import greenLogo from "@/app/icon.svg";
 import styles from "./HeaderLab.module.css";
 
-export type HeaderLook =
-  | "wordmark"
-  | "wordmarkLogo"
-  | "band"
-  | "bandLogo"
-  | "trail"
-  | "overlay"
-  | "split";
+export type HeaderLook = "wordmark" | "wordmarkLogo" | "band" | "bandLogo";
 
 /** The logo looks are variations: they keep every rule of the look they extend. */
 const BASE_LOOK: Partial<Record<HeaderLook, HeaderLook>> = {
@@ -50,39 +43,10 @@ const PAGES = [
 ] as const;
 
 /** The account action: the dashboard when signed in, login otherwise. */
-function accountLink(signedIn: boolean, look: HeaderLook) {
-  if (signedIn) return { href: "/dashboard", label: "Stjórnborð" };
-  // The split look leads with a verb, because there it is a button.
-  return { href: "/auth/login", label: look === "split" ? "Skrá inn" : "Innskráning" };
-}
-
-/** A winding dashed trail over faint contour lines, drawn along the bottom of the trail look. */
-function TrailMotif() {
-  return (
-    <svg
-      className={styles.motif}
-      viewBox="0 0 1200 40"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path className={styles.contour} d="M0 30 C 200 18, 380 38, 600 26 S 1000 14, 1200 28" />
-      <path className={styles.contour} d="M0 38 C 240 28, 420 44, 640 34 S 1020 24, 1200 36" />
-      <path
-        className={styles.trailPath}
-        d="M0 34 C 160 34, 220 20, 380 22 S 640 36, 820 28 S 1080 16, 1200 22"
-      />
-    </svg>
-  );
-}
-
-/** Two peaks, the mark in front of the wordmark in the trail look. */
-function PeaksMark() {
-  return (
-    <svg className={styles.peaks} viewBox="0 0 28 18" aria-hidden="true" focusable="false">
-      <path d="M1 17 L10 4 L15 11 L19 6 L27 17 Z" />
-    </svg>
-  );
+function accountLink(signedIn: boolean) {
+  return signedIn
+    ? { href: "/dashboard", label: "Stjórnborð" }
+    : { href: "/auth/login", label: "Innskráning" };
 }
 
 /**
@@ -129,7 +93,7 @@ export default function HeaderLab({
   const { user } = useUser();
   const isSignedIn = signedIn ?? Boolean(user);
   const pathname = usePathname();
-  const account = accountLink(isSignedIn, look);
+  const account = accountLink(isSignedIn);
   const baseLook = BASE_LOOK[look] ?? look;
   const variantClass = baseLook === look ? "" : ` ${styles[look]}`;
 
@@ -168,14 +132,14 @@ export default function HeaderLab({
           Fara beint í efni
         </a>
       ) : null}
-      {look === "trail" ? <TrailMotif /> : null}
 
       <div className={styles.inner}>
         <Link href="/" className={styles.brand}>
-          {look === "trail" ? <PeaksMark /> : null}
           {baseLook === look ? null : <BrandLogo look={look} />}
           <span className={styles.brandName}>Slóði</span>
-          {baseLook === "band" ? <span className={styles.tagline}>Dagskrárvefur skáta</span> : null}
+          {baseLook === "band" ? (
+            <span className={styles.tagline}>Meira en bara dagskrárvefur</span>
+          ) : null}
         </Link>
 
         <nav className={styles.nav} aria-label={navLabel}>
@@ -200,15 +164,6 @@ export default function HeaderLab({
         </nav>
 
         <div className={styles.phoneBar}>
-          {look === "split" ? (
-            <Link
-              href={account.href}
-              className={`${styles.account} ${styles.phoneAccount}`}
-              prefetch={isSignedIn ? undefined : false}
-            >
-              {account.label}
-            </Link>
-          ) : null}
           <button
             ref={toggleRef}
             type="button"
