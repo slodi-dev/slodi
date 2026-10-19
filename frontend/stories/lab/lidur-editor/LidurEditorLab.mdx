@@ -1,0 +1,255 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import * as LidurEditorLabStories from "./LidurEditorLab.stories";
+
+<Meta of={LidurEditorLabStories} />
+
+# LidurEditor: usage and directions
+
+LidurEditor is the editor for one liður on a fundur sheet. This page covers when a leader opens
+it, which edits are common and which are rare, and what must never be lost. Then it explains
+the four directions in this lab and when each one fits. The stories sit beside this page:
+**Comparison** first, then eight stories per direction, then **Remove, then Afturkalla** and
+**Playground**.
+
+The sheet the editors open from is a plain stand-in (time, heiti, staða, lengd). The real sheet
+is being redesigned in **Lab → FundurSheet**. The editors don't depend on how the row looks.
+All they need from it is a button to open from and to give focus back to. They use the same
+staða glyphs as that lab (✓ Staðfest, ✎ Drög, ~ Óvíst, ? Óákveðið).
+
+## 1. Usage note
+
+### When a leader opens the editor
+
+- **While planning, on a laptop.** Usually a Sunday evening, building next week's fundur. The
+  leader goes down the sheet adjusting one liður after another. This is most of the editing,
+  and it comes in runs of several liðir.
+- **Right after a block lands from the bank.** Its name is generic ("Leikur"), its lengd is a
+  default, and its staða is Óákveðið. The leader renames it, sets the lengd and moves the staða
+  on.
+- **At the fundur, on a phone.** It's raining, so the game is cut short. One quick change, one
+  hand, a noisy room.
+
+### Frequent edits and rare ones
+
+| Frequent (every planning session)                          | Rare (a few times a term)                    |
+| ---------------------------------------------------------- | -------------------------------------------- |
+| **Lengd**, almost always ±5 or ±10 minutes                 | **Færa í fund…**: "we did this too late"     |
+| **Staða**: Óákveðið → Drög → Staðfest as the plan firms up | **Afrita**: the same game twice              |
+| **Heiti**: a block from the bank gets its real name        | **Tegund**: which section it belongs in      |
+|                                                            | **Staðsetning**: only when it goes elsewhere |
+
+The rare fields stay reachable in every direction. They just don't take up first-glance space.
+
+### What must never be lost
+
+- **Typed text survives every way of closing except an explicit "Henda breytingum".** Today's
+  editor writes every keystroke straight through. That keeps text, but it means nothing can be
+  discarded, so Escape can't be a way to back out. Every direction here holds a **draft**:
+  - **Lokið** saves.
+  - In B, **moving to another liður** saves too, and says so.
+  - **Færa í fund…** and **Afrita** carry the draft with them.
+- **Escape closes.** So do ✕ and the backdrop (B on a phone, and C). If something changed, rule
+  6's question comes first: "Henda breytingum?". It names what changed ("Þú breyttir lengd og
+  stöðu á „Áttavitinn: undirstöður“"). The quiet choice, **Halda áfram að breyta**, comes first
+  and has focus, so a second Escape or Enter loses nothing. **Henda breytingum** is red.
+  Escape on the question closes only the question (rule 7, topmost layer).
+- **An empty heiti doesn't save.** Lokið says "Gefðu liðnum heiti." under the field and puts
+  focus there (rule 6).
+- **Enter in a field never submits.** There is no `<form>`. Enter in Heiti and Staðsetning does
+  nothing, and Enter in the lengd number commits the typed value. Staða is a radio group, so
+  Enter has nothing to submit.
+
+### Endurmat from last time
+
+Endurmat is the reason to reuse a block, so it appears **while editing, above the fields it is
+about**. It isn't a link to follow. It shows:
+
+- the note in quotes;
+- **who wrote it and when** ("Signý Hrund · 23. september 2026", through `formatIcelandicDate`),
+  because a note from last week weighs more than one from two years ago;
+- when the note is about length, **one tap to act on it** ("Setja lengd í 20 mín"). That's the
+  commonest reason to read it at all.
+
+It is an inline note (`role="note"`) in the info colour. It isn't Fálkar red, the endurmat kind
+colour, because red reads as an error in this palette. In D, where lengd is edited on the row,
+the note sits under the row itself.
+
+### Removing a liður
+
+"Fjarlægja lið" is **reversible**, so under rule 5 it happens at once. There's no confirm dialog:
+
+- The editor closes and a toast says "Liður fjarlægður: Kortalestur í hverfinu." with
+  **Afturkalla** for 10 seconds (rule 5 asks for at least 8).
+- Focus goes to the next row.
+- Afturkalla puts the liður back in its place, with focus on it.
+
+A confirm dialog would be the wrong tool. It asks "are you sure?" about something that costs
+nothing to undo, and leaders learn to click through it, so it fails on the day it matters.
+"Færa í fund…" works the same way. "Fjarlægja lið" is a quiet underlined text button, last in
+the row, so it's hard to hit by accident without being hidden.
+
+### What every direction does
+
+- **Labels.** Every field has a visible label. Lengd and staða are labelled groups (`fieldset`
+  and `legend` for staða), and every icon button has a name.
+- **Focus.** Opening from the row puts focus on the first field, Heiti. Closing returns it to
+  the row's button. B is the exception: a click on another row moves the panel and leaves focus
+  on that row, so you can keep going down the sheet.
+- **Size.** Inputs are 16px (`--sl-text-body`), so iOS doesn't zoom. Targets are 44px, and 48px
+  on touch and below 620px.
+- **Themes.** Light, dark and patrol work from `--sl-*` tokens alone, checked by axe in every
+  theme.
+- **Text.** `countIs` ("5 liðir", "20 mínútur"), `formatMinutes` and `formatIcelandicDate`.
+- **Motion.** The editor fades in and the sheet rises. Both go under `prefers-reduced-motion`, and
+  the transition tokens collapse to 0 there as well.
+
+## 2. The directions
+
+### A · Inline
+
+**The story:** "Fix this one, here, without losing your place." It's today's editor, refined.
+
+**Hierarchy:**
+
+1. The endurmat, when there is one.
+2. Heiti.
+3. Lengd and staða side by side on one line, staða as a four-way segmented control.
+4. "Meira", which says what it holds ("tegund, staðsetning, færa, afrita"), and Lokið.
+
+**Why it looks this way:**
+
+- It opens under its row, inside the same list item, so "liður 3 af 5" stays true. The leader is
+  thinking about the liðir on either side, and a panel at the edge of the window breaks that.
+- Today's editor gives Tegund and Staðsetning the same weight as Lengd. That makes four boxes of
+  equal importance. Here the frequent three come first, and the rest is one click away.
+- Staða is four radios drawn as one control: one Tab stop, arrows to change. The old
+  `aria-pressed` chips were four Tab stops.
+
+**When to use it:** the default for the bench on a laptop, and fine on a phone, where the frequent
+fields stack.
+
+**Trade-offs:**
+
+- It pushes the rows below it down. Editing several liðir means open, close, open.
+- Only one liður is open at a time.
+- "Meira" hides the move-to-fundur select, which is the only way to move between fundir.
+
+### B · Side inspector
+
+**The story:** "Go down the evening, one liður after another." A properties panel, as in a design
+tool.
+
+**Hierarchy:**
+
+1. A header with the liður's name, its time and place in the fundur, and ‹ › to step through the
+   fundur.
+2. Endurmat.
+3. Heiti, lengd, staða (2×2).
+4. A rule, then tegund, staðsetning and færa, all visible because the panel has the room.
+5. Lokið, Afrita and Fjarlægja.
+
+**Why it looks this way:**
+
+- Planning is a pass down the whole sheet. A panel that stays open while you click liðir (or
+  press ‹ ›) turns ten open-and-close cycles into ten clicks.
+- What you typed travels with you. Moving to another liður saves the draft and announces
+  "Breytingar vistaðar: …". The panel never asks, because nothing has been lost.
+- The sheet doesn't move while you edit, so the running time stays in view.
+- Below 900px there's no room beside the sheet, so the panel becomes a modal bottom sheet. That
+  follows rule 7: Tab stays inside, the page doesn't scroll, and Escape and the backdrop ask
+  first.
+
+**When to use it:** laptop planning sessions, which is where most editing happens.
+
+**Trade-offs:**
+
+- It costs 20–24rem of width that the sheet and the bank also want. With the bank rail open, the
+  sheet gets narrow.
+- The edited liður and its row are apart, so the row is highlighted to tie them together.
+- On a phone it is just C with fewer niceties.
+
+### C · Bottom sheet
+
+**The story:** "One thumb, at the fundur." Built for the phone first.
+
+**Hierarchy:**
+
+1. A grabber and the liður's name as a heading.
+2. Endurmat with its one-tap lengd.
+3. Heiti.
+4. Lengd as five big chips (5, 10, 15, 20, 30), with a 56px stepper under them for anything
+   else.
+5. Staða as a 2×2 segmented control.
+6. "Meira".
+7. A sticky footer with a full-width **Lokið**, and Fjarlægja lið on the far side.
+
+**Why it looks this way:**
+
+- In a loud room you tap a number, you don't type one. The chips cover nearly every lengd a
+  fundur uses, and the stepper covers the rest. The design-system TimingField pairs presets with
+  a stepper in the same way.
+- Every target is 48px or more. Lokið is the biggest thing in the sheet and sits where the thumb
+  rests.
+- It respects the iPhone safe area and uses `dvh`. It's a real modal layer: Tab is trapped,
+  scroll is locked, and the backdrop and Escape ask first (rule 7).
+- On a laptop the same content opens as a centred dialog.
+
+**When to use it:** at the fundur, and for any touch-first planning.
+
+**Trade-offs:**
+
+- It covers the sheet, so you can't see the running time change as you edit.
+- On a laptop it's heavier than A or B for a one-field change.
+- The chips duplicate the stepper. That's deliberate, but it's one more way to do the same thing.
+
+### D · Quick edit
+
+**The story:** "Most edits aren't edits." The frequent changes need no form at all.
+
+**Hierarchy, on the row:**
+
+1. Time and title.
+2. **− lengd +** and a **staða menu** right on the row.
+3. The endurmat note under the row, with its one-tap lengd.
+
+The full editor holds only Heiti, Tegund, Staðsetning, Færa, Afrita and Fjarlægja.
+
+**Why it looks this way:**
+
+- Lengd and staða are single values with an obvious next step. A form round-trip (open, change,
+  Lokið, close) for "+5" is four actions for one change. Here it's one.
+- They write straight through, and each change is announced ("Lengd 20 mínútur: Kötturinn og
+  músin."). A single tap is its own undo, so there's no discard question for them.
+- The staða menu is a real menu (`menuitemradio`): arrows to move, Enter to pick, Escape to close
+  without changes. Focus goes back to the pill either way.
+- The editor, which handles the rare fields, keeps the draft and the discard question.
+
+**When to use it:** together with A or B, as the row's own controls. It doesn't replace an
+editor.
+
+**Trade-offs:**
+
+- Every row carries six more controls, so the sheet gets busy. On a phone they need a second line
+  per row, and the sheet gets much taller.
+- The real row already has ▲ ▼ ✎ ✕ and a grip. Adding − + and a menu is a lot of row.
+- Two ways to save: straight through on the row, a draft in the editor. That's consistent per
+  field, but it has to be explained once.
+
+## 3. Choosing
+
+- **A + D's staða menu** is the smallest step from today. It's the inline editor, with the one
+  change leaders make most, staða, taken out of the form.
+- **B** is worth it only if the bench gets wide enough to give up 22rem. Check that against the
+  fundur-sheet lab's directions.
+- **C** should be what every direction becomes below 620px. B already does this, and A could too.
+
+## 4. Before promoting any of these
+
+- **The shared `Modal` isn't good enough for B or C.** It doesn't trap Tab or restore focus, and
+  its Escape listener on `document` would also close the editor under it. It confirms with
+  `window.confirm`, which rule 5 forbids. The lab carries a stand-in (`useModalLayer`,
+  `DiscardQuestion`). Promoting a modal direction means fixing `Modal` first.
+- **The API doesn't carry endurmat's author and date yet.** `Lidur.endurmat` is a plain string.
+  The lab's `LabEndurmat` (`text`, `by`, `at`, `suggestMinutes`) is the shape these designs need.
+- **A draft instead of write-through** changes `benchState`. The editor would dispatch one
+  `patch` on Lokið rather than one per keystroke. The reducer already supports that.
