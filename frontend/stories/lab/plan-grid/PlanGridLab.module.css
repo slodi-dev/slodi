@@ -1,0 +1,724 @@
+/* Lab variations of the Rist's two side columns. The table itself borrows PlanGrid.module.css,
+   so the grid's rhythm is the real one; everything here is the side columns, the week panel
+   and the phone behaviour. Every colour goes through a --sl-* token. Layout follows the
+   component's own width (container queries), so the Comparison story and a phone agree. */
+
+.root {
+  /* Touch target: 32px with a mouse, 48px once the box is phone-narrow. */
+  --pg-target: 2rem;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-md);
+  font-family: var(--sl-font-family-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+@container (max-width: 40rem) {
+  .rist,
+  .panel,
+  .gear {
+    --pg-target: var(--sl-size-button-lg);
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.root :is(button, input, [tabindex]):focus-visible,
+.segOption:has(input:focus-visible) {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.root svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  flex-shrink: 0;
+}
+
+/* ── The grid ──────────────────────────────────────────────────────────── */
+
+.rist {
+  max-width: none;
+}
+
+/* The scroller is the containing block for the visually hidden text in the cells, so that
+   text can't widen the page on a phone. */
+.rist > div {
+  position: relative;
+}
+
+/* Too narrow for four flokkar and the side columns: scroll sideways, with the week column
+   pinned on the left (and, in C and D, the Vikan column on the right). Today's grid squeezes
+   instead and clips Innkaup off the edge. */
+@container (max-width: 52rem) {
+  .table {
+    min-width: 52rem;
+  }
+
+  .root[data-look="vikan"] .table,
+  .root[data-look="spjald"] .table {
+    min-width: 42rem;
+  }
+
+  .weekHead,
+  .cornerHead {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+  }
+
+  .cornerHead {
+    z-index: 3;
+  }
+
+  .sideSticky,
+  .root[data-look="vikan"] .sideHead,
+  .root[data-look="spjald"] .sideHead {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    box-shadow: -1px 0 0 hsl(var(--sl-color-border));
+  }
+
+  .root[data-look="vikan"] .sideHead,
+  .root[data-look="spjald"] .sideHead {
+    z-index: 3;
+  }
+}
+
+.sideHead {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.sideWide {
+  width: 11.5rem;
+}
+
+.sideNarrow {
+  width: 8.5rem;
+}
+
+.side {
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  vertical-align: top;
+  background: hsl(var(--sl-color-background-secondary));
+  font-size: var(--sl-text-overline);
+  line-height: var(--sl-line-height-normal);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.side:last-child {
+  border-right: 0;
+}
+
+.side[data-selected] {
+  background: hsl(var(--sl-color-primary-subtle));
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary-text));
+}
+
+.none,
+.quiet {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-overline);
+}
+
+.quiet {
+  margin: 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.cellHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-xs);
+  margin: 0 0 var(--sl-spacing-gap-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── Endurmat and reminders ────────────────────────────────────────────── */
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.note,
+.reminder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--sl-spacing-inset-xs);
+  border-left: 2px solid hsl(var(--sl-color-border-strong));
+}
+
+.reminder {
+  border-left-color: hsl(var(--sl-color-info-text));
+}
+
+.note[data-tone="corrective"] {
+  border-left-color: hsl(var(--sl-color-warning-text));
+}
+
+.note[data-tone="positive"] {
+  border-left-color: hsl(var(--sl-color-success-text));
+}
+
+.noteKind {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.noteKind svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.lidurLink {
+  align-self: flex-start;
+  min-height: var(--pg-target);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-link));
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.side .lidurLink {
+  min-height: 1.5rem;
+}
+
+.quote,
+.reminderText {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.side .quote {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.byline {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.more {
+  min-height: 1.5rem;
+  margin-top: var(--sl-spacing-gap-xs);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-link));
+  cursor: pointer;
+}
+
+/* ── Búnaður ───────────────────────────────────────────────────────────── */
+
+.badge,
+.badgeOk {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px var(--sl-spacing-inset-xs);
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.badge {
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+  box-shadow: inset 0 0 0 1px hsl(var(--sl-color-warning-text) / 0.4);
+}
+
+.badgeOk {
+  background: hsl(var(--sl-color-success-subtle));
+  color: hsl(var(--sl-color-success-text));
+}
+
+.gearList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gearRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+}
+
+.gear[data-variant="radio"] .gearRow {
+  padding: var(--sl-spacing-inset-xs) 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-gap-xs);
+  min-height: 1.5rem;
+  cursor: pointer;
+}
+
+.check input {
+  width: 1rem;
+  height: 1rem;
+  margin: 1px 0 0;
+  accent-color: hsl(var(--sl-color-success-text));
+  flex-shrink: 0;
+}
+
+.checkText {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.gearRow[data-state="eigum"] .checkText {
+  color: hsl(var(--sl-color-text-secondary));
+  text-decoration: line-through;
+}
+
+.stateWord {
+  margin-left: 4px;
+  font-style: normal;
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.gearRow[data-state="vantar"] .stateWord {
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.gearName {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1 1 8rem;
+  min-width: 0;
+  min-height: var(--pg-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: hsl(var(--sl-color-text-primary));
+  text-align: left;
+  cursor: pointer;
+}
+
+.side .gearName {
+  min-height: 1.5rem;
+  flex-basis: 100%;
+}
+
+.sourceCount {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.gearName .chevron {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: hsl(var(--sl-color-text-secondary));
+  transition: transform var(--sl-transition-fast);
+}
+
+.gearName[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gearName .chevron {
+    transition-duration: 1ms;
+  }
+}
+
+.sources {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0 0 0 var(--sl-spacing-inset-sm);
+  list-style: none;
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.sources li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+}
+
+.sources b {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.sourceFundur {
+  flex-basis: 100%;
+}
+
+/* B: one button that steps Vantar → Eigum → Óvíst. */
+.cycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 1.5rem;
+  padding: 0 var(--sl-spacing-inset-xs);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  font: inherit;
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.cycle[data-state="vantar"] {
+  background: hsl(var(--sl-color-warning-subtle));
+  border-color: hsl(var(--sl-color-warning-text) / 0.5);
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.cycle[data-state="eigum"] {
+  background: hsl(var(--sl-color-success-subtle));
+  border-color: hsl(var(--sl-color-success-text) / 0.5);
+  color: hsl(var(--sl-color-success-text));
+}
+
+@container (max-width: 40rem) {
+  .side .cycleRow .cycle {
+    width: var(--pg-target);
+    height: var(--pg-target);
+  }
+
+  .side .gearName,
+  .side .lidurLink,
+  .side .more,
+  .check {
+    min-height: var(--pg-target);
+  }
+}
+
+.cycleRow {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.cycleRow .cycle {
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-height: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.side .cycleRow .gearName {
+  flex: 1 1 auto;
+}
+
+.cycleRow:has(.gearName[aria-expanded="true"]) {
+  flex-wrap: wrap;
+}
+
+/* C, D and the close-up: three named options per item. */
+.seg {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  overflow: hidden;
+}
+
+.segOption {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: var(--pg-target);
+  padding: 0 var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-text-secondary));
+  background: hsl(var(--sl-color-surface));
+  cursor: pointer;
+}
+
+.segOption + .segOption {
+  border-left: 1px solid hsl(var(--sl-color-border-strong));
+}
+
+.segOption input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segOption:has(input:checked) {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.segOption[data-state="vantar"]:has(input:checked) {
+  color: hsl(var(--sl-color-warning-text));
+  background: hsl(var(--sl-color-warning-subtle));
+}
+
+.segOption[data-state="eigum"]:has(input:checked) {
+  color: hsl(var(--sl-color-success-text));
+  background: hsl(var(--sl-color-success-subtle));
+}
+
+/* ── C and D: the Vikan cell ───────────────────────────────────────────── */
+
+.weekButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--pg-target);
+  padding: var(--sl-spacing-inset-xs);
+  border: 1px solid transparent;
+  border-radius: var(--sl-radius-sm);
+  background: none;
+  font: inherit;
+  color: hsl(var(--sl-color-text-secondary));
+  text-align: left;
+  cursor: pointer;
+}
+
+.weekButton:hover {
+  border-color: hsl(var(--sl-color-border-strong));
+  background: hsl(var(--sl-color-surface));
+}
+
+.weekButton[aria-pressed="true"] {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-surface));
+}
+
+.summaryLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.summaryLine[data-tone="warn"] {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-md);
+  font-size: var(--sl-text-body-sm);
+}
+
+.detail section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.detailHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.detail .noteKind {
+  font-size: var(--sl-text-overline);
+}
+
+/* D: the docked panel. Beside the grid when there is room, under it when not. */
+.dock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+  gap: var(--sl-spacing-gap-md);
+  align-items: start;
+}
+
+@container (max-width: 64rem) {
+  .dock {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  position: sticky;
+  top: var(--sl-spacing-gap-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-md);
+  padding: var(--sl-spacing-inset-md);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-lg);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card);
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-sm);
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.panelHead span {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-xs);
+  padding-top: var(--sl-spacing-gap-sm);
+  border-top: 1px dashed hsl(var(--sl-color-border));
+}
+
+.form label {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.form input {
+  min-height: var(--pg-target);
+  padding: 0 var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-background));
+  font: inherit;
+  font-size: max(16px, var(--sl-text-body-sm));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.form input::placeholder {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.form input[aria-invalid="true"] {
+  border-color: hsl(var(--sl-color-error-text));
+}
+
+.formRow {
+  display: flex;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.formRow input {
+  flex: 1;
+  min-width: 0;
+}
+
+.primary {
+  min-height: var(--pg-target);
+  padding: 0 var(--sl-spacing-inset-md);
+  border: 0;
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  font: inherit;
+  font-weight: var(--sl-font-weight-semibold);
+  cursor: pointer;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-error-text));
+}
+
+/* The close-up story. */
+.closeUp {
+  max-width: 26rem;
+  padding: var(--sl-spacing-inset-md);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-lg);
+  background: hsl(var(--sl-color-surface));
+  font-size: var(--sl-text-body-sm);
+}
+
+/* The per-item liður count is in the dialog and panel; a cell has no room for it. */
+.side .sourceCount {
+  display: none;
+}
+
+/* Phone: give the flokkar more of the 390px; the panel stops being sticky once it sits under the grid. */
+@container (max-width: 40rem) {
+  .cornerHead {
+    width: 4.75rem;
+  }
+
+  .sideNarrow {
+    width: 7.5rem;
+  }
+}
+
+@container (max-width: 64rem) {
+  .panel {
+    position: static;
+  }
+}

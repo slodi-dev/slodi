@@ -1,0 +1,233 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./PlanGridLab.stories";
+
+<Meta of={Stories} />
+
+# PlanGrid side columns
+
+The Rist is good, apart from its two side columns. **ATH** and **Innkaup** came over from the
+spreadsheet the sveit used to plan in, and they don't connect to the rest of Vinnubekkurinn.
+What they should be:
+
+- **ATH** is either the **endurmat** for this week's liðir (how it went last time) or a
+  **reminder** the leader writes for the week.
+- **Innkaup** is the **búnaður** that this week's liðir need, gathered into one list, where each
+  item can be marked **Eigum**, **Vantar** or left **Óvíst**.
+
+The entry chips are out of scope here; another lab handles them. This lab uses the real
+`PlanEntryChip` and a faithful copy of `PlanGrid`'s table (same CSS module, same
+spanning and clipping), with only the side columns swapped.
+
+## Data note
+
+### What exists today
+
+| Data                | Where                                                               | What it is                                                                                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Week note           | `PlanWeek.note?: string \| null` (grid contract)                    | The ATH column today. Free text, one per week, with no author, no due date and no link to anything ("Vetrarfrí, hálf mæting líkleg").                                                                                                                             |
+| Fundur needs        | `PlanEntryBase.needs?: string[]` (grid contract)                    | Innkaup today. PlanGrid unions the strings across the week's fundir and de-duplicates them only when they match exactly. No quantity, no link to the liður that needs the item, no owned/needed state. The mock picks them at random.                             |
+| Liður endurmat      | `Lidur.endurmat?: string \| null` (bench contract)                  | One string, "carried over from the last time this block was run". LidurRow shows only the marker **Endurmat frá síðast** (the text is in a `title` tooltip); LidurEditor quotes it. No tone, no author, no date, and nothing says which earlier run it came from. |
+| Endurmat liður kind | `SlotKind "endurmat"`                                               | A time slot in the fundur's Slit band for writing endurmat. It isn't the note itself.                                                                                                                                                                             |
+| `EndurmatNote`      | SPEC §2 C, sc-155                                                   | Specced (corrective, positive, several collapsed, none, written after the meeting) but **not built**. The tone split in this lab comes from that spec.                                                                                                            |
+| Bank equipment      | Backend `Content.equipment: list[str]` (JSONB), `Program.equipment` | **Real, on the backend.** Free strings on programs, events and tasks in the dagskrárbanki, filterable (`EquipmentFilter`), shown on the item page. No quantities.                                                                                                 |
+| Bank block needs    | `LibraryBlock.needs?: string[]` (`lib/mock/library.mock.ts`)        | A frontend fixture only: the bank rail's version of the same idea.                                                                                                                                                                                                |
+
+None of the plan endpoints (`/seasons/{id}/grid`, the bench) exist on the backend yet; the
+frontend types are a contract the backend is meant to implement. So everything below is a
+proposal to add to that contract, not a change to shipped API.
+
+### What is missing
+
+1. **Reminders.** `PlanWeek.note` covers one free line. A reminder needs its own row: text, an
+   optional due day, who wrote it, and whether it's done.
+2. **Búnaður per liður, with quantities.** The bank has `equipment` strings, but a liður on a
+   fundur carries nothing, and adding a block from the bank doesn't copy the strings over.
+   "Vasaljós ×12" needs a number and a shared item id; two different strings ("Vasaljós",
+   "vasaljós og rafhlöður") can't be merged.
+3. **Owned/needed state, per week, per sveit.** Nothing stores "eigum", "vantar" or "óvíst".
+4. **Endurmat that knows where it came from.** To show last time's notes for this week's liðir,
+   the server needs to know which block a liður was reused from and find the latest run of that
+   block that has endurmat. The note also needs a tone, an author and a date.
+
+### Proposed shapes
+
+```ts
+// 1. Reminders. Replaces PlanWeek.note; an existing note becomes a reminder with due_on null.
+type WeekReminder = {
+  id: string;
+  season_id: string;
+  week_index: number;
+  text: string;
+  due_on: string | null; // ISO date
+  done_at: string | null;
+  created_by: { id: string; name: string };
+  created_at: string;
+};
+// GET    /seasons/{id}/reminders                → WeekReminder[]
+// POST   /seasons/{id}/weeks/{n}/reminders      { text, due_on? }
+// PATCH  /reminders/{id}                        { text?, due_on?, done? }
+// DELETE /reminders/{id}
+
+// 2. Búnaður. A sveit-wide catalogue, and a list of needs on each liður.
+type GearItem = {
+  id: string;
+  workspace_id: string;
+  name: string; // "Vasaljós"
+  consumable: boolean; // eldsneyti, eldspýtur: quantities add up instead of being shared
+  unit?: { one: string; many: string } | null; // { one: "brúsi", many: "brúsar" }
+};
+type GearNeed = { item_id: string; qty: number };
+// Lidur.gear?: GearNeed[]
+// When a bank block is added to a fundur, its Content.equipment strings are matched to
+// catalogue items by name (or new items are created) and copied onto the liður.
+
+// 3. Owned/needed state, per sveit and week. A missing row means "óvíst".
+type WeekGearState = {
+  season_id: string;
+  week_index: number;
+  item_id: string;
+  state: "eigum" | "vantar";
+  updated_by: string;
+  updated_at: string;
+};
+// GET /seasons/{id}/weeks/{n}/gear →
+//   { items: { item: GearItem; qty: number; state: "eigum" | "vantar" | "ovist";
+//              sources: { lidur_id; lidur_name; event_id; event_title; qty }[] }[] }
+// PUT /seasons/{id}/weeks/{n}/gear/{item_id}   { state: "eigum" | "vantar" | null }
+
+// 4. Endurmat, with where it came from.
+type Endurmat = {
+  id: string;
+  lidur_id: string; // the run it was written after
+  text: string;
+  tone: "positive" | "corrective" | null;
+  written_by: { id: string; name: string };
+  written_on: string;
+};
+// Lidur.source_block_id?: string     (the bank block it was reused from)
+// Lidur.endurmat_from_last?: Endurmat | null   (replaces the bare string)
+// GET /seasons/{id}/weeks/{n}/endurmat → { endurmat: Endurmat; lidur_id; lidur_name; event_id; event_title }[]
+
+// For C and D: counts on the grid itself, so the cells need no extra requests.
+// PlanWeek.summary?: { endurmat: number; reminders: number; vantar: number; ovist: number }
+```
+
+**Two rules worth agreeing on first.** Quantity: reusable kit takes the largest amount any one
+liður needs (the same twelve vasaljós serve Tuesday's and Thursday's fundur), and consumables
+add up. And state is per sveit-week, not per flokkur: the sveit owns the kit. A later
+"búnaðarskrá" (what the sveit owns, with counts) could fill in Eigum automatically, leaving the
+leader to mark only what is missing.
+
+## Today's grid, measured
+
+- At phone width (390px) the current table doesn't scroll. It squeezes four flokkar into about
+  40px each and clips **Innkaup** off the right edge. Every direction here gives the table a
+  minimum width, scrolls it sideways and pins the week column on the left; C and D also pin the
+  Vikan column on the right, so it's always on screen.
+- The week heading prints `starts_on.slice(5)` ("10-19"). The lab uses
+  `formatIcelandicDateShort` ("19. okt.").
+
+## The directions
+
+<Canvas of={Stories.Comparison} />
+
+### A · Two columns
+
+**The story it tells:** "This is what last time taught you about this week's liðir, and this is
+the kit you still have to find."
+
+- **Information hierarchy:**
+  - **Endurmat column:** a count ("3 endurmöt"), then up to two notes. Each note has its tone
+    (an icon plus **Gekk vel** or **Laga næst**), the liður as a link to the bench, and the
+    quote clamped to three lines. The rest sit behind "+ 1 í viðbót".
+  - **Búnaður column:** a "3 vantar" badge, then the items still open (vantar first). Owned
+    items fold away behind "Sýna 5 hluti sem við eigum".
+- **Why it looks this way:** it keeps today's two columns and their overline type, so the grid
+  looks the same; only what's inside changes. A checkbox is the smallest gesture there is: a tick
+  means "eigum". Óvíst shows as the checkbox's mixed state.
+- **Trade-offs:**
+  - Only two states can be set, so once ticked an item can't go back to óvíst.
+  - It has no reminders.
+  - Two wide columns make busy weeks tall.
+  - On a phone the columns sit off-screen to the right, past four flokkar.
+- **API it needs:** week endurmat (4), `Lidur.gear` (2) and the week state (3). Two states would
+  be enough.
+
+### B · Reminders and kit
+
+**The story it tells:** "This is what to remember this week, and the kit."
+
+- **Information hierarchy:**
+  - **ATH:** reminders on top (a pin icon, **Muna**, and the due day: "fyrir 8. okt."). Below
+    them, "N endurmöt" with the first note, and the rest behind a button.
+  - **Búnaður:** one small state button per item (✕ vantar, ✓ eigum, ? óvíst), then the item's
+    name. The name opens the list of liðir that need it.
+- **Why it looks this way:** reminders and endurmat share a column, so they're told apart by
+  icon and word (pin and "Muna", speech bubble and "endurmöt"), with colour only as a third cue.
+  The state button gives each item one target in a 184px column.
+- **Trade-offs:**
+  - The cycle (Vantar → Eigum → Óvíst) is an order you have to learn. The screen-reader name
+    says the current and next state, but sighted users see only the icon.
+  - It's still tall, and it has the same phone problem as A.
+- **API it needs:** everything A needs, plus reminders (1) and the three-state week gear (3).
+
+### C · One Vikan cell
+
+**The story it tells:** "Is there anything I need to deal with this week?"
+
+- **Information hierarchy:**
+  - **In the grid:** counts only. "2 endurmöt", **"3 vantar"** (in the warning colour, with a
+    backpack icon) and "1 minnismiði". A week with nothing shows "Ekkert".
+  - **In the dialog** (the shared `Modal`): **Muna**, **Endurmat frá síðast** (with author,
+    date and fundur), and **Búnaður**, where each item has a three-way choice of Eigum, Vantar
+    and Óvíst.
+- **Why it looks this way:** the grid stays about the fundir. The side area shrinks from two
+  156px columns to one 136px column, quiet enough to scan down, and it pins to the right on a
+  phone. The detail view has room for named radio buttons, which are the clearest control for
+  three states (and arrow keys work in them for free).
+- **Trade-offs:**
+  - Seeing anything takes one more tap.
+  - The dialog covers the grid, so you can't compare weeks.
+  - The shared `Modal` doesn't move focus in or give it back. The lab does both, but the
+    primitive should (UX rule 7).
+- **API it needs:** `PlanWeek.summary` counts on the grid, and the week detail endpoints
+  (1, 3 and 4).
+
+<Canvas of={Stories.OneCellOpen} />
+
+### D · Week panel
+
+**The story it tells:** "Work through the season one week at a time."
+
+- **Information hierarchy:** the same cell as C, but it selects the week (`aria-pressed`, and a
+  marked row). A docked panel beside the grid shows the week heading and date, **Muna** (with a
+  form to add a reminder), endurmat with bylines, and the three-way búnaður list.
+- **Why it looks this way:** leaders plan in a sitting, week by week. A docked panel keeps the
+  grid in view while the details change, and it's the only direction where writing a reminder
+  has a natural place. When the container is narrower than 64rem the panel goes under the grid;
+  on a phone, picking a week moves focus to the panel heading.
+- **Trade-offs:**
+  - The panel takes 22rem, so below that width it drops under the grid.
+  - On a phone the panel is a long scroll from the row that opened it. The focus jump makes up
+    for some of that.
+  - The selected week should be in the URL (`?vika=3`, UX rule 10). The lab doesn't do that.
+- **API it needs:** everything C needs, plus `POST` and `PATCH` for reminders.
+
+## Checklist close-up
+
+<Canvas of={Stories.GearChecklist} />
+
+The same list C and D use, on its own. Items sort vantar first when the list opens, then óvíst,
+then eigum. The list doesn't re-sort while you tick, so an item never jumps out from under your
+finger. Every change is announced (`role="status"`: "Vasaljós ×6: eigum"). Each item's name
+opens the liðir that need it, with each one's own quantity.
+
+## Copy and formats
+
+- Counts go through `countIs`: "1 endurmat / 3 endurmöt", "1 minnismiði / 2 minnismiðar",
+  "1 liður / 2 liðir", "Eldsneyti · 2 brúsar". The spoken name of the badge puts the noun in the
+  accusative, as "vantar" requires: "Vantar 1 hlut / 3 hluti". The visible badge stays short:
+  "3 vantar".
+- Dates use `formatIcelandicDateShort`, parsed as local days so they don't move west of UTC.
+- Icons come from lucide-react: `Pin`, `MessageSquareText`, `Backpack`, `ThumbsUp`, `Wrench`,
+  `Check`, `X` and `CircleHelp`.
