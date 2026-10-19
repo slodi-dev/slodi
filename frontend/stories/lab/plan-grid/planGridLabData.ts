@@ -7,6 +7,12 @@ import type {
   PlanWeek,
 } from "@/services/plan.service";
 import { MOCK_PATROLS } from "@/lib/mock/plan.mock";
+import {
+  LAB_TODAY as CALENDAR_TODAY,
+  labGrid as calendarGrid,
+  mondayOf,
+  type LabGrid as CalendarGrid,
+} from "../plan-calendar/planCalendarLabData";
 
 /**
  * Fixtures and derivations for the Rist lab: A · Two columns (Endurmat and Búnaður), and the
@@ -549,16 +555,27 @@ function buildGrid(): LabGridData {
   return { season_id: "lab-season", patrols: MOCK_PATROLS, weeks, bands, cells };
 }
 
-function buildSides(grid: LabGridData, busy: boolean): Record<number, WeekSide> {
+/** The bit of a fundur the side columns read: who, which week, what, and whether it's off. */
+type SideSource = {
+  event_id: string;
+  week_index: number;
+  title: string;
+  patrol_id?: string;
+  cancelled?: { reason: string } | null;
+};
+
+/** Endurmat and búnaður per week, from the liðir of that week's fundir (cancelled ones drop out). */
+function buildSides(
+  weeks: PlanWeek[],
+  fundir: SideSource[],
+  busy: boolean
+): Record<number, WeekSide> {
   const sides: Record<number, WeekSide> = {};
-  for (const week of grid.weeks) {
+  for (const week of weeks) {
     const side: WeekSide = { endurmat: [], gear: [] };
     if (busy) {
-      const fundir = [...grid.bands, ...grid.cells].filter(
-        (e) => e.week_index === week.index && !e.cancelled
-      );
       for (const fundur of fundir) {
-        const patrolId = (fundur as Partial<LabCell>).patrol_id ?? null;
+        if (fundur.week_index !== week.index || fundur.cancelled) continue;
         (FUNDUR_LIDIR[fundur.title] ?? []).forEach(([lidurName, gear], i) => {
           const lidurId = `${fundur.event_id}-l${i}`;
           for (const [itemId, qty] of gear) {
@@ -579,7 +596,7 @@ function buildSides(grid: LabGridData, busy: boolean): Record<number, WeekSide> 
               lidurName,
               fundurId: fundur.event_id,
               fundurTitle: fundur.title,
-              patrolId,
+              patrolId: fundur.patrol_id ?? null,
               ...last,
             });
           }
@@ -636,21 +653,81 @@ export interface LabSeason {
   grid: LabGridData;
   sides: Record<number, WeekSide>;
   initialState: Record<number, Record<string, GearState>>;
+  /** Busy or empty: A5 builds its own season from the calendar lab's fixture to match. */
+  busy: boolean;
 }
 
 /** A busy autumn: kit for most fundir, endurmat on reused liðir, the usual exceptions. */
 export function busySeason(): LabSeason {
   const grid = buildGrid();
-  return { grid, sides: buildSides(grid, true), initialState: BUSY_STATE };
+  return {
+    grid,
+    sides: buildSides(grid.weeks, [...grid.bands, ...grid.cells], true),
+    initialState: BUSY_STATE,
+    busy: true,
+  };
 }
 
 /** The same fundir with nothing needed and no endurmat. */
 export function emptySeason(): LabSeason {
   const grid = buildGrid();
-  return { grid, sides: buildSides(grid, false), initialState: {} };
+  return {
+    grid,
+    sides: buildSides(grid.weeks, [...grid.bands, ...grid.cells], false),
+    initialState: {},
+    busy: false,
+  };
 }
 
 /** The flokkur's initial, for the small chip: "R" for Refir, "S" for the whole sveit. */
 export function patrolInitial(patrol: Patrol | undefined): string {
   return patrol ? patrol.name.charAt(0).toUpperCase() : "S";
+}
+
+/* ── A5: the calendar lab's own fixture ────────────────────────────────────── */
+
+export interface CalendarSeason {
+  grid: CalendarGrid;
+  sides: Record<number, WeekSide>;
+  initialState: Record<number, Record<string, GearState>>;
+  today: Date;
+  /** The weeks shown: the ones that touch October, as the calendar's busy month. */
+  weekRange: [number, number];
+}
+
+/** What the sveit has ticked for the calendar's weeks: past weeks are all eigum. */
+const CALENDAR_STATE: Record<string, Record<string, GearState>> = {
+  "2026-10-19": { vasaljos: "vantar", kort: "eigum" },
+  "2026-10-26": {
+    primus: "vantar",
+    eldsneyti: "vantar",
+    reipi: "eigum",
+    tjold: "eigum",
+    sjukrakassi: "eigum",
+  },
+};
+
+/**
+ * The same autumn the calendar lab shows (its `labGrid()`), so A5 and D4 draw the same fundir.
+ * The side columns come from this file's liðir, matched by title.
+ */
+export function calendarSeason(busy: boolean): CalendarSeason {
+  const grid = calendarGrid();
+  const sides = buildSides(grid.weeks, [...grid.bands, ...grid.cells], busy);
+  const thisMonday = mondayOf(CALENDAR_TODAY).getTime();
+  const initialState: Record<number, Record<string, GearState>> = {};
+  if (busy) {
+    for (const week of grid.weeks) {
+      if (!week.starts_on) continue;
+      const [y, m, d] = week.starts_on.split("-").map(Number);
+      if (new Date(y, m - 1, d).getTime() < thisMonday) {
+        initialState[week.index] = Object.fromEntries(
+          sides[week.index].gear.map((g) => [g.itemId, "eigum" as GearState])
+        );
+      } else {
+        initialState[week.index] = CALENDAR_STATE[week.starts_on] ?? {};
+      }
+    }
+  }
+  return { grid, sides, initialState, today: CALENDAR_TODAY, weekRange: [1, 6] };
 }

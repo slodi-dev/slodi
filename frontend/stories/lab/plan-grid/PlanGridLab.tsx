@@ -23,6 +23,18 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import PlanEntryChip from "@/components/plan/PlanEntryChip";
+import { cn } from "@/lib/util";
+import { StampEntry, StampKey } from "../plan-calendar/PlanCalendarLab";
+import cal from "../plan-calendar/PlanCalendarLab.module.css";
+import {
+  deriveRhythms,
+  entryName,
+  patrolInitial as calendarInitial,
+  placeEntries,
+  spanRange,
+  type LabEntry as CalendarEntry,
+} from "../plan-calendar/planCalendarLabData";
+import { RhythmLegend, Stamp, rotationFor, stampStateOf } from "../plan-calendar/stampKit";
 import gridStyles from "@/components/plan/PlanGrid.module.css";
 import { accentVarFor, isWeekDone, parseWeekStart } from "@/components/plan/planEntries";
 import {
@@ -37,6 +49,7 @@ import { countIs, formatIcelandicDateShort } from "@/lib/format";
 import {
   GEAR,
   LAB_TODAY,
+  calendarSeason,
   exceptionOf,
   gatherGear,
   patrolInitial,
@@ -66,10 +79,16 @@ import styles from "./PlanGridLab.module.css";
  * - `merki`: A2 · Merki. Each fundur is a scout patch: sewn on once it's decided.
  * - `vardeldur`: A3 · Varðeldur. A fire that grows as the liðir are decided, with a tally.
  * - `stimpill`: A4 · Stimpill. A passport stamp once ready; a dotted empty stamp until then.
+ * - `stimplar`: A5 · Stimplar, as the calendar. The Dagatal's picked D4 look in the grid, built
+ *   from the calendar lab's own stamp kit and entry, on the calendar lab's own fixture.
  */
-export type FundurLook = "chip" | "stada" | "merki" | "vardeldur" | "stimpill";
+export type FundurLook = "stimplar" | "chip" | "stada" | "merki" | "vardeldur" | "stimpill";
+
+/** The looks that draw one fundur element in this lab's own grid (A5 brings the calendar's). */
+export type ElementLook = Exclude<FundurLook, "stimplar">;
 
 export const LOOK_NAME: Record<FundurLook, string> = {
+  stimplar: "A5 · Stimplar (as the calendar)",
   chip: "A · Two columns (current chip)",
   stada: "A1 · Staða",
   merki: "A2 · Merki",
@@ -417,7 +436,7 @@ function StimpillElement(props: ElementProps) {
   );
 }
 
-const ELEMENT: Record<Exclude<FundurLook, "chip">, (p: ElementProps) => ReactNode> = {
+const ELEMENT: Record<Exclude<ElementLook, "chip">, (p: ElementProps) => ReactNode> = {
   stada: StadaElement,
   merki: MerkiElement,
   vardeldur: VardeldurElement,
@@ -430,7 +449,7 @@ export function FundurElement({
   info,
   onSelect,
 }: {
-  look: FundurLook;
+  look: ElementLook;
   info: EntryInfo;
   onSelect?: (eventId: string) => void;
 }) {
@@ -503,21 +522,18 @@ interface WeekModel {
 
 /* ── Root ──────────────────────────────────────────────────────────────────── */
 
-export default function PlanGridLab({
-  look,
-  season,
-  onOpenLidur,
-  onSelectEvent,
-}: PlanGridLabProps) {
-  const [gearState, setGearState] = useState(season.initialState);
+/** The side columns' state for a run of weeks: gear ticks, and what was last announced. */
+function useWeekModels(
+  weeks: PlanWeek[],
+  sides: Record<number, WeekSide>,
+  initialState: Record<number, Record<string, GearState>>
+) {
+  const [gearState, setGearState] = useState(initialState);
   const [announcement, setAnnouncement] = useState("");
-  const infos = useMemo(() => entryInfos(season), [season]);
-  const slots = useMemo(() => usualSlots(season.grid), [season]);
-
   const models = useMemo(() => {
     const map = new Map<number, WeekModel>();
-    for (const week of season.grid.weeks) {
-      const side = season.sides[week.index] ?? { endurmat: [], gear: [] };
+    for (const week of weeks) {
+      const side = sides[week.index] ?? { endurmat: [], gear: [] };
       const gear = gatherGear(side.gear, GEAR);
       const stateOf = (itemId: string): GearState => gearState[week.index]?.[itemId] ?? "ovist";
       map.set(week.index, {
@@ -537,7 +553,71 @@ export default function PlanGridLab({
       });
     }
     return map;
-  }, [season, gearState]);
+  }, [weeks, sides, gearState]);
+  return { models, announcement };
+}
+
+/** The two side cells of a week, shared by every look. */
+function SideCells({
+  look,
+  m,
+  patrols,
+  rowSpan,
+  onOpenLidur,
+}: {
+  look: FundurLook;
+  m: WeekModel;
+  patrols: Patrol[];
+  rowSpan?: number;
+  onOpenLidur?: (lidurId: string) => void;
+}) {
+  return (
+    <>
+      <td className={styles.side} rowSpan={rowSpan}>
+        {m.side.endurmat.length ? (
+          <EndurmatList
+            items={m.side.endurmat}
+            patrols={patrols}
+            onOpenLidur={onOpenLidur}
+            chipClass={look === "stimplar" ? cal.chip : undefined}
+          />
+        ) : (
+          <Nothing />
+        )}
+      </td>
+      <td className={styles.side} rowSpan={rowSpan}>
+        {m.gear.length ? <GearChecklist look={look} model={m} /> : <Nothing />}
+      </td>
+    </>
+  );
+}
+
+export default function PlanGridLab(props: PlanGridLabProps) {
+  if (props.look === "stimplar") {
+    return (
+      <StimplarGrid
+        busy={props.season.busy}
+        onOpenLidur={props.onOpenLidur}
+        onSelectEvent={props.onSelectEvent}
+      />
+    );
+  }
+  return <ElementGrid {...props} look={props.look} />;
+}
+
+function ElementGrid({
+  look,
+  season,
+  onOpenLidur,
+  onSelectEvent,
+}: PlanGridLabProps & { look: ElementLook }) {
+  const infos = useMemo(() => entryInfos(season), [season]);
+  const slots = useMemo(() => usualSlots(season.grid), [season]);
+  const { models, announcement } = useWeekModels(
+    season.grid.weeks,
+    season.sides,
+    season.initialState
+  );
 
   return (
     <div className={styles.root} data-look={look}>
@@ -548,28 +628,260 @@ export default function PlanGridLab({
           const info = infos.get(id);
           return info ? <FundurElement look={look} info={info} onSelect={onSelectEvent} /> : null;
         }}
-        renderSide={(week) => {
-          const m = models.get(week.index) as WeekModel;
-          return (
-            <>
-              <td className={styles.side}>
-                {m.side.endurmat.length ? (
-                  <EndurmatList
-                    items={m.side.endurmat}
-                    patrols={season.grid.patrols}
+        renderSide={(week) => (
+          <SideCells
+            look={look}
+            m={models.get(week.index) as WeekModel}
+            patrols={season.grid.patrols}
+            onOpenLidur={onOpenLidur}
+          />
+        )}
+      />
+      <p role="status" className={styles.srOnly}>
+        {announcement}
+      </p>
+    </div>
+  );
+}
+
+/* ── A5 · Stimplar, as the calendar ────────────────────────────────────────── */
+
+const DAY = 86_400_000;
+const dayKey = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+/** The calendar's patrol aliases on a strip; the whole sveit falls back in CSS. */
+function calendarVars(entry: CalendarEntry): CSSProperties | undefined {
+  if (!entry.patrolVar) return undefined;
+  return {
+    "--pc": `var(${entry.patrolVar})`,
+    "--pc-fg": `var(${entry.patrolVar}-foreground)`,
+  } as CSSProperties;
+}
+
+/**
+ * A multi-day event in a grid row: the calendar's stamped strip (punched ends), across the
+ * columns it covers. Where it runs on from last week's row it starts "↳ … framhald" with a flat
+ * cut, and only the first segment is a button, as in the calendar.
+ */
+function GridStrip({
+  entry,
+  fromBefore,
+  intoNext,
+  onSelect,
+}: {
+  entry: CalendarEntry;
+  fromBefore: boolean;
+  intoNext: boolean;
+  onSelect?: (eventId: string) => void;
+}) {
+  const subject = { ...entry, cancelled: entry.kind === "cancelled" };
+  const attrs = {
+    "data-status": entry.status,
+    "data-state": stampStateOf(subject),
+    "data-kind": entry.kind,
+  };
+  const className = cn(
+    cal.entry,
+    cal.strip,
+    styles.gridStrip,
+    fromBefore && cal.fromBefore,
+    intoNext && cal.intoNext
+  );
+  const content = (
+    <>
+      <Stamp entry={subject} size="md" />
+      <span className={cal.stripText}>
+        <span className={cal.title}>
+          {fromBefore ? "↳ " : ""}
+          {entry.title}
+        </span>
+        <span className={cal.stripRange}>
+          {fromBefore ? "framhald · " : `${entry.clock} · `}
+          {spanRange(entry)}
+        </span>
+      </span>
+      <span className={cal.chip} aria-hidden="true">
+        {calendarInitial(entry)}
+      </span>
+    </>
+  );
+  if (fromBefore) {
+    return (
+      <div className={className} style={calendarVars(entry)} aria-hidden="true" {...attrs}>
+        {content}
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={className}
+      style={calendarVars(entry)}
+      aria-label={entryName(entry)}
+      onClick={() => onSelect?.(entry.id)}
+      {...attrs}
+    >
+      {content}
+    </button>
+  );
+}
+
+/**
+ * A5: the calendar lab's own fixture and entry in the Rist. Each week is a row; a week with
+ * troop-wide events gets a "sveitin" line above the flokkar, where a multi-day event is one
+ * strip across every column. The flokkar's cells hold the calendar's StampEntry, so a routine
+ * fundur is one quiet line with no time and an exception says why.
+ */
+function StimplarGrid({
+  busy,
+  onOpenLidur,
+  onSelectEvent,
+}: {
+  busy: boolean;
+  onOpenLidur?: (lidurId: string) => void;
+  onSelectEvent?: (eventId: string) => void;
+}) {
+  const season = useMemo(() => calendarSeason(busy), [busy]);
+  const entries = useMemo(() => placeEntries(season.grid, season.today), [season]);
+  const rhythms = useMemo(() => deriveRhythms(season.grid), [season]);
+  const { models, announcement } = useWeekModels(
+    season.grid.weeks,
+    season.sides,
+    season.initialState
+  );
+  const [from, to] = season.weekRange;
+  const weeks = season.grid.weeks.filter((w) => w.index >= from && w.index <= to);
+  const { patrols } = season.grid;
+
+  const renderEntry = (entry: CalendarEntry, monday: number, sunday: number) =>
+    entry.kind === "span" ? (
+      <GridStrip
+        entry={entry}
+        fromBefore={dayKey(entry.day) < monday}
+        intoNext={dayKey(entry.endDay) > sunday}
+        onSelect={onSelectEvent}
+      />
+    ) : (
+      <StampEntry entry={entry} onSelect={onSelectEvent} />
+    );
+
+  const list = (items: CalendarEntry[], monday: number, sunday: number) =>
+    items.length ? (
+      <ul className={styles.entryList}>
+        {items.map((e) => (
+          <li key={e.id}>{renderEntry(e, monday, sunday)}</li>
+        ))}
+      </ul>
+    ) : (
+      <Nothing />
+    );
+
+  return (
+    <div className={styles.root} data-look="stimplar">
+      <div className={styles.legends}>
+        <RhythmLegend rules={rhythms} />
+        <StampKey compact />
+      </div>
+      <div className={`${gridStyles.rist} ${styles.rist}`}>
+        <div className={gridStyles.scroll}>
+          <table className={`${gridStyles.table} ${styles.table}`}>
+            <caption className={gridStyles.caption}>
+              Dagskrárhringur — vikur niður, flokkar til hliðar. Viðburðir allrar sveitarinnar eru í
+              eigin línu efst í vikunni.
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" className={`${gridStyles.cornerHead} ${styles.cornerHead}`}>
+                  Vika
+                </th>
+                {patrols.map((patrol, i) => (
+                  <th key={patrol.id} scope="col" className={gridStyles.patrolHead}>
+                    <span className={gridStyles.flokk}>
+                      <i
+                        aria-hidden="true"
+                        style={{ ["--c" as string]: accentVarFor(patrol, i) }}
+                      />
+                      {patrol.name}
+                    </span>
+                  </th>
+                ))}
+                <th scope="col" className={`${gridStyles.utilHead} ${styles.sideHead}`}>
+                  Endurmat
+                </th>
+                <th scope="col" className={`${gridStyles.utilHead} ${styles.sideHead}`}>
+                  Búnaður
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {weeks.flatMap((week) => {
+                const start = parseWeekStart(week);
+                if (!start) return [];
+                const monday = dayKey(start);
+                const sunday = monday + 6 * DAY;
+                const inWeek = (e: CalendarEntry) =>
+                  dayKey(e.endDay) >= monday && dayKey(e.day) <= sunday;
+                const troop = entries.filter((e) => e.troopWide && inWeek(e));
+                const m = models.get(week.index) as WeekModel;
+                const head = (rowSpan?: number) => (
+                  <th
+                    scope="row"
+                    rowSpan={rowSpan}
+                    className={`${gridStyles.weekHead} ${styles.weekHead}`}
+                  >
+                    <span className={gridStyles.weekHeadInner}>
+                      <b>{week.label}</b>
+                      <span>{weekDate(week)}</span>
+                      {week.note && <span className={styles.weekNote}>{week.note}</span>}
+                    </span>
+                  </th>
+                );
+                const side = (rowSpan?: number) => (
+                  <SideCells
+                    look="stimplar"
+                    m={m}
+                    patrols={patrols}
+                    rowSpan={rowSpan}
                     onOpenLidur={onOpenLidur}
                   />
-                ) : (
-                  <Nothing />
-                )}
-              </td>
-              <td className={styles.side}>
-                {m.gear.length ? <GearChecklist look={look} model={m} /> : <Nothing />}
-              </td>
-            </>
-          );
-        }}
-      />
+                );
+                const flokkar = patrols.map((patrol) => (
+                  <td key={patrol.id} className={`${gridStyles.cell} ${styles.cell}`}>
+                    {list(
+                      entries.filter((e) => e.patrol?.id === patrol.id && inWeek(e)),
+                      monday,
+                      sunday
+                    )}
+                  </td>
+                ));
+                if (!troop.length) {
+                  return [
+                    <tr key={week.index}>
+                      {head()}
+                      {flokkar}
+                      {side()}
+                    </tr>,
+                  ];
+                }
+                return [
+                  <tr key={`${week.index}-sveit`}>
+                    {head(2)}
+                    <td
+                      colSpan={patrols.length}
+                      className={`${gridStyles.bandCell} ${styles.sveitLine}`}
+                    >
+                      <span className={styles.srOnly}>Öll sveitin: </span>
+                      {list(troop, monday, sunday)}
+                    </td>
+                    {side(2)}
+                  </tr>,
+                  <tr key={`${week.index}-flokkar`}>{flokkar}</tr>,
+                ];
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
       <p role="status" className={styles.srOnly}>
         {announcement}
       </p>
@@ -765,10 +1077,13 @@ function EndurmatList({
   patrols,
   onOpenLidur,
   max = 2,
+  chipClass = styles.chip,
 }: {
   items: LabEndurmat[];
   patrols: Patrol[];
   onOpenLidur?: (lidurId: string) => void;
+  /** A5 uses the calendar's own chip. */
+  chipClass?: string;
   /** Show this many, and the rest behind "+ N í viðbót". */
   max?: number;
 }) {
@@ -794,7 +1109,7 @@ function EndurmatList({
             <li key={note.id} className={styles.note} data-tone={note.tone}>
               <span className={styles.noteKind}>
                 <span
-                  className={styles.chip}
+                  className={chipClass}
                   aria-hidden="true"
                   style={
                     patrol
@@ -849,10 +1164,13 @@ function KitSummary({
   look,
   gear,
   stateOf,
+  id,
 }: {
   look: FundurLook;
   gear: GatheredGear[];
   stateOf: (id: string) => GearState;
+  /** For A5's stamp tilt, from the kit, so it's the same on every render. */
+  id?: string;
 }) {
   const vantar = gear.filter((g) => stateOf(g.item.id) === "vantar").length;
   const owned = gear.filter((g) => stateOf(g.item.id) === "eigum").length;
@@ -876,9 +1194,16 @@ function KitSummary({
         {vantar > 0 && <span className={styles.badge}>{vantar} vantar</span>}
       </>
     );
-  } else if (look === "stimpill") {
+  } else if (look === "stimpill" || look === "stimplar") {
     visual = all ? (
-      <span className={styles.kitStamp}>
+      <span
+        className={styles.kitStamp}
+        style={
+          look === "stimplar" && id
+            ? ({ "--rot": `${rotationFor(id)}deg` } as CSSProperties)
+            : undefined
+        }
+      >
         <Check /> Allt til
       </span>
     ) : (
@@ -942,7 +1267,7 @@ function GearChecklist({ look, model }: { look: FundurLook; model: WeekModel }) 
 
   return (
     <div className={styles.gear}>
-      <KitSummary look={look} gear={gear} stateOf={stateOf} />
+      <KitSummary look={look} gear={gear} stateOf={stateOf} id={`kit-${model.week.index}`} />
       <ul className={styles.gearList} id={listId}>
         {visible.map((g) => (
           <GearRow
@@ -1060,7 +1385,7 @@ export function ElementStates({
   season,
   ids,
 }: {
-  look: FundurLook;
+  look: ElementLook;
   season: LabSeason;
   ids: { id: string; label: string }[];
 }) {

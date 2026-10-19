@@ -730,7 +730,7 @@
   font-weight: var(--sl-font-weight-heading);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  transform: rotate(-2deg);
+  transform: rotate(var(--rot, -2deg));
 }
 
 .kitSlot {
@@ -841,5 +841,60 @@
 
 .stateLabel {
   font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ═══ A5 · Stimplar, as the calendar ═══
+   The entries, strips, chips and stamps are the calendar lab's own (PlanCalendarLab.module.css
+   and stampKit); only the grid around them is here. */
+
+.entryList {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The week's line for the whole sveit, above the flokkar. */
+.sveitLine {
+  padding: 4px 8px;
+  border-bottom: 1px dashed hsl(var(--sl-color-border));
+  vertical-align: top;
+}
+
+/* A strip fills its row, between the calendar strip's own margins and punched ends. */
+.entryList > li {
+  display: flex;
+  min-width: 0;
+}
+
+.gridStrip {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The whole sveit has no flokkur colour: the inverse surface, as in the calendar. */
+.root[data-look="stimplar"] :is(.note, .sveitLine) {
+  --pc: var(--sl-color-surface-inverse);
+  --pc-fg: var(--sl-color-text-inverse);
+}
+
+.root[data-look="stimplar"] .rist {
+  margin-top: var(--sl-spacing-gap-sm);
+}
+
+.legends {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-lg);
+}
+
+/* The calendar's week note ("Vetrarfrí í skólum…"), under the week's label. */
+.root .weekNote {
+  margin-top: 2px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
   color: hsl(var(--sl-color-text-secondary));
 }

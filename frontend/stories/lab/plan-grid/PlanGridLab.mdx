@@ -11,6 +11,10 @@ in, and they didn't connect to the rest of Vinnubekkurinn. The first round tried
 
 **Picked: A · Two columns** (2026-10-19). B, C and D have been removed.
 
+**New: A5 · Stimplar (as the calendar).** The Dagatal picked and polished D4 · Stimplar, and A5
+brings that same stamp language to the grid. It comes first in the Comparison, and "Grid next to
+calendar" shows the two views one above the other.
+
 The second round keeps A's side columns and works on the other complaint: the fundur element in
 each cell is a generic card that the eye glazes over. Variations A1–A4 each give the element its
 own language. Each one also adjusts the side columns to suit it.
@@ -143,6 +147,68 @@ reading, so:
 ## The variations
 
 <Canvas of={Stories.Comparison} />
+
+### A5 · Stimplar (as the calendar)
+
+**The story it tells:** "The Rist and the Dagatal are the same stamp book, seen by week and by
+day."
+
+**How it matches the calendar.** It's built from the calendar lab's own code, imported rather
+than copied:
+
+- The fundir are the same: the calendar lab's `labGrid()` fixture and `placeEntries()`, so the
+  same October appears in both.
+- Each flokkur's cell holds the calendar's exported `StampEntry`. That gives it the kit's `Stamp`
+  for the state (staðfest, drög, óvíst, "?", lokið, fellur niður), the same patrol initial chip,
+  the title, and the same exception wording: "19:30 Fært frá mið.", "Birnir fellur niður ·
+  vetrarfrí", "+15 mín.".
+- A multi-day event is the calendar's stamped strip (its `.strip` CSS, with punched ends) inside
+  a grid row. Where it runs into the next week's row, the second segment starts "↳ … framhald"
+  with a flat cut and is drawn but not announced twice, as in the calendar.
+- Above the grid are the kit's `RhythmLegend` ("Fundir vikunnar: R Refir mán 17:30 · …") and the
+  calendar's `StampKey`. The column headers lose their time slot, so a routine fundur shows no
+  time, exactly as in the calendar.
+- I put the rhythm **above the grid**, not in each column header. It's the same line, word for
+  word, as in the calendar, so the eye learns it once. The header already carries the flokkur's
+  colour and name.
+- Past weeks are quiet and the dark-mode inks match, both from the calendar's CSS. The kit's
+  thunk plays only when a stamp first appears or turns staðfest, and never under reduced motion.
+- The week's note from the calendar ("Vetrarfrí í skólum 22.–26. okt.") sits under the week
+  label.
+
+**Information hierarchy:**
+
+- Each week is a row. A week with troop-wide events gets an **"Öll sveitin" line** above the
+  flokkar, spanning every column: skipulagsfundur, sveitarfundur, dagsferð, and the strips of a
+  mót or útilega.
+- Under it, one cell per flokkur, holding everything that flokkur has that week. That's often
+  one quiet routine line; sometimes a cancelled fundur plus an aukafundur.
+- **Side columns:** Búnaður shows an inked "ALLT TIL" stamp, tilted with the kit's
+  `rotationFor`, or a dotted "3 vantar" slot. The Endurmat notes use the calendar's own patrol
+  chip.
+
+**Why it looks this way:** the calendar's look was picked and polished, so the grid shouldn't
+invent a second language. The one real difference is structural. The calendar's columns are
+days, while the grid's are flokkar, so troop events can't sit in a flokkur's column. They get
+their own line in the week instead of today's "a band takes the whole week", which would hide
+every flokksfundur that week.
+
+**Trade-offs:**
+
+- A week with many troop events becomes tall (week 5 has a mót, foreldrakynning, a
+  skipulagsfundur and an útilega).
+- Within a week a strip can't show _which_ days it covers by position, only by its date range.
+  The calendar shows that by position.
+- It's tied to the calendar lab's files. That's intended (one language), but a change there
+  changes this.
+- It runs on the calendar's fixture, not this lab's, so it isn't in the "Fundur element states"
+  sheet. The calendar's own Stamp states and Key stories cover it.
+
+**API it needs:** the same as the calendar's D4: `ends_at` and `cancelled`, plus the búnaður
+(sc-644) and endurmat (sc-645) shapes above for the side columns. A troop line needs nothing
+new: it's every band in the week.
+
+<Canvas of={Stories.GridNextToCalendar} />
 
 ### A1 · Staða
 

@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import PlanGrid from "@/components/plan/PlanGrid";
+import PlanCalendarLab from "../plan-calendar/PlanCalendarLab";
 import PlanGridLab, {
   ElementStates,
   GearChecklistCloseUp,
   LOOK_NAME,
+  type ElementLook,
   type FundurLook,
 } from "./PlanGridLab";
 import { busySeason, emptySeason } from "./planGridLabData";
@@ -17,7 +19,9 @@ import { busySeason, emptySeason } from "./planGridLabData";
  * See the Docs page (PlanGridLab.mdx) for the data note and the reasoning.
  */
 
-const LOOK_OPTIONS: FundurLook[] = ["chip", "stada", "merki", "vardeldur", "stimpill"];
+const LOOK_OPTIONS: FundurLook[] = ["stimplar", "chip", "stada", "merki", "vardeldur", "stimpill"];
+/** The looks drawn on this lab's own fixture; A5 uses the calendar lab's. */
+const ELEMENT_LOOKS: ElementLook[] = ["chip", "stada", "merki", "vardeldur", "stimpill"];
 
 const meta = {
   title: "Lab/PlanGrid side columns",
@@ -40,6 +44,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const IDEA: Record<FundurLook, string> = {
+  stimplar:
+    "The Dagatal's picked D4 · Stimplar in the grid: the calendar's own stamps, entries and strips, on the calendar's own fundir (October 2026).",
   chip: "A as picked: Endurmat and Búnaður columns, with today's PlanEntryChip in the cells.",
   stada:
     "Status first, like the Dagatal's Staða: the tile wears the state, with a glyph and a word; the flokkur is a small initial.",
@@ -100,6 +106,42 @@ function storiesFor(look: FundurLook) {
   };
 }
 
+const a5 = storiesFor("stimplar");
+export const Stimplar: Story = a5.busy;
+export const StimplarEmpty: Story = a5.empty;
+export const StimplarPhone: Story = a5.phone;
+
+/**
+ * The calendar lab's D4 · Stimplar and A5 on the same October, one above the other, to judge
+ * whether the two views speak one language.
+ */
+export const GridNextToCalendar: Story = {
+  name: "Grid next to calendar",
+  args: { look: "stimplar" },
+  render: (args) => (
+    <div style={{ display: "grid", gap: "var(--sl-spacing-xl)" }}>
+      <section>
+        <h3 style={heading}>Dagatal · D4 Stimplar (the calendar lab)</h3>
+        <PlanCalendarLab onSelect={args.onSelectEvent} />
+      </section>
+      <section>
+        <h3 style={heading}>Rist · A5 Stimplar</h3>
+        <PlanGridLab {...args} />
+      </section>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The same fundur, named the same way (the calendar's entryName) in both views. On a phone
+    // the calendar folds its days into buttons, so count the grid there.
+    const wide = canvasElement.clientWidth > 640;
+    const both = canvas.getAllByRole("button", { name: /^Haustútilega á Úlfljótsvatni, / });
+    await expect(both.length).toBeGreaterThanOrEqual(wide ? 2 : 1);
+    const cancelled = canvas.getAllByRole("button", { name: /^Flokksfundur Bjarna fellur niður/ });
+    await expect(cancelled.length).toBeGreaterThanOrEqual(wide ? 2 : 1);
+  },
+};
+
 const a1 = storiesFor("stada");
 export const Stada: Story = a1.busy;
 export const StadaEmpty: Story = a1.empty;
@@ -140,7 +182,7 @@ export const FundurElementStates: Story = {
   name: "Fundur element states",
   render: (args) => (
     <div style={{ display: "grid", gap: "var(--sl-spacing-lg)" }}>
-      {LOOK_OPTIONS.map((look) => (
+      {ELEMENT_LOOKS.map((look) => (
         <section key={look}>
           <h3 style={heading}>{LOOK_NAME[look]}</h3>
           <ElementStates look={look} season={args.season} ids={STATES} />
@@ -155,11 +197,11 @@ export const FundurElementStates: Story = {
       name: /^Uglur: .*fellur niður: Skólaferðalag/,
     });
     // Four lab elements; today's chip doesn't say either.
-    await expect(cancelled).toHaveLength(LOOK_OPTIONS.length - 1);
+    await expect(cancelled).toHaveLength(ELEMENT_LOOKS.length - 1);
     const moved = canvas.getAllByRole("button", {
       name: /^Ernir: .*færður af venjulegum fundartíma/,
     });
-    await expect(moved.length).toBe(LOOK_OPTIONS.length - 1);
+    await expect(moved.length).toBe(ELEMENT_LOOKS.length - 1);
   },
 };
 
