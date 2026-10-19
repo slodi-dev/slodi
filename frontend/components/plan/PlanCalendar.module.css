@@ -1,0 +1,213 @@
+/* The Dagatal, per the v5 hi-fi. A real <table> for the same reason as the
+   Rist — see PlanGrid.module.css. */
+
+.root {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.bar {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: var(--sl-spacing-gap-md, 16px);
+}
+
+.monthTitle {
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+
+.nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: var(--sl-radius-md);
+  background: none;
+  color: hsl(var(--sl-color-text-tertiary));
+  font: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.nav:hover:not(:disabled) {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.nav:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.eyebrow {
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.cal {
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-lg, 10px);
+  box-shadow: var(--sl-shadow-card);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dayHead {
+  padding: 6px;
+  background: hsl(var(--sl-color-background-secondary));
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--sl-color-text-tertiary));
+  text-align: left;
+}
+
+.dayHead:last-child {
+  border-right: 0;
+}
+
+.day {
+  min-height: 104px;
+  height: 104px;
+  padding: 5px 6px;
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  vertical-align: top;
+  min-width: 0;
+}
+
+.day:last-child {
+  border-right: 0;
+}
+
+/* Days belonging to the neighbouring month: present for orientation, recessed
+   so they never compete with the month actually being read. */
+.out {
+  background: hsl(var(--sl-color-background-secondary) / 0.5);
+}
+
+.out .dayNumber {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.dayHd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.dayNumber {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Today: the number centred in a circle of the system's primary colour. A fixed
+   square with line-height 1 keeps the digits optically centred; two-digit days
+   fit without stretching it into a pill. */
+.today .dayNumber {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.undated {
+  margin-top: var(--sl-spacing-gap-md, 16px);
+  padding: var(--sl-spacing-inset-sm, 12px);
+  border: 1px dashed hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card, 12px);
+  background: hsl(var(--sl-color-background-secondary) / 0.6);
+}
+
+.undatedTitle {
+  margin: 0 0 6px;
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.undatedList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--sl-text-body-sm);
+}
+
+.undatedList li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.undatedWeek {
+  min-width: 5rem;
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.troopWide {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.empty {
+  max-width: 1080px;
+  margin: 0 auto;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+@media (max-width: 900px) {
+  .day {
+    height: auto;
+    min-height: 72px;
+  }
+}

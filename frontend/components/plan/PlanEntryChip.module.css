@@ -1,0 +1,107 @@
+.ev {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 5px 7px;
+
+  border: 1px solid hsl(var(--sl-color-border));
+  border-left: 3px solid hsl(var(--ev, var(--sl-color-primary)));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card);
+
+  font: inherit;
+  color: hsl(var(--sl-color-text-primary));
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--sl-transition-fast, 120ms),
+    background-color var(--sl-transition-fast, 120ms);
+}
+
+.ev:hover {
+  border-color: hsl(var(--sl-color-border-hover));
+  border-left-color: hsl(var(--ev, var(--sl-color-primary)));
+}
+
+.ev:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.ev[aria-current="true"] {
+  border-color: hsl(var(--sl-color-primary));
+  border-left-color: hsl(var(--ev, var(--sl-color-primary)));
+  background: hsl(var(--sl-color-primary-subtle));
+}
+
+/* ADR-002 §3: "?" is a state, not an error — dashed, never red. */
+.undecided {
+  border-style: dashed;
+  border-left-style: solid;
+}
+
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: 1.15;
+}
+
+.mark {
+  font-weight: var(--sl-font-weight-heading);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.bar {
+  display: flex;
+  height: 4px;
+  margin-top: 2px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.bar i {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev {
+    transition: none;
+  }
+}
+
+/* The hi-fi's 44px floor for touch, from the spec's a11y acceptance. */
+@media (pointer: coarse) {
+  .ev {
+    min-height: 44px;
+    justify-content: center;
+  }
+}
