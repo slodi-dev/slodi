@@ -1,21 +1,109 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
-import styles from "./header.module.css";
+import { usePathname } from "next/navigation";
+import { useCallback, useId, useRef, useState, type MouseEvent } from "react";
 import { useUser } from "@auth0/nextjs-auth0";
+import { ArrowRight, ExternalLink, Menu, X } from "lucide-react";
 import { useDrawerFocus } from "@/hooks/useDrawerFocus";
+import greenLogo from "@/app/icon.svg";
+import styles from "./header.module.css";
+
+/** Id of the page's `<main>`, the target of the header's skip link (ConditionalLayout). */
+export const MAIN_CONTENT_ID = "efni";
 
 const GITHUB_URL = "https://github.com/halldorvalberg/slodi";
 
-export default function Header() {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+/** The green mark is the favicon, `app/icon.svg`; `public/logo/slodi-simple-vector.svg` is black. */
+const GREEN_LOGO_URL: string = typeof greenLogo === "string" ? greenLogo : greenLogo.src;
+const WHITE_LOGO_URL = "/logo/slodi-simple-vector-white.svg";
 
-  const openDrawer = () => setIsDrawerOpen(true);
-  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+const PAGES = [
+  { href: "/", label: "Heim" },
+  { href: "/about", label: "Um Slóða" },
+  { href: "/leikir", label: "Leikir" },
+] as const;
+
+/** The account action: the dashboard when signed in, login otherwise. */
+function accountLink(signedIn: boolean) {
+  return signedIn
+    ? { href: "/dashboard", label: "Stjórnborð", prefetch: undefined }
+    : { href: "/auth/login", label: "Innskráning", prefetch: false };
+}
+
+/**
+ * The Slóði mark in front of the wordmark: green in light mode, white in dark. Both are
+ * rendered and the theme hides one (CSS). `alt=""` because the "Slóði" text beside it already
+ * names the link.
+ */
+/* eslint-disable @next/next/no-img-element -- a small static SVG: next/image does not optimise SVG. */
+function BrandLogo() {
+  return (
+    <>
+      <img
+        className={`${styles.logo} ${styles.logoForLight}`}
+        src={GREEN_LOGO_URL}
+        alt=""
+        width={35}
+        height={32}
+      />
+      <img
+        className={`${styles.logo} ${styles.logoForDark}`}
+        src={WHITE_LOGO_URL}
+        alt=""
+        width={35}
+        height={32}
+      />
+    </>
+  );
+}
+/* eslint-enable @next/next/no-img-element */
+
+function GithubLink({ className, onClick }: { className: string; onClick?: () => void }) {
+  return (
+    <a
+      href={GITHUB_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+      onClick={onClick}
+    >
+      Github
+      <ExternalLink className={styles.externalIcon} aria-hidden="true" />
+      <span className={styles.srOnly}> (opnast í nýjum flipa)</span>
+    </a>
+  );
+}
+
+/**
+ * Moves focus to the page's `<main>` instead of following the `#efni` link. Following it
+ * scrolls, but not every browser moves keyboard focus to the target (older Safari doesn't),
+ * and a `<base>` element would turn it into a page load. Without JavaScript the plain link
+ * still works.
+ */
+function skipToMain(event: MouseEvent<HTMLAnchorElement>) {
+  const main = document.getElementById(MAIN_CONTENT_ID);
+  if (!main) return;
+  event.preventDefault();
+  main.focus();
+}
+
+/**
+ * Top bar for the public pages (landing, Um Slóða, Leikir). Starts with a skip link to the
+ * page's main content. On a phone the links move into a drawer: closed it is `inert`, open it
+ * is a modal dialog that holds focus until Escape, the close button, the scrim or a link
+ * closes it (useDrawerFocus).
+ */
+export default function Header() {
   const { user } = useUser();
+  const pathname = usePathname();
+  const account = accountLink(Boolean(user));
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const drawerId = useId();
   useDrawerFocus({
     open: isDrawerOpen,
     containerRef: drawerRef,
@@ -23,115 +111,115 @@ export default function Header() {
     onClose: closeDrawer,
   });
 
+  const current = (href: string) => (pathname === href ? "page" : undefined);
+
   return (
-    <header className={styles.headerRoot}>
-      <div className={styles.headerContent}>
-        <Link href="/" className={styles.brandLink}>
-          Slóði
+    <header className={styles.header}>
+      <a className={styles.skipLink} href={`#${MAIN_CONTENT_ID}`} onClick={skipToMain}>
+        Fara beint í efni
+      </a>
+
+      <div className={styles.inner}>
+        <Link href="/" className={styles.brand}>
+          <BrandLogo />
+          <span className={styles.brandName}>Slóði</span>
         </Link>
 
-        {/* Desktop navigation */}
-        <nav className={`${styles.primaryNav} ${styles.primaryNavDesktop}`}>
-          <Link href="/" className={styles.primaryNavLink}>
-            Heim
-          </Link>
-          <Link href="/about" className={styles.primaryNavLink}>
-            Um Slóða
-          </Link>
-          <Link href="/leikir" className={styles.primaryNavLink}>
-            Leikir
-          </Link>
-          <a
-            href={GITHUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.primaryNavLink}
+        {/* Desktop navigation. Hidden on a phone, where the drawer's nav takes over, so the
+            two navs are never exposed at the same time and can share a name. */}
+        <nav className={styles.nav} aria-label="Aðalvalmynd">
+          <ul className={styles.links}>
+            {PAGES.map((page) => (
+              <li key={page.href}>
+                <Link href={page.href} className={styles.link} aria-current={current(page.href)}>
+                  {page.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <GithubLink className={styles.link} />
+            </li>
+          </ul>
+          <Link
+            href={account.href}
+            className={styles.account}
+            prefetch={account.prefetch}
+            aria-current={current(account.href)}
           >
-            Github
-          </a>
-
-          {user ? (
-            <Link href="/dashboard" className={styles.primaryNavLink}>
-              Stjórnborð
-            </Link>
-          ) : (
-            <Link href="/auth/login" className={styles.primaryNavLink} prefetch={false}>
-              Innskráning
-            </Link>
-          )}
+            {account.label}
+            <ArrowRight className={styles.accountIcon} aria-hidden="true" />
+          </Link>
         </nav>
 
-        {/* Mobile menu toggle */}
         <button
           ref={toggleRef}
           type="button"
-          className={styles.menuToggleButton}
-          onClick={openDrawer}
-          aria-label="Opna valmynd"
+          className={styles.menuButton}
+          onClick={() => setIsDrawerOpen(true)}
           aria-haspopup="dialog"
           aria-expanded={isDrawerOpen}
-          aria-controls="main-menu-drawer"
+          aria-controls={drawerId}
         >
-          ☰
+          <Menu className={styles.menuIcon} aria-hidden="true" />
+          <span>Valmynd</span>
         </button>
+      </div>
 
-        {/* Drawer overlay */}
-        {isDrawerOpen && (
-          <div className={styles.drawerOverlay} onClick={closeDrawer} aria-hidden="true" />
-        )}
+      {isDrawerOpen ? (
+        <div className={styles.scrim} onClick={closeDrawer} aria-hidden="true" />
+      ) : null}
 
-        {/* Mobile drawer. Closed, it is `inert`: off screen, out of the tab
-            order and hidden from assistive technology. Open, it is a modal
-            dialog that holds focus until Escape, the close button, the overlay
-            or a link closes it (useDrawerFocus). */}
-        <div
-          ref={drawerRef}
-          id="main-menu-drawer"
-          className={`${styles.drawerPanel} ${isDrawerOpen ? styles.drawerPanelOpen : ""}`}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Valmynd"
-          inert={!isDrawerOpen}
-        >
+      <div
+        ref={drawerRef}
+        id={drawerId}
+        className={`${styles.drawer} ${isDrawerOpen ? styles.drawerOpen : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Valmynd"
+        inert={!isDrawerOpen}
+      >
+        <div className={styles.drawerTop}>
+          <span className={styles.drawerTitle} aria-hidden="true">
+            Slóði
+          </span>
           <button
             type="button"
-            className={styles.drawerCloseButton}
+            className={styles.closeButton}
             onClick={closeDrawer}
             aria-label="Loka valmynd"
           >
-            ✕
+            <X className={styles.menuIcon} aria-hidden="true" />
           </button>
-          <nav className={styles.drawerNav} aria-label="Aðalvalmynd">
-            <Link href="/" className={styles.drawerNavLink} onClick={closeDrawer}>
-              Heim
-            </Link>
-            <Link href="/about" className={styles.drawerNavLink} onClick={closeDrawer}>
-              Um Slóða
-            </Link>
-            <Link href="/leikir" className={styles.drawerNavLink} onClick={closeDrawer}>
-              Leikir
-            </Link>
-            <a
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.drawerNavLink}
-              onClick={closeDrawer}
-            >
-              Github
-            </a>
-
-            {user ? (
-              <Link href="/dashboard" className={styles.drawerNavLink} onClick={closeDrawer}>
-                Stjórnborð
-              </Link>
-            ) : (
-              <Link href="/auth/login" className={styles.drawerNavLink} onClick={closeDrawer}>
-                Innskráning
-              </Link>
-            )}
-          </nav>
         </div>
+        <nav className={styles.drawerNav} aria-label="Aðalvalmynd">
+          <ul className={styles.drawerLinks}>
+            {PAGES.map((page) => (
+              <li key={page.href}>
+                <Link
+                  href={page.href}
+                  className={styles.drawerLink}
+                  aria-current={current(page.href)}
+                  onClick={closeDrawer}
+                >
+                  {page.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <GithubLink className={styles.drawerLink} onClick={closeDrawer} />
+            </li>
+          </ul>
+          <Link
+            href={account.href}
+            className={styles.drawerAccount}
+            prefetch={account.prefetch}
+            aria-current={current(account.href)}
+            onClick={closeDrawer}
+          >
+            {account.label}
+            <ArrowRight className={styles.accountIcon} aria-hidden="true" />
+          </Link>
+        </nav>
       </div>
     </header>
   );

@@ -1,9 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { withFreshAuthSession } from "@/components/Header/withFreshAuthSession";
 import ConditionalLayout from "./index";
 
 const meta = {
   title: "Components/Útlit/ConditionalLayout",
   component: ConditionalLayout,
+  // The public layout renders the Header, which reads the Auth0 session.
+  decorators: [withFreshAuthSession],
   args: {
     children: (
       <div style={{ padding: "2rem", minHeight: 240 }}>
@@ -19,7 +22,8 @@ const meta = {
       description: {
         component:
           "Picks the layout from the path: Header + Footer for public pages, DashboardLayout " +
-          "for app routes. Set the path with `parameters.nextjs.navigation.pathname`.",
+          "for app routes. Set the path with `parameters.nextjs.navigation.pathname`. On a public " +
+          "page `<main>` has the id `efni`, the target of the header's skip link.",
       },
     },
   },

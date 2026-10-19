@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Header from "@/components/Header";
+import Header, { MAIN_CONTENT_ID } from "@/components/Header";
 import Footer from "@/components/Footer";
 import DashboardLayout from "@/components/DashboardLayout";
+import styles from "./ConditionalLayout.module.css";
 
 /**
  * ConditionalLayout Component
@@ -93,7 +94,10 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
     return (
       <>
         <Header />
-        <main className="sl-main flex-1">{children}</main>
+        {/* The target of the header's skip link. tabIndex -1 lets the link move focus here. */}
+        <main id={MAIN_CONTENT_ID} tabIndex={-1} className={`sl-main flex-1 ${styles.main}`}>
+          {children}
+        </main>
         <Footer />
       </>
     );
