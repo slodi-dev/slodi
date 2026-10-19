@@ -76,6 +76,11 @@ once a variation is picked it is **promoted** into the real component and its la
 - **MobileMenuButton**: looked invisible because it is `display: none` above 767px and its stories
   rendered at desktop width. The stories now open at phone width.
 
+- **SeasonSwitcher**: works for now. It switches between the term plan ("Starfsárið") and the
+  undated scratchpad ("Krot og krass"); later, between years. The "(GERVIGÖGN)" suffix on the
+  fixture season names is gone (#194); the sticky banner still labels fixture data.
+- **Bench (PlanBench)**: good as a whole; it is a collection of the parts getting variations.
+
 ## To do
 
 - **Rename `DashboardLayout` → `AppShell`.** It is the app shell around the side nav, not a
