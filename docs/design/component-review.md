@@ -49,6 +49,11 @@ once a variation is picked it is **promoted** into the real component and its la
 
 ## In the Lab
 
+- **BlockPalette → C · Card grid, iterating.** The coloured side stripe goes (identity comes
+  from the picture/icon tile). The collections area (Allt, Sveitin mín, Félagið, Færnimerki)
+  becomes user-owned categories too: favourite **albums** next to the built-in sources. Needs
+  the real favourites backend (sc-620), extended to albums.
+
 - **RangeInput → C · Values on the handles, being refined.** The values on the handles can be
   typed into; next, variations on how the number is entered.
 - **Header → A, A2, B, B2.** A2 and B2 add the logo (green mark in light, white in dark; B2's band
