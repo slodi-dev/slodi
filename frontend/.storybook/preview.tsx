@@ -28,6 +28,14 @@ import {
 // `useAuth()` everywhere resolves to contexts/__mocks__/AuthContext.tsx.
 sb.mock("../contexts/AuthContext.tsx");
 
+// The Vinnubekkur stories pick the plan's mock mode themselves
+// (`mocked(useMockMode).mockReturnValue(...)` in a story's beforeEach). The real
+// hook reads `?mock=` and sessionStorage, and is always "off" in a production
+// build — which is what the visual baselines are taken from — so without this
+// the same story would show the bench in `npm run storybook` and the Rist in
+// its screenshot. A spy keeps the real behaviour for every other story.
+sb.mock("../lib/mock/mock-mode.ts", { spy: true });
+
 installMockFetch();
 
 const THEMES = ["light", "dark"] as const;
