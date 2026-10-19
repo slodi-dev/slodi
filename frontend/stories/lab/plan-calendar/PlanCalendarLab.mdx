@@ -1,0 +1,200 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./PlanCalendarLab.stories";
+
+<Meta of={Stories} name="Rationale" />
+
+# PlanCalendar day entries: variations
+
+The Dagatal's grid works. What sits in each day doesn't: every entry is the same white rounded
+card with a 3px coloured left stripe, a bold title, small grey "19:30 · Skátaheimilið" and a
+liðir bar at the bottom. That's the stock look of a generated dashboard. In a month view it adds
+up to a wall of identical cards: you can count them, but you can't tell at a glance which
+evenings belong to which flokkur, which weekend is the útilega, or what still needs planning.
+
+Each look below is a lab copy of the entry inside a lab copy of the month grid (the same table,
+Monday first, trailing row trimmed). The fixtures are fixed to October and December 2026, with
+today on mánudagur 19. október, so the hard cases stay on the same days: 1, 2, 4 and 5 entries in
+a day, long titles, troop-wide events and past days.
+
+## What a day entry has to say, ranked
+
+From the data the grid contract actually carries (`PlanCell` / `PlanBand` in
+`services/plan.service.ts`), ranked by what a sveitarforingi needs from a **month**, not from a
+single fundur:
+
+1. **Whose it is**: a flokkur (with its colour) or öll sveitin. The month question is "is every flokkur meeting every week, and when is the whole sveit together?" A flokkur keeps its colour across the Rist, Dagatal and Tímalína, so colour is the fastest key there is.
+2. **What it is**: the title, and the type when it isn't a plain fundur. An útilega or dagsferð changes the shape of the month (kit, drivers, parents). A flokksfundur is routine. The title tells fundir apart; the type tells routine from exceptional.
+3. **How decided it is**: staðfest / drög / óvíst / óákveðið ("?"). The planning question: "what haven't I sorted yet?" ADR-002 §3 makes "?" a first-class state, and A8 (progressive detailing) means the far end of a month is _supposed_ to be undecided, so it has to read calmly.
+4. **When**: the start time. Needed to tell two entries on one evening apart, and to plan around school. Less important than the day, which the grid already gives.
+5. **Past or to come**. The past half of a month is reference, not work. It should recede without disappearing.
+6. **Over budget**: liðir add up to more than the fundur's minutes. A Bekkurinn problem. Worth a flag in the month view only when it's true, and only in the look that's about readiness.
+7. **Where**: venue. Matters on the day, rarely for the month. It's in every entry's accessible name and in the phone day list, not in the cell.
+
+**Left out:** theme, kit (`needs`), liðir count, the kind split (`segments`). Bench-level detail. The current chip's segment bar is the main thing these looks drop.
+
+What the data **can't** say yet: how many liðir of a fundur are decided. `item_count` is a total,
+and liður status lives in the bench data, not the grid. So "readiness" here is the fundur's own
+status. A real "4 of 5 liðir decided" tally would need a `decided_count` on the grid contract.
+
+## The rules every look keeps
+
+- Each entry is a `<button>` whose accessible name is the whole story, e.g. _"Flokksfundur Arna:
+  Hnútar og bönd, 21. október kl. 19:30, Skátaheimilið, drög"_. It adds _"20 mínútur umfram"_
+  when over budget and _"lokið"_ when past.
+- A day holds 3 or 4 entries (by look) before the rest fold behind **"+N fleiri"**, which expands
+  the day in place.
+- Below 40rem of its own width, the grid stops squeezing titles into 50px cells. Each day becomes
+  a button with small markers in the look's own language, and the chosen day is listed under
+  the grid in the look's full form (48px rows, with who, where and status in words).
+- Colour comes from the vivid `--sl-color-patrol-*` fills with their `-foreground` (near-black,
+  AA on every fill in both themes). A troop-wide event wears the inverse surface: the one colour
+  no flokkur has.
+- Colour is never the only carrier. Every look also has a letter, a shape, a word or a line style
+  for the same fact.
+- Today's circle is centred on the number and drawn in `--sl-color-primary` (white text, 5.2:1
+  in light; near-black on green-400 in dark).
+- Dates come from `lib/format.ts`; counts go through `countIs` ("1 viðburður", "5 viðburðir").
+
+---
+
+## A · Fáni
+
+<Canvas of={Stories.RibbonBusy} />
+
+**Story it tells:** who meets when. Every flokkur's evening is a flag in its own colour, so a
+glance down a column shows Refir and Birnir on Tuesdays, Ernir on Wednesdays, Uglur on Thursdays,
+and the black (white in dark) banners that belong to everyone.
+
+**Information hierarchy:**
+
+1. The flokkur, from the fill.
+2. The title, in bold.
+3. The time, ahead of the title. Status is a quiet extra: dashed stitching inside the flag means
+   "not decided yet", and "?" means óákveðið.
+
+**Why it looks this way:** a flokkur has a fáni, and a patrol colour is the identity scouts
+already use. A solid fill reads at a much smaller size than a 3px stripe, so the entry can shrink
+without losing who it belongs to. The swallowtail makes it a flag rather than a card. A
+troop-wide event is a square banner instead, so shape as well as colour says "everyone". Past
+flags are lowered: faded to the flokkur's pale tint, mixed halfway into the surface, with
+secondary text.
+
+**Trade-offs:** status is coarse. Drög and óvíst look alike (both are only "stitched on"), and
+staðfest can't be told from drög across a room. Six vivid fills in a busy week are loud, and the
+inverse troop banner is the heaviest mark in the month, in black in light mode and white in dark.
+Yellow (Drekar/Ernir) and green (Drótt/Birnir) are close in lightness, so the initial in the phone
+list and the accessible name do the work for colour-blind leaders. The clip-path means the focus
+ring has to sit inside the flag.
+
+## B · Dagbók
+
+<Canvas of={Stories.AgendaBusy} />
+
+**Story it tells:** what each evening holds, read like a page of a paper diary: time, then what,
+with a small disc for whose.
+
+**Information hierarchy:**
+
+1. The time, at the left edge, in a column.
+2. The title.
+3. The flokkur (a disc with its initial; a disc of every flokkur's colour for öll sveitin).
+   Status is the line's hand: **ink** (upright, dark) for staðfest, **pencil** (italic, lighter)
+   for drög and óvíst, and "?" in place of the time for óákveðið.
+
+**Why it looks this way:** no card at all. A month cell is about 150px wide; a card spends a lot
+of that on padding, borders and shadow. One line per entry fits four before folding, so the busiest
+week still reads. Ink vs pencil is how a leader marks a paper plan, so it needs no legend for the
+people this is for. Past lines go grey and their disc turns hollow.
+
+**Trade-offs:** titles truncate at one line ("Trönur og reipa…"), so it relies on the name, the
+hover and the phone list for the rest. The flokkur is the weakest signal of the five looks: a
+small disc with a letter. The italic pencil is subtle at 12px, so óvíst vs staðfest won't be seen
+across a room. It's also the least "Slóði-branded": it could be any calendar.
+
+## C · Miði
+
+<Canvas of={Stories.TicketBusy} />
+
+**Story it tells:** each evening is a ticket: when it starts, what it is, and whether it has been
+stamped yet.
+
+**Information hierarchy:**
+
+1. The time, on a stub in the flokkur's colour.
+2. The title, on the ticket body.
+3. What's missing, written on the stub: **DRÖG**, **ÓVÍST** or **?**. A staðfest ticket's stub
+   only has the time, and its edge is solid.
+
+**Why it looks this way:** it borrows the scouting **stamp** language picked for Alert: a dashed
+edge means "not stamped yet", a solid edge means done. The perforation between stub and body is
+the same dashed line, so the metaphor holds together. Status is a word, not a colour, which makes
+it the most colour-blind-safe look for status. Writing the missing step, rather than the state,
+keeps confirmed tickets quiet and puts ink where work is left. Used (past) tickets have a grey
+stub and no word.
+
+**Trade-offs:** the stub costs 44px of a 150px cell, so long titles break mid-word more often
+("Undirbúningsfun|dur…"). It's the tallest entry, so it folds at 3. "?" on its own on the stub is
+terse. Troop-wide tickets differ from flokkur tickets only by the stub's colour.
+
+## D · Staða
+
+<Canvas of={Stories.ReadinessBusy} />
+
+**Story it tells:** where the planning work is. The month becomes a heatmap: green is sorted,
+blue is drafted, amber is unsure, and dashed grey is still a "?". The past goes plain, because
+colour marks work that's left.
+
+**Information hierarchy:**
+
+1. How decided it is, from the tint and a glyph (✓ staðfest, ✎ drög, ⧗ óvíst, ? óákveðið).
+   These are the spec's own status colours: confirmed → success, draft → info, tentative →
+   warning, undecided → neutral with a dashed border and a literal "?".
+2. The title.
+3. The flokkur (an initial on its colour, "S" for öll sveitin), the time, and **+N mín.** in red
+   when the liðir run over budget.
+
+**Why it looks this way:** it answers the planner's real question for a month, "what haven't I
+done?", and it's the only look that makes A8 visible: a healthy plan is green near today and
+greyer further out, so the gradient itself shows progressive detailing working. A glyph sits next
+to every tint so colour is never alone. Over budget only shows here, because only this look is
+about readiness.
+
+**Trade-offs:** the flokkur drops to a 15px chip, so "who meets when" (look A's whole story) is
+hard to see. Status colours compete with patrol colours if both are loud, which is why the patrol
+is shrunk. It's the boxiest look and closest to the current card. The tint is new, but it's still a
+bordered rounded rectangle. Readiness is the fundur's status, not its liðir (see the note above).
+
+## E · Tákn
+
+<Canvas of={Stories.IconsBusy} />
+
+**Story it tells:** what kind of month it is. The útilega and the dagsferð stand out by shape and
+size, and the routine fundir sit quietly around them.
+
+**Information hierarchy:**
+
+1. The type, from the icon: a flag for a flokksfundur, people for a sveitarfundur, a clipboard
+   for the foringjar's skipulagsfundur, a tent for an útilega, a mountain for a dagsferð, a tent
+   and tree for a mót, party poppers for an uppskeruhátíð.
+2. The flokkur, from the tile's colour (inverse for öll sveitin).
+3. The time and title, in body text beside it. Big outings get a whole row with a larger tile and
+   a two-line bold title.
+
+**Why it looks this way:** shape carries type, so colour is free to carry the flokkur. The
+exceptional events are the ones a leader plans around, so they get the most ink. This is the look
+that survives shrinking best: on a phone the markers are the icons themselves. Status is the
+tile's fill: solid once planned (staðfest or drög), outlined when óvíst, dashed with "?" when
+óákveðið.
+
+**Trade-offs:** in an ordinary month it's mostly flags, so the icon tells you little week to
+week. Drög and staðfest look the same. A kvöldvaka or a varðeldur gets no campfire, because it isn't
+a type in the contract. That would need a tag or a new `EventType`. Icons need learning, and the
+legend matters more here than in any other look.
+
+---
+
+## Close up and on a phone
+
+<Canvas of={Stories.OneDayCloseUp} />
+
+<Canvas of={Stories.ReadinessPhone} />

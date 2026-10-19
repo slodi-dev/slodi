@@ -1,0 +1,938 @@
+/* Lab copies of the Dagatal day entry, inside a lab copy of the month grid.
+
+   Every colour is a token, so each look works in light, dark and the patrol theme. An entry
+   gets its flokkur's ramp as three local aliases, set inline by the component:
+     --pc         the patrol fill (the vivid --sl-color-patrol-* step)
+     --pc-fg      its foreground (near-black, AA on every patrol fill in both themes)
+     --pc-subtle  its pale tint (AA with text-primary/secondary in both themes)
+   A troop-wide event gets the inverse surface instead: the one colour no flokkur has.
+
+   The grid follows its own width (container query), not the viewport, so a narrow story
+   and a phone behave the same way. */
+
+.root {
+  container: plancal / inline-size;
+  max-width: 1080px;
+  margin: 0 auto;
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-tight);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* ── Bar: as the real calendar ── */
+
+.bar {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--sl-spacing-gap-sm);
+}
+
+.monthTitle {
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+
+.nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: var(--sl-radius-md);
+  background: none;
+  color: hsl(var(--sl-color-text-secondary));
+  font: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.nav:hover {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.eyebrow {
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* One focus ring for everything that takes focus; the fills retune it below. */
+.root :is(button):focus-visible,
+.closeCell :is(button):focus-visible {
+  outline: 2px solid hsl(var(--sl-color-focus-ring));
+  outline-offset: 1px;
+}
+
+/* ── Legend ── */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm) var(--sl-spacing-gap-lg);
+  margin-bottom: var(--sl-spacing-gap-sm);
+  font-size: var(--sl-text-xs);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.keyList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.keyItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.patrolSwatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: hsl(var(--pc));
+}
+
+.troopSwatch {
+  background: hsl(var(--sl-color-surface-inverse));
+}
+
+.statusKey {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-xs);
+}
+
+.keySample {
+  width: max-content;
+  min-width: 6.5rem;
+}
+
+/* ── The grid: as the real calendar ── */
+
+.cal {
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-lg);
+  box-shadow: var(--sl-shadow-card);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.dayHead {
+  padding: 6px;
+  background: hsl(var(--sl-color-background-secondary));
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--sl-color-text-secondary));
+  text-align: left;
+}
+
+.dayHead:last-child {
+  border-right: 0;
+}
+
+.day {
+  height: 6.5rem;
+  padding: 5px 6px;
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  vertical-align: top;
+  min-width: 0;
+}
+
+.day:last-child {
+  border-right: 0;
+}
+
+.out {
+  background: hsl(var(--sl-color-background-secondary) / 0.5);
+}
+
+.out .dayNumber {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.dayHd {
+  display: flex;
+  align-items: center;
+  min-height: 1.625rem;
+  margin-bottom: 2px;
+}
+
+.dayNumber {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Today: a true circle whose centre is the number's centre (a fixed square, the digits placed
+   by the grid, line-height 1 so the font's leading cannot push them down), in primary. White on
+   primary is 5.2:1 in light; in dark the inverse text is near-black on green-400. */
+.today .dayNumber {
+  display: inline-grid;
+  place-items: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 50%;
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  line-height: 1;
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.more {
+  margin-top: 3px;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: var(--sl-radius-xs);
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.more:hover {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* ── Entry: shared reset ── */
+
+/* A past entry's colour: the pale tint, mixed halfway back into the surface. The dark theme's
+   tints are deep and saturated, and unmixed they shouted louder than the weeks still to come. */
+.entry {
+  --pc-faded: color-mix(in hsl, hsl(var(--pc-subtle)) 45%, hsl(var(--sl-color-surface)));
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.detail {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-body);
+  white-space: normal;
+}
+
+.q {
+  margin-left: 3px;
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Titles that may take two lines, never three. */
+.rbTitle,
+.tkTitle,
+.rdTitle,
+.icOuting .icText {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* ═══ A · Fáni ═══
+   The flokkur's flag: a solid swallowtail in its colour, time then title in bold. A troop-wide
+   event is a square banner in the inverse colour. Undecided flags are only tacked on (dashed
+   stitching). Past flags are lowered to the pale tint. */
+
+.ribbon {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 5px;
+  align-items: baseline;
+  padding: 3px 12px 3px 6px;
+  border: 1.5px dashed transparent;
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%);
+}
+
+.ribbon:is([data-status="draft"], [data-status="tentative"], [data-status="unknown"]) {
+  border-color: hsl(var(--pc-fg) / 0.6);
+}
+
+.ribbon[data-troop] {
+  padding-right: 6px;
+  clip-path: none;
+  border-radius: 2px;
+}
+
+.ribbon[data-past] {
+  border-color: transparent;
+  background: var(--pc-faded);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.ribbon:hover {
+  box-shadow: inset 0 0 0 100vmax hsl(var(--pc-fg) / 0.08);
+}
+
+/* The clip-path would cut an outside ring, so the ring sits inside, in the flag's own ink. */
+.root .ribbon:focus-visible,
+.closeCell .ribbon:focus-visible {
+  outline: 2px solid hsl(var(--pc-fg));
+  outline-offset: -4px;
+}
+
+.root .ribbon[data-past]:focus-visible,
+.closeCell .ribbon[data-past]:focus-visible {
+  outline-color: hsl(var(--sl-color-text-primary));
+}
+
+.rbTime {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  font-variant-numeric: tabular-nums;
+}
+
+.rbTitle {
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-heading);
+}
+
+/* ═══ B · Dagbók ═══
+   No card: one line per entry, the way a leader writes a diary. A disc with the flokkur's
+   initial, the time, the title. Ink for what is decided, pencil (italic, lighter) for what is
+   not; "?" where the time would be when nothing is decided. A troop-wide line is bold, with a
+   disc made of every flokkur's colour. Past lines go grey and their disc hollow. */
+
+.agenda {
+  grid-template-columns: auto auto minmax(0, 1fr);
+  column-gap: 4px;
+  align-items: center;
+  padding: 1px 2px;
+  border-radius: var(--sl-radius-xs);
+  font-size: var(--sl-text-xs);
+  white-space: nowrap;
+}
+
+.agenda:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.agDot {
+  display: inline-grid;
+  place-items: center;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+  font-size: var(--sl-primitive-font-size-2xs);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+}
+
+.agenda[data-troop] .agDot,
+.mk_agenda[data-troop] {
+  background: conic-gradient(
+    hsl(var(--sl-color-patrol-rekkar)) 0 25%,
+    hsl(var(--sl-color-patrol-drekar)) 0 50%,
+    hsl(var(--sl-color-patrol-falkar)) 0 75%,
+    hsl(var(--sl-color-patrol-drott)) 0
+  );
+}
+
+.agTime {
+  min-width: 2.1rem;
+  font-weight: var(--sl-font-weight-emphasis);
+  font-variant-numeric: tabular-nums;
+}
+
+.agTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.agenda[data-troop] .agTitle {
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.agenda:is([data-status="draft"], [data-status="tentative"], [data-status="unknown"])
+  :is(.agTime, .agTitle) {
+  font-style: italic;
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.agenda[data-past] :is(.agTime, .agTitle) {
+  font-style: normal;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.agenda[data-past] .agDot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px hsl(var(--pc));
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.agenda[data-past][data-troop] .agDot {
+  box-shadow: inset 0 0 0 1.5px hsl(var(--sl-color-border-strong));
+}
+
+.agenda .detail {
+  grid-column: 3 / -1;
+}
+
+/* ═══ C · Miði ═══
+   A ticket: the stub carries the time in the flokkur's colour, a perforation, then the title on
+   paper. Decided tickets have a solid edge; the rest have the dashed edge of an unstamped
+   ticket, the same dashed "stamp" language as Alert, and the stub says what is missing. */
+
+.ticket {
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: stretch;
+  border-radius: var(--sl-radius-sm);
+}
+
+.tkStub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 3px 2px;
+  border-right: 2px dashed hsl(var(--sl-color-surface));
+  border-radius: var(--sl-radius-sm) 0 0 var(--sl-radius-sm);
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+}
+
+.tkTime {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.tkWord {
+  font-size: var(--sl-primitive-font-size-2xs);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tkBody {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-left: 0;
+  border-radius: 0 var(--sl-radius-sm) var(--sl-radius-sm) 0;
+  background: hsl(var(--sl-color-surface));
+}
+
+.ticket:not([data-status="confirmed"]):not([data-past]) .tkBody {
+  border-style: dashed;
+}
+
+.tkTitle {
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.ticket[data-past] .tkStub {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.ticket[data-past] .tkBody {
+  border-color: hsl(var(--sl-color-border));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.ticket:hover .tkBody {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+/* ═══ D · Staða ═══
+   Readiness first: the entry's tint is its status, from the spec's mapping (staðfest → success,
+   drög → info, óvíst → warning, óákveðið → neutral, dashed, "?"), plus a glyph so colour is
+   never alone. The flokkur shrinks to an initial. The month reads as a planning heatmap; past
+   entries drop their tint, because the colour marks where work is left. */
+
+.readiness {
+  --rd-bg: var(--sl-color-background-secondary);
+  --rd-ink: var(--sl-color-text-secondary);
+  --rd-edge: var(--sl-color-border-strong);
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 4px;
+  row-gap: 1px;
+  align-items: start;
+  padding: 3px 5px;
+  border: 1px solid hsl(var(--rd-edge));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--rd-bg));
+}
+
+.readiness[data-status="confirmed"],
+.mk_readiness[data-status="confirmed"] {
+  --rd-bg: var(--sl-color-success-subtle);
+  --rd-ink: var(--sl-color-success-text);
+  --rd-edge: var(--sl-color-success);
+  --rd-mark: var(--sl-color-success);
+}
+
+.readiness[data-status="draft"],
+.mk_readiness[data-status="draft"] {
+  --rd-bg: var(--sl-color-info-subtle);
+  --rd-ink: var(--sl-color-info-text);
+  --rd-edge: var(--sl-color-info);
+  --rd-mark: var(--sl-color-info);
+}
+
+.readiness[data-status="tentative"],
+.mk_readiness[data-status="tentative"] {
+  --rd-bg: var(--sl-color-warning-subtle);
+  --rd-ink: var(--sl-color-warning-text);
+  --rd-edge: var(--sl-color-warning);
+  --rd-mark: var(--sl-color-warning);
+}
+
+.readiness[data-status="unknown"] {
+  border-style: dashed;
+}
+
+.readiness[data-past] {
+  --rd-bg: var(--sl-color-surface);
+  --rd-ink: var(--sl-color-text-secondary);
+  --rd-edge: var(--sl-color-border);
+  border-style: solid;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.readiness:hover {
+  box-shadow: inset 0 0 0 1px hsl(var(--rd-edge));
+}
+
+.rdGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.8rem;
+  height: 1rem;
+  color: hsl(var(--rd-ink));
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.rdTitle {
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.readiness[data-past] .rdTitle {
+  grid-column: 1 / -1;
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.rdMeta {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--rd-ink));
+}
+
+.rdChip {
+  display: inline-grid;
+  place-items: center;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 3px;
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+  font-size: var(--sl-primitive-font-size-2xs);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+}
+
+.rdOver {
+  margin-left: auto;
+  color: hsl(var(--sl-color-error-text));
+  font-weight: var(--sl-font-weight-heading);
+}
+
+/* ═══ E · Tákn ═══
+   Shape carries type: a flag for a flokksfundur, a tent for an útilega, a mountain for a
+   dagsferð, a clipboard for the foringjar's skipulagsfundur, people for a sveitarfundur. The
+   tile is the flokkur's colour (inverse for the whole sveit). Big outings take a full row.
+   Status is the tile's fill: solid once planned (staðfest or drög), outlined when óvíst,
+   dashed with "?" when óákveðið. Past tiles fade to the flokkur's pale tint. */
+
+.icons {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 5px;
+  align-items: center;
+  padding: 1px 2px;
+  border-radius: var(--sl-radius-xs);
+}
+
+.icons:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.icTile {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid hsl(var(--pc));
+  border-radius: 4px;
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+}
+
+.icons[data-status="tentative"] .icTile {
+  background: hsl(var(--pc-subtle));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.icons[data-status="unknown"] .icTile {
+  border: 1.5px dashed hsl(var(--sl-color-border-strong));
+  background: hsl(var(--sl-color-background-secondary));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.icons[data-past] .icTile {
+  border-color: transparent;
+  border-style: solid;
+  background: var(--pc-faded);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.icTile .q {
+  position: absolute;
+  top: -6px;
+  right: -7px;
+  margin: 0;
+  padding: 0 2px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: 0 0 0 1px hsl(var(--sl-color-border-strong));
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-primitive-font-size-2xs);
+  line-height: 1.2;
+}
+
+.icText {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--sl-text-xs);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.icTime {
+  font-weight: var(--sl-font-weight-emphasis);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.icons[data-past] .icTime {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.icOuting {
+  padding: 3px 4px;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.icOuting:hover {
+  background: hsl(var(--sl-color-background-tertiary));
+  box-shadow: inset 0 0 0 1px hsl(var(--sl-color-border-strong));
+}
+
+.icOuting .icTile {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.icOuting .icTile svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.icOuting .icText {
+  white-space: normal;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.icOuting .icTitle {
+  font-weight: var(--sl-font-weight-heading);
+}
+
+/* ── Compact markers (phone): each look shrunk to what a 50px cell holds ── */
+
+.markers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  min-height: 0.75rem;
+}
+
+.marker {
+  display: inline-block;
+  flex: none;
+}
+
+.markerMore {
+  font-size: var(--sl-primitive-font-size-2xs);
+  font-weight: var(--sl-font-weight-heading);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.mk_ribbon {
+  width: 0.875rem;
+  height: 0.5rem;
+  background: hsl(var(--pc));
+  clip-path: polygon(0 0, 100% 0, 70% 50%, 100% 100%, 0 100%);
+}
+
+.mk_agenda {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: hsl(var(--pc));
+}
+
+.mk_ticket {
+  width: 0.875rem;
+  height: 0.5rem;
+  border-radius: 1px;
+  background: linear-gradient(
+    to right,
+    hsl(var(--pc)) 0 40%,
+    hsl(var(--sl-color-surface)) 40% 52%,
+    hsl(var(--pc)) 52%
+  );
+}
+
+.mk_readiness {
+  --rd-mark: var(--sl-color-background-secondary);
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 2px;
+  background: hsl(var(--rd-mark));
+}
+
+.mk_readiness[data-status="unknown"] {
+  box-shadow: inset 0 0 0 1.5px hsl(var(--sl-color-border-strong));
+}
+
+.mk_icons {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 3px;
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+}
+
+/* Past markers go grey: a mid-tone, so they still show on a white or a dark cell. */
+.mk_ribbon[data-past],
+.mk_ticket[data-past],
+.mk_icons[data-past] {
+  background: hsl(var(--sl-color-border-strong));
+  color: hsl(var(--sl-color-surface));
+}
+
+.mk_agenda[data-past] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px hsl(var(--pc));
+}
+
+.mk_readiness[data-past] {
+  background: hsl(var(--sl-color-border-strong));
+  box-shadow: none;
+}
+
+/* ── Phone: day buttons with markers, and the chosen day listed under the grid ── */
+
+.compactDay,
+.dayPanel {
+  display: none;
+}
+
+.dayPanelTitle {
+  margin: 0 0 var(--sl-spacing-gap-sm);
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.panelList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panelEmpty {
+  margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+@container plancal (max-width: 40rem) {
+  .wide {
+    display: none;
+  }
+
+  .day {
+    height: auto;
+    padding: 0;
+  }
+
+  .dayHead {
+    padding: 6px 2px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+
+  .compactDay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 100%;
+    min-height: 3.25rem;
+    margin: 0;
+    padding: 4px 2px;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+  }
+
+  button.compactDay {
+    cursor: pointer;
+  }
+
+  .compactDay[aria-pressed="true"] {
+    background: hsl(var(--sl-color-primary-subtle));
+    box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
+  }
+
+  .today .compactDay .dayNumber {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .nav {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .dayPanel {
+    display: block;
+    margin-top: var(--sl-spacing-gap-md);
+  }
+
+  .panelList .entry {
+    min-height: 3rem;
+    align-content: center;
+  }
+
+  .panelList .ribbon,
+  .panelList .readiness {
+    padding-block: 6px;
+  }
+
+  .panelList :is(.agenda, .icons) {
+    white-space: normal;
+    padding-block: 4px;
+  }
+
+  .panelList .agenda .agTitle {
+    white-space: normal;
+  }
+
+  .panelList .icText {
+    white-space: normal;
+  }
+
+  .panelList .rbTitle,
+  .panelList .tkTitle,
+  .panelList .rdTitle {
+    font-size: var(--sl-text-body-sm);
+  }
+}
+
+/* ── One day, close up: a single cell at the grid's desktop width ── */
+
+.closeCell {
+  width: 9.5rem;
+  min-height: 6.5rem;
+  padding: 5px 6px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface));
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-tight);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry,
+  .more,
+  .nav {
+    transition-duration: 1ms;
+  }
+}
