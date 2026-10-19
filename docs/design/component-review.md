@@ -60,6 +60,15 @@ once a variation is picked it is **promoted** into the real component and its la
 
 ## Kept as they are
 
+- **PlanShell (Vinnubekkur) layout**: as intended. Top left is the collections (Allt, Sveitin
+  mín, Félagið, Færnimerki), bottom left is the items in the chosen collection, and the main
+  body is the plan.
+- **PlanCalendar grid**: no issues. The today circle is now centred on the number and uses the
+  primary colour (fixed on #194). The day entries are in `Lab/PlanCalendar`.
+- **PlanGrid**: the grid itself is good. The ATH and INNKAUP columns came from a spreadsheet and
+  are in `Lab/PlanGrid`: ATH becomes the week's endurmat or a reminder, INNKAUP becomes the
+  week's collected búnaður with owned/needed ticks.
+
 - **Modal**, **Button**: basic, and they work.
 - **Type badge**, **FormControls**: good.
 - **CollapsibleSection**: good. Its story used bare `<input>` checkboxes (tick high, touching the
