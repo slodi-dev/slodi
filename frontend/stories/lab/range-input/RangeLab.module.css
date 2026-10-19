@@ -1,0 +1,186 @@
+/* Two native range inputs stacked on one track: each keeps its own keyboard and
+   screen-reader behaviour, and only the thumbs take pointer events. */
+
+.range {
+  display: grid;
+  gap: var(--sl-spacing-sm);
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.slider {
+  position: relative;
+  height: 1.75rem;
+}
+
+.track {
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 0.375rem;
+  transform: translateY(-50%);
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-border));
+}
+
+.fill {
+  position: absolute;
+  inset: 0 calc(100% - var(--hi)) 0 var(--lo);
+  border-radius: inherit;
+  background: hsl(var(--sl-color-primary));
+}
+
+.thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  appearance: none;
+  pointer-events: none;
+}
+.thumb::-webkit-slider-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card);
+  cursor: grab;
+  appearance: none;
+  pointer-events: auto;
+}
+.thumb::-moz-range-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface));
+  cursor: grab;
+  pointer-events: auto;
+}
+.thumb::-moz-range-track {
+  background: none;
+}
+.thumb:focus-visible {
+  outline: none;
+}
+.thumb:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--sl-shadow-focus);
+}
+.thumb:focus-visible::-moz-range-thumb {
+  box-shadow: var(--sl-shadow-focus);
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(-1 * var(--sl-spacing-xs));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-xs);
+}
+
+.fields {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+}
+.dash {
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* A compact field: a small label, a number about four digits wide, and the unit. */
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  padding: 0 var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+}
+.field:focus-within {
+  border-color: hsl(var(--sl-color-border-focus));
+  box-shadow: var(--sl-shadow-focus);
+}
+.fieldLabel,
+.unit {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-xs);
+}
+.input {
+  width: 4ch;
+  padding: var(--sl-spacing-xs) 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  /* 16px so iOS doesn't zoom on focus (UX rule 8). */
+  font: inherit;
+  font-size: var(--sl-text-body);
+  text-align: right;
+  appearance: textfield;
+}
+.input:focus {
+  outline: none;
+}
+.input::-webkit-inner-spin-button,
+.input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+/* ── B · inline: fields at the two ends of the track ── */
+.inlineRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+}
+.inlineRow .slider {
+  flex: 1;
+}
+.inline .fieldLabel {
+  display: none;
+}
+
+/* ── C · bubbles: the value rides above each handle ── */
+.bubbles .slider {
+  margin-top: var(--sl-spacing-lg);
+}
+.bubble {
+  position: absolute;
+  bottom: 100%;
+  transform: translateX(-50%);
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  white-space: nowrap;
+}
+
+/* ── D · presets: one tap for the common ranges, slider for the rest ── */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-xs);
+}
+.preset {
+  padding: var(--sl-spacing-xs) var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-primary-border));
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-primary-text));
+  font: inherit;
+  cursor: pointer;
+}
+.preset[aria-pressed="true"] {
+  border-color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+}
+.preset:focus-visible {
+  outline: none;
+  box-shadow: var(--sl-shadow-focus);
+}

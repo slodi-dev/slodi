@@ -1,0 +1,28 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Lab/About the lab" />
+
+# The Lab
+
+Where new looks for existing components are tried side by side before one replaces the real
+component. Nothing in `Lab/` is used by the app.
+
+## How a component goes through the lab
+
+1. **Variations.** Each variation is a small, self-contained copy of the component in
+   `stories/lab/<component>/`, built from `--sl-*` tokens only, so it already works in light,
+   dark and patrol themes. The current component is always shown first as _Current_.
+2. **Pick.** Compare them in the _Comparison_ story. Pick one, or combine parts of several.
+3. **Tweak.** Adjust the chosen variation here until it's right.
+4. **Promote.** Move the chosen styles into the real component (`components/<Name>/`), keeping
+   its props and API, refresh the visual baselines, and **delete the component's lab folder** in
+   the same PR.
+
+Lab stories still run the story tests and axe in every theme, so a variation that fails
+contrast is caught before anyone falls for it. They have no visual baselines (`skip-visual`),
+because they change often.
+
+**Language:** Storybook itself is in English (titles, story names, descriptions); the component
+examples are in Icelandic, the way users see them.
+
+Verdicts from component reviews are logged in `docs/design/component-review.md`.

@@ -1,0 +1,147 @@
+/* Lab variations of Alert. Every colour goes through a token, so each look works in
+   light, dark and the patrol themes without overrides. */
+
+.alert {
+  --tone: var(--sl-color-info);
+  --tone-text: var(--sl-color-info-text);
+  --tone-subtle: var(--sl-color-info-subtle);
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-alert-font-size);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.success {
+  --tone: var(--sl-color-success);
+  --tone-text: var(--sl-color-success-text);
+  --tone-subtle: var(--sl-color-success-subtle);
+}
+.warning {
+  --tone: var(--sl-color-warning);
+  --tone-text: var(--sl-color-warning-text);
+  --tone-subtle: var(--sl-color-warning-subtle);
+}
+.error {
+  --tone: var(--sl-color-error);
+  --tone-text: var(--sl-color-error-text);
+  --tone-subtle: var(--sl-color-error-subtle);
+}
+
+.title {
+  margin: 0 0 var(--sl-spacing-xs);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+.body > :first-child {
+  margin-top: 0;
+}
+.body > :last-child {
+  margin-bottom: 0;
+}
+.icon {
+  display: inline-flex;
+  flex: none;
+}
+.icon svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+.content {
+  min-width: 0;
+}
+
+/* ── A · Merki: a white card with a solid status disc, like a badge sewn on ── */
+.merki {
+  display: flex;
+  gap: var(--sl-spacing-sm);
+  align-items: flex-start;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-sm);
+}
+.merki .icon {
+  align-items: center;
+  justify-content: center;
+  width: 2em;
+  height: 2em;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--tone-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+.merki .icon svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.merki .title {
+  color: hsl(var(--tone-text));
+}
+
+/* ── B · Miði: neutral slip, the status is a small coloured label ── */
+.midi {
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  background: hsl(var(--sl-color-surface-secondary));
+  border-radius: var(--sl-radius-xs);
+}
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  margin: 0 0 var(--sl-spacing-xs);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--tone-text));
+}
+.dot {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--tone-text));
+}
+
+/* ── C · Borði: a full-strength band for page-level messages ── */
+.bordi {
+  display: flex;
+  gap: var(--sl-spacing-sm);
+  align-items: flex-start;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  background: hsl(var(--tone-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+/* ── D · Lína: no box at all; a rule above, colour only in the icon and title ── */
+.lina {
+  display: flex;
+  gap: var(--sl-spacing-sm);
+  align-items: flex-start;
+  padding-top: var(--sl-spacing-sm);
+  border-top: 2px solid hsl(var(--tone));
+}
+.lina .icon,
+.lina .title {
+  color: hsl(var(--tone-text));
+}
+.lina .body {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── E · Stimpill: a dashed stamp, like a mark in the scout handbook ── */
+.stimpill {
+  display: flex;
+  gap: var(--sl-spacing-sm);
+  align-items: flex-start;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border: 2px dashed hsl(var(--tone));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--tone-subtle));
+}
+.stimpill .icon,
+.stimpill .title {
+  color: hsl(var(--tone-text));
+}
+.stimpill .title {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--sl-text-body-sm);
+}

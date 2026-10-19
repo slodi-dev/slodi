@@ -1,0 +1,101 @@
+/* One chip, five greens. Each tone sets the same three properties, so a chip
+   changes meaning without changing shape. */
+
+.chip {
+  --bg: var(--sl-color-primary-subtle);
+  --fg: var(--sl-color-success-text);
+  --edge: var(--sl-color-primary-subtle);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  max-width: 100%;
+  padding: var(--sl-spacing-xs) var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--edge));
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--bg));
+  color: hsl(var(--fg));
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-caption);
+  line-height: var(--sl-line-height-body);
+}
+
+/* The current ActiveChip: an active filter you can remove. */
+.filter {
+}
+
+/* Picked from a set: the "ALLT / DAGSKRÁ / LEIKUR" toggles. Full strength. */
+.selected {
+  --bg: var(--sl-color-primary);
+  --fg: var(--sl-color-text-inverse);
+  --edge: var(--sl-color-primary);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+/* Offered but not applied: "add this filter", optional tags. */
+.suggested {
+  --bg: var(--sl-color-surface);
+  --fg: var(--sl-color-primary-text);
+  --edge: var(--sl-color-primary-border);
+  border-style: dashed;
+}
+
+/* A fact about the item, not something to click: "Staðfest". */
+.status {
+  --bg: var(--sl-color-surface);
+  --fg: var(--sl-color-success-text);
+  --edge: var(--sl-color-success-text);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Strong identity: a category or færnimerki that should stand out. */
+.deep {
+  --bg: var(--sl-color-primary-active);
+  --fg: var(--sl-color-text-inverse);
+  --edge: var(--sl-color-primary-active);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  min-width: 1.5em;
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--fg));
+  color: hsl(var(--bg));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  text-align: center;
+}
+
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25em;
+  height: 1.25em;
+  margin-right: calc(-1 * var(--sl-spacing-xs));
+  padding: 0;
+  border: 0;
+  border-radius: var(--sl-radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.remove:hover {
+  background: hsl(var(--fg) / 0.12);
+}
+.remove:focus-visible {
+  outline: none;
+  box-shadow: var(--sl-shadow-focus);
+}
+.remove svg {
+  width: 0.9em;
+  height: 0.9em;
+}

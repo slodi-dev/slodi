@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import CollapsibleSection from "./CollapsibleSection";
+import filterStyles from "@/components/filters/filters.module.css";
 
 const options = ["Drekaskátar", "Fálkaskátar", "Dróttskátar", "Rekkaskátar", "Róverskátar"];
 
@@ -9,10 +10,12 @@ const meta = {
   args: {
     label: "Aldurshópur",
     children: (
-      <div style={{ display: "grid", gap: "0.25rem" }}>
+      // The real filter checkboxes, so the story shows what the filter sidebar shows.
+      <div className={filterStyles.checkboxGroup}>
         {options.map((o) => (
-          <label key={o}>
-            <input type="checkbox" /> {o}
+          <label key={o} className={filterStyles.checkboxLabel}>
+            <input type="checkbox" className={filterStyles.checkbox} />
+            {o}
           </label>
         ))}
       </div>
