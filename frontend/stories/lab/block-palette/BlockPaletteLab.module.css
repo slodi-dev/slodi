@@ -1,11 +1,12 @@
-/* BlockPalette lab — four directions for the dagskrárbankinn rail. --sl-* tokens only. */
+/* BlockPalette lab — C · Card grid with four collections variations. --sl-* tokens only. */
 
 .rail {
-  /* Touch target: 44px everywhere, not only on coarse pointers (the lab brief). */
+  /* Touch target: 44px everywhere, not only on coarse pointers. */
   --bp-target: 44px;
   --bp-kind: var(--sl-color-border-strong);
   --bp-kind-tint: var(--sl-color-background-tertiary);
 
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -28,93 +29,761 @@
   white-space: nowrap;
 }
 
-/* ── Kind colours: the same mapping as the bench rows (SPEC §1) ── */
+/* ── Kind tints: the picture tile carries the type, never a side stripe ── */
 
-.rail [data-kind="setning"] {
+.rail [data-kind="setning"],
+.sheet [data-kind="setning"] {
   --bp-kind: var(--sl-color-patrol-drekar);
   --bp-kind-tint: var(--sl-color-patrol-drekar-subtle);
 }
-.rail [data-kind="dagskra"] {
+.rail [data-kind="dagskra"],
+.sheet [data-kind="dagskra"] {
   --bp-kind: var(--sl-color-primary);
   --bp-kind-tint: var(--sl-color-primary-subtle);
 }
-.rail [data-kind="leikur"] {
+.rail [data-kind="leikur"],
+.sheet [data-kind="leikur"] {
   --bp-kind: var(--sl-color-patrol-rekkar);
   --bp-kind-tint: var(--sl-color-patrol-rekkar-subtle);
 }
-.rail [data-kind="slit"] {
+.rail [data-kind="slit"],
+.sheet [data-kind="slit"] {
   --bp-kind: var(--sl-color-secondary);
   --bp-kind-tint: var(--sl-color-secondary-subtle);
 }
-.rail [data-kind="endurmat"] {
+.rail [data-kind="endurmat"],
+.sheet [data-kind="endurmat"] {
   --bp-kind: var(--sl-color-patrol-falkar);
   --bp-kind-tint: var(--sl-color-patrol-falkar-subtle);
 }
 
-/* ── Collections (top left) ── */
+/* ── Collections area (top left) ── */
 
-.folders {
+.collections {
+  flex: none;
+  /* The cards below always keep at least half the rail. */
+  max-height: 40%;
   display: flex;
   flex-direction: column;
-  flex: none;
+  min-height: 0;
   border-bottom: 1px solid hsl(var(--sl-color-border));
 }
 
-.folder {
+.collections > nav {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 1px;
+  min-height: 0;
+}
+
+.groupHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-xs);
+  margin: 0;
+  padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm) 2px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  letter-spacing: 0.04em;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.groupCount {
+  font-weight: var(--sl-font-weight-body);
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows > li {
+  display: flex;
+  min-width: 0;
+}
+
+.scrollRows {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.albumRow {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.albumRow[data-dragging="true"] {
+  position: relative;
+  z-index: 1;
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-dropdown);
+}
+
+.collection {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  flex: 1;
+  min-width: 0;
   min-height: var(--bp-target);
-  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm);
+  padding: 2px var(--sl-spacing-inset-sm);
   border: 0;
   border-left: 3px solid transparent;
   background: none;
   font: inherit;
+  font-size: var(--sl-text-body-sm);
   text-align: left;
   color: inherit;
   cursor: pointer;
   transition: background var(--sl-transition-fast);
 }
 
-.folder:hover {
+.collection:hover {
   background: hsl(var(--sl-color-surface-hover));
 }
 
-.folder[aria-pressed="true"] {
+.collection[aria-pressed="true"] {
   border-left-color: hsl(var(--sl-color-primary-text));
   background: hsl(var(--sl-color-primary-subtle));
-}
-
-.folderLabel {
-  font-size: var(--sl-text-body-sm);
   font-weight: var(--sl-font-weight-emphasis);
 }
 
-.folderHint {
+.collection:focus-visible,
+.cover:focus-visible,
+.sourceTab:focus-visible,
+.tab:focus-visible,
+.handle:focus-visible,
+.iconButton:focus-visible,
+.menuItem:focus-visible,
+.newAlbum:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+
+.collectionIcon {
+  flex: none;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.collectionName {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: var(--sl-line-height-tight);
+}
+
+.collectionCount {
+  flex: none;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-body);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.sharedIcon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: var(--sl-spacing-gap-xs);
+  vertical-align: -1px;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.iconButton,
+.handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--bp-target);
+  height: var(--bp-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--sl-radius-button);
+  background: none;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.iconButton svg,
+.handle svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.iconButton:hover,
+.handle:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.handle {
+  width: 28px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.createRow {
+  flex: none;
+  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm) var(--sl-spacing-gap-sm);
+}
+
+.newAlbum {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-gap-sm);
+  border: 1px dashed hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-primary-text));
+  cursor: pointer;
+}
+
+.newAlbum svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.newAlbum:hover {
+  background: hsl(var(--sl-color-primary-subtle));
+}
+
+/* The name field, for create and rename. */
+.nameField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-xs);
+  flex: 1;
+  min-width: 0;
+  padding: var(--sl-spacing-gap-xs) 0;
+}
+
+.albumRow .nameField {
+  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm);
+}
+
+.nameLabel {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.nameInput {
+  width: 100%;
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-gap-sm);
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  font: inherit;
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-input-text));
+}
+
+.nameInput:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.nameInput[aria-invalid="true"] {
+  border-color: hsl(var(--sl-color-error-text));
+}
+
+.nameError {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-error-text));
+}
+
+.nameActions {
+  display: flex;
+  gap: var(--sl-spacing-gap-xs);
+}
+
+.primaryButton,
+.quietButton,
+.secondaryButton,
+.create {
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-gap-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+}
+
+.primaryButton {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.quietButton {
+  border-color: transparent;
+  background: none;
+}
+
+.quietButton:hover,
+.secondaryButton:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.primaryButton:focus-visible,
+.quietButton:focus-visible,
+.secondaryButton:focus-visible,
+.create:focus-visible,
+.toastButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+/* ── C1 · Folder list ── */
+
+.folderList {
+  min-height: 0;
+}
+
+/* C1's "Mitt" heading carries "+ Nýtt albúm", so the albums get the space a row below took. */
+.groupHeadRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: var(--sl-spacing-inset-sm);
+}
+
+.groupHeadRow .groupHead {
+  padding-bottom: 0;
+}
+
+.groupHeadRow .newAlbum {
+  min-height: 36px;
+  border-style: solid;
+  border-color: transparent;
+  /* The visible button is 36px; the padding makes the target 44px. */
+  margin: -4px 0;
+  padding: 4px var(--sl-spacing-gap-sm);
+  box-sizing: content-box;
+}
+
+.groupHeadRow .nameField {
+  flex: 1 1 100%;
+  padding-left: var(--sl-spacing-inset-sm);
+}
+
+.rail[data-look="mappa"] .collections {
+  max-height: 46%;
+}
+
+/* ── C2 · Album covers ── */
+
+.sourceTabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.sourceTab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 2px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-medium);
+  line-height: var(--sl-line-height-tight);
+  text-align: center;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.sourceTab svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.sourceTab:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.sourceTab[aria-pressed="true"] {
+  border-bottom-color: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.covers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sl-spacing-gap-xs);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 2px var(--sl-spacing-inset-sm) var(--sl-spacing-gap-sm);
+  list-style: none;
+}
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 3px;
+  border: 1px solid transparent;
+  border-radius: var(--sl-radius-md);
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-overline);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cover:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.cover[aria-pressed="true"] {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-subtle));
+}
+
+.mosaic,
+.coverEmpty {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.coverEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coverEmpty .collectionIcon {
+  width: var(--sl-size-icon-md);
+  height: var(--sl-size-icon-md);
+}
+
+.mosaicTile,
+.mosaicBlank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  background: hsl(var(--bp-kind-tint));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.mosaicBlank {
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.mosaicTile svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mosaicTile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coverName {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-tight);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.coverNew {
+  display: flex;
+}
+
+.coverNew .newAlbum {
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+  font-size: var(--sl-text-overline);
+  text-align: center;
+}
+
+.coverNew .nameField {
+  grid-column: 1 / -1;
+}
+
+/* An open name field takes the whole row, not one cover's width. */
+.coverNew:has(.nameField) {
+  grid-column: 1 / -1;
+}
+
+.albumBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--sl-spacing-gap-xs);
+  flex: none;
+  padding: 0 var(--sl-spacing-inset-sm) var(--sl-spacing-gap-xs);
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.albumBarName {
+  flex: 1 1 100%;
+  padding-top: var(--sl-spacing-gap-xs);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  overflow-wrap: break-word;
+}
+
+/* ── C3 · Chips + "Öll albúm…" ── */
+
+.collections > .chipNav {
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: var(--sl-spacing-gap-xs);
+  padding: 2px var(--sl-spacing-inset-sm);
+}
+
+/* The button is the 44px target; the face inside is what you see. */
+.collectionChip {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  max-width: 100%;
+  min-height: var(--bp-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chipFace {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-md);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-medium);
+  transition: background var(--sl-transition-fast);
+}
+
+.chipFace svg {
+  flex: none;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.chipName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collectionChip:hover .chipFace {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.collectionChip[aria-pressed="true"] .chipFace {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-subtle));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.chipMore {
+  border-style: dashed;
+}
+
+.chipBadge {
   font-size: var(--sl-text-overline);
   color: hsl(var(--sl-color-text-secondary));
 }
 
-/* B and C drop the hint: one line per collection, so the list starts higher. */
-.rail[data-look="listi"] .folderHint,
-.rail[data-look="spjold"] .folderHint {
+.collectionChip:focus-visible {
+  outline: none;
+}
+
+.collectionChip:focus-visible .chipFace {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+/* ── C4 · Tabs ── */
+
+.tabList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: none;
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.tab {
+  min-height: var(--bp-target);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  border-bottom-color: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tabPanel[hidden] {
   display: none;
 }
 
-/* C: the four collections as a 2 × 2 block, the same grid the cards use. */
-.rail[data-look="spjold"] .folders {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* ── Popovers (top layer) ── */
+
+.popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 13rem;
+  max-height: min(24rem, 70dvh);
+  overflow-y: auto;
+  padding: var(--sl-spacing-gap-xs) 0;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-dropdown);
+  color: hsl(var(--sl-color-text-primary));
+  font-family: var(--sl-font-family-body);
 }
 
-.rail[data-look="spjold"] .folder {
-  border-left: 0;
-  border-bottom: 3px solid transparent;
+.popoverWide {
+  width: 17rem;
 }
 
-.rail[data-look="spjold"] .folder[aria-pressed="true"] {
-  border-bottom-color: hsl(var(--sl-color-primary-text));
+.popover .scrollRows {
+  max-height: 15rem;
+}
+
+.popoverHead {
+  margin: 0;
+  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.popoverNote {
+  margin: 0;
+  padding: 0 var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.menuItem {
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-inset-sm);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.pickerSet {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pickerList {
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.pickerItem {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  cursor: pointer;
+}
+
+.pickerItem:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.pickerItem input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: hsl(var(--sl-color-primary-text));
+}
+
+.pickerItem:has(input:focus-visible) {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
 }
 
 /* ── Search, type chips and the count ── */
@@ -122,13 +791,38 @@
 .head {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-gap-xs);
+  gap: 2px;
   flex: none;
-  padding: var(--sl-spacing-inset-sm);
+  padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm) var(--sl-spacing-gap-xs);
   border-bottom: 1px solid hsl(var(--sl-color-border));
 }
 
+.searchRow {
+  display: flex;
+  gap: var(--sl-spacing-gap-xs);
+}
+
+.kindSelect {
+  flex: none;
+  width: 7.5rem;
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-gap-xs);
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  font: inherit;
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-input-text));
+}
+
+.kindSelect:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
 .search {
+  flex: 1;
+  min-width: 0;
   position: relative;
   display: flex;
   align-items: center;
@@ -165,7 +859,6 @@
   outline-offset: 1px;
 }
 
-/* The browser's own clear cross duplicates ours. */
 .searchInput::-webkit-search-cancel-button {
   appearance: none;
 }
@@ -179,7 +872,6 @@
   width: var(--bp-target);
   height: var(--bp-target);
   border: 0;
-  border-radius: var(--sl-radius-input);
   background: none;
   color: hsl(var(--sl-color-text-secondary));
   cursor: pointer;
@@ -190,84 +882,35 @@
   height: var(--sl-size-icon-sm);
 }
 
-.clear:hover {
-  color: hsl(var(--sl-color-text-primary));
-}
-
 .clear:focus-visible {
   outline: 2px solid hsl(var(--sl-color-border-focus));
   outline-offset: -2px;
 }
 
-/* Wrapping, not scrolling: a scrolled row hid Endurmat and Slit with no sign they were there.
-   The 44px buttons sit flush, so a second row costs one target height and no more. */
-.kinds {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: var(--sl-spacing-gap-xs);
-}
-
-/* The button is the 44px target; the pill inside is what you see. */
-.kind {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  min-height: var(--bp-target);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  cursor: pointer;
-}
-
 .kindPill {
   display: inline-flex;
   align-items: center;
-  gap: var(--sl-spacing-gap-xs);
-  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
+  padding: 2px var(--sl-spacing-gap-sm);
   border: 1px solid hsl(var(--sl-color-border-strong));
   border-radius: var(--sl-radius-chip);
   font-size: var(--sl-text-body-sm);
   font-weight: var(--sl-font-weight-medium);
   color: hsl(var(--sl-color-text-secondary));
-  transition:
-    background var(--sl-transition-fast),
-    border-color var(--sl-transition-fast);
-}
-
-.kindPill svg {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-}
-
-.kind:hover .kindPill {
-  border-color: hsl(var(--sl-color-border-hover));
-  color: hsl(var(--sl-color-text-primary));
-}
-
-/* Filled chips ride the -text tier with inverse text: primary itself fails AA with white. */
-.kind[aria-pressed="true"] .kindPill {
-  border-color: hsl(var(--sl-color-primary-text));
-  background: hsl(var(--sl-color-primary-text));
-  color: hsl(var(--sl-color-text-inverse));
-}
-
-.kind:focus-visible {
-  outline: none;
-}
-
-.kind:focus-visible .kindPill {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: 2px;
+  transition: background var(--sl-transition-fast);
 }
 
 .count {
   margin: 0;
   font-size: var(--sl-text-overline);
   color: hsl(var(--sl-color-text-secondary));
+  overflow-wrap: break-word;
 }
 
-/* ── The list (bottom left) ── */
+.count strong {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* ── The cards (bottom left) ── */
 
 .body {
   flex: 1;
@@ -275,23 +918,16 @@
   overflow-y: auto;
 }
 
-.body:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: -2px;
-}
-
 .target,
 .hint {
   margin: 0;
-  padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm);
+  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm);
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-secondary));
-  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
 }
 
 .target strong {
   color: hsl(var(--sl-color-text-primary));
-  font-weight: var(--sl-font-weight-emphasis);
 }
 
 .hint {
@@ -299,327 +935,13 @@
   color: hsl(var(--sl-color-text-primary));
 }
 
-.list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.title {
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-emphasis);
-  line-height: var(--sl-line-height-tight);
-  overflow-wrap: anywhere;
-  hyphens: auto;
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: var(--sl-spacing-gap-xs);
-  row-gap: 2px;
-  font-size: var(--sl-text-overline);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.meta > :not(.flag) + :not(.flag)::before {
-  content: "·";
-  margin-right: var(--sl-spacing-gap-xs);
-  color: hsl(var(--sl-color-text-tertiary));
-}
-
-.num {
-  font-variant-numeric: tabular-nums;
-}
-
-.kindLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-weight: var(--sl-font-weight-medium);
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.kindLabel svg {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-}
-
-/* Facts about this block on this fundur, so a badge rather than one more dot-separated word. */
-.flag {
-  padding: 0 var(--sl-spacing-gap-xs);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-chip);
-  font-weight: var(--sl-font-weight-medium);
-  color: hsl(var(--sl-color-text-primary));
-  white-space: nowrap;
-}
-
-.itemBody {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1;
-  min-width: 0;
-}
-
-.rail [data-dragging="true"] {
-  opacity: 0.4;
-}
-
-/* The drag handle: a 44px-tall strip at the row's left edge. */
-.grip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  align-self: stretch;
-  width: 20px;
-  min-height: var(--bp-target);
-  color: hsl(var(--sl-color-text-secondary));
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-}
-
-.grip svg {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-}
-
-.grip:active,
-.gripArea:active {
-  cursor: grabbing;
-}
-
-/* "Bæta við": outlined in the -text tier, which carries AA on surface in both themes. */
-.add {
-  flex: none;
-  min-width: var(--bp-target);
-  min-height: var(--bp-target);
-  padding: 0 var(--sl-spacing-gap-sm);
-  border: 1px solid hsl(var(--sl-color-primary-text));
-  border-radius: var(--sl-radius-button);
-  background: hsl(var(--sl-color-surface));
-  font: inherit;
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--sl-color-primary-text));
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background var(--sl-transition-fast);
-}
-
-.add:hover:not(:disabled) {
-  background: hsl(var(--sl-color-primary-subtle));
-}
-
-.add:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: 2px;
-}
-
-/* Disabled stays legible: the reason sits above the list, so the label must still read. */
-.add:disabled {
-  border-color: hsl(var(--sl-color-border));
-  background: hsl(var(--sl-color-background-secondary));
-  color: hsl(var(--sl-color-text-secondary));
-  cursor: not-allowed;
-}
-
-.addWide {
-  width: 100%;
-}
-
-/* ── A · Icons ── */
-
-.iconItem {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sl-spacing-gap-sm);
-  padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm) var(--sl-spacing-gap-sm)
-    var(--sl-spacing-gap-xs);
-  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
-  border-left: 3px solid hsl(var(--bp-kind));
-}
-
-.iconItem:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.iconItem .grip {
-  min-height: 40px;
-}
-
-.itemFoot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sl-spacing-gap-sm);
-}
-
-.marker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  overflow: hidden;
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--bp-kind-tint));
-  /* A 1px ring in the kind colour, so the tile still reads as the kind on an image. */
-  box-shadow: inset 0 0 0 1px hsl(var(--bp-kind) / 0.6);
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.marker[data-size="sm"] {
-  width: 40px;
-  height: 40px;
-}
-
-.marker[data-size="lg"] {
-  width: 100%;
-  height: 64px;
-}
-
-.markerIcon {
-  width: var(--sl-size-icon-md);
-  height: var(--sl-size-icon-md);
-}
-
-.marker[data-size="lg"] .markerIcon {
-  width: 28px;
-  height: 28px;
-}
-
-.markerImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ── B · Minimal list ── */
-
-.listItem {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: var(--sl-spacing-gap-xs);
-  padding: 2px var(--sl-spacing-inset-sm) 2px var(--sl-spacing-gap-xs);
-  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
-  border-left: 3px solid hsl(var(--bp-kind));
-}
-
-.listItem:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.summary {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs);
-  min-width: 0;
-  min-height: var(--bp-target);
-  padding: 0 var(--sl-spacing-gap-xs);
-  border: 0;
-  border-radius: var(--sl-radius-sm);
-  background: none;
-  font: inherit;
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-}
-
-.summary .title {
-  flex: 1;
-  min-width: 0;
-}
-
-.summary:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: 0;
-}
-
-.summaryMinutes {
-  flex: none;
-  font-size: var(--sl-text-overline);
-  font-variant-numeric: tabular-nums;
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.chevron {
-  flex: none;
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-  color: hsl(var(--sl-color-text-secondary));
-  transition: transform var(--sl-transition-fast);
-}
-
-[aria-expanded="true"] > .chevron {
-  transform: rotate(180deg);
-}
-
-.peek {
-  grid-column: 2 / -1;
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows var(--sl-transition-fast);
-}
-
-.peekInner {
-  overflow: hidden;
-  padding: 0 var(--sl-spacing-gap-xs);
-  font-size: var(--sl-text-overline);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.listItem:hover .peek,
-.listItem:focus-within .peek {
-  grid-template-rows: 1fr;
-}
-
-/* Expanded, the details say it all; the peek would repeat them. */
-.listItem:has(.summary[aria-expanded="true"]) .peek {
-  display: none;
-}
-
-.details {
-  grid-column: 2 / -1;
-  display: grid;
-  gap: 2px;
-  margin: 0 0 var(--sl-spacing-gap-sm);
-  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-color-background-secondary));
-  font-size: var(--sl-text-overline);
-}
-
-.details[hidden] {
-  display: none;
-}
-
-.details > div {
-  display: grid;
-  grid-template-columns: 7.5em minmax(0, 1fr);
-  gap: var(--sl-spacing-gap-xs);
-}
-
-.details dt {
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.details dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-/* ── C · Card grid ── */
-
-.rail[data-look="spjold"] .list {
+.cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sl-spacing-gap-sm);
-  padding: var(--sl-spacing-inset-sm);
+  margin: 0;
+  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm) var(--sl-spacing-inset-sm);
+  list-style: none;
 }
 
 .card {
@@ -629,7 +951,6 @@
   min-width: 0;
   padding: var(--sl-spacing-gap-xs);
   border: 1px solid hsl(var(--sl-color-border));
-  border-top: 3px solid hsl(var(--bp-kind));
   border-radius: var(--sl-radius-md);
   background: hsl(var(--sl-color-surface));
   transition:
@@ -638,10 +959,16 @@
 }
 
 .card:hover {
+  border-color: hsl(var(--sl-color-border-hover));
   box-shadow: var(--sl-shadow-card-hover);
 }
 
-.gripArea {
+.card[data-dragging="true"] {
+  opacity: 0.4;
+}
+
+/* The picture is the drag handle: the biggest thing on the card is the easiest to grab. */
+.cardPicture {
   position: relative;
   display: block;
   cursor: grab;
@@ -649,15 +976,65 @@
   user-select: none;
 }
 
+.cardPicture:active {
+  cursor: grabbing;
+}
+
+.marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 64px;
+  overflow: hidden;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--bp-kind-tint));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.markerSmall {
+  width: 40px;
+  height: 40px;
+}
+
+.markerIcon {
+  width: 28px;
+  height: 28px;
+}
+
+.markerSmall .markerIcon {
+  width: var(--sl-size-icon-md);
+  height: var(--sl-size-icon-md);
+}
+
+.markerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cardGrip {
   position: absolute;
   top: 4px;
   left: 4px;
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
+  width: 18px;
+  height: 18px;
   padding: 1px;
   border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-color-surface) / 0.85);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.cardMinutes {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 0 5px;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  font-variant-numeric: tabular-nums;
   color: hsl(var(--sl-color-text-primary));
 }
 
@@ -667,88 +1044,136 @@
   gap: 2px;
   flex: 1;
   min-width: 0;
+  padding: 0 2px;
 }
 
-/* ── D · By section ── */
-
-.section + .section {
-  border-top: 1px solid hsl(var(--sl-color-border));
-}
-
-.sectionHead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  margin: 0;
-  background: hsl(var(--sl-color-background-secondary));
-  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
-}
-
-.sectionToggle {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-sm);
-  width: 100%;
-  min-height: var(--bp-target);
-  padding: 0 var(--sl-spacing-inset-sm);
-  border: 0;
-  background: none;
-  font: inherit;
+.title {
   font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-heading);
-  text-align: left;
-  color: hsl(var(--sl-color-text-primary));
-  cursor: pointer;
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-tight);
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
-.sectionToggle > span:first-child {
-  flex: 1;
-}
-
-.sectionToggle:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: -2px;
-}
-
-.sectionCount {
+.cardKind {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
   font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.cardKind svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cardTheme,
+.cardUsed {
   font-weight: var(--sl-font-weight-body);
+  font-size: var(--sl-text-overline);
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.list[hidden] {
-  display: none;
-}
-
-.sectionItem {
+.badges {
   display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-sm);
-  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm) var(--sl-spacing-gap-xs)
-    var(--sl-spacing-gap-xs);
-  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
 }
 
-.sectionItem:hover {
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-background-tertiary));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.badge svg {
+  width: 11px;
+  height: 11px;
+}
+
+.cardActions {
+  display: flex;
+  gap: var(--sl-spacing-gap-xs);
+}
+
+/* "Bæta við": outlined in the -text tier, which carries AA on surface in both themes. */
+.add {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-gap-xs);
+  border: 1px solid hsl(var(--sl-color-primary-text));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-primary-text));
+  cursor: pointer;
+  transition: background var(--sl-transition-fast);
+}
+
+.add:hover:not(:disabled) {
+  background: hsl(var(--sl-color-primary-subtle));
+}
+
+.add:focus-visible,
+.albumButton:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
+}
+
+.add:disabled {
+  border-color: hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-background-secondary));
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: not-allowed;
+}
+
+.albumButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--bp-target);
+  min-height: var(--bp-target);
+  padding: 0;
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.albumButton svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.albumButton[data-in-album="true"] {
+  color: hsl(var(--sl-color-primary-text));
+}
+
+.albumButton:hover {
   background: hsl(var(--sl-color-surface-hover));
 }
 
-.stripe {
-  flex: none;
-  align-self: stretch;
-  width: 3px;
-  border-radius: 2px;
-  background: hsl(var(--bp-kind));
-}
-
-/* ── Empty and footer ── */
+/* ── Empty, toast and footer ── */
 
 .empty {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sl-spacing-gap-sm);
-  margin: 0;
   padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-sm);
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-secondary));
@@ -761,36 +1186,53 @@
 .emptyTitle {
   font-weight: var(--sl-font-weight-emphasis);
   color: hsl(var(--sl-color-text-primary));
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
-.secondaryButton,
-.create {
-  min-height: var(--bp-target);
-  padding: 0 var(--sl-spacing-inset-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-button);
-  background: hsl(var(--sl-color-surface));
-  font: inherit;
+.inlineIcon {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+}
+
+.toastArea:empty {
+  display: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  margin: 0;
+  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm);
+  border-top: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-text-primary));
   font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.toast span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.toastButton {
+  flex: none;
+  min-height: var(--bp-target);
+  padding: 0 var(--sl-spacing-gap-sm);
+  border: 1px solid currentColor;
+  border-radius: var(--sl-radius-button);
+  background: none;
+  font: inherit;
   font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--sl-color-text-primary));
+  color: inherit;
   cursor: pointer;
-}
-
-.secondaryButton:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.secondaryButton:focus-visible,
-.create:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: 2px;
 }
 
 .foot {
   flex: none;
-  padding: var(--sl-spacing-inset-sm);
+  padding: var(--sl-spacing-gap-sm) var(--sl-spacing-inset-sm);
   border-top: 1px solid hsl(var(--sl-color-border));
   background: hsl(var(--sl-color-background-secondary));
 }
@@ -807,19 +1249,6 @@
   margin-left: var(--sl-spacing-gap-xs);
   font-weight: var(--sl-font-weight-body);
   color: hsl(var(--sl-color-text-secondary));
-}
-
-/* ── Reduced motion: durations collapse, the property stays ── */
-
-@media (prefers-reduced-motion: reduce) {
-  .folder,
-  .kindPill,
-  .add,
-  .chevron,
-  .peek,
-  .card {
-    transition-duration: 1ms;
-  }
 }
 
 /* ── Stories only: the shell split and the mapping sheet ── */
@@ -843,9 +1272,14 @@
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 38rem auto;
+    grid-template-rows: 40rem auto;
     height: auto;
   }
+}
+
+.sheet {
+  color: hsl(var(--sl-color-text-primary));
+  font-family: var(--sl-font-family-body);
 }
 
 .mapping {
@@ -873,4 +1307,15 @@
 .mapping thead th {
   font-size: var(--sl-text-overline);
   color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── Reduced motion: durations collapse, the property stays ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .collection,
+  .chipFace,
+  .add,
+  .card {
+    transition-duration: 1ms;
+  }
 }

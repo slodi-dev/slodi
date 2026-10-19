@@ -1,41 +1,51 @@
 "use client";
 
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { ChevronDown, GripVertical, Search, X } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  Check,
+  GripVertical,
+  MessageSquareText,
+  Search,
+  X,
+} from "lucide-react";
 import { useBench } from "@/components/plan/bench/BenchProvider";
 import { blockAsLidur, dragId } from "@/components/plan/bench/dnd";
-import { LIBRARY_FOLDERS, LIBRARY_KINDS } from "@/lib/mock/library.mock";
-import { countIs, formatAgeGroups } from "@/lib/format";
-import { BAND_OF, BANDS, type BandId, type SlotKind } from "@/services/plan.service";
+import { LIBRARY_KINDS } from "@/lib/mock/library.mock";
+import { countIs } from "@/lib/format";
+import type { SlotKind } from "@/services/plan.service";
 import {
+  ALBUMS,
   FALLBACK_THEME_ICON,
   KIND_ICON,
   LAB_BLOCKS,
+  SOURCES,
   THEME_ICON,
   themeIcon,
   type IconEntry,
+  type LabAlbum,
   type LabBlock,
 } from "./blockPaletteLabData";
+import { AlbumGlyph, COLLECTIONS, CreateAlbum, Popover, type CollectionsLook } from "./Collections";
+import { useAlbums, type AlbumsApi, type Selection } from "./useAlbums";
 import styles from "./BlockPaletteLab.module.css";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
-/**
- * - `merki`: A · Icons. Every block carries a picture: its own image, or its theme's icon.
- * - `listi`: B · Minimal list. Title and minutes; the rest behind hover, focus and an expand.
- * - `spjold`: C · Card grid. Two columns of small cards, for browsing.
- * - `hlutar`: D · By section. Grouped by the part of the fundur the block fits; no type chips.
- */
-export type BlockPaletteLook = "merki" | "listi" | "spjold" | "hlutar";
+export type { CollectionsLook } from "./Collections";
 
 export interface BlockPaletteLabProps {
-  /** Which lab direction to render. */
-  look: BlockPaletteLook;
+  /** Which collections variation sits above C's card grid. */
+  look: CollectionsLook;
   /** The bank. Defaults to the mock bank plus the lab's extra fields. */
   blocks?: LabBlock[];
+  /** The leader's albums. */
+  albums?: LabAlbum[];
+  /** What is selected on load. */
+  defaultSelection?: Selection;
   defaultQuery?: string;
-  defaultFolder?: string;
   defaultKind?: SlotKind | "allt";
   /**
    * Lab only: told apart from other rails on the same page, so the landmarks have unique
@@ -53,15 +63,15 @@ const KIND_FILTERS: { id: SlotKind | "allt"; label: string }[] = [
 ];
 
 const timesUsed = (n: number) => `notað ${countIs(n, "sinni", "sinnum")}`;
-const minutes = (n: number) => `${n} mín`;
 
 /* ── The rail ──────────────────────────────────────────────────────────────── */
 
 export default function BlockPaletteLab({
   look,
   blocks = LAB_BLOCKS,
+  albums: initialAlbums = ALBUMS,
+  defaultSelection = { type: "source", id: "allt" },
   defaultQuery = "",
-  defaultFolder = "allt",
   defaultKind = "allt",
   instanceName,
 }: BlockPaletteLabProps) {
@@ -74,33 +84,45 @@ export default function BlockPaletteLab({
     [activeFundur]
   );
 
-  const [folder, setFolder] = useState(defaultFolder);
+  const api = useAlbums(initialAlbums, defaultSelection);
   const [kind, setKind] = useState<SlotKind | "allt">(defaultKind);
   const [query, setQuery] = useState(defaultQuery);
   const hintId = useId();
   const searchId = useId();
+  const kindId = useId();
 
-  // D replaces the type chips with its grouping, so a kind filter must not linger unseen.
-  const showKinds = look !== "hlutar";
-  const kindFilter = showKinds ? kind : "allt";
+  const { selection } = api;
+  const album =
+    selection.type === "album" ? api.albums.find((a) => a.id === selection.id) : undefined;
+  const collectionLabel =
+    album?.name ?? SOURCES.find((s) => s.id === selection.id)?.label ?? "Allt";
+
+  /** The selected collection's blocks, in its own order (an album keeps the leader's order). */
+  const inCollection = useMemo(() => {
+    if (album) {
+      return album.blockIds
+        .map((id) => blocks.find((b) => b.id === id))
+        .filter((b): b is LabBlock => Boolean(b));
+    }
+    if (selection.id === "allt") return blocks;
+    return blocks.filter((b) => b.folder === selection.id);
+  }, [album, blocks, selection.id]);
 
   const results = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("is");
-    return blocks.filter((block) => {
-      if (folder !== "allt" && block.folder !== folder) return false;
-      if (kindFilter !== "allt" && block.kind !== kindFilter) return false;
+    return inCollection.filter((block) => {
+      if (kind !== "allt" && block.kind !== kind) return false;
       if (!needle) return true;
       const haystack = [block.name, block.theme, ...(block.needs ?? [])]
         .join(" ")
         .toLocaleLowerCase("is");
       return haystack.includes(needle);
     });
-  }, [blocks, folder, kindFilter, query]);
+  }, [inCollection, kind, query]);
 
-  const filtered = query.trim() !== "" || folder !== "allt" || kindFilter !== "allt";
-  const reset = () => {
+  const filtered = query.trim() !== "" || kind !== "allt";
+  const resetFilters = () => {
     setQuery("");
-    setFolder("allt");
     setKind("allt");
   };
 
@@ -113,90 +135,73 @@ export default function BlockPaletteLab({
         })
     : undefined;
 
-  const itemProps = (block: LabBlock): ItemProps => ({
-    block,
-    onAdd: add ? () => add(block) : undefined,
-    disabledReasonId: add ? undefined : hintId,
-    isOnFundur: onFundur.has(block.name),
-  });
+  const Collections = COLLECTIONS[look];
 
   return (
-    // A labelled section, as in the real rail: it sits inside the app's <main>.
-    <section className={styles.rail} data-look={look} aria-label={named("Dagskrá og möppur")}>
-      <nav className={styles.folders} aria-label={named("Möppur")}>
-        {LIBRARY_FOLDERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            className={styles.folder}
-            aria-pressed={folder === f.id}
-            onClick={() => setFolder(f.id)}
-          >
-            <span className={styles.folderLabel}>{f.label}</span>
-            <span className={styles.folderHint}>{f.hint}</span>
-          </button>
-        ))}
-      </nav>
+    // A labelled section, as in the real rail: it sits inside the app's <main>. `lang` lets the
+    // browser hyphenate long Icelandic titles in a 130px card.
+    <section
+      className={styles.rail}
+      data-look={look}
+      aria-label={named("Dagskrá og möppur")}
+      lang="is"
+    >
+      <div className={styles.collections}>
+        <Collections api={api} blocks={blocks} named={named} />
+      </div>
 
       <div className={styles.head}>
-        <div className={styles.search}>
-          <label htmlFor={searchId} className={styles.srOnly}>
-            Leita í dagskrá
-          </label>
-          <Search className={styles.searchIcon} aria-hidden="true" />
-          <input
-            id={searchId}
-            type="search"
-            className={styles.searchInput}
-            placeholder="Leita í bankanum…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {query && (
-            <button
-              type="button"
-              className={styles.clear}
-              aria-label="Hreinsa leit"
-              onClick={() => setQuery("")}
-            >
-              <X aria-hidden="true" />
-            </button>
-          )}
-        </div>
-        {showKinds && (
-          <div className={styles.kinds} role="group" aria-label="Sía eftir tegund">
-            {KIND_FILTERS.map((k) => {
-              const Icon = k.id === "allt" ? null : KIND_ICON[k.id].icon;
-              return (
-                <button
-                  key={k.id}
-                  type="button"
-                  className={styles.kind}
-                  aria-pressed={kind === k.id}
-                  onClick={() => setKind(k.id)}
-                >
-                  <span className={styles.kindPill}>
-                    {look === "merki" && Icon && <Icon aria-hidden="true" />}
-                    {k.label}
-                  </span>
-                </button>
-              );
-            })}
+        <div className={styles.searchRow}>
+          <div className={styles.search}>
+            <label htmlFor={searchId} className={styles.srOnly}>
+              Leita í dagskrá
+            </label>
+            <Search className={styles.searchIcon} aria-hidden="true" />
+            <input
+              id={searchId}
+              type="search"
+              className={styles.searchInput}
+              placeholder="Leita…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button
+                type="button"
+                className={styles.clear}
+                aria-label="Hreinsa leit"
+                onClick={() => setQuery("")}
+              >
+                <X aria-hidden="true" />
+              </button>
+            )}
           </div>
-        )}
-        <p className={styles.count} role="status">
-          {countIs(results.length, "blokk", "blokkir")}
-          {filtered ? " passa" : " í bankanum"}
+          {/* One select instead of six chips: the chips took two rows the cards needed. */}
+          <label className={styles.srOnly} htmlFor={kindId}>
+            Sía eftir tegund
+          </label>
+          <select
+            id={kindId}
+            className={styles.kindSelect}
+            value={kind}
+            onChange={(e) => setKind(e.target.value as SlotKind | "allt")}
+          >
+            {KIND_FILTERS.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.id === "allt" ? "Allar tegundir" : k.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className={styles.count} role="status" data-showing>
+          <strong>{collectionLabel}</strong>:{" "}
+          {filtered
+            ? countIs(results.length, "blokk passar", "blokkir passa")
+            : countIs(results.length, "blokk", "blokkir")}
         </p>
       </div>
 
-      {/* With every "Bæta við" disabled, A and C have nothing focusable in the list, so the
-          list itself takes focus: a keyboard user must still be able to scroll and read the
-          bank (axe scrollable-region-focusable). */}
-      <div
-        className={styles.body}
-        {...(add ? {} : { tabIndex: 0, role: "region", "aria-label": named("Blokkir") })}
-      >
+      <div className={styles.body}>
         {blocks.length > 0 &&
           (activeFundur ? (
             <p className={styles.target}>
@@ -213,27 +218,59 @@ export default function BlockPaletteLab({
           <p className={styles.empty}>
             Dagskrárbankinn er ekki tengdur enn. Þegar bakendinn svarar birtast blokkirnar hér.
           </p>
+        ) : album && album.blockIds.length === 0 ? (
+          <div className={styles.empty}>
+            <p className={styles.emptyTitle}>„{album.name}“ er tómt.</p>
+            <p>
+              Settu blokkir í það með bókamerkinu{" "}
+              <Bookmark className={styles.inlineIcon} aria-hidden="true" /> á spjaldi („Setja í
+              albúm…“).
+            </p>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => api.select({ type: "source", id: "allt" })}
+            >
+              Sýna allan bankann
+            </button>
+          </div>
         ) : results.length === 0 ? (
           <div className={styles.empty}>
             <p className={styles.emptyTitle}>
               Ekkert fannst{query.trim() ? ` fyrir „${query.trim()}“` : ""}.
             </p>
-            <p>Prófaðu færri orð, aðra möppu eða aðra tegund.</p>
-            <button type="button" className={styles.secondaryButton} onClick={reset}>
+            <p>Prófaðu færri orð eða aðra tegund.</p>
+            <button type="button" className={styles.secondaryButton} onClick={resetFilters}>
               Hreinsa leit og síur
             </button>
           </div>
-        ) : look === "hlutar" ? (
-          <Sections blocks={results} itemProps={itemProps} />
         ) : (
-          <ul className={styles.list} aria-label="Blokkir">
-            {results.map((block) => {
-              const props = itemProps(block);
-              if (look === "listi") return <ListItem key={block.id} {...props} />;
-              if (look === "spjold") return <CardItem key={block.id} {...props} />;
-              return <IconItem key={block.id} {...props} />;
-            })}
+          <ul className={styles.cards} aria-label="Blokkir">
+            {results.map((block) => (
+              <Card
+                key={block.id}
+                block={block}
+                api={api}
+                onAdd={add ? () => add(block) : undefined}
+                disabledReasonId={add ? undefined : hintId}
+                isOnFundur={onFundur.has(block.name)}
+              />
+            ))}
           </ul>
+        )}
+      </div>
+
+      {/* Album changes and "Afturkalla" after a delete. Always mounted, so it is announced. */}
+      <div className={styles.toastArea} role="status">
+        {api.message && (
+          <p className={styles.toast} key={api.message.seq}>
+            <span>{api.message.text}</span>
+            {api.message.canUndo && (
+              <button type="button" className={styles.toastButton} onClick={api.undoRemove}>
+                Afturkalla
+              </button>
+            )}
+          </p>
         )}
       </div>
 
@@ -247,10 +284,11 @@ export default function BlockPaletteLab({
   );
 }
 
-/* ── Shared item parts ─────────────────────────────────────────────────────── */
+/* ── The card ──────────────────────────────────────────────────────────────── */
 
-interface ItemProps {
+interface CardProps {
   block: LabBlock;
+  api: AlbumsApi;
   /** Absent while there is no fundur to add to. */
   onAdd?: () => void;
   /** The visible hint that says why "Bæta við" is disabled. */
@@ -259,50 +297,11 @@ interface ItemProps {
   isOnFundur: boolean;
 }
 
-/**
- * Drag from the handle only, as in the real rail, so "Bæta við" stays a plain click. The handle
- * gets no `role="button"`: there is no keyboard drag here, and "Bæta við" is the keyboard path.
- */
-function useBlockDrag(block: LabBlock) {
-  const { listeners, setNodeRef, isDragging } = useDraggable({
-    id: dragId.library(block.id),
-    data: { kind: "library", block },
-  });
-  return { listeners, setNodeRef, isDragging };
-}
-
-function Grip({ drag, children }: { drag: ReturnType<typeof useBlockDrag>; children?: ReactNode }) {
-  return (
-    <span
-      ref={drag.setNodeRef}
-      className={children ? styles.gripArea : styles.grip}
-      aria-hidden="true"
-      {...drag.listeners}
-    >
-      {children ?? <GripVertical />}
-    </span>
-  );
-}
-
-function AddButton({ onAdd, disabledReasonId, wide }: ItemProps & { wide?: boolean }) {
-  return (
-    <button
-      type="button"
-      className={wide ? `${styles.add} ${styles.addWide}` : styles.add}
-      disabled={!onAdd}
-      aria-describedby={disabledReasonId}
-      onClick={onAdd}
-    >
-      Bæta við
-    </button>
-  );
-}
-
 /** The block's picture: its own image if it has one, else its theme's icon on its kind's tint. */
-function Marker({ block, size }: { block: LabBlock; size: "sm" | "lg" }) {
+function Marker({ block }: { block: LabBlock }) {
   const { icon: Icon } = themeIcon(block.theme);
   return (
-    <span className={styles.marker} data-size={size} data-kind={block.kind}>
+    <span className={styles.marker} data-kind={block.kind}>
       {block.image ? (
         // eslint-disable-next-line @next/next/no-img-element -- a lab fixture SVG; next/image does not optimise SVG.
         <img className={styles.markerImage} src={block.image} alt="" />
@@ -313,254 +312,111 @@ function Marker({ block, size }: { block: LabBlock; size: "sm" | "lg" }) {
   );
 }
 
-function KindLabel({ kind }: { kind: SlotKind }) {
-  const { icon: Icon, label } = KIND_ICON[kind];
+function Card({ block, api, onAdd, disabledReasonId, isOnFundur }: CardProps) {
+  // Drag from the picture only, so "Bæta við" stays a plain click. No role="button" on it:
+  // there's no keyboard drag here, and "Bæta við" is the keyboard path.
+  const { listeners, setNodeRef, isDragging } = useDraggable({
+    id: dragId.library(block.id),
+    data: { kind: "library", block },
+  });
+  const { icon: KindIcon, label: kindLabel } = KIND_ICON[block.kind];
+
   return (
-    <span className={styles.kindLabel}>
-      <Icon aria-hidden="true" />
-      {label}
-    </span>
-  );
-}
-
-function Flags({ block, isOnFundur }: { block: LabBlock; isOnFundur: boolean }) {
-  if (!block.endurmat && !isOnFundur) return null;
-  return (
-    <>
-      {block.endurmat && <span className={styles.flag}>Endurmat fylgir</span>}
-      {isOnFundur && <span className={styles.flag}>Þegar á fundinum</span>}
-    </>
-  );
-}
-
-/* ── A · Icons ─────────────────────────────────────────────────────────────── */
-
-function IconItem(props: ItemProps) {
-  const { block, isOnFundur } = props;
-  const drag = useBlockDrag(block);
-  return (
-    <li
-      className={styles.iconItem}
-      data-kind={block.kind}
-      data-dragging={drag.isDragging || undefined}
-    >
-      <Grip drag={drag} />
-      <Marker block={block} size="sm" />
-      <div className={styles.itemBody}>
-        <span className={styles.title}>{block.name}</span>
-        <span className={styles.meta}>
-          <KindLabel kind={block.kind} />
-          <span className={styles.num}>{minutes(block.minutes)}</span>
-          <span>{block.theme}</span>
-        </span>
-        <span className={styles.itemFoot}>
-          <span className={styles.meta}>
-            <span>{timesUsed(block.timesUsed)}</span>
-            <Flags block={block} isOnFundur={isOnFundur} />
-          </span>
-          <AddButton {...props} />
-        </span>
-      </div>
-    </li>
-  );
-}
-
-/* ── B · Minimal list ──────────────────────────────────────────────────────── */
-
-function ListItem(props: ItemProps) {
-  const { block, isOnFundur } = props;
-  const drag = useBlockDrag(block);
-  const [open, setOpen] = useState(false);
-  const detailsId = useId();
-  return (
-    <li
-      className={styles.listItem}
-      data-kind={block.kind}
-      data-dragging={drag.isDragging || undefined}
-    >
-      <Grip drag={drag} />
-      <button
-        type="button"
-        className={styles.summary}
-        aria-expanded={open}
-        aria-controls={detailsId}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className={styles.title}>{block.name}</span>
-        <span className={styles.summaryMinutes}>{minutes(block.minutes)}</span>
-        <ChevronDown className={styles.chevron} aria-hidden="true" />
-      </button>
-      <AddButton {...props} />
-      {/* A one-line preview on hover or focus. Information only, so hiding it on touch loses
-          nothing the expand does not also show (rule 8 is about actions). */}
-      <span className={styles.peek} aria-hidden="true">
-        <span className={styles.peekInner}>
-          {KIND_ICON[block.kind].label} · {block.theme} · {timesUsed(block.timesUsed)}
-        </span>
-      </span>
-      <dl className={styles.details} id={detailsId} hidden={!open}>
-        <div>
-          <dt>Tegund</dt>
-          <dd>{KIND_ICON[block.kind].label}</dd>
-        </div>
-        <div>
-          <dt>Þema</dt>
-          <dd>{block.theme}</dd>
-        </div>
-        {block.ages && block.ages.length > 0 && (
-          <div>
-            <dt>Aldur</dt>
-            <dd>{formatAgeGroups(block.ages)}</dd>
-          </div>
-        )}
-        {block.needs && block.needs.length > 0 && (
-          <div>
-            <dt>Búnaður</dt>
-            <dd>{block.needs.join(", ")}</dd>
-          </div>
-        )}
-        {block.prepMinutes !== undefined && (
-          <div>
-            <dt>Undirbúningur</dt>
-            <dd>{minutes(block.prepMinutes)}</dd>
-          </div>
-        )}
-        <div>
-          <dt>Notkun</dt>
-          <dd>{timesUsed(block.timesUsed)}</dd>
-        </div>
-        {block.endurmat && (
-          <div>
-            <dt>Síðasta endurmat</dt>
-            <dd>{block.endurmat}</dd>
-          </div>
-        )}
-        {isOnFundur && (
-          <div>
-            <dt>Á fundinum</dt>
-            <dd>Þegar á fundinum</dd>
-          </div>
-        )}
-      </dl>
-    </li>
-  );
-}
-
-/* ── C · Card grid ─────────────────────────────────────────────────────────── */
-
-function CardItem(props: ItemProps) {
-  const { block, isOnFundur } = props;
-  const drag = useBlockDrag(block);
-  return (
-    <li className={styles.card} data-kind={block.kind} data-dragging={drag.isDragging || undefined}>
-      {/* The picture is the drag handle: the biggest thing on the card is the easiest to grab. */}
-      <Grip drag={drag}>
-        <Marker block={block} size="lg" />
+    <li className={styles.card} data-dragging={isDragging || undefined}>
+      <span ref={setNodeRef} className={styles.cardPicture} aria-hidden="true" {...listeners}>
+        <Marker block={block} />
         <GripVertical className={styles.cardGrip} />
-      </Grip>
+        {/* Minutes on the picture, like the length on a video thumbnail: read with the picture. */}
+        <span className={styles.cardMinutes}>{block.minutes} mín</span>
+      </span>
       <div className={styles.cardBody}>
         <span className={styles.title}>{block.name}</span>
-        <span className={styles.meta}>
-          <span className={styles.num}>{minutes(block.minutes)}</span>
-          <span>{KIND_ICON[block.kind].label}</span>
+        <span className={styles.srOnly}>, {block.minutes} mínútur</span>
+        <span className={styles.cardKind}>
+          <KindIcon aria-hidden="true" />
+          {kindLabel}
+          <span className={styles.cardTheme}> · {block.theme}</span>
         </span>
-        <span className={styles.meta}>
-          <span>{timesUsed(block.timesUsed)}</span>
-          <Flags block={block} isOnFundur={isOnFundur} />
-        </span>
+        <span className={styles.cardUsed}>{timesUsed(block.timesUsed)}</span>
+        {(isOnFundur || block.endurmat) && (
+          <span className={styles.badges}>
+            {isOnFundur && (
+              <span className={styles.badge}>
+                <Check aria-hidden="true" />
+                Þegar á fundinum
+              </span>
+            )}
+            {block.endurmat && (
+              <span className={styles.badge}>
+                <MessageSquareText aria-hidden="true" />
+                Endurmat fylgir
+              </span>
+            )}
+          </span>
+        )}
       </div>
-      <AddButton {...props} wide />
+      <div className={styles.cardActions}>
+        <button
+          type="button"
+          className={styles.add}
+          disabled={!onAdd}
+          aria-describedby={disabledReasonId}
+          onClick={onAdd}
+        >
+          Bæta við
+        </button>
+        <AlbumPicker block={block} api={api} />
+      </div>
     </li>
   );
 }
 
-/* ── D · By section ────────────────────────────────────────────────────────── */
-
-/** In Setning every block is a setning, so the type word is only shown where two kinds share. */
-const MIXED_BANDS: BandId[] = ["kjarni", "lok"];
-
-function Sections({
-  blocks,
-  itemProps,
-}: {
-  blocks: LabBlock[];
-  itemProps: (block: LabBlock) => ItemProps;
-}) {
-  const idBase = useId();
-  const [closed, setClosed] = useState<Set<BandId>>(new Set());
-  const toggle = (band: BandId) =>
-    setClosed((prev) => {
-      const next = new Set(prev);
-      if (next.has(band)) next.delete(band);
-      else next.add(band);
-      return next;
-    });
-
+/** "Setja í albúm…": every album as a checkbox, ticked where the block already is. */
+function AlbumPicker({ block, api }: { block: LabBlock; api: AlbumsApi }) {
+  const inAlbums = api.albums.filter((a) => a.blockIds.includes(block.id));
+  const Icon = inAlbums.length > 0 ? BookmarkCheck : Bookmark;
+  const where = inAlbums.length > 0 ? `, í ${countIs(inAlbums.length, "albúmi", "albúmum")}` : "";
   return (
-    <div className={styles.sections}>
-      {BANDS.map((band) => {
-        const inBand = blocks.filter((block) => BAND_OF[block.kind] === band.id);
-        if (inBand.length === 0) return null;
-        const isOpen = !closed.has(band.id);
-        const listId = `${idBase}-${band.id}`;
-        return (
-          <section key={band.id} className={styles.section} aria-label={band.label}>
-            <h3 className={styles.sectionHead}>
-              <button
-                type="button"
-                className={styles.sectionToggle}
-                aria-expanded={isOpen}
-                aria-controls={listId}
-                onClick={() => toggle(band.id)}
-              >
-                <span>{band.label}</span>
-                <span className={styles.sectionCount}>
-                  {countIs(inBand.length, "blokk", "blokkir")}
-                </span>
-                <ChevronDown className={styles.chevron} aria-hidden="true" />
-              </button>
-            </h3>
-            <ul className={styles.list} id={listId} hidden={!isOpen}>
-              {inBand.map((block) => (
-                <SectionItem
-                  key={block.id}
-                  {...itemProps(block)}
-                  showKind={MIXED_BANDS.includes(band.id)}
-                />
-              ))}
-            </ul>
-          </section>
-        );
-      })}
-    </div>
-  );
-}
-
-function SectionItem(props: ItemProps & { showKind: boolean }) {
-  const { block, isOnFundur, showKind } = props;
-  const drag = useBlockDrag(block);
-  return (
-    <li
-      className={styles.sectionItem}
-      data-kind={block.kind}
-      data-dragging={drag.isDragging || undefined}
+    <Popover
+      label={`Setja ${block.name} í albúm`}
+      trigger={(props) => (
+        <button
+          {...props}
+          type="button"
+          className={styles.albumButton}
+          data-in-album={inAlbums.length > 0 || undefined}
+          aria-label={`Setja í albúm…${where}`}
+          title="Setja í albúm…"
+        >
+          <Icon aria-hidden="true" />
+        </button>
+      )}
     >
-      <Grip drag={drag} />
-      <span className={styles.stripe} aria-hidden="true" />
-      <div className={styles.itemBody}>
-        <span className={styles.title}>{block.name}</span>
-        <span className={styles.meta}>
-          {showKind && <span>{KIND_ICON[block.kind].label}</span>}
-          <span className={styles.num}>{minutes(block.minutes)}</span>
-          <span>{block.theme}</span>
-        </span>
-        <span className={styles.meta}>
-          <span>{timesUsed(block.timesUsed)}</span>
-          <Flags block={block} isOnFundur={isOnFundur} />
-        </span>
-      </div>
-      <AddButton {...props} />
-    </li>
+      {() => (
+        <>
+          <fieldset className={styles.pickerSet}>
+            <legend className={styles.popoverHead}>Setja í albúm</legend>
+            {api.albums.length === 0 && <p className={styles.popoverNote}>Engin albúm enn.</p>}
+            <div className={styles.pickerList}>
+              {api.albums.map((album) => (
+                <label key={album.id} className={styles.pickerItem}>
+                  <input
+                    type="checkbox"
+                    checked={album.blockIds.includes(block.id)}
+                    onChange={() => api.toggleBlock(album.id, block.id, block.name)}
+                  />
+                  <AlbumGlyph album={album} />
+                  <span className={styles.collectionName}>{album.name}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className={styles.createRow}>
+            <CreateAlbum api={api} withBlock={block.id} select={false} />
+          </div>
+        </>
+      )}
+    </Popover>
   );
 }
 
@@ -588,7 +444,7 @@ function MappingTable({
         {rows.map(({ key, kind, entry }) => (
           <tr key={key}>
             <td>
-              <span className={styles.marker} data-size="sm" data-kind={kind}>
+              <span className={`${styles.marker} ${styles.markerSmall}`} data-kind={kind}>
                 <entry.icon className={styles.markerIcon} aria-hidden="true" />
               </span>
             </td>
@@ -604,7 +460,7 @@ function MappingTable({
   );
 }
 
-/** Every type and theme icon, on the tint it gets in the rail. */
+/** Every type and theme icon, on the tint it gets on a card. */
 export function IconMappingSheet() {
   const kinds = (Object.keys(KIND_ICON) as SlotKind[]).map((kind) => ({
     key: kind,
@@ -614,7 +470,7 @@ export function IconMappingSheet() {
   const themes = [
     ...Object.entries(THEME_ICON).map(([theme, entry]) => ({
       key: theme,
-      // A theme tile takes the tint of the kind it most often comes with; "Annað" stays neutral.
+      // A theme tile takes the tint of the kind it most often comes with.
       kind: (theme === "Hefðir"
         ? "setning"
         : theme === "Endurmat"
@@ -625,7 +481,7 @@ export function IconMappingSheet() {
     { key: "fallback", kind: "custom" as SlotKind, entry: FALLBACK_THEME_ICON },
   ];
   return (
-    <div className={styles.rail} style={{ height: "auto", border: 0 }}>
+    <div className={styles.sheet}>
       <MappingTable caption="Tegund (kind): when in the fundur it runs" rows={kinds} />
       <MappingTable caption="Þema (theme): what it is about" rows={themes} />
     </div>

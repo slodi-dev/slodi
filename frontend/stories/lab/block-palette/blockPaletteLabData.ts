@@ -1,15 +1,24 @@
 import {
+  Award,
+  BookMarked,
   BookOpen,
+  Building2,
+  CloudRain,
   Compass,
   Dices,
   Flag,
   Flame,
   Footprints,
   Heart,
+  House,
+  Leaf,
+  Library,
   Moon,
   MessagesSquare,
   Puzzle,
   Shapes,
+  Snowflake,
+  Star,
   Sunrise,
   Tent,
   type LucideIcon,
@@ -23,14 +32,10 @@ import ratleikurImage from "./thumbs/ratleikur.svg";
 /* ── What a block could carry ──────────────────────────────────────────────── */
 
 /**
- * A bank block plus what the real bank cards already know about an item and the rail does not
- * show yet: age fit, prep time, whether an endurmat came with it, and a picture.
+ * A bank block plus what the card grid shows and the mock bank does not carry yet: whether an
+ * endurmat came with it, and a picture.
  */
 export interface LabBlock extends LibraryBlock {
-  /** Age bands it was written for (the same values as ProgramCard's badges). */
-  ages?: string[];
-  /** Minutes a foringi needs before the fundur. */
-  prepMinutes?: number;
   /** The last endurmat the sveit wrote about it, if there is one (B3). */
   endurmat?: string;
   /** A picture, when the item has one. Most will not. */
@@ -44,28 +49,15 @@ function urlOf(image: unknown): string {
 }
 
 const EXTRA: Record<string, Partial<LabBlock>> = {
-  "lb-1": { ages: ["Drekaskátar", "Fálkaskátar"] },
-  "lb-2": { ages: ["Drekaskátar", "Fálkaskátar", "Dróttskátar"] },
   "lb-3": {
-    ages: ["Fálkaskátar", "Dróttskátar"],
-    prepMinutes: 30,
     image: urlOf(ratleikurImage),
     endurmat: "Of langt fyrir yngsta flokkinn — styttum leiðina í vor.",
   },
-  "lb-4": { ages: ["Fálkaskátar", "Dróttskátar"], prepMinutes: 10, image: urlOf(hnutarImage) },
-  "lb-5": { ages: ["Fálkaskátar", "Dróttskátar"], prepMinutes: 15 },
+  "lb-4": { image: urlOf(hnutarImage) },
   "lb-6": {
-    ages: ["Dróttskátar", "Rekkaskátar"],
-    prepMinutes: 20,
     image: urlOf(eldamennskaImage),
     endurmat: "Vantaði annan prímus; tveir hópar biðu of lengi.",
   },
-  "lb-7": { ages: ["Dróttskátar", "Rekkaskátar"], prepMinutes: 15 },
-  "lb-8": { ages: ["Dróttskátar", "Rekkaskátar"] },
-  "lb-9": {},
-  "lb-10": {},
-  "lb-11": {},
-  "lb-12": {},
 };
 
 /** The mock bank, plus one "Matur" block so every theme in the mapping appears. */
@@ -80,8 +72,6 @@ export const LAB_BLOCKS: LabBlock[] = [
     folder: "felagid",
     timesUsed: 1,
     needs: ["Panna", "Deig"],
-    ages: ["Fálkaskátar", "Dróttskátar"],
-    prepMinutes: 20,
   },
 ];
 
@@ -95,8 +85,6 @@ export const LONG_BLOCKS: LabBlock[] = [
     theme: "Umhyggja",
     folder: "merki",
     timesUsed: 21,
-    ages: ["Dróttskátar", "Rekkaskátar", "Róverskátar"],
-    prepMinutes: 45,
     endurmat: "Krakkarnir vildu meiri tíma með brúðunum — skiptum hópnum í tvennt næst.",
   },
   {
@@ -184,3 +172,94 @@ export const FALLBACK_THEME_ICON: IconEntry = {
 export function themeIcon(theme: string): IconEntry {
   return THEME_ICON[theme] ?? FALLBACK_THEME_ICON;
 }
+
+/* ── Collections: built-in sources and the leader's own albums ─────────────── */
+
+/** A built-in source: where a block comes from. Fixed, and not editable. */
+export interface LabSource {
+  id: "allt" | "felagid" | "merki" | "sveitin";
+  label: string;
+  icon: LucideIcon;
+  /** Which group it sits in when a variation splits "Bankinn" from "Mitt". */
+  group: "bankinn" | "mitt";
+}
+
+export const SOURCES: LabSource[] = [
+  { id: "allt", label: "Allt", icon: Library, group: "bankinn" },
+  { id: "felagid", label: "Félagið", icon: Building2, group: "bankinn" },
+  { id: "merki", label: "Færnimerki", icon: Award, group: "bankinn" },
+  { id: "sveitin", label: "Sveitin mín", icon: House, group: "mitt" },
+];
+
+/** The icons an album can wear. Kept apart from the type and theme icons on purpose. */
+export const ALBUM_ICONS = { BookMarked, Star, CloudRain, Leaf, Snowflake, Flame } as const;
+export type AlbumIcon = keyof typeof ALBUM_ICONS;
+
+/**
+ * An album: a named list of references to bank blocks, in the order the leader keeps them. It
+ * holds no copies: editing a block in the bank changes it in every album.
+ */
+export interface LabAlbum {
+  id: string;
+  name: string;
+  icon: AlbumIcon;
+  /** Shared with the sveit (owned by the workspace), or the leader's own (owned by the user). */
+  shared: boolean;
+  blockIds: string[];
+}
+
+export const ALBUMS: LabAlbum[] = [
+  {
+    id: "al-1",
+    name: "Uppáhalds leikir",
+    icon: "Star",
+    shared: false,
+    blockIds: ["lb-1", "lb-2", "lb-3"],
+  },
+  {
+    id: "al-2",
+    name: "Rigningardagar",
+    icon: "CloudRain",
+    shared: true,
+    blockIds: ["lb-10", "lb-4", "lb-7"],
+  },
+  {
+    id: "al-3",
+    name: "Útilega haust",
+    icon: "Leaf",
+    shared: true,
+    blockIds: ["lb-6", "lb-8", "lb-lab-1", "lb-5"],
+  },
+  {
+    id: "al-4",
+    name: "Fyrir Drekaskáta",
+    icon: "BookMarked",
+    shared: false,
+    blockIds: ["lb-1", "lb-2", "lb-9", "lb-11"],
+  },
+  { id: "al-5", name: "Jólafundur", icon: "Snowflake", shared: false, blockIds: [] },
+];
+
+const MORE_NAMES = [
+  "Fundir þegar helmingur sveitarinnar er á handboltamóti",
+  "Vetrarstarf",
+  "Foreldrafundur",
+  "Þegar rafmagnið fer",
+  "Sumardagurinn fyrsti",
+  "Nýliðar í september",
+  "Stuttir fundir (undir klukkutíma)",
+  "Varðeldur",
+  "Prófað einu sinni, prófa aftur",
+];
+
+/** Fourteen albums, some with long names, for the scrolling and wrapping states. */
+export const MANY_ALBUMS: LabAlbum[] = [
+  ...ALBUMS,
+  ...MORE_NAMES.map((name, i) => ({
+    id: `al-more-${i}`,
+    name,
+    icon: (["BookMarked", "Star", "Leaf", "Flame"] as AlbumIcon[])[i % 4],
+    shared: i % 3 === 0,
+    blockIds: LAB_BLOCKS.slice(i % 5, (i % 5) + (i % 4)).map((block) => block.id),
+  })),
+];

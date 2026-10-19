@@ -5,21 +5,20 @@ import BlockPalette from "@/components/plan/bench/BlockPalette";
 import PlanBench from "@/components/plan/bench/PlanBench";
 import { Bench, benchData, mockModeIs } from "@/stories/vinnubekkur/benchHarness";
 import type { PlanBenchData } from "@/services/plan.service";
-import BlockPaletteLab, { IconMappingSheet, type BlockPaletteLook } from "./BlockPaletteLab";
-import { LONG_BLOCKS } from "./blockPaletteLabData";
+import BlockPaletteLab, { IconMappingSheet, type CollectionsLook } from "./BlockPaletteLab";
+import { LAB_BLOCKS, LONG_BLOCKS, MANY_ALBUMS } from "./blockPaletteLabData";
 import styles from "./BlockPaletteLab.module.css";
 
 /**
- * BlockPalette variations: the dagskrárbankinn rail on the left of the Vinnubekkur. The shell
- * stays as it is (collections top left, blocks below, the plan in the main body); what changes
- * is what each block shows and how the list is organised. Every direction keeps "Bæta við",
- * dragging, the search and the collections. Lab → BlockPalette → About has the inventory: why
- * each element is or is not there.
+ * BlockPalette: C · Card grid was picked (2026-10-19), and A Icons, B Minimal list and D By
+ * section were removed. The cards lost the side stripe. What's being compared now is the
+ * collections area at the top left, which becomes the leader's own albums next to the built-in
+ * sources. Lab → BlockPalette → About has why, the album concept and the API it needs.
  */
 
 /* ── Meta ── */
 
-const LOOK_OPTIONS: BlockPaletteLook[] = ["merki", "listi", "spjold", "hlutar"];
+const LOOK_OPTIONS: CollectionsLook[] = ["mappa", "kapur", "flogar", "tre"];
 
 const meta = {
   title: "Lab/BlockPalette/Directions",
@@ -27,41 +26,42 @@ const meta = {
   tags: ["skip-visual"],
   // The bank is mock fixtures; shown unless mock mode is "off".
   beforeEach: () => mockModeIs("auto"),
-  args: { look: "merki" },
+  args: { look: "mappa" },
   argTypes: {
     look: { control: "inline-radio", options: LOOK_OPTIONS },
     defaultKind: {
       control: "select",
       options: ["allt", "dagskra", "leikur", "setning", "slit", "endurmat"],
     },
-    defaultFolder: { control: "select", options: ["allt", "sveitin", "felagid", "merki"] },
     blocks: { control: false },
+    albums: { control: false },
+    defaultSelection: { control: false },
   },
 } satisfies Meta<typeof BlockPaletteLab>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const LOOKS: { look: BlockPaletteLook; name: string; idea: string }[] = [
+const LOOKS: { look: CollectionsLook; name: string; idea: string }[] = [
   {
-    look: "merki",
-    name: "A · Icons",
-    idea: "Every block has a picture: its own image, or its theme's icon on its type's tint. Tell them apart before reading.",
+    look: "mappa",
+    name: "C1 · Folder list",
+    idea: "Two groups, Bankinn and Mitt, one row per collection with its count. Everything is in view, and the albums scroll.",
   },
   {
-    look: "listi",
-    name: "B · Minimal list",
-    idea: "Title and minutes only, so a leader who knows the bank finds it fastest. Details on hover, focus and expand.",
+    look: "kapur",
+    name: "C2 · Album covers",
+    idea: "Sources as four tabs, albums as covers made of the blocks inside, like photo albums.",
   },
   {
-    look: "spjold",
-    name: "C · Card grid",
-    idea: "Two columns of small cards with a picture, for browsing when you don't yet know what you want.",
+    look: "flogar",
+    name: "C3 · Chips + Öll albúm…",
+    idea: "One row of chips: the sources and the first albums, with the rest in a panel. The most room for cards.",
   },
   {
-    look: "hlutar",
-    name: "D · By section",
-    idea: "Grouped by where a block fits in the fundur (Setning, Verkefni fundar, Slit). The grouping replaces the type chips.",
+    look: "tre",
+    name: "C4 · Tabs",
+    idea: "Bankinn · Mitt as tabs. Mitt lists Sveitin mín and the albums, which can be dragged into order.",
   },
 ];
 
@@ -78,12 +78,12 @@ const idea = {
 /** The rail's real width (PlanShell: 296px) and a laptop-ish height. */
 const railFrame = {
   width: "18.5rem",
-  height: "44rem",
+  height: "46rem",
   display: "flex",
   flexDirection: "column",
   border: "1px solid hsl(var(--sl-color-border))",
 } as const;
-const phoneFrame = { ...railFrame, width: "100%", height: "40rem" } as const;
+const phoneFrame = { ...railFrame, width: "100%", height: "42rem" } as const;
 
 /** Each rail gets its own bench: two rails under one DndContext would share drag ids. */
 function Rail({
@@ -102,7 +102,7 @@ function Rail({
   );
 }
 
-/** The current rail first, then the four directions on the same bank. */
+/** The current rail first, then the four collections variations, all with C's cards. */
 export const Comparison: Story = {
   name: "Comparison",
   render: () => (
@@ -115,9 +115,7 @@ export const Comparison: Story = {
     >
       <section>
         <h3 style={heading}>Current</h3>
-        <p style={idea}>
-          What the Vinnubekkur uses today: a colour stripe, title and one meta line.
-        </p>
+        <p style={idea}>What the Vinnubekkur uses today: four fixed folders and a list.</p>
         <Rail>
           <BlockPalette />
         </Rail>
@@ -135,21 +133,47 @@ export const Comparison: Story = {
   ),
 };
 
-/* ── One set of stories per direction ── */
+/* ── Helpers for the play functions ── */
 
-function railOf(canvasElement: HTMLElement): HTMLElement {
+type Canvas = ReturnType<typeof within>;
+
+function railOf(canvasElement: HTMLElement): Canvas {
   const rail = canvasElement.querySelector<HTMLElement>("[data-look]");
   if (!rail) throw new Error("No lab rail");
-  return rail;
+  return within(rail);
 }
 
-function itemOf(rail: HTMLElement, name: string): HTMLElement {
-  const item = within(rail).getByText(name).closest("li");
-  if (!item) throw new Error(`No item for ${name}`);
-  return item as HTMLElement;
+/** Make the album list visible: C3 keeps it in a panel, C4 under the "Mitt" tab. */
+async function showAlbums(canvas: Canvas, look: CollectionsLook) {
+  if (look === "flogar") {
+    const more = canvas.getByRole("button", { name: /^Öll albúm/ });
+    if (more.getAttribute("aria-expanded") !== "true") await userEvent.click(more);
+    await canvas.findByRole("dialog", { name: "Öll albúm" });
+  }
+  if (look === "tre") await userEvent.click(canvas.getByRole("tab", { name: "Mitt" }));
 }
 
-function storiesFor(look: BlockPaletteLook, name: string) {
+/** Rename or delete an album: from its "…" menu, or, in C2, from the bar under the covers. */
+async function albumAction(canvas: Canvas, look: CollectionsLook, album: string, action: string) {
+  if (look === "kapur") {
+    await userEvent.click(canvas.getByRole("button", { name: new RegExp(`^${album}`) }));
+    await userEvent.click(canvas.getByRole("button", { name: action }));
+    return;
+  }
+  await showAlbums(canvas, look);
+  await userEvent.click(canvas.getByRole("button", { name: `Aðgerðir fyrir ${album}` }));
+  await userEvent.click(await canvas.findByRole("button", { name: action }));
+}
+
+function cardOf(canvas: Canvas, name: string): HTMLElement {
+  const card = canvas.getByText(name).closest("li");
+  if (!card) throw new Error(`No card for ${name}`);
+  return card as HTMLElement;
+}
+
+/* ── One set of stories per variation ── */
+
+function storiesFor(look: CollectionsLook, name: string) {
   const args = { look };
   const rail: Story["render"] = (a) => (
     <Rail>
@@ -172,75 +196,94 @@ function storiesFor(look: BlockPaletteLook, name: string) {
         </Bench>
       ),
       play: async ({ canvasElement }) => {
-        const r = railOf(canvasElement);
-        const canvas = within(r);
+        const canvas = railOf(canvasElement);
         await expect(canvas.getByText(/^Bætist við:/)).toBeVisible();
-        const create = canvas.getByRole("button", { name: /Búa til nýja blokk/ });
-        await expect(create).toBeDisabled();
-        await expect(create).toHaveTextContent("Kemur síðar");
-        const item = itemOf(r, "Ratleikur um hverfið");
-        await userEvent.click(within(item).getByRole("button", { name: "Bæta við" }));
-        // The block is now on the active fundur, and the rail says so.
+        await expect(canvas.getByRole("button", { name: /Búa til nýja blokk/ })).toBeDisabled();
+        const card = cardOf(canvas, "Ratleikur um hverfið");
+        await userEvent.click(within(card).getByRole("button", { name: "Bæta við" }));
         await waitFor(() =>
           expect(
-            within(itemOf(r, "Ratleikur um hverfið")).getByText("Þegar á fundinum")
+            within(cardOf(canvas, "Ratleikur um hverfið")).getByText("Þegar á fundinum")
           ).toBeInTheDocument()
         );
       },
     } satisfies Story,
-    filtered: {
-      name: `${name} — filtered`,
-      args,
+    many: {
+      name: `${name} — many albums`,
+      args: { ...args, albums: MANY_ALBUMS, blocks: [...LAB_BLOCKS, ...LONG_BLOCKS.slice(0, 3)] },
       render: rail,
       play: async ({ canvasElement }) => {
-        const canvas = within(railOf(canvasElement));
-        await userEvent.click(canvas.getByRole("button", { name: /^Færnimerki/ }));
-        await expect(canvas.getByText("Áttavitinn: undirstöður")).toBeInTheDocument();
-        await expect(canvas.queryByText("Kötturinn og músin")).toBeNull();
-        await expect(canvas.getByRole("status")).toHaveTextContent("3 blokkir passa");
-        if (look === "hlutar") {
-          // The sections replace the type chips.
-          await expect(canvas.queryByRole("group", { name: "Sía eftir tegund" })).toBeNull();
-        }
+        const canvas = railOf(canvasElement);
+        await showAlbums(canvas, look);
+        await userEvent.click(canvas.getByRole("button", { name: /^Fundir þegar helmingur/ }));
+        await waitFor(() =>
+          expect(canvasElement.querySelector("[data-showing]")).toHaveTextContent(
+            /^Fundir þegar helmingur/
+          )
+        );
+        // Long names wrap; nothing pushes the rail sideways.
+        const railEl = canvasElement.querySelector<HTMLElement>("[data-look]") as HTMLElement;
+        await expect(railEl.scrollWidth).toBeLessThanOrEqual(railEl.clientWidth + 1);
       },
     } satisfies Story,
-    noResults: {
-      name: `${name} — no results`,
-      args,
+    empty: {
+      name: `${name} — empty album`,
+      args: { ...args, defaultSelection: { type: "album", id: "al-5" } },
       render: rail,
       play: async ({ canvasElement }) => {
-        const canvas = within(railOf(canvasElement));
-        await userEvent.type(canvas.getByRole("searchbox", { name: "Leita í dagskrá" }), "kajak");
-        await expect(canvas.getByText(/Ekkert fannst fyrir „kajak“/)).toBeVisible();
-        await expect(canvas.getByRole("status")).toHaveTextContent("0 blokkir");
+        const canvas = railOf(canvasElement);
+        await expect(canvas.getByText("„Jólafundur“ er tómt.")).toBeVisible();
+        await userEvent.click(canvas.getByRole("button", { name: "Sýna allan bankann" }));
+        await expect(canvasElement.querySelector("[data-showing]")).toHaveTextContent(
+          "Allt: 13 blokkir"
+        );
       },
     } satisfies Story,
-    noFundur: {
-      name: `${name} — no fundur selected`,
+    create: {
+      name: `${name} — create album`,
       args,
-      render: (a) => (
-        <Rail data={{ ...benchData(), fundir: [] }}>
-          <BlockPaletteLab {...a} />
-        </Rail>
-      ),
-      play: async ({ canvasElement }) => {
-        const canvas = within(railOf(canvasElement));
-        const reason = canvas.getByText(/Veldu fund á bekknum/);
-        await expect(reason).toBeVisible();
-        for (const button of canvas.getAllByRole("button", { name: "Bæta við" })) {
-          await expect(button).toBeDisabled();
-          await expect(button).toHaveAccessibleDescription(reason.textContent ?? "");
-        }
+      parameters: {
+        // In C1 and C4's rename step, React's act() finds leftover work after a synthetic event
+        // and warns. The same steps with real input in Playwright (from :6008) log nothing, so
+        // this is the test harness, not the component. Allowed here and nowhere else.
+        // C4 also gets one from dnd-kit's DndContext, which re-measures its sortable albums
+        // after the list changes, outside any act().
+        allowedConsoleErrors: [
+          /^A component suspended inside an `act` scope/,
+          /^An update to %s inside a test was not wrapped in act[\s\S]*DndContext\d*$/,
+        ],
       },
-    } satisfies Story,
-    long: {
-      name: `${name} — long titles`,
-      args: { ...args, blocks: LONG_BLOCKS },
       render: rail,
-      play: async ({ canvasElement }) => {
-        const r = railOf(canvasElement);
-        const body = r.querySelector<HTMLElement>("ul")?.parentElement ?? r;
-        await expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth + 1);
+      play: async ({ canvasElement, step }) => {
+        const canvas = railOf(canvasElement);
+        await step("a duplicate name is refused, and says why", async () => {
+          await showAlbums(canvas, look);
+          await userEvent.click(canvas.getByRole("button", { name: "Nýtt albúm" }));
+          const field = await canvas.findByLabelText("Heiti nýs albúms");
+          await userEvent.type(field, "uppáhalds leikir {Enter}");
+          await expect(await canvas.findByRole("alert")).toHaveTextContent(
+            "Þú átt þegar albúm sem heitir „Uppáhalds leikir“."
+          );
+          await expect(field).toHaveAttribute("aria-invalid", "true");
+          await userEvent.clear(field);
+          await userEvent.type(field, "Haustfundir{Enter}");
+          await expect(await canvas.findByText("„Haustfundir“ er tómt.")).toBeVisible();
+        });
+        await step("rename", async () => {
+          await albumAction(canvas, look, "Haustfundir", "Endurnefna");
+          const field = await canvas.findByLabelText("Nýtt heiti á Haustfundir");
+          await userEvent.clear(field);
+          await userEvent.type(field, "Haustfundir 2026{Enter}");
+          await expect(await canvas.findByText("„Haustfundir 2026“ er tómt.")).toBeVisible();
+        });
+        await step("delete, then Afturkalla", async () => {
+          await albumAction(canvas, look, "Haustfundir 2026", "Eyða albúmi");
+          await expect(await canvas.findByText("Albúmi eytt: Haustfundir 2026.")).toBeVisible();
+          await userEvent.click(canvas.getByRole("button", { name: "Afturkalla" }));
+          await expect(
+            await canvas.findByText("Albúmið Haustfundir 2026 er komið aftur.")
+          ).toBeVisible();
+        });
       },
     } satisfies Story,
     phone: {
@@ -253,8 +296,12 @@ function storiesFor(look: BlockPaletteLook, name: string) {
         </Rail>
       ),
       play: async ({ canvasElement }) => {
-        const canvas = within(railOf(canvasElement));
-        for (const button of canvas.getAllByRole("button", { name: "Bæta við" }).slice(0, 4)) {
+        const canvas = railOf(canvasElement);
+        const targets = [
+          ...canvas.getAllByRole("button", { name: "Bæta við" }).slice(0, 2),
+          ...canvas.getAllByRole("button", { name: /^Setja í albúm/ }).slice(0, 2),
+        ];
+        for (const button of targets) {
           const box = button.getBoundingClientRect();
           await expect(box.height).toBeGreaterThanOrEqual(44);
           await expect(box.width).toBeGreaterThanOrEqual(44);
@@ -270,77 +317,130 @@ function storiesFor(look: BlockPaletteLook, name: string) {
   };
 }
 
-const icons = storiesFor("merki", "A · Icons");
-export const Icons: Story = icons.default;
-export const IconsFiltered: Story = icons.filtered;
-export const IconsNoResults: Story = icons.noResults;
-export const IconsNoFundur: Story = icons.noFundur;
-export const IconsLongTitles: Story = icons.long;
-export const IconsPhone: Story = icons.phone;
-export const IconsDark: Story = icons.dark;
+const folders = storiesFor("mappa", "C1 · Folder list");
+export const FolderList: Story = folders.default;
+export const FolderListManyAlbums: Story = folders.many;
+export const FolderListEmptyAlbum: Story = folders.empty;
+export const FolderListCreateAlbum: Story = folders.create;
+export const FolderListPhone: Story = folders.phone;
+export const FolderListDark: Story = folders.dark;
 
-const minimal = storiesFor("listi", "B · Minimal list");
-export const Minimal: Story = minimal.default;
-export const MinimalFiltered: Story = minimal.filtered;
-export const MinimalNoResults: Story = minimal.noResults;
-export const MinimalNoFundur: Story = minimal.noFundur;
-export const MinimalLongTitles: Story = minimal.long;
-export const MinimalPhone: Story = minimal.phone;
-export const MinimalDark: Story = minimal.dark;
+const covers = storiesFor("kapur", "C2 · Album covers");
+export const AlbumCovers: Story = covers.default;
+export const AlbumCoversManyAlbums: Story = covers.many;
+export const AlbumCoversEmptyAlbum: Story = covers.empty;
+export const AlbumCoversCreateAlbum: Story = covers.create;
+export const AlbumCoversPhone: Story = covers.phone;
+export const AlbumCoversDark: Story = covers.dark;
 
-/** B's details live behind the title: one press opens them, the next closes them. */
-export const MinimalExpand: Story = {
-  name: "B · Minimal list — expand",
-  args: { look: "listi" },
+const chips = storiesFor("flogar", "C3 · Chips + Öll albúm…");
+export const Chips: Story = chips.default;
+export const ChipsManyAlbums: Story = chips.many;
+export const ChipsEmptyAlbum: Story = chips.empty;
+export const ChipsCreateAlbum: Story = chips.create;
+export const ChipsPhone: Story = chips.phone;
+export const ChipsDark: Story = chips.dark;
+
+const tabs = storiesFor("tre", "C4 · Tabs");
+export const Tabs: Story = tabs.default;
+export const TabsManyAlbums: Story = tabs.many;
+export const TabsEmptyAlbum: Story = tabs.empty;
+export const TabsCreateAlbum: Story = tabs.create;
+export const TabsPhone: Story = tabs.phone;
+export const TabsDark: Story = tabs.dark;
+
+/** C4: the albums reorder with the arrow keys on their handle (and by dragging it). */
+export const TabsReorder: Story = {
+  name: "C4 · Tabs — reorder",
+  args: { look: "tre" },
   render: (a) => (
     <Rail>
       <BlockPaletteLab {...a} />
     </Rail>
   ),
   play: async ({ canvasElement }) => {
-    const r = railOf(canvasElement);
-    const item = itemOf(r, "Eldamennska á prímus");
-    const summary = within(item).getByRole("button", { name: /Eldamennska á prímus/ });
-    await expect(summary).toHaveAttribute("aria-expanded", "false");
-    await userEvent.click(summary);
-    await expect(summary).toHaveAttribute("aria-expanded", "true");
-    await expect(within(item).getByText("Prímus og eldsneyti")).toBeVisible();
-    await expect(within(item).getByText(/Vantaði annan prímus/)).toBeVisible();
+    const canvas = railOf(canvasElement);
+    await userEvent.click(canvas.getByRole("tab", { name: "Mitt" }));
+    const handle = canvas.getByRole("button", { name: "Færa Rigningardagar, sæti 2 af 5" });
+    handle.focus();
+    await userEvent.keyboard("{ArrowUp}");
+    await expect(await canvas.findByText("Rigningardagar fært í sæti 1 af 5.")).toBeVisible();
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "Færa Rigningardagar, sæti 1 af 5" })).toHaveFocus()
+    );
   },
 };
 
-const cards = storiesFor("spjold", "C · Card grid");
-export const Cards: Story = cards.default;
-export const CardsFiltered: Story = cards.filtered;
-export const CardsNoResults: Story = cards.noResults;
-export const CardsNoFundur: Story = cards.noFundur;
-export const CardsLongTitles: Story = cards.long;
-export const CardsPhone: Story = cards.phone;
-export const CardsDark: Story = cards.dark;
+/* ── The card's "Setja í albúm…" ── */
 
-const sections = storiesFor("hlutar", "D · By section");
-export const Sections: Story = sections.default;
-export const SectionsFiltered: Story = sections.filtered;
-export const SectionsNoResults: Story = sections.noResults;
-export const SectionsNoFundur: Story = sections.noFundur;
-export const SectionsLongTitles: Story = sections.long;
-export const SectionsPhone: Story = sections.phone;
-export const SectionsDark: Story = sections.dark;
+/** The picker lists every album, ticks the ones the block is in, and can start a new one. */
+export const PutInAlbum: Story = {
+  name: "Setja í albúm",
+  args: { look: "mappa" },
+  render: (a) => (
+    <Rail>
+      <BlockPaletteLab {...a} />
+    </Rail>
+  ),
+  play: async ({ canvasElement, step }) => {
+    const canvas = railOf(canvasElement);
+    const card = cardOf(canvas, "Kötturinn og músin");
+    await step("shows where the block already is", async () => {
+      await userEvent.click(
+        within(card).getByRole("button", { name: "Setja í albúm…, í 2 albúmum" })
+      );
+      const picker = within(
+        await canvas.findByRole("dialog", { name: "Setja Kötturinn og músin í albúm" })
+      );
+      await expect(picker.getByRole("checkbox", { name: "Uppáhalds leikir" })).toBeChecked();
+      await expect(picker.getByRole("checkbox", { name: "Rigningardagar" })).not.toBeChecked();
+    });
+    await step("ticking an album adds the block to it", async () => {
+      const picker = within(
+        canvas.getByRole("dialog", { name: "Setja Kötturinn og músin í albúm" })
+      );
+      await userEvent.click(picker.getByRole("checkbox", { name: "Rigningardagar" }));
+      await expect(picker.getByRole("checkbox", { name: "Rigningardagar" })).toBeChecked();
+      await expect(
+        canvas.getByRole("button", { name: /^Rigningardagar.*4 blokkir/ })
+      ).toBeInTheDocument();
+    });
+    await step("a new album from the picker already holds the block", async () => {
+      const picker = within(
+        canvas.getByRole("dialog", { name: "Setja Kötturinn og músin í albúm" })
+      );
+      await userEvent.click(picker.getByRole("button", { name: "Nýtt albúm" }));
+      await userEvent.type(picker.getByLabelText("Heiti nýs albúms"), "Prófa næst{Enter}");
+      await expect(await picker.findByRole("checkbox", { name: "Prófa næst" })).toBeChecked();
+    });
+    await step("Escape closes it and focus goes back to the card", async () => {
+      await userEvent.keyboard("{Escape}");
+      await waitFor(() =>
+        expect(
+          within(card).getByRole("button", { name: "Setja í albúm…, í 4 albúmum" })
+        ).toHaveFocus()
+      );
+    });
+  },
+};
 
 /* ── Reference ── */
 
-/** Every type and theme icon, on the tint it gets in the rail, with why that picture. */
+/** Every type and theme icon, on the tint it gets on a card, with why that picture. */
 export const IconMapping: Story = {
   name: "Icon mapping",
   render: () => <IconMappingSheet />,
 };
 
-/** One direction, with controls. Changing a control remounts it. */
+/** One variation, with controls. Changing a control remounts it. */
 export const Playground: Story = {
   name: "Playground",
   render: (a) => (
     <Rail>
-      <BlockPaletteLab key={JSON.stringify({ ...a, blocks: undefined })} {...a} />
+      <BlockPaletteLab
+        key={JSON.stringify({ ...a, blocks: undefined, albums: undefined })}
+        {...a}
+      />
     </Rail>
   ),
 };

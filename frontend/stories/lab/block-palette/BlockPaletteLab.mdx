@@ -5,222 +5,242 @@ import { Meta } from "@storybook/addon-docs/blocks";
 # BlockPalette lab
 
 The BlockPalette is the dagskrárbankinn rail on the left of the Vinnubekkur, where a leader picks
-blocks for a fundur. This lab asks two questions. What should each block show? And how should the
-list be organised?
+blocks for a fundur. The shell is fixed: collections top left, blocks below them, the plan in the
+main body, all in PlanShell's 296px column.
+
+**State, 2026-10-19:** C · Card grid was picked. A Icons, B Minimal list and D By section have
+been removed. This round compares four ways to lay out the collections area (top left) once it
+holds the leader's own **albums**, with C's cards below.
+
+Stories: **Lab → BlockPalette → Directions**. _Comparison_ shows the current rail first, then C1–C4.
+Each variation has a default (in the shell, beside the bench), many albums, empty album, create
+album (with a duplicate name, rename, and delete with Afturkalla), phone and dark. _Setja í albúm_
+tests the card's picker, _C4 · Tabs — reorder_ the keyboard reorder, _Icon mapping_ is the icon
+reference, and _Playground_ has controls.
+
+## Why C · Card grid
+
+- **The picture does the telling-apart.** A 64px tile (the block's image, or its theme's icon on
+  a tint of its type) is big enough to read, so the leader scans by picture before reading.
+- **It's for browsing.** A leader opens the rail most often not knowing yet what they want. Cards
+  show enough to judge without opening anything.
+- **It suits albums.** A grid of pictures already looks like an album, so a collection that's
+  "ours" feels like a place, not a filter.
+
+### What changed on the card
+
+- **No side stripe.** The coloured edge was decoration standing in for meaning. The type now
+  shows as an icon and its word ("Leikur", with dice), and as the tint behind the picture. The
+  card's border is neutral.
+- **The minutes sit on the picture**, bottom right, like the length on a video thumbnail. It's
+  read with the picture and saves a line.
+- **The title wraps and hyphenates** (`lang="is"`, `hyphens: auto`). It never truncates, because
+  the end of an Icelandic title is often what tells two blocks apart.
+- **Badges with icons:** "Þegar á fundinum" (a tick) and "Endurmat fylgir" (a note). They sit on a
+  neutral tint, never coloured.
+- **"Bæta við" plus a bookmark button** ("Setja í albúm…"). Both are 44px. The bookmark is filled
+  when the block is in an album, and its accessible name says how many ("í 2 albúmum").
+- **The picture is the drag handle**, marked with a grip. It's the biggest thing on the card,
+  and "Bæta við" stays a plain click.
+- **The six type chips became one select** ("Allar tegundir"), beside the search. The chips took
+  two rows the cards needed once the collections grew.
+
+## Albums
+
+An **album** is a named list of blocks the leader keeps for a reason of their own: "Uppáhalds
+leikir", "Rigningardagar", "Útilega haust", "Fyrir Drekaskáta". It holds **references, not
+copies**: editing a block in the bank changes it in every album, and a block can be in several.
+
+How albums differ from the built-in sources:
+
+- **Sources say where a block comes from.** They are fixed and can't be edited. _Allt_ is the whole
+  bank. _Félagið_ is what's shared in the félag. _Færnimerki_ is the badge programme. _Sveitin mín_
+  is what the sveit made itself.
+- **Albums say what a block is for.** They are made, named, ordered and deleted by the leader. A
+  Félagið block and a Sveitin mín block can sit side by side in "Rigningardagar".
+- **Sveitin mín stays a source.** It's authorship, not curation, so it sits with the albums under
+  "Mitt" (C1, C4) but can't be renamed or deleted.
+
+### Personal or shared with the sveit
+
+The proposal is two owners:
+
+- **Personal** (owned by a user): the default. "Mín uppáhalds" belongs to one foringi, and nobody
+  else needs to see it.
+- **Shared with the sveit** (owned by the workspace): every foringi in the sveit sees it and can add
+  to it. That's the natural home for "Rigningardagar" or "Útilega haust", which the whole team
+  builds up. It's marked with a people icon and "deilt með sveitinni" for screen readers.
+
+A new album is personal. Sharing it is one deliberate step (a later "Deila með sveitinni"
+action), never a side effect. Who may edit a shared album follows the workspace role: an
+editor or above can add and remove blocks, and only the album's creator or an admin can rename
+or delete it.
+
+## The four variations
+
+All four share the same album behaviour:
+
+- **Create:** "+ Nýtt albúm" opens an inline name field. Enter creates the album and selects it,
+  and Escape cancels. A duplicate name (trimmed, any case) is refused with "Þú átt þegar albúm sem
+  heitir „…“", announced, and the typed text is kept. The limit is 60 characters.
+- **Rename:** inline, with the same rules.
+- **Delete:** at once, with no dialog, and "Afturkalla" for 10 seconds (rule 5: reversible acts
+  don't confirm).
+- **Add a block from its card:** the bookmark opens "Setja í albúm", with every album as a ticked
+  or unticked checkbox and "+ Nýtt albúm" (which creates the album with the block already in it).
+- **Empty album:** "„Jólafundur“ er tómt.", how to fill it, and "Sýna allan bankann".
+- **Counts** go through `countIs`: "3 blokkir", "1 blokk", "14 albúm".
+- **Feedback:** every change is said once in the rail's live region (rule 4).
+- **Popovers** use the native `popover` attribute, so they're never clipped by the scrolling
+  list. Escape closes them, and focus goes back to the button that opened them.
+- **Selection** is a toggle button with `aria-pressed`, as in the current rail. A listbox would
+  forbid the "…" button inside each row.
+
+### C1 · Folder list: everything in view
+
+**The story.** Two labelled groups, _Bankinn_ (Allt, Félagið, Færnimerki) and _Mitt_ (Sveitin
+mín, then the albums). One row per collection, with an icon, the name and "3 blokkir".
+
+**Hierarchy.** Group → collection name → count. The "…" (Endurnefna, Eyða albúmi) is quiet at the
+row's end. "+ Nýtt albúm" sits on the _Mitt_ heading.
+
+**Why.** It's closest to the current rail, which the user likes, and the counts answer "is there
+anything in it?" before a press. Only _Mitt_ scrolls, because the bank's three rows never grow
+and the albums do.
+
+**Trade-offs.** It's the tallest: at 44px a row, three to four albums show before _Mitt_ scrolls,
+and the area takes almost half the rail. Twelve albums means a lot of scrolling in a small box.
+
+### C2 · Album covers: albums as photo albums
+
+**The story.** The sources are a compact row of four tabs with icons. The albums are covers: a
+2 × 2 mosaic of the first four blocks inside, or the album's icon while it's empty. Three
+across, with the name and count under each.
 
-The shell stays as it is, because the user likes it: collections top left, blocks below them, the
-plan in the main body. Every direction keeps the same split, the same 296px column, "Bæta við",
-dragging, the search and the collections.
-
-Stories: **Lab → BlockPalette → Directions**. _Comparison_ shows the current rail first. Each
-direction then has a default (in the shell, beside the bench), filtered, no results, no fundur
-selected, long titles, phone and dark. _Icon mapping_ is the reference sheet for A, and
-_Playground_ has controls.
-
-## What the leader is deciding
-
-A leader at the rail is trying to fill a gap in a fundur. They are asking, roughly in this order:
-
-1. **Is it one of ours?** Something the sveit has run before, or something new to read first?
-2. **Does it fit the gap?** The right part of the fundur (setning, verkefni, slit) and the
-   minutes left.
-3. **Does it fit the theme and the scouts?** The fundur's theme, and the age group.
-4. **What does it cost me?** Equipment, prep time, and anything the last endurmat warned about.
-5. **Where will it go when I press the button?**
-
-Each element below is judged by which of these questions it answers, or by the noise it adds.
-
-## Inventory: the current rail
-
-- **Collections:** Allt, Sveitin mín, Félagið, Færnimerki — _Keep._ They answer question 1, whose material it is, before anything else. They are also the shell's top-left anchor. One catch: _Færnimerki_ is a different axis (a kind of programme, not who made it), so a færnimerki block made by the sveit sits in two collections. The hints ("Það sem við höfum búið til") help the first time and are noise after that, so B and C drop them.
-
-- **Search** — _Keep, and widen._ A leader often knows what they want ("hnútar"). Today it searches the title and theme only, while the block's equipment (`needs`) is in the data but can't be searched or seen. The field is under 44px and 14px, so iOS zooms when it's tapped (rule 8). All directions make it 44px, 16px, with an icon, a clear button and a result count read out politely ("6 blokkir passa").
-
-- **Type chips:** ALLT, DAGSKRÁ, LEIKUR, SETNING, SLIT — _Keep in A–C; replaced in D._ They answer the first half of question 2 ("I need a slit"). Three problems: **Endurmat is missing**, so "Endurmat foringja" is only reachable under ALLT. The uppercase overline is about 11px and the chips are under 44px. And the selected chip is white on `--sl-color-primary`, about 3.3:1, which fails AA. A–C add Endurmat, use sentence case, put a 44px button round a smaller pill, and fill the selected chip with `-text`. D removes them because the grouping does the same job.
-
-- **Drag handle** ⠿ — _Keep._ Drag is the fast path (SPEC §0). A handle of its own keeps "Bæta við" a plain click. At 40% opacity it is under 3:1 and nearly invisible, so the lab shows it at full secondary colour.
-
-- **Colour stripe** — _Keep only as a second signal._ It ties a bank item to its row on the sheet (same kind colour, SPEC §1), and that link is worth keeping. But it is the **only** place the type shows on an item, which is colour alone (WCAG 1.4.1). The colours have no learned meaning, and two of them are the same patrol colours that mean **age groups** on ProgramCard: a yellow stripe can read as "for drekaskátar". Every direction keeps the colour and adds a word or an icon.
-
-- **Title** — _Keep._ The thing being picked. It has to wrap, never truncate: Icelandic compounds are long and the end of a title is often what tells two blocks apart ("Hjálp í viðlögum (1/2)").
-
-- **Minutes** — _Keep._ Question 2: does it fit what's left. It's the second most used fact, so B keeps it beside the title when everything else is hidden.
-
-- **Theme** (the tag) — _Keep._ Question 3, and the spec is firm that a block brings its theme with it (B3, BlockLibraryItem: "þemalínan alltaf sýnileg"). It's text only today; A gives it an icon so a column of blocks can be scanned by topic.
-
-- **"notað N×"** — _Keep, lower down._ Question 1 again, as trust: 31 times is a tradition, once means read it first. It's the cheapest useful signal, but it's lower priority than minutes and theme. "12×" doesn't go through `countIs` (rule 2). The lab says "notað 12 sinnum" / "notað 31 sinni". B moves it into the hover line and the details.
-
-- **"Bæta við"** — _Keep._ The non-drag path, required by SPEC §0, and the keyboard path. It's about 22px tall with a fine pointer, under the 44px target. Disabled, it fades to 40% and is hard to read. The reason is visible text above the list (good, rule 9), but nothing links it to the buttons. The lab makes it 44px, outlined in `-text`, legible when disabled, and connected to the reason with `aria-describedby`.
-
-- **"Búa til nýja blokk… / Kemur síðar"** — _Keep for now; question it._ Rule 9 allows a feature that isn't built to show if it says "Kemur síðar", and sc-148 is next in the spec. But it takes about 68px of a crowded rail on every screen for something no one can do. If sc-148 isn't close, removing it is the better fit for rule 9 ("absent or marked").
-
-### Missing, and whether it should come
-
-- **Where "Bæta við" adds to** — _Add (all directions)._ Question 5, and the biggest gap. "Bæta við" adds to the _active_ fundur. Until a sheet is touched, that's the first fundur in the data, which is a **past** fundur scrolled out of view above the fold marker (see PlanBench › WithBank). Nothing on the rail says so. Every direction shows "Bætist við: Flokksfundur Refa" above the list.
-
-- **Already on this fundur** — _Add (all directions)._ It's in the spec (BlockLibraryItem, "Þegar á fundinum") and stops a double add. The lab shows it as a small badge. The button stays enabled, because running something twice can be on purpose.
-
-- **Endurmat came with it** — _Add (all directions)._ B3: a reused block should bring what the sveit learned. An "Endurmat fylgir" badge says there's a warning to read. B shows the text itself in the details.
-
-- **Age group fit** — _Add as a filter, later._ The bank already knows it (ProgramCard's age badges), and a rekka block in a drekaskáta fundur is wrong. A sveit is mostly one age band, though, so a badge on every item would be the same word fifty times. It belongs as a default filter set from the sveit, not per item. For now it shows in B's details.
-
-- **Prep time** — _Details only._ It matters when the fundur is tonight. Most blocks don't have it, so a slot for it on every item is noise. B's details show it.
-
-- **Equipment** (`needs`) — _Searchable, and in details._ It's in the data and hidden today. Searching "áttavit" should find the blocks that need compasses. B's details list it.
-
-- **Participants** — _Leave out._ The sveit's size doesn't change between blocks, so it rarely decides anything. Add it only if blocks get real minimums (team games).
-
-- **Result count** — _Add._ A screen reader can't tell that a filter did anything without it (PaletteSearch: "Niðurstöðutalan er lesin upp"). It's also a cheap visible check that the filter took.
-
-- **A next step when nothing matches** — _Add._ PaletteEmptyState: an empty state always has the next action. "Hreinsa leit og síur" resets the search, the collection and the type in one press.
-
-## The directions
-
-### A · Icons: tell blocks apart before you read
-
-**The story.** Every block carries a picture: its own image if it has one, or its theme's icon on
-a tint of its type. A leader looking for "something outdoors" sees the tents before reading a
-word.
-
-**Hierarchy.** Picture → title → type (icon and word), minutes, theme → how often it's been used and
-the badges, with "Bæta við" beside them.
-
-**Why it looks that way.** The 40px tile sits where the eye starts on each row, so it's the first
-filter. The **theme** gets the big picture because topic is what leaders scan for. The **type**
-is about where the block goes, so it rides inline with its word, where it's read with the
-minutes. The tile keeps the type's colour as a tint and a 1px ring, so the link to the sheet's
-stripe survives without colour doing the work alone.
-
-**Drops / adds.** Adds the type as a word and an icon, the theme icon, the Endurmat chip, and the
-badges. Drops nothing. The collection hints stay, because A is the "explain everything" direction.
-
-**Trade-offs.** It's the tallest row (about 100px), so about three blocks show in a 44rem rail against six
-today. The type chips wrap to two rows. An icon set has to be kept up as themes are
-added, and an unmapped theme falls back to neutral shapes instead of a guess. Photos at 40px
-rarely read, so they help only when the image is clear.
-
-### B · Minimal list: the fastest path for someone who knows the bank
-
-**The story.** Title and minutes, nothing else, so a leader who knows the bank finds and adds in
-one pass. Everything else is one hover, one focus or one press away.
-
-**Hierarchy.** Title → minutes → "Bæta við". On hover or focus, one line with the type, theme and
-use count. On expand, everything: type, theme, age, equipment, prep, use count, the last endurmat,
-and whether it's on the fundur.
-
-**Why it looks that way.** A 44px row with the title as the button that opens the details.
-About twice as many blocks fit as in A, and close to today's six. The collection hints go too, so the list starts
-higher. The colour stripe stays as the only type cue in the closed row. That's acceptable here
-because the type is in the peek and the details as a word, and because the chips filter by type.
-
-**Drops / adds.** Drops theme, use count and badges from the closed row. Adds the expand with
-every field the bank has, including the ones no other direction shows (age, equipment, prep, the
-endurmat text).
-
-**Trade-offs.** It's the worst for browsing: a leader who doesn't know what they want gets titles
-only. The hover line is information only, so touch loses it, but the expand covers it (rule 8 is
-about actions). The theme, which the spec wants always visible, is hidden in the closed row. That's
-the cost of the speed, and the reason this is a direction to test, not a default.
-
-### C · Card grid: browse when you don't know yet
-
-**The story.** Two columns of small cards with a picture, like a smaller version of the bank's
-ProgramCard grid. For the evening a leader opens the rail looking for an idea.
-
-**Hierarchy.** Picture → title → minutes and type → use count and badges → a full-width "Bæta
-við".
-
-**Why it looks that way.** At 64px a picture finally reads, so C is where images earn their place.
-The picture is also the **drag handle**, the biggest thing on the card and the easiest to grab.
-The collections become a 2 × 2 grid to echo the cards and save three lines. The type's colour is
-the card's top edge.
-
-**Drops / adds.** Drops the theme as text (the icon carries it) and the collection hints. Adds the
-picture and a full-width button.
-
-**Trade-offs.** At 130px a card wraps long titles into four or five lines (see _long titles_), and
-the two columns go out of step. Only about four cards fit above the fold, two of them cut off. It's the least like the
-sheet, so less of what a leader sees in the bank carries over to the row they'll get.
-
-### D · By section: group by where it goes in the fundur
-
-**The story.** Blocks grouped by the part of the fundur they fit: **Setning**, **Verkefni fundar**,
-**Slit**. These are the sheet's own section names, so the bank is laid out like the fundur it fills.
-
-**Hierarchy.** Section → title → minutes and theme (plus the type word where two types share a
-section) → use count and badges → "Bæta við".
-
-**Why it looks that way.** The type chips answered "which part of the fundur?" one press at a time.
-The sections answer it at a glance and are always visible, so the chips go. Section headers stick
-while their list scrolls, can be collapsed, and give a count. In Setning every block is a setning,
-so the word would be noise. In Verkefni fundar (dagskrá and leikur) and Slit (slit and endurmat)
-it's shown.
-
-**Drops / adds.** Drops the type chips. Adds section headers with counts and collapse. Endurmat
-finds its place under Slit, which is where it goes on the sheet.
-
-**Trade-offs.** The Verkefni fundar section holds most of the bank, so the grouping helps least
-where the list is longest. There's no way to see only the leikir without the dagskrá. If that
-matters, a chip row inside that one section could bring it back. It's the most coupled to the
-sheet's structure, which is good while the sections stay fixed.
-
-## Icons: the mapping
-
-See the _Icon mapping_ story for every icon on its tint.
-
-**Type** (when it runs): Setning `Sunrise` · Dagskrá `BookOpen` · Leikur `Dices` · Slit `Moon` ·
-Endurmat `MessagesSquare` · Annað (custom) `Puzzle`.
-
-**Theme** (what it's about): Útilíf `Tent` · Ratleikni `Compass` · Hreyfing `Footprints` ·
-Hefðir `Flag` · Umhyggja `Heart` · Matur `Flame` · Endurmat `MessagesSquare` · any other theme
-`Shapes` (the fallback).
-
-- **Slit is a moon, not a sunset.** Lucide's `Sunset` is `Sunrise` mirrored, and the two can't
-  be told apart at 16px.
-- **Hreyfing is footprints.** Lucide has no running figure, and footprints read as "on foot".
-- **Endurmat** uses the same icon as type and as theme, because an endurmat block's theme is the
-  endurmat.
-- An unknown theme gets neutral shapes. No icon is better than a misleading one, and the theme
-  name still shows as text.
-
-### Why icons, and not colour alone
-
-- **WCAG 1.4.1.** Colour can't be the only carrier of meaning. Today the type is only a 3px
-  stripe.
-- **The colours already mean something else.** The stripe uses patrol colours, and on ProgramCard
-  the same colours mean **age groups**. The primary and secondary greens are close enough to look
-  the same to many people, and the dark theme moves every tint.
-- **Colour has no meaning of its own.** Yellow has to be learned as "setning". A sunrise doesn't.
-- **Shape survives greyscale**, print, a sunlit phone screen and colour blindness.
-- **Colour stays, as a second signal.** It's the tile's tint and ring, the card's top edge, and
-  the row stripe. It ties a bank item to its row on the sheet, but it doesn't have to carry the
-  meaning alone.
-
-### Images
-
-An item with an image shows it in the tile, cropped square, with the type's ring. Every other
-item gets its theme icon. In the lab, three blocks have stand-in SVG pictures (`thumbs/`). In the
-real bank they'd come from the item's image, as on ProgramCard. At 40px (A) a photo is a hint at
-best. At 64px (C) it starts to read. A mix of photos and icons looks uneven, which is another
-reason icons should be the default and images the exception.
-
-## Rules every direction follows
-
-- "Bæta við" and dragging from the handle, both dispatching the bench's own intents
-  (`blockAsLidur`, `dragId.library`), so they behave as in the real rail.
-- Search and the four collections, in the same place.
-- With no fundur selected, every "Bæta við" is disabled, and the reason is visible text above the
-  list ("Veldu fund á bekknum…"), linked with `aria-describedby` (rule 9). The list becomes
-  focusable then, so it can still be scrolled with the keyboard.
-- 44px targets everywhere (`--bp-target`), not only on coarse pointers, and a visible 2px focus
-  ring.
-- `--sl-*` tokens only (`npm run check:tokens` is clean). Filled and outlined controls use the
-  `-text` tier, so they pass AA in light, dark and patrol.
-- Counts go through `countIs`: "13 blokkir", "notað 31 sinni".
-- Transitions collapse to 1ms under `prefers-reduced-motion`.
-
-## Lining up with the FundurSheet lab
-
-The sheet lab (Lab → FundurSheet) keeps the kind stripe on rows and the section names Setning /
-Verkefni fundar / Slit. All four directions use the same kind colours. D uses the same sections in
-the same order, so a block moves from a bank section to the sheet section with the same name.
+**Hierarchy.** Cover picture → name → count. The selected album's actions (Endurnefna, Eyða
+albúmi) appear as words in a bar under the covers, because a cover is too small for a "…".
+
+**Why.** It makes the albums the thing you see. A mosaic tells "Útilega haust" (fire, tent) from
+"Rigningardagar" (flag, knots, heart) without reading, and it echoes the card grid below.
+
+**Trade-offs.** Names wrap at about 80px, so long names make tall covers. Six covers is the most
+that shows before scrolling. The actions are one step further away (select, then act), and the
+mosaic is only as good as the pictures in it.
+
+### C3 · Chips + "Öll albúm…": the most room for cards
+
+**The story.** One wrapping row of chips: the four sources, the first two albums in the leader's
+order, the selected album if it isn't one of them, and "Öll albúm… +N". The panel holds every album
+with rename, delete and create.
+
+**Hierarchy.** What you use most is one press away. The rest is two presses away, behind a count
+that says how many.
+
+**Why.** It's the smallest collections area (about three chip rows, against nearly half the rail
+in C1), so the most cards show.
+
+**Trade-offs.** Most albums are out of sight, so they're easy to forget. Chip names truncate
+(the full name is in the panel and in the count line). Which albums get a chip has to be
+predictable: here it's the first ones in the leader's own order, not "most used", which would
+shuffle under the leader's hand.
+
+### C4 · Tabs: Bankinn · Mitt
+
+**The story.** Two real tabs (`tablist`, arrow keys, Home and End). _Bankinn_ lists Allt, Félagið
+and Færnimerki. _Mitt_ lists Sveitin mín and the albums, in an order the leader sets by dragging
+the handle or pressing ↑ ↓ on it ("Rigningardagar fært í sæti 1 af 5").
+
+**Hierarchy.** Whose (tab) → which collection → count.
+
+**Why.** It splits "find something in the bank" from "go to my things", which are two different
+moods. Each panel is shorter than C1's two groups together, and the order of the albums is the
+leader's own.
+
+**Trade-offs.** It's one more press to switch between a source and an album. The selected
+collection can sit in the tab that isn't showing (the count line still names it). Reorder adds a
+handle to every row, and with it a third target per row.
+
+## The data it needs
+
+Nothing here exists in the API yet. Favourites are hidden behind `FAVOURITES_ENABLED` (off), and
+**sc-620** ("Build real favourites: backend table + endpoints, 'Mappan mín' in the sidebar") is
+where they get a backend. The proposal: albums **are** the favourites model, generalised.
+"Uppáhalds" is one album every user gets by default, and sc-620's _Mappan mín_ is the list of a
+user's albums. One model then serves the sidebar and the rail.
+
+### Tables
+
+**`album`**
+
+- `id`: uuid
+- `owner_user_id`: uuid, nullable. Set for a personal album.
+- `owner_workspace_id`: uuid, nullable. Set for an album shared with the sveit. Exactly one of the
+  two owners is set (a check constraint).
+- `name`: text, 1–60 characters. Unique per owner, case-insensitive (`lower(name)`), so the
+  duplicate error can come from the server too.
+- `icon`: text, one of a fixed set (`bookmark`, `star`, `cloud-rain`, `leaf`, `snowflake`, `flame`).
+- `position`: integer, the order in the owner's list.
+- `is_default`: bool. The one "Uppáhalds" album per user, which can't be deleted.
+- `created_by`, `created_at`, `updated_at`, and `deleted_at` (soft delete, `SoftDeleteMixin`).
+  Soft delete is what makes "Afturkalla" a restore rather than a re-create.
+
+**`album_item`**
+
+- `album_id`: fk, on delete cascade.
+- `content_id`: fk to `content` (Program, Event, Task), so a bank item of any kind can be put in an
+  album, not just a block.
+- `position`: integer, the order inside the album (C2's mosaic shows the first four).
+- `added_by`, `added_at`.
+- Primary key `(album_id, content_id)`: a block is in an album at most once.
+
+### Endpoints
+
+- `GET /albums?workspace_id=…`: the caller's own albums plus those shared in the workspace,
+  ordered by `position`, each with `item_count` and up to four `cover_items` (id, theme, kind,
+  image) for C2.
+- `POST /albums` with `{ name, icon?, workspace_id? }`: create. `workspace_id` makes it shared.
+  A duplicate name returns 409.
+- `PATCH /albums/{id}` with `{ name?, icon?, position? }`: rename or reorder. Reordering one
+  album shifts the others on the server.
+- `DELETE /albums/{id}`: soft delete. `POST /albums/{id}/restore` is "Afturkalla", within the
+  undo window.
+- `GET /albums/{id}/items`: the items, ordered.
+- `PUT /albums/{id}/items/{content_id}` / `DELETE …`: put a block in or take it out. Both are
+  idempotent, which suits a checkbox.
+- `GET /content/{id}/albums`: which of the caller's albums an item is in. This is what the card's
+  picker ticks, and it could be folded into the bank list as `album_ids` to save a request per card.
+
+**Permissions** follow `check_workspace_access`. A personal album is owner-only. A shared album
+can be read by any workspace member, its items changed by an editor or above, and renamed or
+deleted by its creator or a workspace admin.
+
+## Rules every variation follows
+
+- "Bæta við" and dragging from the picture, both through the bench's own intents
+  (`blockAsLidur`, `dragId.library`).
+- Search, type and the collections stay in the same place. The count line names the selected
+  collection: "Uppáhalds leikir: 3 blokkir".
+- With no fundur selected, "Bæta við" is disabled, and the reason is visible text linked with
+  `aria-describedby` (rule 9). "Setja í albúm…" still works, because albums don't need a fundur.
+- 44px targets everywhere, with a visible 2px focus ring. Inputs are 16px.
+- `--sl-*` tokens only. Filled controls use the `-text` tier, so they pass AA in light, dark and
+  patrol.
+- Transitions collapse to 1ms under `prefers-reduced-motion`, and the reorder animation is
+  switched off.
+
+## Icons
+
+See the _Icon mapping_ story. **Type:** Setning `Sunrise`, Dagskrá `BookOpen`, Leikur `Dices`,
+Slit `Moon`, Endurmat `MessagesSquare`, Annað `Puzzle`. **Theme:** Útilíf `Tent`, Ratleikni
+`Compass`, Hreyfing `Footprints`, Hefðir `Flag`, Umhyggja `Heart`, Matur `Flame`, Endurmat
+`MessagesSquare`, anything else `Shapes`.
+
+Sources and albums use their own icons (Library, Building2, Award, House for the sources; star,
+cloud, leaf, snowflake, flame and bookmark for albums), so a collection is never mistaken for a
+type or a theme. The one overlap is the flame, which is both the Matur theme and an album icon.
+It's acceptable because a theme icon only appears on a card and an album icon only in the
+collections area.
+
+Colour is never the only carrier: WCAG 1.4.1, the patrol colours already mean age groups, and
+shape survives greyscale and colour blindness. The type's colour survives only as the tint behind
+the picture.
