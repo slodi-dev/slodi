@@ -73,77 +73,77 @@
   --sl-primitive-sky-600: 205 89% 45%;
 
   /* Scout Patrol Primitives */
-  --sl-primitive-drekar-50: 48 67% 93%;
-  --sl-primitive-drekar-100: 48 67% 85%;
-  --sl-primitive-drekar-200: 48 67% 75%;
-  --sl-primitive-drekar-300: 48 67% 65%;
-  --sl-primitive-drekar-400: 48 69% 55%;
-  --sl-primitive-drekar-500: 48 77% 61%; /* Base drekar */
-  --sl-primitive-drekar-600: 48 69% 52%;
-  --sl-primitive-drekar-700: 48 69% 45%;
-  --sl-primitive-drekar-800: 48 69% 35%;
-  --sl-primitive-drekar-900: 48 69% 25%;
+  --sl-primitive-drekar-50: 48 92% 95%;
+  --sl-primitive-drekar-100: 48 92% 86.8%;
+  --sl-primitive-drekar-200: 48 92% 78.5%;
+  --sl-primitive-drekar-300: 48 92% 70.2%;
+  --sl-primitive-drekar-400: 48 92% 62%;
+  --sl-primitive-drekar-500: 48 92% 52%; /* Base drekar */
+  --sl-primitive-drekar-600: 48 92% 44.6%;
+  --sl-primitive-drekar-700: 48 92% 37.2%;
+  --sl-primitive-drekar-800: 48 92% 29.8%;
+  --sl-primitive-drekar-900: 48 92% 22.4%;
   --sl-primitive-drekar-on: 0 0% 10%;
 
-  --sl-primitive-falkar-50: 347 38% 95%;
-  --sl-primitive-falkar-100: 347 38% 85%;
-  --sl-primitive-falkar-200: 347 38% 75%;
-  --sl-primitive-falkar-300: 347 38% 65%;
-  --sl-primitive-falkar-400: 347 44% 55%;
-  --sl-primitive-falkar-500: 347 51% 57%; /* Base falkar */
-  --sl-primitive-falkar-600: 347 44% 47%;
-  --sl-primitive-falkar-700: 347 44% 40%;
-  --sl-primitive-falkar-800: 347 44% 30%;
-  --sl-primitive-falkar-900: 347 44% 20%;
-  --sl-primitive-falkar-on: 0 0% 100%;
+  --sl-primitive-falkar-50: 356 82% 95%;
+  --sl-primitive-falkar-100: 356 82% 89%;
+  --sl-primitive-falkar-200: 356 82% 83%;
+  --sl-primitive-falkar-300: 356 82% 77%;
+  --sl-primitive-falkar-400: 356 82% 71%;
+  --sl-primitive-falkar-500: 356 82% 61%; /* Base falkar */
+  --sl-primitive-falkar-600: 356 82% 51.8%;
+  --sl-primitive-falkar-700: 356 82% 42.6%;
+  --sl-primitive-falkar-800: 356 82% 33.4%;
+  --sl-primitive-falkar-900: 356 82% 24.2%;
+  --sl-primitive-falkar-on: 0 0% 10%;
 
-  --sl-primitive-drott-50: 168 43% 95%;
-  --sl-primitive-drott-100: 168 43% 85%;
-  --sl-primitive-drott-200: 168 43% 75%;
-  --sl-primitive-drott-300: 168 43% 65%;
-  --sl-primitive-drott-400: 168 45% 50%;
-  --sl-primitive-drott-500: 168 48% 42%; /* Base drott */
-  --sl-primitive-drott-600: 168 45% 35%;
-  --sl-primitive-drott-700: 168 45% 30%;
-  --sl-primitive-drott-800: 168 45% 22%;
-  --sl-primitive-drott-900: 168 45% 15%;
-  --sl-primitive-drott-on: 0 0% 100%;
+  --sl-primitive-drott-50: 134 70% 95%;
+  --sl-primitive-drott-100: 134 70% 86.8%;
+  --sl-primitive-drott-200: 134 70% 78.5%;
+  --sl-primitive-drott-300: 134 70% 70.2%;
+  --sl-primitive-drott-400: 134 70% 62%;
+  --sl-primitive-drott-500: 134 70% 52%; /* Base drott */
+  --sl-primitive-drott-600: 134 70% 44.6%;
+  --sl-primitive-drott-700: 134 70% 37.2%;
+  --sl-primitive-drott-800: 134 70% 29.8%;
+  --sl-primitive-drott-900: 134 70% 22.4%;
+  --sl-primitive-drott-on: 0 0% 10%;
 
-  --sl-primitive-rekkar-50: 177 60% 95%;
-  --sl-primitive-rekkar-100: 177 60% 85%;
-  --sl-primitive-rekkar-200: 177 60% 75%;
-  --sl-primitive-rekkar-300: 177 60% 65%;
-  --sl-primitive-rekkar-400: 177 58% 60%;
-  --sl-primitive-rekkar-500: 177 58% 59%; /* Base rekkar */
-  --sl-primitive-rekkar-600: 177 52% 52%;
-  --sl-primitive-rekkar-700: 177 52% 45%;
-  --sl-primitive-rekkar-800: 177 52% 35%;
-  --sl-primitive-rekkar-900: 177 52% 25%;
-  --sl-primitive-rekkar-on: 222 47% 11%;
+  --sl-primitive-rekkar-50: 212 88% 95%;
+  --sl-primitive-rekkar-100: 212 88% 87.5%;
+  --sl-primitive-rekkar-200: 212 88% 80%;
+  --sl-primitive-rekkar-300: 212 88% 72.5%;
+  --sl-primitive-rekkar-400: 212 88% 65%;
+  --sl-primitive-rekkar-500: 212 88% 55%; /* Base rekkar */
+  --sl-primitive-rekkar-600: 212 88% 47%;
+  --sl-primitive-rekkar-700: 212 88% 39%;
+  --sl-primitive-rekkar-800: 212 88% 31%;
+  --sl-primitive-rekkar-900: 212 88% 23%;
+  --sl-primitive-rekkar-on: 0 0% 10%;
 
-  --sl-primitive-rover-50: 28 60% 94%;
-  --sl-primitive-rover-100: 28 60% 85%;
-  --sl-primitive-rover-200: 28 60% 75%;
-  --sl-primitive-rover-300: 28 60% 65%;
-  --sl-primitive-rover-400: 28 65% 60%;
-  --sl-primitive-rover-500: 28 65% 59%; /* Base rover */
-  --sl-primitive-rover-600: 28 57% 51%;
-  --sl-primitive-rover-700: 28 57% 45%;
-  --sl-primitive-rover-800: 28 57% 35%;
-  --sl-primitive-rover-900: 28 57% 25%;
+  --sl-primitive-rover-50: 26 92% 95%;
+  --sl-primitive-rover-100: 26 92% 86.8%;
+  --sl-primitive-rover-200: 26 92% 78.5%;
+  --sl-primitive-rover-300: 26 92% 70.2%;
+  --sl-primitive-rover-400: 26 92% 62%;
+  --sl-primitive-rover-500: 26 92% 52%; /* Base rover */
+  --sl-primitive-rover-600: 26 92% 44.6%;
+  --sl-primitive-rover-700: 26 92% 37.2%;
+  --sl-primitive-rover-800: 26 92% 29.8%;
+  --sl-primitive-rover-900: 26 92% 22.4%;
   --sl-primitive-rover-on: 0 0% 10%;
 
-  --sl-primitive-adrir-50: 270 71% 96%;
-  --sl-primitive-adrir-100: 270 71% 88%;
-  --sl-primitive-adrir-200: 270 71% 78%;
-  --sl-primitive-adrir-300: 270 71% 70%;
-  --sl-primitive-adrir-400: 270 46% 65%;
-  --sl-primitive-adrir-500: 270 46% 64%; /* Base adrir */
-  --sl-primitive-adrir-600: 270 41% 56%;
-  --sl-primitive-adrir-700: 270 41% 48%;
-  --sl-primitive-adrir-800: 270 41% 38%;
-  --sl-primitive-adrir-900: 270 41% 28%;
-  --sl-primitive-adrir-on: 0 0% 100%;
+  --sl-primitive-adrir-50: 272 72% 95%;
+  --sl-primitive-adrir-100: 272 72% 90.1%;
+  --sl-primitive-adrir-200: 272 72% 85.2%;
+  --sl-primitive-adrir-300: 272 72% 80.4%;
+  --sl-primitive-adrir-400: 272 72% 75.5%;
+  --sl-primitive-adrir-500: 272 72% 65.5%; /* Base adrir */
+  --sl-primitive-adrir-600: 272 72% 55.4%;
+  --sl-primitive-adrir-700: 272 72% 45.3%;
+  --sl-primitive-adrir-800: 272 72% 35.2%;
+  --sl-primitive-adrir-900: 272 72% 25.1%;
+  --sl-primitive-adrir-on: 0 0% 10%;
 
   /* Semantic State Colors - Primitives */
   --sl-primitive-success-500: 142 50% 32%; /* Fresh green — same as green-500 */
@@ -441,43 +441,43 @@
   /* ===== PATROL COLORS (Semantic) ===== */
   --sl-color-patrol-drekar: var(--sl-primitive-drekar-500);
   --sl-color-patrol-drekar-foreground: var(--sl-primitive-drekar-on);
-  --sl-color-patrol-drekar-hover: var(--sl-primitive-drekar-600);
-  --sl-color-patrol-drekar-active: var(--sl-primitive-drekar-700);
+  --sl-color-patrol-drekar-hover: var(--sl-primitive-drekar-400);
+  --sl-color-patrol-drekar-active: var(--sl-primitive-drekar-300);
   --sl-color-patrol-drekar-subtle: var(--sl-primitive-drekar-50);
   --sl-color-patrol-drekar-muted: var(--sl-primitive-drekar-100);
 
-  --sl-color-patrol-falkar: var(--sl-primitive-falkar-600); /* -500 fails AA with white (sc-600) */
+  --sl-color-patrol-falkar: var(--sl-primitive-falkar-500);
   --sl-color-patrol-falkar-foreground: var(--sl-primitive-falkar-on);
-  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-700);
-  --sl-color-patrol-falkar-active: var(--sl-primitive-falkar-800);
+  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-400);
+  --sl-color-patrol-falkar-active: var(--sl-primitive-falkar-300);
   --sl-color-patrol-falkar-subtle: var(--sl-primitive-falkar-50);
   --sl-color-patrol-falkar-muted: var(--sl-primitive-falkar-100);
 
-  --sl-color-patrol-drott: var(--sl-primitive-drott-600); /* -500 fails AA with white (sc-600) */
+  --sl-color-patrol-drott: var(--sl-primitive-drott-500);
   --sl-color-patrol-drott-foreground: var(--sl-primitive-drott-on);
-  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-700);
-  --sl-color-patrol-drott-active: var(--sl-primitive-drott-800);
+  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-400);
+  --sl-color-patrol-drott-active: var(--sl-primitive-drott-300);
   --sl-color-patrol-drott-subtle: var(--sl-primitive-drott-50);
   --sl-color-patrol-drott-muted: var(--sl-primitive-drott-100);
 
   --sl-color-patrol-rekkar: var(--sl-primitive-rekkar-500);
   --sl-color-patrol-rekkar-foreground: var(--sl-primitive-rekkar-on);
-  --sl-color-patrol-rekkar-hover: var(--sl-primitive-rekkar-600);
-  --sl-color-patrol-rekkar-active: var(--sl-primitive-rekkar-700);
+  --sl-color-patrol-rekkar-hover: var(--sl-primitive-rekkar-400);
+  --sl-color-patrol-rekkar-active: var(--sl-primitive-rekkar-300);
   --sl-color-patrol-rekkar-subtle: var(--sl-primitive-rekkar-50);
   --sl-color-patrol-rekkar-muted: var(--sl-primitive-rekkar-100);
 
   --sl-color-patrol-rover: var(--sl-primitive-rover-500);
   --sl-color-patrol-rover-foreground: var(--sl-primitive-rover-on);
-  --sl-color-patrol-rover-hover: var(--sl-primitive-rover-600);
-  --sl-color-patrol-rover-active: var(--sl-primitive-rover-700);
+  --sl-color-patrol-rover-hover: var(--sl-primitive-rover-400);
+  --sl-color-patrol-rover-active: var(--sl-primitive-rover-300);
   --sl-color-patrol-rover-subtle: var(--sl-primitive-rover-50);
   --sl-color-patrol-rover-muted: var(--sl-primitive-rover-100);
 
-  --sl-color-patrol-adrir: var(--sl-primitive-adrir-600); /* -500 fails AA with white (sc-600) */
+  --sl-color-patrol-adrir: var(--sl-primitive-adrir-500);
   --sl-color-patrol-adrir-foreground: var(--sl-primitive-adrir-on);
-  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-700);
-  --sl-color-patrol-adrir-active: var(--sl-primitive-adrir-800);
+  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-400);
+  --sl-color-patrol-adrir-active: var(--sl-primitive-adrir-300);
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-50);
   --sl-color-patrol-adrir-muted: var(--sl-primitive-adrir-100);
 
@@ -888,13 +888,13 @@
   --sl-color-patrol-drekar-subtle: var(--sl-primitive-drekar-900);
 
   /* Same as light: lighter steps fail AA with white text (sc-600) */
-  --sl-color-patrol-falkar: var(--sl-primitive-falkar-600);
-  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-700);
+  --sl-color-patrol-falkar: var(--sl-primitive-falkar-400);
+  --sl-color-patrol-falkar-hover: var(--sl-primitive-falkar-300);
   --sl-color-patrol-falkar-subtle: var(--sl-primitive-falkar-900);
 
   /* Same as light: lighter steps fail AA with white text (sc-600) */
-  --sl-color-patrol-drott: var(--sl-primitive-drott-600);
-  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-700);
+  --sl-color-patrol-drott: var(--sl-primitive-drott-400);
+  --sl-color-patrol-drott-hover: var(--sl-primitive-drott-300);
   --sl-color-patrol-drott-subtle: var(--sl-primitive-drott-900);
 
   --sl-color-patrol-rekkar: var(--sl-primitive-rekkar-400);
@@ -906,8 +906,8 @@
   --sl-color-patrol-rover-subtle: var(--sl-primitive-rover-900);
 
   /* Same as light: lighter steps fail AA with white text (sc-600) */
-  --sl-color-patrol-adrir: var(--sl-primitive-adrir-600);
-  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-700);
+  --sl-color-patrol-adrir: var(--sl-primitive-adrir-400);
+  --sl-color-patrol-adrir-hover: var(--sl-primitive-adrir-300);
   --sl-color-patrol-adrir-subtle: var(--sl-primitive-adrir-900);
 
   /* ===== HEIÐURSORÐLA TILE COLORS (Dark) ===== */

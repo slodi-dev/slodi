@@ -87,15 +87,13 @@ function Sheet({ large }: { large?: boolean }) {
 const meta = {
   title: "Design system/Patrol badges",
   parameters: {
-    // Known violation: color-contrast on the Fálkar, Drótt and Aðrir badges —
-    // their -foreground on the -500 base is under 4.5:1 (sc-600). PR #180
-    // moves them to -600; once it is on main, drop this so the story fails on
-    // any patrol pair that slips under AA again.
-    a11y: { test: "todo" },
     docs: {
       description: {
         component:
           "The six patrol colours as badges: `.sl-bg-patrol-*` (base + `-foreground`), caption " +
+          "and body size. Six vivid hues (yellow, red, green, blue, orange, purple), each with " +
+          "a light- and a dark-mode shade and the same dark text in both (picked in Lab/PatrolBadges, " +
+          "2026-10-19). Every badge must pass AA; a failure fails CI. Shown at caption " +
           "and body size, with the text contrast measured in the current theme. AA asks 4.5:1 " +
           "for the caption badge. Picking a patrol in **Sveit** on the toolbar also swaps " +
           "`--sl-color-primary`; swatches and the hover/active ramps are on the Tokens page.",
