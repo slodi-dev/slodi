@@ -9,8 +9,8 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
  * Both panels are drawn on fixed light and dark surfaces, so they can be compared side by side
  * whatever the toolbar theme says.
  */
-/* Dróttskátar moved from teal (168°) to green and Rekkaskátar from teal (177°) to blue:
-   the two were 9° apart and read as the same colour (review 2026-10-19). */
+/* Six vivid, unmistakable colours (review 2026-10-19): Drekar yellow, Fálkar red, Drótt green,
+   Rekkar blue, Róver orange, Aðrir purple. */
 const meta = {
   title: "Lab/PatrolBadges",
   tags: ["skip-visual"],
@@ -20,42 +20,43 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 type Shades = { light: string; dark: string };
+type SetName = "ink" | "white" | "mixed";
 const PATROLS: { key: string; name: string; ink: Shades; white: Shades }[] = [
   {
     key: "drekar",
     name: "Drekaskátar",
-    ink: { light: "48 72% 39.5%", dark: "48 72% 53.5%" },
-    white: { light: "48 72% 28.5%", dark: "48 72% 31.5%" },
+    ink: { light: "48 92% 52%", dark: "48 92% 62%" },
+    white: { light: "48 92% 26.5%", dark: "48 92% 28.5%" },
   },
   {
     key: "falkar",
     name: "Fálkaskátar",
-    ink: { light: "347 52% 63.0%", dark: "347 52% 77.0%" },
-    white: { light: "347 52% 50.0%", dark: "347 52% 53.0%" },
+    ink: { light: "356 82% 61.0%", dark: "356 82% 71.0%" },
+    white: { light: "356 82% 47.5%", dark: "356 82% 49.5%" },
   },
   {
     key: "drott",
     name: "Dróttskátar",
-    ink: { light: "122 42% 45.0%", dark: "122 42% 59.0%" },
-    white: { light: "122 42% 33.5%", dark: "122 42% 36.5%" },
+    ink: { light: "134 70% 52%", dark: "134 70% 62%" },
+    white: { light: "134 70% 29.0%", dark: "134 70% 31.0%" },
   },
   {
     key: "rekkar",
     name: "Rekkaskátar",
-    ink: { light: "208 62% 55.0%", dark: "208 62% 69.0%" },
-    white: { light: "208 62% 42.5%", dark: "208 62% 45.5%" },
+    ink: { light: "212 88% 55.0%", dark: "212 88% 65.0%" },
+    white: { light: "212 88% 45.5%", dark: "212 88% 47.5%" },
   },
   {
     key: "rover",
     name: "Róverskátar",
-    ink: { light: "28 66% 49.5%", dark: "28 66% 63.5%" },
-    white: { light: "28 66% 37.5%", dark: "28 66% 40.5%" },
+    ink: { light: "26 92% 52%", dark: "26 92% 62%" },
+    white: { light: "26 92% 36.5%", dark: "26 92% 38.5%" },
   },
   {
     key: "adrir",
     name: "Aðrir",
-    ink: { light: "270 50% 66.0%", dark: "270 50% 80.0%" },
-    white: { light: "270 50% 54.0%", dark: "270 50% 57.0%" },
+    ink: { light: "272 72% 65.5%", dark: "272 72% 75.5%" },
+    white: { light: "272 72% 57.0%", dark: "272 72% 59.0%" },
   },
 ];
 
@@ -112,7 +113,13 @@ function Badge({ bg, fg, name }: { bg: string; fg: string; name: string }) {
   );
 }
 
-function Panel({ mode, set }: { mode: "light" | "dark"; set: "ink" | "white" }) {
+/** Set C is set B, except Drekar keeps a bright yellow with dark text. */
+function pick(p: (typeof PATROLS)[number], set: SetName, mode: "light" | "dark") {
+  if (set === "ink" || (set === "mixed" && p.key === "drekar")) return { bg: p.ink[mode], fg: INK };
+  return { bg: p.white[mode], fg: WHITE };
+}
+
+function Panel({ mode, set }: { mode: "light" | "dark"; set: SetName }) {
   return (
     <div
       style={{
@@ -136,13 +143,13 @@ function Panel({ mode, set }: { mode: "light" | "dark"; set: "ink" | "white" }) 
         {mode === "light" ? "Light" : "Dark"}
       </strong>
       {PATROLS.map((p) => (
-        <Badge key={p.key} bg={p[set][mode]} fg={set === "ink" ? INK : WHITE} name={p.name} />
+        <Badge key={p.key} {...pick(p, set, mode)} name={p.name} />
       ))}
     </div>
   );
 }
 
-function Set({ set, title, idea }: { set: "ink" | "white"; title: string; idea: string }) {
+function Set({ set, title, idea }: { set: SetName; title: string; idea: string }) {
   return (
     <section style={{ display: "grid", gap: "var(--sl-spacing-sm)" }}>
       <h3
@@ -175,13 +182,18 @@ export const Comparison: Story = {
     <div style={{ display: "grid", gap: "var(--sl-spacing-xl)", maxWidth: "52rem" }}>
       <Set
         set="ink"
-        title="A · Dark text everywhere (recommended)"
+        title="A · Dark text everywhere"
         idea="Every colour light enough for near-black text. In dark mode they get lighter and glow on the dark surface. Yellow stays yellow."
       />
       <Set
         set="white"
         title="B · White text everywhere"
-        idea="Every colour dark enough for white text. It passes, but Drekar turns olive and Rekkar nearly dark green: the identity colours are lost."
+        idea="Every colour dark enough for white text. Vivid, except yellow: white on a bright yellow can never reach AA, so Drekar turns mustard."
+      />
+      <Set
+        set="mixed"
+        title="C · White text, bright yellow with dark text"
+        idea="Set B, but Drekar keeps a bright yellow with dark text: the one exception to a single text colour."
       />
     </div>
   ),
@@ -197,15 +209,18 @@ export const Tokens: Story = {
         whiteSpace: "pre-wrap",
       }}
     >
-      {["ink", "white"]
+      {(["ink", "white", "mixed"] as const)
         .map((set) =>
           [
-            `/* ${set === "ink" ? "A · dark text" : "B · white text"} */`,
-            ...PATROLS.map((p) => {
-              const s = p[set as "ink" | "white"];
-              return `--sl-color-patrol-${p.key}: ${s.light};   /* dark: ${s.dark} */`;
+            `/* ${{ ink: "A · dark text", white: "B · white text", mixed: "C · white text, yellow with dark text" }[set]} */`,
+            ...PATROLS.flatMap((p) => {
+              const light = pick(p, set, "light");
+              const dark = pick(p, set, "dark");
+              return [
+                `--sl-color-patrol-${p.key}: ${light.bg};   /* dark: ${dark.bg} */`,
+                `--sl-color-patrol-${p.key}-foreground: ${light.fg};   /* same in both modes */`,
+              ];
             }),
-            `--sl-color-patrol-*-foreground: ${set === "ink" ? INK : WHITE};   /* same in both modes */`,
           ].join("\n")
         )
         .join("\n\n")}
