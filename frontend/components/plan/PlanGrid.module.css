@@ -1,0 +1,218 @@
+/*
+ * The Rist, per the v5 hi-fi on claude.ai/design.
+ *
+ * The design draws this as a CSS grid of divs. It is a real <table> here
+ * instead, for the reason PlanGrid.tsx sets out: spanning is the hard part, and
+ * rowSpan/colSpan already do it, while <th scope> gives screen readers the row
+ * and column context a div grid would have to rebuild by hand. The visual
+ * result is the same — fixed layout, sticky header, hairline rules.
+ */
+
+.vhead {
+  max-width: 1080px;
+  margin: 0 auto var(--sl-spacing-gap-md, 16px);
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.vhead h3 {
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+
+.eyebrow {
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.rist {
+  /* Fills the height the shell hands it, rather than capping at a guessed
+     fraction of the viewport — see PlanShell.module.css .viewHost. */
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-lg, 10px);
+  box-shadow: var(--sl-shadow-card);
+  overflow: hidden;
+}
+
+.scroll {
+  /* The sticky header needs a scroll container that is not the page; this is
+     it, and it is exactly as tall as the frame allows. */
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--sl-text-body-sm);
+}
+
+.caption {
+  /* Read by screen readers; the visible heading lives in the view header. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cornerHead,
+.patrolHead,
+.utilHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 6px 8px;
+  background: hsl(var(--sl-color-background-secondary));
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--sl-color-text-tertiary));
+  text-align: left;
+}
+
+.cornerHead {
+  width: 104px;
+}
+
+.utilHead:last-child {
+  border-right: 0;
+}
+
+.flokk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.flokk i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: hsl(var(--c));
+  flex-shrink: 0;
+}
+
+/*
+ * No `display: flex` on the <th> itself. Changing a table cell's display box
+ * drops its implicit `rowheader`/`cell` role from the accessibility tree, which
+ * would throw away exactly the row-and-column context this was built as a real
+ * table to get. The flex layout goes on an inner span instead.
+ */
+.weekHead {
+  padding: 6px 8px;
+  background: hsl(var(--sl-color-background-secondary));
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  text-align: left;
+}
+
+.weekHeadInner {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  justify-content: center;
+}
+
+.weekHead b {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.weekHead span {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-body, 400);
+  color: hsl(var(--sl-color-text-tertiary));
+  font-variant-numeric: tabular-nums;
+}
+
+.cell,
+.bandCell,
+.util {
+  padding: 6px 8px;
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-right: 1px solid hsl(var(--sl-color-border));
+  vertical-align: top;
+  min-width: 0;
+}
+
+.bandCell {
+  background: hsl(var(--sl-color-primary-subtle) / 0.5);
+}
+
+.util {
+  background: hsl(var(--sl-color-background-secondary) / 0.6);
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-secondary));
+  width: 156px;
+}
+
+.util:last-child {
+  border-right: 0;
+}
+
+.none {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.buy {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.buy i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: hsl(var(--sl-color-secondary));
+  flex-shrink: 0;
+}
+
+.swallowed {
+  margin: 6px 0 0;
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.empty {
+  max-width: 1080px;
+  margin: 0 auto;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+@media (max-width: 900px) {
+  .cornerHead {
+    width: 88px;
+  }
+
+  .util {
+    width: 130px;
+  }
+}

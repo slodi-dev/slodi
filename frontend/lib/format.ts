@@ -295,6 +295,25 @@ export function formatIcelandicDateTime(value: string | Date | null | undefined)
   return `${day} kl. ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
+/**
+ * `14. september` — day and month without the year, for a heading inside a
+ * season where the year is already known (a fundur on the bench).
+ */
+export function formatIcelandicDayMonth(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = toDate(value);
+  if (!date) return "";
+  return `${date.getDate()}. ${MONTHS_IS[date.getMonth()]}`;
+}
+
+/** `október 2026` — a month heading (the plan calendar and timeline). */
+export function formatIcelandicMonthYear(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const date = toDate(value);
+  if (!date) return "";
+  return `${MONTHS_IS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 /** `14. sept.` — for a list rail, where the year is noise and width is scarce. */
 export function formatIcelandicDateShort(value: string | Date | null | undefined): string {
   if (!value) return "";

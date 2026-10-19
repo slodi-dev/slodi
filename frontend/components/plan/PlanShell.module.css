@@ -1,0 +1,202 @@
+/*
+ * The v5 workbench frame.
+ *
+ * The window owns the height and only .cv scrolls, so the dagskrárbankinn stays
+ * pinned while the bench moves under it — see PlanShell.tsx on why that is
+ * structural rather than cosmetic.
+ */
+
+.wb {
+  position: relative;
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  /*
+   * Dashboard routes have no header above them — the app chrome is the left
+   * sidebar — so the frame takes the whole viewport. `dvh` rather than `vh`
+   * because mobile browsers count `vh` against the *largest* viewport, which
+   * puts the bottom of the bench under the address bar.
+   */
+  height: 100vh;
+  height: 100dvh;
+  min-height: 480px;
+  overflow: hidden;
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+/* ── masthead ──────────────────────────────────────────────── */
+
+.hd {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-md, 16px);
+  flex-wrap: wrap;
+  padding: 10px var(--sl-spacing-inset-md, 20px);
+  background: hsl(var(--sl-color-surface));
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.hdT {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+
+.eyebrow {
+  font-size: var(--sl-text-overline);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.hdActs {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm, 12px);
+}
+
+/* The segmented view switcher: one inset track, the active tab raised. */
+.views {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.vbtn {
+  padding: 4px 12px;
+  border: 0;
+  border-radius: var(--sl-radius-chip);
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.vbtn:hover {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.vbtn:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.vbtnOn {
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  box-shadow: var(--sl-shadow-card);
+}
+
+/* ── the canvas ────────────────────────────────────────────── */
+
+.bench {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.cv {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sl-spacing-inset-md, 20px) var(--sl-spacing-inset-md, 20px) 80px;
+  /* A column so a view that wants the remaining height can ask for it — the
+     Rist does, because its header is sticky and sticky needs a bounded box. */
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * The host every view mounts into.
+ *
+ * Bekkurinn stacks sheets and lets .cv scroll; the Rist instead fills what is
+ * left and scrolls inside itself, so its sticky column headers have something
+ * to stick to. Both need this to be a flex column that can shrink below its
+ * content — hence `min-height: 0`, without which a flex child refuses to
+ * shrink and the table simply overflows the frame.
+ */
+.viewHost {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.muted {
+  color: hsl(var(--sl-color-text-secondary));
+  margin: 0;
+}
+
+.notice,
+.error {
+  max-width: 700px;
+  margin: 0 auto;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card, 12px);
+  background: hsl(var(--sl-color-surface));
+  padding: var(--sl-spacing-lg, 24px);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.error {
+  border-color: hsl(var(--sl-color-error-text));
+  color: hsl(var(--sl-color-error-text));
+}
+
+.noticeTitle {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* The diagonal hatch behind everything the fixture drew, so a screenshot of the
+   grid itself — not just the banner — reads as unreal. */
+.hatched {
+  background-image: repeating-linear-gradient(
+    45deg,
+    hsl(var(--sl-color-warning) / 0.06) 0,
+    hsl(var(--sl-color-warning) / 0.06) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  border-radius: var(--sl-radius-card, 12px);
+}
+
+/* ── phone: the rail becomes a sheet ───────────────────────── */
+
+@media (max-width: 900px) {
+  .wb {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .cv {
+    overflow-y: visible;
+    padding: var(--sl-spacing-gap-sm, 12px) var(--sl-spacing-gap-sm, 12px) 40px;
+  }
+
+  .hdT {
+    flex: 1 1 100%;
+  }
+}

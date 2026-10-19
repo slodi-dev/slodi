@@ -1,0 +1,343 @@
+/* The dagskrárbankinn rail, from the v5 hi-fi's aside.src. */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.src {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: hsl(var(--sl-color-surface));
+  border-right: 1px solid hsl(var(--sl-color-border));
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.fol {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px var(--sl-spacing-inset-sm, 12px);
+  border: 0;
+  border-left: 3px solid transparent;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fol:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.fol:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+
+.folOn {
+  border-left-color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle) / 0.5);
+}
+
+.folL {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.folHint {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.hd {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: var(--sl-spacing-inset-sm, 12px);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.srch {
+  display: block;
+}
+
+.in {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-background-secondary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.in:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 2px 9px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-chip);
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.tab:hover {
+  border-color: hsl(var(--sl-color-border-hover));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.tab:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.tabOn {
+  border-color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px var(--sl-spacing-inset-sm, 12px);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle, var(--sl-color-border)));
+}
+
+.item:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+/* The same 3px kind accent the bench rows carry, so a block is recognisable
+   before and after it is placed. */
+.grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: 0 2px;
+  color: hsl(var(--sl-color-text-tertiary));
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: grab;
+  opacity: 0.4;
+  touch-action: none;
+  user-select: none;
+}
+
+.item:hover .grip,
+.grip:focus-visible {
+  opacity: 1;
+}
+
+.grip:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.item[data-dragging="true"] {
+  opacity: 0.4;
+}
+
+.itemKind {
+  flex: none;
+  width: 3px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: hsl(var(--sl-color-border-strong));
+}
+
+.item[data-kind="setning"] .itemKind {
+  background: hsl(var(--sl-color-patrol-drekar));
+}
+.item[data-kind="dagskra"] .itemKind {
+  background: hsl(var(--sl-color-primary));
+}
+.item[data-kind="leikur"] .itemKind {
+  background: hsl(var(--sl-color-patrol-rekkar));
+}
+.item[data-kind="slit"] .itemKind {
+  background: hsl(var(--sl-color-secondary));
+}
+.item[data-kind="endurmat"] .itemKind {
+  background: hsl(var(--sl-color-patrol-falkar));
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemT {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: 1.15;
+}
+
+.itemM {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.add {
+  flex: none;
+  padding: 3px 9px;
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  font: inherit;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+}
+
+.add:hover:not(:disabled) {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.add:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+.add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.emptyState {
+  margin: 0;
+  padding: var(--sl-spacing-inset-md, 20px) var(--sl-spacing-inset-sm, 12px);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.ft {
+  padding: var(--sl-spacing-inset-sm, 12px);
+  border-top: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.create {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+}
+
+.create:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.create:disabled {
+  cursor: not-allowed;
+}
+
+.create:disabled:hover {
+  background: hsl(var(--sl-color-surface));
+}
+
+.soon {
+  margin-left: var(--sl-spacing-gap-xs);
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.hint {
+  margin: 0;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.create:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+  .add,
+  .create {
+    min-height: 44px;
+  }
+
+  .grip {
+    opacity: 1;
+    min-width: 44px;
+  }
+}

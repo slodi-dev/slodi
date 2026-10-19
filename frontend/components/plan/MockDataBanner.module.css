@@ -1,0 +1,56 @@
+.banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm, 12px);
+  flex-wrap: wrap;
+
+  margin-bottom: var(--sl-spacing-md, 16px);
+  padding: 10px var(--sl-spacing-md, 16px);
+
+  border: 1px solid hsl(var(--sl-color-warning));
+  border-radius: var(--sl-radius-card, 12px);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.tag {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  /* The banner's own text pair, inverted: AA in both themes. Text on the
+     plain warning fill was 1.9:1 in dark. */
+  background: hsl(var(--sl-color-warning-text));
+  color: hsl(var(--sl-color-warning-subtle));
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.text {
+  flex: 1 1 240px;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.off {
+  flex: none;
+  padding: 6px 10px;
+  border-radius: var(--sl-radius-sm, 8px);
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.off:hover {
+  background: hsl(var(--sl-color-warning-muted));
+}
+
+.off:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-warning-text));
+  outline-offset: 2px;
+}

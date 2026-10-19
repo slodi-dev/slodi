@@ -1,0 +1,44 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Components/Vinnubekkur/Overview" />
+
+# Vinnubekkur
+
+Vinnubekkurinn is the plan route: a leader plans the term (the **Rist** and the **Dagatal**)
+and builds each fundur from timed liðir on the bench (**Bekkurinn**), pulling blocks from the
+dagskrárbankinn on the left.
+
+**Spec:** `docs/design/vinnubekkurinn/SPEC.md` on the branch `origin/release/vinnubekkur-v1`.
+The API contract the views are written against is `docs/frontend/plan-api-contract.md` on the
+same branch.
+
+## Status
+
+None of this is mounted by a route on `main` yet (sc-426). The bench and the bank have no
+backend, so they render from fixtures in mock mode only (`lib/mock/*.mock.ts`), always under the
+**GERVIGÖGN** banner. In a production build mock mode cannot be turned on.
+
+## The pieces
+
+| Component                      | What it is                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| PlanShell                      | The frame: masthead, view switch, season switcher, bank rail, canvas                              |
+| PlanBench                      | Bekkurinn — every fundur as a sheet, with the fold where the past ends. Also covers BenchProvider |
+| FundurSheet                    | One fundur: header and the three bands (Setning, Verkefni fundar, Slit)                           |
+| LidurRow                       | One liður: keyboard grab and move, duration chip, ↑ ↓ ✎ ✕                                         |
+| LidurEditor                    | The inline editor under a row                                                                     |
+| SplitGrid                      | A band split across the flokkar ("Skipta á flokka")                                               |
+| BlockPalette                   | The dagskrárbankinn rail                                                                          |
+| PlanGrid                       | Rist — weeks × flokkar                                                                            |
+| PlanCalendar                   | Dagatal — by month                                                                                |
+| PlanTimeline, PlanWindow       | One flokkur's season, and its next few fundir                                                     |
+| PlanEntryChip                  | One event, as the Rist and the Dagatal draw it                                                    |
+| SeasonSwitcher, MockDataBanner | Season picker; the fixture label                                                                  |
+
+## In Storybook
+
+- The stories set mock mode themselves (`mockModeIs` in `stories/vinnubekkur/benchHarness.tsx`),
+  so a story looks the same in `npm run storybook`, in the story tests and in the visual
+  baselines.
+- Bench pieces are rendered from live bench state, so the buttons and keys work.
+- The fixtures are anchored to today, so the dates move. The visual baselines fix the clock.
