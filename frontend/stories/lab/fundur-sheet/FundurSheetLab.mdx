@@ -1,0 +1,266 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Lab/FundurSheet/About" />
+
+# FundurSheet and LidurRow: usage and directions
+
+The fundur sheet is the most important surface in the Vinnubekkur: one fundur, its three sections
+and its liðir in order. This page works out who reads it, when, and what they need to see first.
+Then it explains the four directions in **Lab → FundurSheet → Directions**, and when each one
+fits.
+
+All four directions are live. They render from the real `BenchProvider` and reducer
+(`benchState.ts`), so ▲ ▼, the drag handle, Space / arrow keys / Enter / Delete, "Skipta á
+flokka", the inline editor and the announcements behave exactly as they do on the bench. The
+split sections use the real `SplitGrid`.
+
+## 1. Who uses the sheet, and when
+
+**A sveitarforingi on a laptop on Sunday evening.** They're building next Wednesday's fundur.
+There's time, a keyboard and a mouse. They:
+
+- pull blocks from the dagskrárbankinn;
+- move things around until the evening fits;
+- change the lengths;
+- open a liður to write notes;
+- decide whether Verkefni fundar is one activity or split by flokkur.
+
+**The same person on a phone, at the fundur.** The phone is in one hand, or on a table between two
+foringjar, and the room is loud. They glance at it between activities to answer: _what's next,
+when does it start, and are we late?_ They rarely edit. If they do, it's a quick fix, such as
+moving the game earlier because it's raining.
+
+## 2. The jobs, and what each one needs
+
+<table>
+  <thead><tr><th>Job</th><th>What has to be visible</th><th>Where it lives today</th></tr></thead>
+  <tbody>
+    <tr><td><b>Read the running order at a glance</b></td><td>Start time and title, in order</td><td>16px times in a narrow column, titles at 16px</td></tr>
+    <tr><td><b>See whether it fits</b> ("100 / 90 mín · 10 yfir")</td><td>Total against the plan, and by how much</td><td>Footer only, 14px, at the bottom of the sheet</td></tr>
+    <tr><td><b>See what is undecided</b></td><td>A count, and which liðir</td><td>Footer sentence, 12px uppercase grey</td></tr>
+    <tr><td><b>Reorder</b></td><td>▲ ▼, a grip, keyboard grab</td><td>↑ ↓ glyphs at 28px, grey</td></tr>
+    <tr><td><b>Split a section by flokkur</b></td><td>"Skipta á flokka" on each section</td><td>12px chip in the band header</td></tr>
+    <tr><td><b>Add from the bank</b></td><td>A drop target, and where the block will land</td><td>Bands and rows (unchanged in every direction)</td></tr>
+    <tr><td><b>Open a liður to edit</b></td><td>✎, Enter, or the duration</td><td>✎ glyph, or a click on the duration</td></tr>
+  </tbody>
+</table>
+
+## 3. What must read from across a room, and what can be secondary
+
+At the meeting, the phone is read at arm's length or from a table. **Readable from across a room**:
+
+1. **The clock.** When each liður starts. The running order _is_ the times.
+2. **The title.** What happens.
+3. **Whether we're over.** One number, coloured, with the word "yfir". Never colour alone.
+
+**Second read, at normal reading distance:** the duration, a status that isn't "Staðfest", the
+endurmat from last time, and the section a liður is in.
+
+**Third read, or only while planning:** the theme, the venue, the cycle week, the kind of
+liður, ▲ ▼ ✎ ✕ and the split toggle. These must be present and reachable (rule 8: 44px or more
+on touch, never hover-only). They don't need to compete for attention.
+
+### Ranking: the sheet
+
+1. Time range of the evening (19:30–21:10) and the fit (100 / 90 mín · 10 yfir)
+2. Title and date
+3. What's left to decide (a count, then the liðir)
+4. The three sections and their minutes
+5. Theme, cycle week, venue, "Öll sveitin"
+
+### Ranking: a row
+
+1. Start time
+2. Title
+3. Duration
+4. Status, when it isn't "Staðfest"; endurmat
+5. Actions (▲ ▼ ✎ ✕, grip)
+6. Theme and kind
+
+### What's wrong with the current sheet
+
+The current sheet is correct and complete. It reads _evenly_, though:
+
+- The title is the only large thing, and it's set in uppercase, which slows reading.
+- Everything else is 12px, grey (`text-tertiary`) and often uppercase.
+- The fit, the one number that answers "does this work?", sits in the footer, under the last
+  row.
+- Every row carries a coloured 3px stripe and an outlined status pill, including "Staðfest". The
+  exceptions look the same as the normal case.
+
+None of the directions below use a coloured left stripe or tertiary-grey meta. Secondary text is
+`text-secondary`, which passes AA in both themes. A status is a glyph plus a word (✓ Staðfest, ✎
+Drög, ~ Óvíst, ? Óákveðið), so colour is never the only signal (WCAG 1.4.1). "Óákveðið" is dashed
+and neutral, never red (ADR-002 §3).
+
+## 4. The directions
+
+### A · Dagskrá (running order)
+
+**The story:** "Here's tonight, in order." A printed programme pinned to the wall of the
+skátaheimili.
+
+**First read:** the start times (24px, bold, tabular) and the titles (20px). **Second:** the
+duration under each time, the evening's range in the header, and the fit in the header and
+again in the footer ("Lok kl. 21:10"). **Third:** status, only when it isn't "Staðfest"; the
+endurmat, written out as a note under the title; the actions.
+
+**Why it looks this way:**
+
+- Heavy rules above and below the programme, and none of the card chrome, so the sheet reads as
+  one document, not a stack of widgets.
+- Each section header carries its own start time ("19:40 VERKEFNI FUNDAR"), so you can find your
+  place without counting rows.
+- "Staðfest" is the expected state at the meeting, so it's left out visually. A screen reader
+  still hears it. Only exceptions are drawn, and they stand out because nothing else competes.
+- The endurmat is shown in full, not as a link to it. At the meeting, "Of stuttur síðast,
+  krakkarnir vildu spila aftur" is exactly the note you need, right when you reach that liður.
+
+**When to use it:** at the meeting, on a phone. It's also the best printout.
+
+**Trade-offs:**
+
+- The large type means fewer rows on screen. A long útilega needs scrolling.
+- With "Staðfest" hidden, you can't tell at a glance whether _everything_ is confirmed. You see
+  only that nothing is flagged.
+- On a phone the actions drop to a second line under each row, so the sheet is taller.
+- The design suggests a later "Núna" marker on the current liður. That would need a live clock,
+  so it isn't drawn here.
+
+### B · Tímalína (timeline bar)
+
+**The story:** "This is the shape of the evening, and this is where it spills over."
+
+**First read:** the evening bar in the header. It has one segment per liður, sized by its
+minutes, and a black line at the planned end ("Áætluð lok 21:00"). Anything past the line is
+hatched in the warning colour. **Second:** each row's own bar on the same scale, with the same
+line through every row, so the line reads as one rule down the whole sheet. **Third:** the
+status tag, endurmat and actions.
+
+**Why it looks this way:**
+
+- Duration is what leaders most often get wrong. A list of equal rows hides it: 45 minutes looks
+  like 5. A bar doesn't.
+- The current sheet tries to show duration through row _height_. That has to be clamped (5
+  minutes still has to be clickable), so the proportion is only partly true. A horizontal bar is
+  always exactly proportional, and every row keeps the same height for its controls.
+- The overrun is a _shape_: hatched, past a line. "10 yfir" becomes something you see before you
+  read it.
+- A split section is drawn as one striped block as long as its longest lane. The lanes run side
+  by side, so that's when the sveit regroups.
+- Bars are coloured by status: confirmed is solid, draft lighter, óvíst amber, and óákveðið a
+  dashed outline. The evening bar also shows how settled the evening is.
+
+**When to use it:** planning on a laptop, while fitting the evening to its time. It's still
+readable on a phone, where the bars stay full-width.
+
+**Trade-offs:**
+
+- It's the busiest of the four: two bars per liður (header and row).
+- The bars are decorative to assistive technology (`aria-hidden`); the same facts are in the text
+  ("100 / 90 mín · 10 yfir", each start time and duration).
+- Short liðir make thin slivers in the evening bar.
+- It's less useful at the meeting, where "what's next" matters more than the shape.
+
+### C · Gátlisti (checklist / readiness)
+
+**The story:** "Here's what's left before Wednesday."
+
+**First read:** the headline, which states only what's outstanding: "2 óákveðnir · 10 mín yfir",
+or "Tilbúið: allt ákveðið og passar í tímann" when nothing is. **Second:** a status meter and
+legend (Staðfest 3 · Drög 2 · Óvíst 0 · Óákveðið 0), then the "Eftir að ákveða" list. Each entry
+in that list is a button that jumps to its row. **Third:** the rows, each led by its status as a
+real `<select>`, so it can be changed where you see it.
+
+**Why it looks this way:**
+
+- Planning across a week is a series of small decisions. The sheet should say which ones are
+  still open, not make you scan for dashed pills.
+- The headline uses the reader's own words ("2 óákveðnir", "10 mín yfir", "Slit tómt"), from
+  `countIs`, so the singular and plural agree ("1 óákveðinn").
+- The status leads the row because, in this mode, it's the thing you act on. The time and the
+  duration step back to the line under the title.
+
+**When to use it:** midweek, on either device, when the question is "am I ready?", not "what's
+the order?".
+
+**Trade-offs:**
+
+- The header is tall. On a phone, the first liður is below the fold.
+- Status changes are edits (`patch`), and the bench reducer doesn't announce them. The `<select>`
+  announces its own new value, but promoting this look should add a reducer announcement.
+- The to-do list covers the shared liðir, not the copies in split lanes, which have their own
+  grid.
+
+### D · Þétt tafla (compact editor)
+
+**The story:** "Change ten things in a minute."
+
+**First read:** a column of start times and a column of titles. **Second:** a − / + stepper for
+the minutes (5-minute steps, announced by the reducer) and a status `<select>` in every row, under
+a column head (Kl. · Mín · Liður · Staða). **Third:** ▲ ▼ ✎ ✕, the endurmat flag and the kicker.
+
+**Why it looks this way:**
+
+- On a laptop, the slow part of planning is _opening things_. When the length and status are
+  editable in the row, most changes need no editor.
+- The rows are about 36px tall on a wide sheet, so a whole fundur fits on screen with room for
+  the editor.
+- The fit sits at the top right of the header and again in the footer, so you see it change as
+  you step the minutes.
+
+**When to use it:** on Sunday evening at a laptop, as the default editing view. It's the worst
+fit for the meeting itself.
+
+**Trade-offs:**
+
+- It's dense and small (14px), which makes it the least readable from a distance.
+- On a phone each row stacks into three lines (title, then stepper and status, then actions), to
+  keep 48px targets. That works, but it's the least elegant of the four on a small screen.
+- The column head is visual only (`aria-hidden`); each control names its liður itself.
+
+## 5. Choosing
+
+<table>
+  <thead><tr><th></th><th>Laptop, planning</th><th>Phone, at the meeting</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Dagskrá</b></td><td>Good for a final read-through</td><td><b>Best</b></td></tr>
+    <tr><td><b>B · Tímalína</b></td><td><b>Best for making it fit</b></td><td>Readable</td></tr>
+    <tr><td><b>C · Gátlisti</b></td><td><b>Best midweek</b></td><td>Good</td></tr>
+    <tr><td><b>D · Þétt tafla</b></td><td><b>Best for fast edits</b></td><td>Workable</td></tr>
+  </tbody>
+</table>
+
+These directions combine naturally. One option is **D for editing and A for reading**, one
+sheet with a "Lesa / Breyta" switch, with **C's headline** and **B's evening bar** in the header
+of both. That would give the leader both answers before the first row: does it fit, and what's
+left.
+
+## 6. What every direction keeps
+
+- The three sections (Setning, Verkefni fundar, Slit), with an empty section stated, not hidden.
+- Start times derived from the durations (`startTimes`). On an undated fundur they become offsets
+  from the start (`+0:40`), so a scratchpad still has a running order.
+- Status, endurmat, ▲ ▼, the grip, ✎, ✕, and "Skipta á flokka" / "Sameina í eitt".
+- The keyboard path: the row is the keyboard surface. Space grabs, ↑ ↓ move while grabbed (and
+  move focus otherwise), Enter opens the editor, Delete removes, Escape lets go. Focus follows a
+  grabbed row across a move, and every move is announced through the bench's live regions.
+- 48px targets on a narrow sheet or a touch screen (`--sl-size-button-lg`); 32px with a mouse on a
+  wide sheet. Nothing is revealed only on hover.
+- Light and dark from `--sl-*` tokens only. Counts go through `countIs`, dates through
+  `formatIcelandicDayMonth`. The only motion (row background) collapses under
+  `prefers-reduced-motion`.
+
+## Files
+
+`stories/lab/fundur-sheet/`:
+
+- `FundurSheetLab.tsx`: the sheet, with a `look` prop.
+- `LidurRowLab.tsx`: the row, with a `look` prop.
+- `sheetModel.ts`: the shared facts (fit, undecided, offsets) and copy.
+- `labHarness.tsx`: live bench state, focus handling and the announcer.
+- `FundurSheetLab.module.css`: the styles.
+- `FundurSheetLab.stories.tsx`: the stories.
+
+Each direction has a "reorder" story whose play test reorders with ▲ and checks that the start times follow, then puts
+the liður back with the keyboard.

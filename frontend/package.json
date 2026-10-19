@@ -61,6 +61,7 @@
     "jsdom": "^25.0.1",
     "playwright": "^1.64.0",
     "prettier": "^3.8.1",
+    "remark-gfm": "^4.0.1",
     "storybook": "^10.6.1",
     "typescript": "^5",
     "vite": "^6.4.4",

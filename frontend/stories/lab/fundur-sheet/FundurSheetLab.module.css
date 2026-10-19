@@ -1,0 +1,984 @@
+/*
+ * FundurSheet and LidurRow lab: four looks. Every value resolves through --sl-*,
+ * so each look follows light, dark and the patrol themes without overrides.
+ *
+ * Layout follows the sheet's own width (container queries), so a sheet in the
+ * Comparison story and a sheet on a phone behave the same way. Actions are never
+ * hover-revealed: they're always drawn, at --fs-target, which is 32px on a wide
+ * sheet with a mouse and 48px (--sl-size-button-lg) on a narrow sheet or a touch
+ * screen (UX rule 8).
+ */
+
+.sheet {
+  container: fs / inline-size;
+  max-width: 46rem;
+  width: 100%;
+  margin: 0 auto;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  color: hsl(var(--sl-color-text-primary));
+  font-family: var(--sl-font-family-body);
+  line-height: var(--sl-line-height-normal);
+  overflow: hidden;
+}
+
+.inner {
+  --fs-target: var(--sl-size-button-sm);
+  --fs-pad: var(--sl-spacing-inset-md);
+}
+
+@container fs (max-width: 36rem) {
+  .inner {
+    --fs-target: var(--sl-size-button-lg);
+    --fs-pad: var(--sl-spacing-inset-sm);
+  }
+}
+
+@media (pointer: coarse) {
+  .inner {
+    --fs-target: var(--sl-size-button-lg);
+  }
+}
+
+.sheet[data-active="true"] {
+  border-color: hsl(var(--sl-color-border-strong));
+}
+
+/* A fundur that has happened is context, not work: recessed by surface and a
+   dashed edge, never by opacity (which took the text below AA). */
+.sheet[data-past="true"] {
+  background: hsl(var(--sl-color-background-secondary));
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Header pieces ─────────────────────────────────────────────────────── */
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-gap-sm);
+  padding: var(--fs-pad);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.kicker:empty {
+  display: none;
+}
+
+.pastTag {
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-chip);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.troop {
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-primary-text));
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-5);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.titleLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
+}
+
+.date {
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
+  margin: 0;
+}
+
+.range {
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-heading);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--sl-line-height-tight);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+}
+
+.warnText {
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-warning-text));
+}
+
+/* "100 / 90 mín · 10 yfir": the one number every look must show. */
+.fit {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-heading);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fit[data-over="true"] {
+  border-color: hsl(var(--sl-color-warning));
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-gap-sm);
+  padding: var(--sl-spacing-inset-sm) var(--fs-pad);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+/* ── Bands ─────────────────────────────────────────────────────────────── */
+
+.bandHd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
+  padding: var(--sl-spacing-inset-xs) var(--fs-pad);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.bandLabel {
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  letter-spacing: var(--sl-primitive-letter-spacing-widest);
+  text-transform: uppercase;
+}
+
+.bandClock,
+.bandMin {
+  font-size: var(--sl-text-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.bandClock {
+  font-weight: var(--sl-font-weight-heading);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.splitBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: var(--fs-target);
+  margin-left: auto;
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  cursor: pointer;
+}
+
+.splitBtn svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.splitBtn[aria-pressed="true"] {
+  border-color: hsl(var(--sl-color-primary-border));
+  background: hsl(var(--sl-color-primary-subtle));
+  color: hsl(var(--sl-color-primary-text));
+}
+
+.blank {
+  margin: 0;
+  padding: var(--sl-spacing-inset-sm) var(--fs-pad);
+  border-bottom: 1px dashed hsl(var(--sl-color-border-strong));
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.rows {
+  display: block;
+}
+
+.rows[data-over="true"] {
+  background: hsl(var(--sl-color-primary-subtle));
+  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
+}
+
+/* ── Rows: shared ──────────────────────────────────────────────────────── */
+
+.row {
+  display: grid;
+  align-items: center;
+  column-gap: var(--sl-spacing-gap-sm);
+  position: relative;
+  padding: var(--sl-spacing-inset-xs) var(--fs-pad) var(--sl-spacing-inset-xs) 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  transition: background-color var(--sl-transition-fast);
+}
+
+.sheet[data-past="true"] .row {
+  background: transparent;
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background: hsl(var(--sl-color-surface-hover));
+  }
+}
+
+/* Selected: a tinted row with a full outline, not a coloured stripe. */
+.row[aria-current="true"] {
+  background: hsl(var(--sl-color-primary-subtle));
+  box-shadow: inset 0 0 0 1px hsl(var(--sl-color-primary-border));
+}
+
+/* Grabbed changes what the arrows do, so it looks lifted and different. */
+.row[data-grabbed="true"] {
+  background: hsl(var(--sl-color-info-subtle));
+  box-shadow:
+    inset 0 0 0 2px hsl(var(--sl-color-info)),
+    var(--sl-shadow-card);
+}
+
+.row[data-dragging="true"] {
+  opacity: 0.4;
+}
+
+.row:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: -2px;
+}
+
+.grip {
+  grid-area: grip;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.grip svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+@media (pointer: coarse) {
+  .grip {
+    width: 2.75rem;
+  }
+}
+
+.main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+  min-height: var(--fs-target);
+  padding: var(--sl-spacing-xs) 0;
+  border: 0;
+  border-radius: var(--sl-radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.title {
+  font-weight: var(--sl-font-weight-semibold);
+  line-height: var(--sl-line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.clock {
+  grid-area: clock;
+  font-weight: var(--sl-font-weight-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.dur {
+  grid-area: dur;
+  font-size: var(--sl-text-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: nowrap;
+}
+
+.acts {
+  grid-area: acts;
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--fs-target);
+  height: var(--fs-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--sl-radius-md);
+  background: none;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  transition: background-color var(--sl-transition-fast);
+}
+
+.act svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+@media (hover: hover) {
+  .act:hover:not(:disabled) {
+    background: hsl(var(--sl-color-background-tertiary));
+    color: hsl(var(--sl-color-text-primary));
+  }
+}
+
+.act:disabled {
+  opacity: var(--sl-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.sheet :is(button, select):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* Status: a glyph and a word, coloured by the semantic -text tier. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid currentColor;
+  border-radius: var(--sl-radius-chip);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-normal);
+  white-space: nowrap;
+}
+
+.glyph {
+  font-weight: var(--sl-primitive-font-weight-bold);
+}
+
+[data-status="confirmed"].tag,
+[data-status="confirmed"].statusPick,
+[data-status="confirmed"].legendItem {
+  color: hsl(var(--sl-color-success-text));
+}
+[data-status="draft"].tag,
+[data-status="draft"].statusPick,
+[data-status="draft"].legendItem {
+  color: hsl(var(--sl-color-info-text));
+}
+[data-status="tentative"].tag,
+[data-status="tentative"].statusPick,
+[data-status="tentative"].legendItem {
+  color: hsl(var(--sl-color-warning-text));
+}
+/* ADR-002 §3: undecided is a state, not an error: dashed and "?", never red. */
+[data-status="unknown"].tag,
+[data-status="unknown"].statusPick,
+[data-status="unknown"].legendItem {
+  color: hsl(var(--sl-color-text-primary));
+}
+[data-status="unknown"].tag,
+[data-status="unknown"].statusPick .statusSelect {
+  border-style: dashed;
+}
+
+.statusPick {
+  grid-area: status;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+}
+
+.statusPick .glyph {
+  position: absolute;
+  left: var(--sl-spacing-sm);
+  pointer-events: none;
+}
+
+.statusSelect {
+  min-height: var(--fs-target);
+  width: 100%;
+  padding: 0 var(--sl-spacing-xs) 0 1.625rem;
+  border: 1px solid currentColor;
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  color: inherit;
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-emphasis);
+  cursor: pointer;
+}
+
+/* iOS zooms into any field under 16px. */
+@container fs (max-width: 36rem) {
+  .statusSelect {
+    font-size: var(--sl-text-body);
+  }
+}
+
+.statusSelect option {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface));
+}
+
+.endurmat {
+  grid-area: note;
+  margin: 0 0 var(--sl-spacing-xs);
+  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-warning-subtle));
+  font-size: var(--sl-text-body-sm);
+  overflow-wrap: anywhere;
+}
+
+.endurmat b {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.endurmatFlag {
+  display: inline-flex;
+  padding: 0 var(--sl-spacing-sm);
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-warning-subtle));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-warning-text));
+  white-space: nowrap;
+}
+
+/* ── A · Dagskrá: a printed running order ──────────────────────────────── */
+
+.sheet[data-look="dagskra"] {
+  border-color: hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-sm);
+}
+
+.sheet[data-look="dagskra"] .head {
+  border-bottom: 3px solid hsl(var(--sl-color-text-primary));
+}
+
+.sheet[data-look="dagskra"] .heading {
+  font-size: var(--sl-text-heading-3);
+}
+
+.sheet[data-look="dagskra"] .bandHd {
+  padding-top: var(--sl-spacing-inset-sm);
+  background: none;
+  border-bottom-color: hsl(var(--sl-color-border-strong));
+}
+
+.sheet[data-look="dagskra"] .foot {
+  border-top: 3px solid hsl(var(--sl-color-text-primary));
+}
+
+.row[data-look="dagskra"] {
+  grid-template-columns: auto 5.25rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    "grip clock main acts"
+    "grip clock note note";
+  padding-block: var(--sl-spacing-inset-sm);
+}
+
+.clockCol {
+  grid-area: clock;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  padding-top: 2px;
+}
+
+.row[data-look="dagskra"] .clock {
+  font-size: var(--sl-text-heading-4);
+  line-height: var(--sl-line-height-tight);
+}
+
+.row[data-look="dagskra"] .title {
+  font-size: var(--sl-text-heading-5);
+}
+
+@container fs (max-width: 36rem) {
+  .row[data-look="dagskra"] {
+    grid-template-columns: auto 4.25rem minmax(0, 1fr);
+    grid-template-areas:
+      "grip clock main"
+      "grip clock note"
+      "grip acts acts";
+  }
+
+  .row[data-look="dagskra"] .clock {
+    font-size: var(--sl-text-heading-5);
+  }
+
+  .row[data-look="dagskra"] .title {
+    font-size: var(--sl-text-heading-6);
+  }
+
+  .sheet[data-look="dagskra"] .heading {
+    font-size: var(--sl-text-heading-4);
+  }
+}
+
+/* ── B · Tímalína: bars as long as their minutes ───────────────────────── */
+
+.sheet[data-look="timalina"] {
+  border-radius: var(--sl-radius-card);
+  box-shadow: var(--sl-shadow-card);
+}
+
+.evening {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  padding-top: var(--sl-spacing-md);
+}
+
+.eveningBar {
+  position: relative;
+  height: 1.75rem;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.eveningScale {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--sl-text-overline);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* Above the bar, right-aligned to the line, so it never collides with the end. */
+.eveningLimitLabel {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: var(--sl-spacing-sm);
+  transform: translateX(-100%);
+  padding-right: var(--sl-spacing-xs);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-primary));
+  white-space: nowrap;
+}
+
+.seg,
+.bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-right: 2px solid hsl(var(--sl-color-surface));
+  background: hsl(var(--sl-color-primary) / 0.75);
+}
+
+.seg {
+  border-radius: 0;
+}
+
+.bar {
+  border-radius: var(--sl-radius-pill);
+}
+
+:is(.seg, .bar)[data-status="draft"] {
+  background: hsl(var(--sl-color-info) / 0.6);
+}
+:is(.seg, .bar)[data-status="tentative"] {
+  background: hsl(var(--sl-color-warning) / 0.55);
+}
+:is(.seg, .bar)[data-status="unknown"] {
+  background: hsl(var(--sl-color-surface));
+  border: 2px dashed hsl(var(--sl-color-text-secondary));
+}
+.seg[data-split="true"] {
+  background: repeating-linear-gradient(
+    90deg,
+    hsl(var(--sl-color-primary) / 0.75) 0 6px,
+    hsl(var(--sl-color-primary) / 0.35) 6px 12px
+  );
+}
+
+/* Past the planned end: hatched warning, so an overrun is a shape. */
+.segOver,
+.barOver {
+  background: repeating-linear-gradient(
+    -45deg,
+    hsl(var(--sl-color-warning)) 0 4px,
+    hsl(var(--sl-color-warning) / 0.45) 4px 8px
+  );
+  border: 0;
+}
+
+.eveningLimit,
+.limit {
+  position: absolute;
+  width: 2px;
+  margin-left: -1px;
+  background: hsl(var(--sl-color-text-primary));
+}
+
+.eveningLimit {
+  top: -0.375rem;
+  bottom: -0.375rem;
+}
+
+.sheet[data-look="timalina"] .eveningBar {
+  margin-top: var(--sl-spacing-lg);
+}
+
+.row[data-look="timalina"] {
+  grid-template-columns: auto 3.5rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "grip clock main dur acts"
+    "grip track track track track";
+  row-gap: var(--sl-spacing-xs);
+}
+
+.row[data-look="timalina"] .clock {
+  font-size: var(--sl-text-body-lg);
+}
+
+.row[data-look="timalina"] .title {
+  font-size: var(--sl-text-body-lg);
+}
+
+.track {
+  grid-area: track;
+  position: relative;
+  height: 0.625rem;
+  margin-bottom: var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.limit {
+  top: -0.25rem;
+  bottom: -0.25rem;
+}
+
+@container fs (max-width: 36rem) {
+  .row[data-look="timalina"] {
+    grid-template-columns: auto 3.25rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      "grip clock main dur"
+      "grip track track track"
+      "grip acts acts acts";
+  }
+}
+
+/* ── C · Gátlisti: what's left to do ───────────────────────────────────── */
+
+.sheet[data-look="gatlisti"] {
+  border-radius: var(--sl-radius-card);
+  box-shadow: var(--sl-shadow-card);
+}
+
+.sheet[data-look="gatlisti"] .head {
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.readiness {
+  margin: 0;
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.readiness[data-done="true"] {
+  font-size: var(--sl-text-heading-6);
+  color: hsl(var(--sl-color-success-text));
+}
+
+.meter {
+  display: flex;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-background-tertiary));
+}
+
+.meterPart {
+  height: 100%;
+  border-right: 2px solid hsl(var(--sl-color-background-secondary));
+}
+
+.meterPart[data-status="confirmed"] {
+  background: hsl(var(--sl-color-success));
+}
+.meterPart[data-status="draft"] {
+  background: hsl(var(--sl-color-info));
+}
+.meterPart[data-status="tentative"] {
+  background: hsl(var(--sl-color-warning));
+}
+.meterPart[data-status="unknown"] {
+  background: hsl(var(--sl-color-text-secondary) / 0.35);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-xs) var(--sl-spacing-md);
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+}
+
+.legendItem b {
+  font-variant-numeric: tabular-nums;
+}
+
+.todo {
+  padding: var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface));
+}
+
+.todoHead {
+  margin: 0 0 var(--sl-spacing-xs);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  letter-spacing: var(--sl-primitive-letter-spacing-widest);
+  text-transform: uppercase;
+}
+
+.todoList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.todoItem {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  width: 100%;
+  min-height: var(--fs-target);
+  padding: 0 var(--sl-spacing-xs);
+  border: 0;
+  border-radius: var(--sl-radius-sm);
+  background: none;
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-medium);
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .todoItem:hover {
+    background: hsl(var(--sl-color-surface-hover));
+  }
+}
+
+.row[data-look="gatlisti"] {
+  grid-template-columns: auto 8rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    "grip status main acts"
+    "grip . note note";
+}
+
+.row[data-look="gatlisti"] .statusPick {
+  width: 100%;
+}
+
+.row[data-look="gatlisti"] .title {
+  font-size: var(--sl-text-body-lg);
+}
+
+.row[data-look="gatlisti"] .clock {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+@container fs (max-width: 36rem) {
+  .row[data-look="gatlisti"] {
+    grid-template-columns: auto 7.5rem minmax(0, 1fr);
+    grid-template-areas:
+      "grip status main"
+      "grip note note"
+      "grip acts acts";
+  }
+}
+
+/* ── D · Þétt tafla: a dense editor ────────────────────────────────────── */
+
+.sheet[data-look="thett"] {
+  border-radius: var(--sl-radius-md);
+  font-size: var(--sl-text-body-sm);
+}
+
+.headDense {
+  gap: var(--sl-spacing-xs);
+  padding-block: var(--sl-spacing-inset-sm);
+}
+
+.headDense .heading {
+  font-size: var(--sl-text-heading-6);
+}
+
+.headDense .fit {
+  margin-left: auto;
+}
+
+.colHead,
+.row[data-look="thett"] {
+  grid-template-columns: auto 3rem 6.5rem minmax(0, 1fr) 7.5rem auto;
+  grid-template-areas: "grip clock step main status acts";
+}
+
+.colHead {
+  display: grid;
+  column-gap: var(--sl-spacing-gap-sm);
+  padding: var(--sl-spacing-xs) var(--fs-pad) var(--sl-spacing-xs) 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border-strong));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.colHead > span:first-child {
+  width: 1.5rem;
+}
+
+.row[data-look="thett"] {
+  padding-block: 2px;
+}
+
+.row[data-look="thett"] .main {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
+}
+
+.stepper {
+  grid-area: step;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+}
+
+.stepValue {
+  min-width: 1.75rem;
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+@container fs (max-width: 36rem) {
+  .colHead {
+    display: none;
+  }
+
+  .row[data-look="thett"] {
+    grid-template-columns: auto 3rem auto minmax(0, 1fr);
+    grid-template-areas:
+      "grip clock main main"
+      "grip step step status"
+      "grip acts acts acts";
+    row-gap: var(--sl-spacing-xs);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .act {
+    transition-duration: 1ms;
+  }
+}
