@@ -1,0 +1,497 @@
+/* Lab variations of the public-page Header. Every colour goes through a token, so each look
+   works in light, dark and the patrol themes. Each look sets five local colours (--hdr-bg, --hdr-fg,
+   --hdr-muted, --hdr-hover, --hdr-line) and the shared rules below read only those. */
+
+.header {
+  --hdr-bg: hsl(var(--sl-color-background));
+  --hdr-fg: hsl(var(--sl-color-text-primary));
+  --hdr-muted: hsl(var(--sl-color-text-secondary));
+  --hdr-hover: hsl(var(--sl-color-surface-secondary));
+  --hdr-line: hsl(var(--sl-color-border));
+
+  position: sticky;
+  top: 0;
+  z-index: var(--sl-z-sticky);
+  background: var(--hdr-bg);
+  color: var(--hdr-fg);
+  font-family: var(--sl-font-family-body);
+  line-height: var(--sl-line-height-tight);
+}
+
+/* Every control gets the same ring. The transparent outline keeps a ring in forced colours. */
+.header a:focus-visible,
+.header button:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skipLink {
+  position: absolute;
+  top: var(--sl-spacing-sm);
+  left: var(--sl-spacing-md);
+  z-index: var(--sl-z-toast);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skipLink:focus {
+  transform: none;
+}
+
+/* ── Layout shared by every look ── */
+
+.inner {
+  position: relative;
+  max-width: var(--sl-content-max-width);
+  min-height: var(--sl-navbar-height);
+  margin: 0 auto;
+  padding: 0 var(--sl-spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-md);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-sm);
+  color: var(--hdr-fg);
+  text-decoration: none;
+}
+.brandName {
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: var(--sl-text-body-lg);
+  letter-spacing: var(--sl-primitive-letter-spacing-tight);
+}
+.tagline {
+  display: none;
+}
+
+.nav {
+  display: none;
+}
+.links {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-sm);
+  border-radius: var(--sl-radius-sm);
+  color: var(--hdr-muted);
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-medium);
+  text-decoration: none;
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-fast);
+}
+.link:hover {
+  color: var(--hdr-fg);
+  background: var(--hdr-hover);
+}
+.link[aria-current="page"] {
+  color: var(--hdr-fg);
+}
+.externalIcon {
+  width: 0.85em;
+  height: 0.85em;
+}
+
+.account {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-xs);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border-radius: var(--sl-radius-pill);
+  color: var(--hdr-fg);
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+.accountIcon {
+  width: 1em;
+  height: 1em;
+  transition: transform var(--sl-transition-fast);
+}
+.account:hover .accountIcon {
+  transform: translateX(2px);
+}
+
+.phoneBar {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  margin-left: auto;
+}
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-xs);
+  min-width: var(--sl-primitive-height-lg);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border: 1px solid var(--hdr-line);
+  border-radius: var(--sl-radius-pill);
+  background: transparent;
+  color: var(--hdr-fg);
+  font: inherit;
+  font-weight: var(--sl-font-weight-medium);
+  cursor: pointer;
+}
+.menuButton:hover {
+  background: var(--hdr-hover);
+}
+.menuIcon {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+/* ── Drawer (phone). Closed it is inert and off screen, as in the real header. ── */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sl-z-overlay);
+  background: hsl(var(--sl-color-overlay-backdrop));
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--sl-z-drawer);
+  width: min(20rem, 85%);
+  height: 100dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-md);
+  padding: var(--sl-spacing-md);
+  padding-bottom: calc(var(--sl-spacing-md) + env(safe-area-inset-bottom));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  box-shadow: var(--sl-shadow-modal);
+  transform: translateX(100%);
+  transition: transform var(--sl-transition-base);
+}
+.drawerOpen {
+  transform: none;
+}
+/* Closed, the panel sits just off screen; without this its shadow still falls on the page. */
+.drawer:not(.drawerOpen) {
+  box-shadow: none;
+}
+.drawerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-sm);
+}
+.drawerTitle {
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: var(--sl-text-body-lg);
+}
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-primitive-height-lg);
+  height: var(--sl-primitive-height-lg);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.closeButton:hover {
+  background: hsl(var(--sl-color-surface-secondary));
+}
+.drawerNav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-lg);
+}
+.drawerLinks {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.drawerLink {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-sm);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-xs);
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body-lg);
+  text-decoration: none;
+}
+.drawerLink:hover {
+  background: hsl(var(--sl-color-surface-secondary));
+}
+.drawerLink[aria-current="page"] {
+  color: hsl(var(--sl-color-primary-text));
+  font-weight: var(--sl-font-weight-semibold);
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary));
+}
+.drawerAccount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-sm);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+}
+.drawerAccount:hover {
+  background: hsl(var(--sl-color-primary-hover));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .accountIcon {
+    transition: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .inner {
+    padding: 0 var(--sl-spacing-xl);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: var(--sl-spacing-md);
+    margin-left: auto;
+  }
+  .phoneBar,
+  .drawer,
+  .scrim {
+    display: none;
+  }
+}
+
+/* ── A · Wordmark: quiet bar, a big wordmark, the current page underlined in green ── */
+.wordmark .inner {
+  min-height: var(--sl-primitive-space-20);
+}
+.wordmark {
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.wordmark .brandName {
+  font-size: var(--sl-text-heading-4);
+  letter-spacing: var(--sl-primitive-letter-spacing-tighter);
+}
+.wordmark .link[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-color: hsl(var(--sl-color-primary));
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.45em;
+}
+.wordmark .account {
+  border: 1px solid hsl(var(--sl-color-border-strong));
+}
+.wordmark .account:hover {
+  border-color: hsl(var(--sl-color-border-strong-hover));
+  background: var(--hdr-hover);
+}
+
+/* ── B · Band: a full band of Slóði green with a tagline; current page marked by a bar ── */
+.band {
+  --hdr-bg: hsl(var(--sl-color-primary));
+  --hdr-fg: hsl(var(--sl-color-text-inverse));
+  --hdr-muted: hsl(var(--sl-color-text-inverse));
+  --hdr-hover: hsl(var(--sl-color-text-inverse) / 0.14);
+  --hdr-line: hsl(var(--sl-color-text-inverse) / 0.6);
+  border-bottom: 4px solid hsl(var(--sl-color-primary-active));
+}
+.band .link[aria-current="page"] {
+  box-shadow: inset 0 -3px 0 var(--hdr-fg);
+  border-radius: 0;
+}
+.band .account {
+  border: 2px solid var(--hdr-fg);
+}
+.band .account:hover {
+  background: var(--hdr-fg);
+  color: var(--hdr-bg);
+}
+.band .drawerTop {
+  margin: calc(-1 * var(--sl-spacing-md)) calc(-1 * var(--sl-spacing-md)) 0;
+  padding: var(--sl-spacing-md);
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+}
+.band .closeButton {
+  border-color: hsl(var(--sl-color-text-inverse) / 0.6);
+}
+.band .closeButton:hover {
+  background: hsl(var(--sl-color-text-inverse) / 0.14);
+}
+@media (min-width: 1024px) {
+  .band .tagline {
+    display: inline;
+    padding-left: var(--sl-spacing-sm);
+    border-left: 1px solid var(--hdr-line);
+    font-size: var(--sl-text-caption);
+  }
+}
+
+/* ── C · Trail: a signpost wordmark with two peaks, a dashed trail over contour lines ── */
+.trail .inner {
+  padding-bottom: var(--sl-spacing-sm);
+}
+.motif {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: var(--sl-spacing-lg);
+  pointer-events: none;
+}
+.contour {
+  fill: none;
+  stroke: hsl(var(--sl-color-border));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.trailPath {
+  fill: none;
+  stroke: hsl(var(--sl-color-primary));
+  stroke-width: 2;
+  stroke-dasharray: 6 7;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.peaks {
+  width: 1.75rem;
+  height: 1.125rem;
+  fill: hsl(var(--sl-color-primary));
+}
+.trail .brandName {
+  text-transform: uppercase;
+  letter-spacing: var(--sl-primitive-letter-spacing-widest);
+}
+.trail .link[aria-current="page"]::before {
+  content: "";
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-primary));
+}
+.trail .account {
+  border: 2px dashed hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-primary-text));
+}
+.trail .account:hover {
+  background: hsl(var(--sl-color-primary-subtle));
+}
+
+/* ── D · Overlay: no bar at all; floats over the landing hero, the action is a raised chip ── */
+.overlay {
+  --hdr-bg: transparent;
+  --hdr-muted: hsl(var(--sl-color-text-primary));
+  --hdr-hover: hsl(var(--sl-color-surface) / 0.7);
+}
+.overlay .brandName {
+  font-size: var(--sl-text-heading-4);
+}
+.overlay .link {
+  font-weight: var(--sl-font-weight-semibold);
+}
+.overlay .link[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.4em;
+}
+.overlay .account {
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  box-shadow: var(--sl-shadow-card);
+}
+.overlay .account:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.overlay .menuButton {
+  border-color: transparent;
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card);
+}
+
+/* ── E · Split: pages on the left, the account action as a solid button on the right ── */
+.split {
+  --hdr-bg: hsl(var(--sl-color-surface));
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+.split .account {
+  padding: 0 var(--sl-spacing-lg);
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+}
+.split .account:hover {
+  background: hsl(var(--sl-color-primary-hover));
+}
+.split .phoneAccount {
+  padding: 0 var(--sl-spacing-md);
+}
+.split .link[aria-current="page"] {
+  background: hsl(var(--sl-color-primary-subtle));
+  color: hsl(var(--sl-color-primary-text));
+}
+@media (min-width: 768px) {
+  .split .nav {
+    flex: 1;
+    justify-content: space-between;
+    margin-left: var(--sl-spacing-sm);
+    padding-left: var(--sl-spacing-md);
+    border-left: 1px solid var(--hdr-line);
+  }
+}
