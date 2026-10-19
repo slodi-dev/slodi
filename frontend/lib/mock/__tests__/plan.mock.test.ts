@@ -11,13 +11,6 @@ import { isWeekDone } from "@/components/plan/planEntries";
  */
 
 describe("plan fixtures", () => {
-  it("labels every season as fake in its own name", () => {
-    // The banner can be cropped out of a screenshot; the name cannot.
-    for (const season of mockSeasons()) {
-      expect(season.name).toContain("GERVIGÖGN");
-    }
-  });
-
   it("offers both a dated starfsár and an undated scratchpad", () => {
     const seasons = mockSeasons();
     const starfsar = seasons.find((s) => s.id === MOCK_SEASON_ID);

@@ -26,11 +26,10 @@ import { safeSessionStorage } from "@/lib/safe-storage";
  *    build, so `readMockMode` short-circuits before it reads anything. The
  *    fixtures are still bundled — this is a guard against showing fake data,
  *    not a secret — but no user action can turn it on.
- * 2. **It is never silent.** Anything rendered from a fixture sits under
- *    `MockDataBanner`, and the mock seasons carry "GERVIGÖGN" in their own
- *    names, so a screenshot of it is self-labelling even with the banner
- *    cropped out. Mock data that looks like real data is how a demo becomes a
- *    bug report.
+ * 2. **It is never silent.** Anything rendered from a fixture sits under the
+ *    sticky `MockDataBanner` ("GERVIGÖGN"). The season names themselves used to
+ *    carry "(GERVIGÖGN)" too; that was dropped in review (2026-10-19) because it
+ *    cluttered every heading and switcher, and the banner already says it.
  */
 
 const STORAGE_KEY = "slodi_mock_data";

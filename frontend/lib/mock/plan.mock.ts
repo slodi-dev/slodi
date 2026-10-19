@@ -313,7 +313,7 @@ export function mockSeasons(): Season[] {
     {
       id: MOCK_SEASON_ID,
       workspace_id: MOCK_WORKSPACE_ID,
-      name: "Starfsárið (GERVIGÖGN)",
+      name: "Starfsárið 2026–2027",
       kind: "starfsar",
       starts_on: weeks[0].starts_on,
       ends_on: weeks[weeks.length - 1].starts_on,
@@ -322,7 +322,7 @@ export function mockSeasons(): Season[] {
     {
       id: MOCK_SCRATCHPAD_ID,
       workspace_id: MOCK_WORKSPACE_ID,
-      name: "Krot og krass (GERVIGÖGN)",
+      name: "Krot og krass",
       kind: "scratchpad",
       starts_on: null,
       ends_on: null,
