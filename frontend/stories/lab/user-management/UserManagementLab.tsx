@@ -1,7 +1,17 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import type { FormEvent, ReactNode, RefObject } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Search } from "lucide-react";
-import { countIs, formatIcelandicDate, formatIcelandicDateTime } from "@/lib/format";
+import type { ChangeEvent, FormEvent, KeyboardEvent, ReactNode } from "react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  ArrowUpDown,
+  Lock,
+  Search,
+  TriangleAlert,
+  UserRound,
+  X,
+} from "lucide-react";
+import { countIs, formatIcelandicDate } from "@/lib/format";
 import type { User, UserPermissions } from "@/services/users.service";
 import styles from "./UserManagementLab.module.css";
 
@@ -15,11 +25,15 @@ export interface LabHistoryEntry {
   /** ISO timestamp. */
   at: string;
   text: string;
+  /** Who made the change, when someone did. */
+  by?: string;
 }
 
 /** The API `User`, plus what a user-management screen needs and the API doesn't have yet. */
 export interface LabUser extends Pick<User, "id" | "name" | "email" | "permissions"> {
   status: "active" | "suspended";
+  /** Set while suspended. `since` is an ISO timestamp. */
+  suspension?: { since: string; reason?: string };
   joinedAt: string;
   lastSeenAt: string | null;
   /** Newest last. */
@@ -41,6 +55,12 @@ export interface UserManagementLabProps {
   /** `skipt` only: the user open in the detail panel. */
   defaultSelectedId?: string;
   pageSize?: number;
+  /** Lab only: ids the fake API refuses on the first try, to show a partial failure. */
+  failIds?: string[];
+  /** Lab only: how long the fake API takes, in ms, for C and D. */
+  latencyMs?: number;
+  /** Lab only, `skipt`: render just the detail panel of `defaultSelectedId`. */
+  panelOnly?: boolean;
   /**
    * Called with the query string the real page would write with `router.replace`
    * (UX rule 10): `?q=…&rettindi=…&sida=…&notandi=…`.
@@ -79,6 +99,8 @@ const DESCRIPTION: Record<UserPermissions, string> = {
   moderator: "Getur falið og hafnað hvaða efni sem er í bankanum.",
   admin: "Hefur fullan aðgang að notendum og stillingum.",
 };
+const PROMOTE_WARNING =
+  "Umsjónarmenn dagskrár geta falið og hafnað hvaða efni sem er í dagskrárbankanum.";
 const FILTERS: PermissionFilter[] = ["all", "viewer", "member", "moderator", "admin"];
 
 /** UX rule 5: reversible actions offer "Afturkalla" for at least 8 seconds. */
@@ -134,6 +156,13 @@ interface ConfirmRequest {
   confirmLabel: string;
   tone: "primary" | "danger";
   onConfirm: () => void;
+  onCancel?: () => void;
+}
+
+/** What a batch call to the (fake) API did: who changed, and who it refused. */
+export interface BatchResult {
+  done: LabUser[];
+  failed: LabUser[];
 }
 
 interface Toast {
@@ -143,7 +172,8 @@ interface Toast {
 }
 
 function useUserManagement(props: UserManagementLabProps) {
-  const { currentUserId, pageSize = 10, onUrlChange } = props;
+  const { currentUserId, pageSize = 10, onUrlChange, latencyMs = 400 } = props;
+  const failIds = props.failIds;
   const [users, setUsers] = useState(props.users);
   const [query, setQuery] = useState(props.defaultQuery ?? "");
   const [permission, setPermission] = useState<PermissionFilter>(props.defaultPermission ?? "all");
@@ -152,6 +182,8 @@ function useUserManagement(props: UserManagementLabProps) {
   const [selectedId, setSelectedId] = useState<string | null>(props.defaultSelectedId ?? null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  /** Ids the fake API has already refused once; a retry goes through. */
+  const refused = useRef(new Set<string>());
 
   const matching = useMemo(() => {
     const q = fold(query.trim());
@@ -250,9 +282,7 @@ function useUserManagement(props: UserManagementLabProps) {
               ? `${targets[0].name} verður ${LABEL_LOWER[to]}.`
               : `Ný réttindi: ${LABEL[to]}.`}
           </p>
-          {promotes && (
-            <p>Umsjónarmenn dagskrár geta falið og hafnað hvaða efni sem er í dagskrárbankanum.</p>
-          )}
+          {promotes && <p>{PROMOTE_WARNING}</p>}
           {targets.length > 1 && <NameList users={targets} />}
         </>
       ),
@@ -304,6 +334,163 @@ function useUserManagement(props: UserManagementLabProps) {
     });
   };
 
+  /* ── Async versions for C and D: a fake API call, partial failure, undo per batch ── */
+
+  /** Opens the confirm dialog and resolves with the answer. */
+  const askConfirm = (request: Omit<ConfirmRequest, "onConfirm" | "onCancel">) =>
+    new Promise<boolean>((resolve) => {
+      let settled = false;
+      const settle = (answer: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(answer);
+      };
+      setConfirm({ ...request, onConfirm: () => settle(true), onCancel: () => settle(false) });
+    });
+
+  /**
+   * Sends one batch. Whoever the API accepts changes at once, and the toast's "Afturkalla"
+   * puts every one of them back as they were. Whoever it refuses comes back in `failed`.
+   */
+  const runBatch = async (
+    targets: LabUser[],
+    change: (u: LabUser) => LabUser,
+    describe: (done: LabUser[]) => string
+  ): Promise<BatchResult> => {
+    await new Promise((r) => setTimeout(r, latencyMs));
+    const failed = targets.filter((u) => failIds?.includes(u.id) && !refused.current.has(u.id));
+    for (const u of failed) refused.current.add(u.id);
+    const done = targets.filter((u) => !failed.includes(u));
+    if (done.length === 0) return { done, failed };
+
+    const before = new Map(done.map((u) => [u.id, u]));
+    setUsers((prev) => prev.map((u) => (before.has(u.id) ? change(u) : u)));
+    const failNote = failed.length
+      ? ` Ekki tókst hjá ${countIs(failed.length, "notanda", "notendum")}.`
+      : "";
+    setToast({
+      key: Date.now(),
+      message: describe(done) + failNote,
+      undo: () => {
+        setUsers((prev) => prev.map((u) => before.get(u.id) ?? u));
+        setToast({
+          key: Date.now(),
+          message:
+            done.length === 1
+              ? "Afturkallað."
+              : `Afturkallað hjá ${countIs(done.length, "notanda", "notendum")}.`,
+        });
+      },
+    });
+    return { done, failed };
+  };
+
+  const changeRoleBatch = async (
+    ids: string[],
+    to: UserPermissions,
+    options: { confirmed?: boolean; onStart?: () => void } = {}
+  ): Promise<BatchResult | null> => {
+    const targets = users.filter((u) => ids.includes(u.id) && !isLocked(u) && u.permissions !== to);
+    if (targets.length === 0) {
+      nothingChanged();
+      return null;
+    }
+    const promotes =
+      RANK[to] >= RANK.moderator && targets.some((u) => RANK[u.permissions] < RANK[to]);
+    // UX rule 5: promoting to moderator always confirms; a change to many confirms with a count.
+    if (!options.confirmed && (targets.length > 1 || promotes)) {
+      const n = countIs(targets.length, "notanda", "notendum");
+      const ok = await askConfirm({
+        title:
+          targets.length === 1 ? "Gera að umsjónarmanni dagskrár?" : `Breyta réttindum hjá ${n}?`,
+        body: (
+          <>
+            <p>
+              {targets.length === 1
+                ? `${targets[0].name} verður ${LABEL_LOWER[to]}.`
+                : `Ný réttindi: ${LABEL[to]}.`}
+            </p>
+            {promotes && <p>{PROMOTE_WARNING}</p>}
+            {targets.length > 1 && <NameList users={targets} />}
+          </>
+        ),
+        confirmLabel: targets.length === 1 ? "Gera að umsjónarmanni" : `Breyta hjá ${n}`,
+        tone: "primary",
+      });
+      if (!ok) return null;
+    }
+    options.onStart?.();
+    const at = new Date().toISOString();
+    return runBatch(
+      targets,
+      (u) => ({
+        ...u,
+        permissions: to,
+        history: [
+          ...u.history,
+          { at, text: `Réttindi: ${LABEL[u.permissions]} → ${LABEL[to]}`, by: "Þú" },
+        ],
+      }),
+      (done) =>
+        done.length === 1
+          ? `${done[0].name} er nú ${LABEL_LOWER[to]}.`
+          : `Réttindum breytt hjá ${countIs(done.length, "notanda", "notendum")}.`
+    );
+  };
+
+  const suspendBatch = async (
+    ids: string[],
+    suspend: boolean,
+    options: { reason?: string; onStart?: () => void } = {}
+  ): Promise<BatchResult | null> => {
+    const wanted = suspend ? "active" : "suspended";
+    const targets = users.filter((u) => ids.includes(u.id) && !isLocked(u) && u.status === wanted);
+    if (targets.length === 0) {
+      nothingChanged();
+      return null;
+    }
+    // One user: reversible, so it happens at once with "Afturkalla". Many: confirm with a count.
+    if (targets.length > 1) {
+      const n = countIs(targets.length, "notanda", "notendum");
+      const ok = await askConfirm({
+        title: suspend ? `Frysta aðgang hjá ${n}?` : `Virkja aðgang aftur hjá ${n}?`,
+        body: (
+          <>
+            <p>
+              {suspend
+                ? "Þau komast ekki inn í Slóða fyrr en aðgangurinn er virkjaður aftur. Efnið þeirra helst óbreytt."
+                : "Þau komast strax inn aftur með sömu réttindi og áður."}
+            </p>
+            <NameList users={targets} />
+          </>
+        ),
+        confirmLabel: suspend ? `Frysta hjá ${n}` : `Virkja hjá ${n}`,
+        tone: suspend ? "danger" : "primary",
+      });
+      if (!ok) return null;
+    }
+    options.onStart?.();
+    const at = new Date().toISOString();
+    const reason = options.reason?.trim() || undefined;
+    const verb = suspend ? "frystur" : "virkjaður aftur";
+    return runBatch(
+      targets,
+      (u) => ({
+        ...u,
+        status: suspend ? "suspended" : "active",
+        suspension: suspend ? { since: at, reason } : undefined,
+        history: [
+          ...u.history,
+          { at, text: reason ? `Aðgangur ${verb}: ${reason}` : `Aðgangur ${verb}`, by: "Þú" },
+        ],
+      }),
+      (done) =>
+        done.length === 1
+          ? `Aðgangur ${verb}: ${done[0].name}.`
+          : `Aðgangur ${verb} hjá ${countIs(done.length, "notanda", "notendum")}.`
+    );
+  };
+
   const resetFilters = () => {
     setQuery("");
     setPermission("all");
@@ -327,6 +514,7 @@ function useUserManagement(props: UserManagementLabProps) {
     visible,
     page: safePage,
     pageCount,
+    pageSize,
     setPage,
     sort,
     toggleSort: (key: SortKey) =>
@@ -341,6 +529,8 @@ function useUserManagement(props: UserManagementLabProps) {
     isSelf: (u: LabUser) => u.id === currentUserId,
     changeRole,
     setSuspended,
+    changeRoleBatch,
+    suspendBatch,
     resetFilters,
   };
 }
@@ -357,7 +547,21 @@ export default function UserManagementLab(props: UserManagementLabProps) {
   const { look, state = "ready" } = props;
   const m = useUserManagement(props);
   const ready = state === "ready";
-  const rootRef = useRef<HTMLDivElement>(null);
+  const closeConfirm = () => {
+    m.confirm?.onCancel?.();
+    m.setConfirm(null);
+  };
+
+  if (props.panelOnly && look === "skipt") {
+    const user = m.users.find((u) => u.id === m.selectedId);
+    return (
+      <div className={cx(styles.root, styles[look])}>
+        {user && <UserDetail m={m} user={user} focusOnMount={false} />}
+        <ToastRegion m={m} />
+        <ConfirmDialog request={m.confirm} onDone={closeConfirm} />
+      </div>
+    );
+  }
 
   let body: ReactNode;
   if (state === "loading") body = <Skeleton look={look} />;
@@ -367,13 +571,13 @@ export default function UserManagementLab(props: UserManagementLabProps) {
   else if (m.filtered.length === 0) body = <NoMatch onReset={m.resetFilters} query={m.query} />;
   else if (look === "tafla") body = <TableLook m={m} />;
   else if (look === "spjold") body = <CardsLook m={m} />;
-  else if (look === "skipt") body = <SplitLook m={m} rootRef={rootRef} />;
+  else if (look === "skipt") body = <SplitLook m={m} />;
   else body = <BulkLook m={m} />;
 
   const showSummary = ready && props.users.length > 0;
 
   return (
-    <div ref={rootRef} className={cx(styles.root, styles[look])} aria-busy={state === "loading"}>
+    <div className={cx(styles.root, styles[look])} aria-busy={state === "loading"}>
       <Toolbar m={m} showCounts={ready} />
       <p className={styles.summary} role="status">
         {showSummary
@@ -385,7 +589,7 @@ export default function UserManagementLab(props: UserManagementLabProps) {
       {body}
       {ready && m.filtered.length > 0 && m.pageCount > 1 && <Pager m={m} />}
       <ToastRegion m={m} />
-      <ConfirmDialog request={m.confirm} onDone={() => m.setConfirm(null)} />
+      <ConfirmDialog request={m.confirm} onDone={closeConfirm} />
     </div>
   );
 }
@@ -458,7 +662,9 @@ function NameList({ users }: { users: LabUser[] }) {
       {shown.map((u) => (
         <li key={u.id}>{u.name}</li>
       ))}
-      {users.length > shown.length && <li>og {users.length - shown.length} til viðbótar</li>}
+      {users.length > shown.length && (
+        <li className={styles.nameListMore}>og {users.length - shown.length} í viðbót</li>
+      )}
     </ul>
   );
 }
@@ -640,49 +846,118 @@ function CardsLook({ m }: { m: Model }) {
 
 /* ── C · Skipt: list + detail panel ────────────────────────────────────────── */
 
-function SplitLook({ m, rootRef }: { m: Model; rootRef: RefObject<HTMLDivElement | null> }) {
+/** True once the split has collapsed to one column (phone width): the panel replaces the list. */
+function isStacked(el: HTMLElement | null): boolean {
+  if (!el) return false;
+  return getComputedStyle(el).gridTemplateColumns.trim().split(/\s+/).length < 2;
+}
+
+const ROW_KEYS: Record<string, (index: number, last: number) => number> = {
+  ArrowDown: (i, last) => Math.min(i + 1, last),
+  ArrowUp: (i) => Math.max(i - 1, 0),
+  Home: () => 0,
+  End: (_, last) => last,
+};
+
+function PermissionBadge({ permission }: { permission: UserPermissions }) {
+  return (
+    <span className={cx(styles.permBadge, permission === "admin" && styles.permBadgeAdmin)}>
+      {LABEL[permission]}
+    </span>
+  );
+}
+
+function SplitLook({ m }: { m: Model }) {
   const selected = m.users.find((u) => u.id === m.selectedId) ?? null;
+  const splitRef = useRef<HTMLDivElement>(null);
+  const hintId = useId();
   const [focusDetail, setFocusDetail] = useState(false);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+
+  // A link to a user opens the page of the list they are on, so the selected row is in view.
+  useEffect(() => {
+    const index = m.filtered.findIndex((u) => u.id === m.selectedId);
+    if (index >= 0) m.setPage(Math.floor(index / m.pageSize));
+    // Only on mount: after that the reader pages on their own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const ids = m.visible.map((u) => u.id);
+  // Roving tab stop: the list is one Tab stop, and the arrow keys move inside it.
+  const tabStop = [focusedId, m.selectedId].find((x) => x && ids.includes(x)) ?? ids[0];
+
+  const rowFor = (id: string) =>
+    splitRef.current?.querySelector<HTMLElement>(`[data-user-id="${CSS.escape(id)}"]`);
+
+  const open = (id: string) => {
+    m.setSelectedId(id);
+    setFocusedId(id);
+    // Side by side, focus stays in the list. Stacked, it follows the panel.
+    setFocusDetail(isStacked(splitRef.current));
+  };
+
+  const onRowKey = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const step = ROW_KEYS[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const id = ids[step(index, ids.length - 1)];
+    setFocusedId(id);
+    rowFor(id)?.focus();
+    // Side by side, the selection follows focus. Stacked, opening would hide the list: wait for Enter.
+    if (!isStacked(splitRef.current)) {
+      m.setSelectedId(id);
+      setFocusDetail(false);
+    }
+  };
 
   const back = () => {
     const id = m.selectedId;
     m.setSelectedId(null);
-    requestAnimationFrame(() =>
-      rootRef.current?.querySelector<HTMLElement>(`[data-user-id="${id}"]`)?.focus()
-    );
+    if (id) requestAnimationFrame(() => rowFor(id)?.focus());
   };
 
   return (
-    <div className={styles.split} data-has-selection={selected ? "true" : undefined}>
-      <ul className={styles.splitList} aria-label="Notendalisti">
-        {m.visible.map((u) => (
-          <li key={u.id}>
-            <button
-              type="button"
-              data-user-id={u.id}
-              className={styles.splitItem}
-              aria-current={u.id === m.selectedId ? "true" : undefined}
-              onClick={() => {
-                m.setSelectedId(u.id);
-                setFocusDetail(true);
-              }}
-            >
-              <Avatar name={u.name} />
-              <span className={styles.splitWho}>
-                <span className={styles.name}>
-                  {u.name}
-                  {m.isSelf(u) && <SelfBadge />}
+    <div ref={splitRef} className={styles.split} data-has-selection={selected ? "true" : undefined}>
+      <div className={styles.splitListBox}>
+        <p id={hintId} className={styles.srOnly}>
+          Örvalyklar upp og niður færa á milli notenda.
+        </p>
+        <ul className={styles.splitList} aria-label="Notendalisti" aria-describedby={hintId}>
+          {m.visible.map((u, i) => (
+            <li key={u.id}>
+              <button
+                type="button"
+                data-user-id={u.id}
+                tabIndex={u.id === tabStop ? 0 : -1}
+                className={styles.splitItem}
+                aria-current={u.id === m.selectedId ? "true" : undefined}
+                onClick={() => open(u.id)}
+                onKeyDown={(e) => onRowKey(e, i)}
+                onFocus={() => setFocusedId(u.id)}
+              >
+                <Avatar name={u.name} />
+                <span className={styles.splitWho}>
+                  <span className={styles.splitNameLine}>
+                    <span className={cx(styles.name, styles.truncate)}>{u.name}</span>
+                    {m.isSelf(u) && <SelfBadge />}
+                  </span>
+                  <span className={cx(styles.email, styles.truncate)}>{u.email}</span>
+                  <span className={styles.splitRole}>
+                    {LABEL[u.permissions]}
+                    {u.status === "suspended" && (
+                      <span className={styles.splitFrozen}>
+                        <span aria-hidden="true"> · </span>
+                        <span className={styles.srOnly}>, </span>
+                        Frystur
+                      </span>
+                    )}
+                  </span>
                 </span>
-                <span className={styles.email}>{u.email}</span>
-                <span className={styles.splitRole}>
-                  {LABEL[u.permissions]}
-                  {u.status === "suspended" && " · Frystur"}
-                </span>
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
       <div className={styles.detail}>
         {selected ? (
           <UserDetail
@@ -693,14 +968,27 @@ function SplitLook({ m, rootRef }: { m: Model; rootRef: RefObject<HTMLDivElement
             focusOnMount={focusDetail}
           />
         ) : (
-          <p className={styles.detailEmpty}>
-            Veldu notanda úr listanum til að sjá réttindi, aðgang og sögu.
-          </p>
+          <div className={styles.detailEmpty}>
+            <UserRound className={styles.detailEmptyIcon} aria-hidden="true" />
+            <p className={styles.detailEmptyTitle}>Veldu notanda</p>
+            <p className={styles.sectionText}>
+              Veldu notanda úr listanum til að sjá réttindi, aðgang og sögu.
+            </p>
+          </div>
         )}
       </div>
     </div>
   );
 }
+
+/** When the account was frozen: the record if there is one, else the last freeze in the history. */
+function suspendedSince(user: LabUser): string | undefined {
+  if (user.suspension) return user.suspension.since;
+  return [...user.history].reverse().find((h) => h.text.startsWith("Aðgangur frystur"))?.at;
+}
+
+/** History entries shown before "Sýna alla söguna". */
+const HISTORY_SHOWN = 5;
 
 function UserDetail({
   m,
@@ -710,49 +998,97 @@ function UserDetail({
 }: {
   m: Model;
   user: LabUser;
-  onBack: () => void;
+  onBack?: () => void;
   focusOnMount: boolean;
 }) {
   const id = useId();
   const [draft, setDraft] = useState<UserPermissions | null>(null);
-  const value = draft ?? user.permissions;
+  const [busy, setBusy] = useState<"role" | "access" | null>(null);
+  const [roleNote, setRoleNote] = useState<string | null>(null);
+  const [roleError, setRoleError] = useState<string | null>(null);
+  const [accessError, setAccessError] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  const [allHistory, setAllHistory] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
+
+  const value = draft ?? user.permissions;
+  const changed = value !== user.permissions;
+  const locked = m.isLocked(user);
+  const self = m.isSelf(user);
+  const suspended = user.status === "suspended";
+  const since = suspended ? suspendedSince(user) : undefined;
 
   // On a phone the panel replaces the list, so focus follows it there.
   useEffect(() => {
     if (focusOnMount && backRef.current?.offsetParent) headingRef.current?.focus();
   }, [focusOnMount]);
 
-  const submit = (e: FormEvent) => {
+  const submitRole = async (e: FormEvent) => {
     e.preventDefault();
-    m.changeRole([user.id], value);
-    setDraft(null);
+    setRoleError(null);
+    // UX rule 6: the button stays enabled; with nothing changed it says so instead of saving.
+    if (!changed) {
+      setRoleNote("Engin breyting til að vista.");
+      return;
+    }
+    setRoleNote(null);
+    const result = await m.changeRoleBatch([user.id], value, { onStart: () => setBusy("role") });
+    setBusy(null);
+    if (result?.failed.length) setRoleError("Ekki tókst að vista réttindin. Reyndu aftur.");
+    else if (result) setDraft(null);
   };
 
-  const suspended = user.status === "suspended";
+  const toggleAccess = async (e: FormEvent) => {
+    e.preventDefault();
+    setAccessError(null);
+    const result = await m.suspendBatch([user.id], !suspended, {
+      reason,
+      onStart: () => setBusy("access"),
+    });
+    setBusy(null);
+    if (result?.failed.length) {
+      setAccessError(
+        suspended
+          ? "Ekki tókst að virkja aðganginn aftur. Reyndu aftur."
+          : "Ekki tókst að frysta aðganginn. Reyndu aftur."
+      );
+    } else if (result) setReason("");
+  };
+
+  const history = [...user.history].reverse();
+  const shownHistory = allHistory ? history : history.slice(0, HISTORY_SHOWN);
 
   return (
     <article className={styles.detailCard} aria-labelledby={`${id}-h`}>
-      <button
-        ref={backRef}
-        type="button"
-        className={cx(styles.button, styles.buttonGhost, styles.backButton)}
-        onClick={onBack}
-      >
-        <ArrowLeft aria-hidden="true" className={styles.buttonIcon} />
-        Til baka í lista
-      </button>
+      {onBack && (
+        <button
+          ref={backRef}
+          type="button"
+          className={cx(styles.button, styles.buttonGhost, styles.backButton)}
+          onClick={onBack}
+        >
+          <ArrowLeft aria-hidden="true" className={styles.buttonIcon} />
+          Til baka í lista
+        </button>
+      )}
       <header className={styles.detailHead}>
-        <Avatar name={user.name} />
-        <div className={styles.cardWho}>
+        <span className={styles.avatarLg} aria-hidden="true">
+          {initials(user.name)}
+        </span>
+        <div className={styles.detailWho}>
           <h2 id={`${id}-h`} ref={headingRef} tabIndex={-1} className={styles.detailName}>
             {user.name}
-            {m.isSelf(user) && <SelfBadge />}
+            {self && <SelfBadge />}
           </h2>
           <p className={styles.email}>{user.email}</p>
+          <p className={styles.detailBadges}>
+            <PermissionBadge permission={user.permissions} />
+            <StatusBadge user={user} />
+          </p>
         </div>
       </header>
+
       <dl className={styles.facts}>
         <div>
           <dt>Nýskráning</dt>
@@ -762,27 +1098,24 @@ function UserDetail({
           <dt>Síðast inni</dt>
           <dd>{lastSeen(user)}</dd>
         </div>
-        <div>
-          <dt>Staða</dt>
-          <dd>
-            <StatusBadge user={user} />
-          </dd>
-        </div>
       </dl>
 
-      <section className={styles.detailSection} aria-labelledby={`${id}-r`}>
+      <section className={styles.detailSection} aria-labelledby={`${id}-r ${id}-h`}>
         <h3 id={`${id}-r`} className={styles.sectionTitle}>
           Réttindi
         </h3>
-        {m.isLocked(user) ? (
-          <p className={styles.lockedNote}>
-            <strong>{LABEL[user.permissions]}.</strong>{" "}
-            {m.isSelf(user)
-              ? "Þú getur ekki breytt eigin réttindum. Annar stjórnandi þarf að gera það."
-              : "Stjórnendur eru skilgreindir í stillingum kerfisins og þeim er ekki breytt hér."}
-          </p>
+        {locked ? (
+          <div className={styles.lockedNote}>
+            <Lock className={styles.lockedIcon} aria-hidden="true" />
+            <p>
+              <strong>{LABEL[user.permissions]}.</strong>{" "}
+              {self
+                ? "Þú getur ekki breytt eigin réttindum. Annar stjórnandi þarf að gera það."
+                : "Stjórnendur eru skilgreindir í stillingum kerfisins og þeim er ekki breytt hér."}
+            </p>
+          </div>
         ) : (
-          <form onSubmit={submit} className={styles.roleForm}>
+          <form onSubmit={submitRole} className={styles.roleForm}>
             <fieldset className={styles.radios}>
               <legend className={styles.srOnly}>Réttindi {user.name}</legend>
               {GRANTABLE.map((p) => (
@@ -792,94 +1125,204 @@ function UserDetail({
                     name={`${id}-perm`}
                     value={p}
                     checked={value === p}
-                    onChange={() => setDraft(p)}
+                    onChange={() => {
+                      setDraft(p);
+                      setRoleNote(null);
+                    }}
                   />
                   <span>
-                    <span className={styles.radioLabel}>{LABEL[p]}</span>
+                    <span className={styles.radioLabel}>
+                      {LABEL[p]}
+                      {p === user.permissions && <span className={styles.radioNow}> · núna</span>}
+                    </span>
                     <span className={styles.radioHint}>{DESCRIPTION[p]}</span>
                   </span>
                 </label>
               ))}
             </fieldset>
-            <button type="submit" className={cx(styles.button, styles.buttonPrimary)}>
-              Vista réttindi
+            {roleError && (
+              <p className={styles.inlineError} role="alert">
+                {roleError}
+              </p>
+            )}
+            <div className={styles.formActions}>
+              <button
+                type="submit"
+                className={cx(styles.button, styles.buttonPrimary)}
+                disabled={busy === "role"}
+              >
+                {busy === "role" ? "Vista…" : "Vista réttindi"}
+              </button>
+              {changed && busy !== "role" && (
+                <button
+                  type="button"
+                  className={cx(styles.button, styles.buttonGhost)}
+                  onClick={() => setDraft(null)}
+                >
+                  Hætta við
+                </button>
+              )}
+              <p className={styles.formHint} aria-live="polite">
+                {changed
+                  ? `${LABEL[user.permissions]} → ${LABEL[value]}, óvistað`
+                  : (roleNote ?? "")}
+              </p>
+            </div>
+          </form>
+        )}
+      </section>
+
+      <section className={styles.detailSection} aria-labelledby={`${id}-a ${id}-h`}>
+        <h3 id={`${id}-a`} className={styles.sectionTitle}>
+          Aðgangur
+        </h3>
+        {locked ? (
+          <div className={styles.lockedNote}>
+            <Lock className={styles.lockedIcon} aria-hidden="true" />
+            <p>
+              {self
+                ? "Þú getur ekki fryst eigin aðgang."
+                : "Aðgangi stjórnenda er stýrt í stillingum kerfisins."}
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={toggleAccess} className={styles.accessForm}>
+            {suspended ? (
+              <div className={styles.frozenNote}>
+                <p className={styles.frozenTitle}>
+                  {since ? `Frystur síðan ${formatIcelandicDate(since)}` : "Aðgangurinn er frystur"}
+                </p>
+                <p>
+                  {user.suspension?.reason
+                    ? `Ástæða: ${user.suspension.reason}`
+                    : "Engin ástæða skráð."}
+                </p>
+                <p className={styles.frozenHint}>Notandinn kemst ekki inn, en efnið er óbreytt.</p>
+              </div>
+            ) : (
+              <>
+                <p className={styles.sectionText}>
+                  Ef þú frystir aðganginn kemst notandinn ekki inn fyrr en hann er virkjaður aftur.
+                  Efnið helst óbreytt.
+                </p>
+                <div className={styles.field}>
+                  <label htmlFor={`${id}-reason`} className={styles.fieldLabel}>
+                    Ástæða (valfrjálst)
+                  </label>
+                  <input
+                    id={`${id}-reason`}
+                    className={styles.textInput}
+                    value={reason}
+                    maxLength={200}
+                    onChange={(e) => setReason(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+              </>
+            )}
+            {accessError && (
+              <p className={styles.inlineError} role="alert">
+                {accessError}
+              </p>
+            )}
+            <button
+              type="submit"
+              className={cx(
+                styles.button,
+                suspended ? styles.buttonSecondary : styles.buttonDangerQuiet
+              )}
+              disabled={busy === "access"}
+            >
+              {busy === "access"
+                ? suspended
+                  ? "Virki…"
+                  : "Frysti…"
+                : suspended
+                  ? "Virkja aðgang aftur"
+                  : "Frysta aðgang"}
             </button>
           </form>
         )}
       </section>
 
-      {!m.isLocked(user) && (
-        <section className={styles.detailSection} aria-labelledby={`${id}-a`}>
-          <h3 id={`${id}-a`} className={styles.sectionTitle}>
-            Aðgangur
-          </h3>
-          <p className={styles.sectionText}>
-            {suspended
-              ? "Aðgangurinn er frystur. Notandinn kemst ekki inn, en efnið er óbreytt."
-              : "Ef þú frystir aðganginn kemst notandinn ekki inn fyrr en hann er virkjaður aftur. Efnið helst óbreytt."}
-          </p>
-          <button
-            type="button"
-            className={cx(
-              styles.button,
-              suspended ? styles.buttonSecondary : styles.buttonDangerQuiet
-            )}
-            onClick={() => m.setSuspended([user.id], !suspended)}
-          >
-            {suspended ? "Virkja aðgang aftur" : "Frysta aðgang"}
-          </button>
-        </section>
-      )}
-
-      <section className={styles.detailSection} aria-labelledby={`${id}-s`}>
+      <section className={styles.detailSection} aria-labelledby={`${id}-s ${id}-h`}>
         <h3 id={`${id}-s`} className={styles.sectionTitle}>
           Saga
         </h3>
-        {user.history.length === 0 ? (
+        {history.length === 0 ? (
           <p className={styles.sectionText}>Engar breytingar skráðar.</p>
         ) : (
-          <ol className={styles.history}>
-            {[...user.history].reverse().map((h, i) => (
-              <li key={`${h.at}-${i}`}>
-                <time dateTime={h.at} className={styles.historyTime}>
-                  {formatIcelandicDateTime(h.at)}
-                </time>
-                <span>{h.text}</span>
-              </li>
-            ))}
-          </ol>
+          <>
+            <ol className={styles.timeline}>
+              {shownHistory.map((h, i) => (
+                <li key={`${h.at}-${i}`} className={styles.timelineItem}>
+                  <time dateTime={h.at} className={styles.timelineTime}>
+                    {formatIcelandicDate(h.at)}
+                  </time>
+                  <span className={styles.timelineText}>{h.text}</span>
+                  {h.by && <span className={styles.timelineBy}>{h.by}</span>}
+                </li>
+              ))}
+            </ol>
+            {history.length > HISTORY_SHOWN && (
+              <button
+                type="button"
+                className={cx(styles.button, styles.buttonGhost, styles.timelineMore)}
+                aria-expanded={allHistory}
+                onClick={() => setAllHistory((v) => !v)}
+              >
+                {allHistory ? "Sýna færri" : `Sýna alla söguna (${history.length})`}
+              </button>
+            )}
+          </>
         )}
       </section>
     </article>
   );
 }
 
-/* ── D · Val: checkbox rows with bulk actions ──────────────────────────────── */
+/* ── D · Val: checkbox rows with a sticky action bar ───────────────────────── */
+
+type BulkAction = "role" | "freeze" | "reinstate";
+
+const BULK_BUSY: Record<BulkAction, string> = {
+  role: "Breyti…",
+  freeze: "Frysti…",
+  reinstate: "Virki…",
+};
+
+const BULK_FAILED: Record<BulkAction, string> = {
+  role: "breyta réttindum",
+  freeze: "frysta aðgang",
+  reinstate: "virkja aðgang aftur",
+};
+
+interface BulkFailure {
+  action: BulkAction;
+  role?: UserPermissions;
+  users: LabUser[];
+}
 
 function BulkLook({ m }: { m: Model }) {
-  const id = useId();
   const [chosen, setChosen] = useState<Set<string>>(new Set());
-  const [bulkRole, setBulkRole] = useState<UserPermissions>("member");
+  const [anchor, setAnchor] = useState<string | null>(null);
+  const [busy, setBusy] = useState<BulkAction | null>(null);
+  const [failure, setFailure] = useState<BulkFailure | null>(null);
+  const [roleDialog, setRoleDialog] = useState(false);
   const allRef = useRef<HTMLInputElement>(null);
+  const failureRef = useRef<HTMLDivElement>(null);
 
   const selectable = m.visible.filter((u) => !m.isLocked(u));
   // Act only on what can be seen: a selection hidden by a later filter is ignored.
-  const targets = m.filtered.filter((u) => chosen.has(u.id)).map((u) => u.id);
+  const targets = m.filtered.filter((u) => chosen.has(u.id));
   const onPage = selectable.filter((u) => chosen.has(u.id)).length;
   const all = selectable.length > 0 && onPage === selectable.length;
   const some = onPage > 0 && !all;
+  const failedIds = new Set(failure?.users.map((u) => u.id));
 
   useEffect(() => {
     if (allRef.current) allRef.current.indeterminate = some;
   }, [some]);
-
-  const toggle = (uid: string) =>
-    setChosen((prev) => {
-      const next = new Set(prev);
-      if (next.has(uid)) next.delete(uid);
-      else next.add(uid);
-      return next;
-    });
 
   const toggleAll = () =>
     setChosen((prev) => {
@@ -891,11 +1334,78 @@ function BulkLook({ m }: { m: Model }) {
       return next;
     });
 
-  const none = targets.length === 0;
+  /** A click toggles one row; a shift-click sets every row from the last click to this one. */
+  const onRowChange = (uid: string, e: ChangeEvent<HTMLInputElement>) => {
+    const on = e.target.checked;
+    const shift = (e.nativeEvent as MouseEvent).shiftKey;
+    const from = anchor ? selectable.findIndex((u) => u.id === anchor) : -1;
+    const to = selectable.findIndex((u) => u.id === uid);
+    const range =
+      shift && from !== -1 && to !== -1
+        ? selectable.slice(Math.min(from, to), Math.max(from, to) + 1).map((u) => u.id)
+        : [uid];
+    setChosen((prev) => {
+      const next = new Set(prev);
+      for (const id of range) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+    setAnchor(uid);
+  };
+
+  const clear = () => {
+    setChosen(new Set());
+    setAnchor(null);
+  };
+
+  const run = async (
+    action: BulkAction,
+    ids: string[],
+    send: (onStart: () => void) => Promise<BatchResult | null>,
+    role?: UserPermissions
+  ) => {
+    setFailure(null);
+    const result = await send(() => setBusy(action));
+    setBusy(null);
+    if (!result) return;
+    setChosen((prev) => new Set([...prev].filter((id) => !ids.includes(id))));
+    if (result.failed.length) {
+      setFailure({ action, role, users: result.failed });
+      requestAnimationFrame(() => failureRef.current?.focus());
+    } else {
+      // The bar goes with the selection, so focus goes back to the top of the list.
+      requestAnimationFrame(() => allRef.current?.focus());
+    }
+  };
+
+  const freeze = (ids: string[]) =>
+    run("freeze", ids, (onStart) => m.suspendBatch(ids, true, { onStart }));
+  const reinstate = (ids: string[]) =>
+    run("reinstate", ids, (onStart) => m.suspendBatch(ids, false, { onStart }));
+  const changeRole = (ids: string[], role: UserPermissions) =>
+    run("role", ids, (onStart) => m.changeRoleBatch(ids, role, { confirmed: true, onStart }), role);
+
+  const retry = () => {
+    if (!failure) return;
+    const ids = failure.users.map((u) => u.id);
+    if (failure.action === "freeze") freeze(ids);
+    else if (failure.action === "reinstate") reinstate(ids);
+    else if (failure.role) changeRole(ids, failure.role);
+  };
+
+  const ids = targets.map((u) => u.id);
+  const anyActive = targets.some((u) => u.status === "active");
+  const anySuspended = targets.some((u) => u.status === "suspended");
+  const showBar = targets.length > 0 || busy !== null;
 
   return (
     <div className={styles.bulk}>
-      <div className={styles.bulkBar}>
+      <p className={styles.srOnly} aria-live="polite">
+        {targets.length > 0 ? `Valin: ${countIs(targets.length, "notandi", "notendur")}` : ""}
+      </p>
+      <div className={styles.bulkHead}>
         <label className={styles.checkLabel}>
           <input
             ref={allRef}
@@ -903,109 +1413,219 @@ function BulkLook({ m }: { m: Model }) {
             className={styles.checkbox}
             checked={all}
             onChange={toggleAll}
+            disabled={selectable.length === 0}
           />
           Velja alla á síðunni
         </label>
-        <p className={styles.bulkCount} aria-live="polite">
-          {none
-            ? "Veldu notendur til að breyta þeim."
-            : countIs(targets.length, "notandi valinn", "notendur valdir")}
-        </p>
-        <div className={styles.bulkActions}>
-          <div className={styles.inlineField}>
-            <label htmlFor={`${id}-role`} className={styles.fieldLabel}>
-              Ný réttindi
-            </label>
-            <select
-              id={`${id}-role`}
-              className={styles.select}
-              value={bulkRole}
-              onChange={(e) => setBulkRole(e.target.value as UserPermissions)}
-            >
-              {GRANTABLE.map((p) => (
-                <option key={p} value={p}>
-                  {LABEL[p]}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className={cx(styles.button, styles.buttonPrimary)}
-              disabled={none}
-              onClick={() => m.changeRole(targets, bulkRole)}
-            >
-              Breyta réttindum
-            </button>
+        <span className={styles.bulkHeadCols} aria-hidden="true">
+          <span>Réttindi</span>
+          <span>Staða</span>
+        </span>
+      </div>
+
+      {failure && (
+        <div ref={failureRef} className={styles.failure} role="alert" tabIndex={-1}>
+          <TriangleAlert className={styles.failureIcon} aria-hidden="true" />
+          <div className={styles.failureBody}>
+            <p className={styles.failureTitle}>
+              Ekki tókst að {BULK_FAILED[failure.action]} hjá{" "}
+              {countIs(failure.users.length, "notanda", "notendum")}.
+            </p>
+            <NameList users={failure.users} />
+            <div className={styles.failureActions}>
+              <button
+                type="button"
+                className={cx(styles.button, styles.buttonSecondary)}
+                onClick={retry}
+                disabled={busy !== null}
+              >
+                {busy ? BULK_BUSY[busy] : "Reyna aftur"}
+              </button>
+            </div>
           </div>
           <button
             type="button"
-            className={cx(styles.button, styles.buttonDangerQuiet)}
-            disabled={none}
-            onClick={() => m.setSuspended(targets, true)}
+            className={cx(styles.button, styles.buttonGhost, styles.iconButton)}
+            aria-label="Loka"
+            onClick={() => setFailure(null)}
           >
-            Frysta aðgang
+            <X className={styles.buttonIcon} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            className={cx(styles.button, styles.buttonSecondary)}
-            disabled={none}
-            onClick={() => m.setSuspended(targets, false)}
-          >
-            Virkja aftur
-          </button>
-          {!none && (
-            <button
-              type="button"
-              className={cx(styles.button, styles.buttonGhost)}
-              onClick={() => setChosen(new Set())}
-            >
-              Afvelja
-            </button>
-          )}
         </div>
-      </div>
+      )}
+
       <ul className={styles.bulkList}>
         {m.visible.map((u) => {
           const locked = m.isLocked(u);
-          const who = (
-            <span className={styles.bulkWho}>
-              <span className={styles.name}>
-                {u.name}
-                {m.isSelf(u) && <SelfBadge />}
+          const isChosen = chosen.has(u.id);
+          const cells = (
+            <>
+              <span className={styles.bulkWho}>
+                <span className={styles.splitNameLine}>
+                  <span className={styles.name}>{u.name}</span>
+                  {m.isSelf(u) && <SelfBadge />}
+                </span>
+                <span className={styles.email}>{u.email}</span>
               </span>
-              <span className={styles.email}>{u.email}</span>
-            </span>
+              <span className={styles.bulkRole}>
+                {LABEL[u.permissions]}
+                {locked && <span className={styles.reason}>{lockReason(m, u)}</span>}
+              </span>
+              <span className={styles.bulkStatus}>
+                <StatusBadge user={u} />
+                {failedIds.has(u.id) && <span className={styles.failedBadge}>Mistókst</span>}
+              </span>
+            </>
           );
           return (
-            <li key={u.id} className={cx(styles.bulkRow, chosen.has(u.id) && styles.bulkRowChosen)}>
+            <li key={u.id}>
               {locked ? (
-                <div className={styles.checkLabel}>
+                <div className={cx(styles.bulkRow, styles.bulkRowLocked)}>
                   <span className={styles.checkSpacer} aria-hidden="true" />
-                  {who}
+                  {cells}
                 </div>
               ) : (
-                <label className={styles.checkLabel}>
+                <label className={cx(styles.bulkRow, isChosen && styles.bulkRowChosen)}>
                   <input
                     type="checkbox"
                     className={styles.checkbox}
-                    checked={chosen.has(u.id)}
-                    onChange={() => toggle(u.id)}
+                    checked={isChosen}
+                    onChange={(e) => onRowChange(u.id, e)}
                   />
-                  {who}
+                  {cells}
                 </label>
               )}
-              <span className={styles.bulkMeta}>
-                <span className={styles.bulkRole}>
-                  {LABEL[u.permissions]}
-                  {locked && <span className={styles.reason}>{lockReason(m, u)}</span>}
-                </span>
-                <StatusBadge user={u} />
-              </span>
             </li>
           );
         })}
       </ul>
+
+      {showBar && (
+        <div className={styles.actionBar} role="region" aria-label="Aðgerðir fyrir valda notendur">
+          <p className={styles.barCount}>Valin: {countIs(targets.length, "notandi", "notendur")}</p>
+          <button
+            type="button"
+            className={cx(styles.button, styles.buttonGhost)}
+            onClick={clear}
+            disabled={busy !== null}
+          >
+            Hreinsa val
+          </button>
+          <span className={styles.barSpacer} />
+          <button
+            type="button"
+            className={cx(styles.button, styles.buttonSecondary)}
+            onClick={() => setRoleDialog(true)}
+            disabled={busy !== null}
+          >
+            {busy === "role" ? BULK_BUSY.role : "Breyta réttindum…"}
+          </button>
+          {anySuspended && (
+            <button
+              type="button"
+              className={cx(styles.button, styles.buttonSecondary)}
+              onClick={() => reinstate(ids)}
+              disabled={busy !== null}
+            >
+              {busy === "reinstate" ? BULK_BUSY.reinstate : "Virkja aftur"}
+            </button>
+          )}
+          {(anyActive || busy === "freeze") && (
+            <button
+              type="button"
+              className={cx(styles.button, styles.buttonDanger)}
+              onClick={() => freeze(ids)}
+              disabled={busy !== null}
+            >
+              {busy === "freeze" ? BULK_BUSY.freeze : "Frysta aðgang"}
+            </button>
+          )}
+        </div>
+      )}
+
+      <BulkRoleDialog
+        open={roleDialog}
+        users={targets}
+        onClose={() => setRoleDialog(false)}
+        onConfirm={(role) => {
+          setRoleDialog(false);
+          changeRole(ids, role);
+        }}
+      />
     </div>
+  );
+}
+
+/** "Breyta réttindum…": pick the new role, see the count and the names, then confirm. */
+function BulkRoleDialog({
+  open,
+  users,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  users: LabUser[];
+  onClose: () => void;
+  onConfirm: (role: UserPermissions) => void;
+}) {
+  const id = useId();
+  const [role, setRole] = useState<UserPermissions>("member");
+  const changing = users.filter((u) => u.permissions !== role);
+  const promotes = role === "moderator" && changing.length > 0;
+  const n = countIs(users.length, "notanda", "notendum");
+
+  return (
+    <Modal open={open} onClose={onClose} labelledBy={`${id}-t`}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onConfirm(role);
+        }}
+      >
+        <h2 id={`${id}-t`} className={styles.dialogTitle}>
+          Breyta réttindum hjá {n}
+        </h2>
+        <div className={styles.dialogBody}>
+          <fieldset className={styles.radios}>
+            <legend className={styles.fieldLabel}>Ný réttindi</legend>
+            {GRANTABLE.map((p) => (
+              <label key={p} className={cx(styles.radio, role === p && styles.radioChecked)}>
+                <input
+                  type="radio"
+                  name={`${id}-role`}
+                  value={p}
+                  checked={role === p}
+                  onChange={() => setRole(p)}
+                />
+                <span>
+                  <span className={styles.radioLabel}>{LABEL[p]}</span>
+                  <span className={styles.radioHint}>{DESCRIPTION[p]}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          {promotes && <p>{PROMOTE_WARNING}</p>}
+          <NameList users={users} />
+          {changing.length < users.length && (
+            <p className={styles.sectionText}>
+              {changing.length === 0
+                ? `Öll valin eru þegar ${LABEL_LOWER[role]}.`
+                : `Þegar með þessi réttindi: ${countIs(users.length - changing.length, "notandi", "notendur")}. Þeim er ekki breytt.`}
+            </p>
+          )}
+        </div>
+        <div className={styles.dialogActions}>
+          <button type="button" className={cx(styles.button, styles.buttonGhost)} onClick={onClose}>
+            Hætta við
+          </button>
+          <button type="submit" className={cx(styles.button, styles.buttonPrimary)}>
+            {changing.length > 0
+              ? `Breyta hjá ${countIs(changing.length, "notanda", "notendum")}`
+              : "Breyta réttindum"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -1176,12 +1796,52 @@ function ToastRegion({ m }: { m: Model }) {
   );
 }
 
-/* ── Confirmation dialog ───────────────────────────────────────────────────── */
+/* ── Dialogs ───────────────────────────────────────────────────────────────── */
 
 /**
  * Native `<dialog>` opened with `showModal()`: traps focus, makes the page inert and
  * closes on Escape. Focus returns to whatever opened it.
  */
+function Modal({
+  open,
+  onClose,
+  labelledBy,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  labelledBy: string;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) {
+      opener.current = document.activeElement as HTMLElement | null;
+      d.showModal();
+    } else if (!open && d.open) {
+      d.close();
+    }
+  }, [open]);
+
+  return (
+    <dialog
+      ref={ref}
+      className={styles.dialog}
+      aria-labelledby={labelledBy}
+      onClose={() => {
+        onClose();
+        opener.current?.focus();
+      }}
+    >
+      {open && children}
+    </dialog>
+  );
+}
+
 function ConfirmDialog({
   request,
   onDone,
@@ -1189,31 +1849,9 @@ function ConfirmDialog({
   request: ConfirmRequest | null;
   onDone: () => void;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const opener = useRef<HTMLElement | null>(null);
   const id = useId();
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (request && !d.open) {
-      opener.current = document.activeElement as HTMLElement | null;
-      d.showModal();
-    } else if (!request && d.open) {
-      d.close();
-    }
-  }, [request]);
-
   return (
-    <dialog
-      ref={ref}
-      className={styles.dialog}
-      aria-labelledby={`${id}-t`}
-      onClose={() => {
-        onDone();
-        opener.current?.focus();
-      }}
-    >
+    <Modal open={request !== null} onClose={onDone} labelledBy={`${id}-t`}>
       {request && (
         <>
           <h2 id={`${id}-t`} className={styles.dialogTitle}>
@@ -1244,6 +1882,6 @@ function ConfirmDialog({
           </div>
         </>
       )}
-    </dialog>
+    </Modal>
   );
 }

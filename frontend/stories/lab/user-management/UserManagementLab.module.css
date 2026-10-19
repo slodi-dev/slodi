@@ -460,55 +460,131 @@ th.td {
   flex: 1;
 }
 
+/* ── Shared by C and D ── */
+
+.truncate {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.splitNameLine {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.splitNameLine .selfBadge {
+  flex: none;
+}
+.permBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-badge);
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  white-space: nowrap;
+}
+.permBadgeAdmin {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-subtle));
+  color: hsl(var(--sl-color-primary-text));
+}
+.inlineError {
+  margin: 0;
+  color: hsl(var(--sl-color-error-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+.textInput {
+  width: 100%;
+  min-height: var(--um-target);
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  color: hsl(var(--sl-input-text));
+  font: inherit;
+  /* 16px: iOS zooms into anything smaller. */
+  font-size: var(--sl-text-body);
+}
+.textInput:focus-visible {
+  border-color: hsl(var(--sl-input-border-focus));
+}
+.iconButton {
+  padding: 0;
+}
+
 /* ── C · Skipt: list + detail ── */
 
 .split {
   display: grid;
-  grid-template-columns: minmax(16rem, 2fr) 3fr;
+  /* The list keeps one width whatever is selected, so nothing moves when the selection does. */
+  grid-template-columns: minmax(17rem, 22rem) minmax(0, 1fr);
   gap: var(--sl-spacing-md);
   align-items: start;
+}
+.splitListBox {
+  min-width: 0;
 }
 .splitList {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: var(--sl-spacing-xs);
   list-style: none;
   border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-sm);
+  border-radius: var(--sl-radius-md);
   background: hsl(var(--sl-color-surface));
 }
 .splitItem {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--sl-spacing-sm);
   width: 100%;
   min-height: var(--um-target);
   padding: var(--sl-spacing-sm);
   border: 0;
-  border-radius: var(--sl-radius-xs);
+  border-radius: var(--sl-radius-sm);
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background var(--sl-transition-fast);
 }
 .splitItem:hover {
   background: hsl(var(--sl-color-surface-hover));
 }
+/* Selected: tint plus a bar, so it doesn't rely on colour alone. Same box size as unselected. */
 .splitItem[aria-current="true"] {
-  background: hsl(var(--sl-color-surface-active));
-  box-shadow: inset 3px 0 0 hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary-text));
+}
+.splitItem[aria-current="true"]:focus-visible {
+  box-shadow:
+    inset 3px 0 0 hsl(var(--sl-color-primary-text)),
+    var(--sl-shadow-focus);
+}
+.splitItem[aria-current="true"] .avatar {
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
 }
 .splitItem .avatar {
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   font-size: var(--sl-text-xs);
 }
 .splitWho {
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-width: 0;
+  line-height: var(--sl-line-height-tight);
+  gap: 2px;
 }
 .splitWho .email {
   font-size: var(--sl-text-xs);
@@ -517,52 +593,114 @@ th.td {
   font-size: var(--sl-text-xs);
   color: hsl(var(--sl-color-text-secondary));
 }
+.splitFrozen {
+  color: hsl(var(--sl-color-warning-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
 .detail {
   position: sticky;
   top: var(--sl-spacing-sm);
   min-width: 0;
 }
+/* The empty panel and a short detail take the same room, so choosing someone doesn't jump. */
+.detailEmpty,
+.detailCard {
+  min-height: 26rem;
+}
 .detailEmpty {
-  margin: 0;
-  padding: var(--sl-spacing-xl) var(--sl-spacing-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-xs);
+  padding: var(--sl-spacing-xl) var(--sl-spacing-lg);
   border: 1px dashed hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-sm);
-  color: hsl(var(--sl-color-text-secondary));
+  border-radius: var(--sl-radius-md);
   text-align: center;
+}
+.detailEmptyIcon {
+  width: var(--sl-size-icon-lg);
+  height: var(--sl-size-icon-lg);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.detailEmptyTitle {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-body-lg);
+  font-weight: var(--sl-font-weight-heading);
 }
 .detailCard {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-md);
-  padding: var(--sl-spacing-md);
+  gap: var(--sl-spacing-lg);
+  padding: var(--sl-spacing-lg);
   border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-sm);
+  border-radius: var(--sl-radius-md);
   background: hsl(var(--sl-color-surface));
 }
 .backButton {
   display: none;
   align-self: flex-start;
-  margin: calc(var(--sl-spacing-xs) * -1) 0 0 calc(var(--sl-spacing-sm) * -1);
+  margin: calc(var(--sl-spacing-sm) * -1) 0 calc(var(--sl-spacing-sm) * -1)
+    calc(var(--sl-spacing-sm) * -1);
   padding: 0 var(--sl-spacing-sm);
 }
 .detailHead {
   display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-md);
+}
+.avatarLg {
+  display: inline-flex;
+  flex: none;
   align-items: center;
-  gap: var(--sl-spacing-sm);
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--sl-radius-avatar);
+  background: hsl(var(--sl-color-primary-subtle));
+  color: hsl(var(--sl-color-primary-text));
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-body-lg);
+  font-weight: var(--sl-font-weight-semibold);
+}
+.detailWho {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+}
+.detailWho .email {
+  margin: 0;
 }
 .detailName {
   margin: 0;
   font-family: var(--sl-font-family-heading);
-  font-size: var(--sl-text-body-lg);
+  font-size: var(--sl-text-heading-5);
   font-weight: var(--sl-font-weight-heading);
   line-height: var(--sl-line-height-tight);
   overflow-wrap: anywhere;
 }
-.facts {
+.detailName:focus {
+  outline: none;
+}
+.detailBadges {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  margin: 0;
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--sl-spacing-sm) var(--sl-spacing-lg);
   margin: 0;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-secondary));
 }
 .facts dt {
   font-size: var(--sl-text-xs);
@@ -570,56 +708,95 @@ th.td {
 }
 .facts dd {
   margin: 0;
+  font-weight: var(--sl-font-weight-semibold);
 }
 .detailSection {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--sl-spacing-sm);
-  padding-top: var(--sl-spacing-md);
+  padding-top: var(--sl-spacing-lg);
   border-top: 1px solid hsl(var(--sl-color-border-subtle));
 }
 .sectionTitle {
   margin: 0;
-  font-size: var(--sl-text-body-sm);
+  font-size: var(--sl-text-xs);
   font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-text-secondary));
 }
-.sectionText,
-.lockedNote {
+.sectionText {
   margin: 0;
   color: hsl(var(--sl-color-text-secondary));
 }
-.roleForm {
+.lockedNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface-secondary));
+  color: hsl(var(--sl-color-text-primary));
+}
+.lockedNote p {
+  margin: 0;
+}
+.lockedIcon {
+  flex: none;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  margin-top: 0.2em;
+  color: hsl(var(--sl-color-text-secondary));
+}
+.roleForm,
+.accessForm {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sl-spacing-sm);
   width: 100%;
+}
+.accessForm .field {
+  width: 100%;
+  max-width: 28rem;
 }
 .radios {
   display: flex;
   flex-direction: column;
   gap: var(--sl-spacing-xs);
   width: 100%;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
+}
+.radios legend {
+  margin-bottom: var(--sl-spacing-xs);
+  padding: 0;
 }
 .radio {
   display: flex;
   align-items: flex-start;
   gap: var(--sl-spacing-sm);
   min-height: var(--um-target);
-  padding: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
   border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-xs);
+  border-radius: var(--sl-radius-sm);
   cursor: pointer;
+  transition:
+    background var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+.radio:hover {
+  border-color: hsl(var(--sl-color-border-strong));
 }
 .radio input {
+  flex: none;
   width: 1.125rem;
   height: 1.125rem;
   margin: 0.125rem 0 0;
-  accent-color: hsl(var(--sl-color-text-primary));
+  accent-color: hsl(var(--sl-color-primary-text));
 }
 .radio:has(input:focus-visible) {
   box-shadow: var(--sl-shadow-focus);
@@ -627,146 +804,406 @@ th.td {
 .radio input:focus-visible {
   box-shadow: none;
 }
-.radioChecked {
-  border-color: hsl(var(--sl-color-text-primary));
-  background: hsl(var(--sl-color-surface-secondary));
+.radioChecked,
+.radioChecked:hover {
+  border-color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-subtle));
 }
 .radioLabel {
   display: block;
   font-weight: var(--sl-font-weight-semibold);
+}
+.radioNow {
+  font-weight: var(--sl-font-weight-normal);
+  color: hsl(var(--sl-color-text-secondary));
 }
 .radioHint {
   display: block;
   font-size: var(--sl-text-xs);
   color: hsl(var(--sl-color-text-secondary));
 }
-.history {
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  width: 100%;
+}
+.formHint {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: var(--sl-text-xs);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.frozenNote {
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-xs);
+  gap: 2px;
+  width: 100%;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-left: 3px solid hsl(var(--sl-color-warning-text));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-text-primary));
+  overflow-wrap: anywhere;
+}
+.frozenNote p {
+  margin: 0;
+}
+.frozenTitle {
+  color: hsl(var(--sl-color-warning-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+.frozenHint {
+  font-size: var(--sl-text-xs);
+}
+
+/* History: a rail with a dot per change, newest first. */
+.timeline {
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.history li {
+.timelineItem {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--sl-spacing-sm);
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 0 var(--sl-spacing-md) var(--sl-spacing-lg);
 }
-.historyTime {
-  min-width: 11rem;
+.timelineItem:last-child {
+  padding-bottom: 0;
+}
+/* The dot. */
+.timelineItem::before {
+  content: "";
+  position: absolute;
+  top: 0.3rem;
+  left: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-text-secondary));
+}
+.timelineItem:first-child::before {
+  background: hsl(var(--sl-color-primary-text));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-primary-subtle));
+}
+/* The rail down to the next dot. */
+.timelineItem:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 1.35rem;
+  bottom: 0.2rem;
+  left: calc(0.375rem - 1px);
+  width: 2px;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-border));
+}
+.timelineTime {
+  font-size: var(--sl-text-xs);
   color: hsl(var(--sl-color-text-secondary));
   font-variant-numeric: tabular-nums;
+}
+.timelineText {
+  overflow-wrap: anywhere;
+}
+.timelineBy {
+  font-size: var(--sl-text-xs);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.timelineMore {
+  align-self: flex-start;
+  margin-left: calc(var(--sl-spacing-md) * -1);
 }
 
 @container (max-width: 40rem) {
   /* The panel replaces the list, with a way back. */
   .split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
-  .split[data-has-selection] .splitList,
+  .split[data-has-selection] .splitListBox,
   .split:not([data-has-selection]) .detail {
     display: none;
   }
   .detail {
     position: static;
   }
+  .detailCard,
+  .detailEmpty {
+    min-height: 0;
+  }
+  .detailCard {
+    padding: var(--sl-spacing-md);
+  }
   .backButton {
     display: inline-flex;
   }
+  /* With the panel open on a phone, the list's search, count and pages go with the list. */
+  .root:has(.split[data-has-selection]) > :is(.toolbar, .summary, .pager) {
+    display: none;
+  }
 }
 
-/* ── D · Val: checkbox rows with bulk actions ── */
+/* ── D · Val: checkbox rows with a sticky action bar ── */
 
 .bulk {
   display: flex;
   flex-direction: column;
   border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-sm);
+  border-radius: var(--sl-radius-md);
   background: hsl(var(--sl-color-surface));
 }
-.bulkBar {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
+.bulk {
+  --um-cols: 1.25rem minmax(0, 1fr) 13rem 7.5rem;
+}
+.bulkHead,
+.bulkRow {
+  display: grid;
+  grid-template-columns: var(--um-cols);
   align-items: center;
-  gap: var(--sl-spacing-sm) var(--sl-spacing-md);
-  padding: var(--sl-spacing-sm);
+  gap: var(--sl-spacing-xs) var(--sl-spacing-md);
+  padding: 0 var(--sl-spacing-md);
+}
+.bulkHead {
+  min-height: var(--um-target);
   border-bottom: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-sm) var(--sl-radius-sm) 0 0;
+  border-radius: var(--sl-radius-md) var(--sl-radius-md) 0 0;
   background: hsl(var(--sl-color-surface-secondary));
 }
-.bulkCount {
-  flex: 1;
-  min-width: 10rem;
-  margin: 0;
+.bulkHead .checkLabel {
+  grid-column: 1 / 3;
   font-weight: var(--sl-font-weight-semibold);
 }
-.bulkActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-sm);
+.bulkHeadCols {
+  display: contents;
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-secondary));
 }
 .bulkList {
   margin: 0;
   padding: 0;
   list-style: none;
 }
+.bulkList > li + li {
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
 .bulkRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sl-spacing-xs) var(--sl-spacing-md);
-  padding: 0 var(--sl-spacing-sm);
-  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  min-height: calc(var(--um-target) + var(--sl-spacing-sm));
+  padding-block: var(--sl-spacing-sm);
+  cursor: pointer;
+  transition: background var(--sl-transition-fast);
 }
-.bulkRow:last-child {
-  border-bottom: 0;
+label.bulkRow:hover {
+  background: hsl(var(--sl-color-surface-hover));
 }
-.bulkRowChosen {
-  background: hsl(var(--sl-color-surface-active));
+/* Chosen: a tint plus a bar, so it isn't colour alone. Text keeps its own tokens on the tint. */
+.bulkRowChosen,
+label.bulkRowChosen:hover {
+  background: hsl(var(--sl-color-primary-subtle));
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary-text));
+}
+.bulkRow:has(.checkbox:focus-visible) {
+  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-border-focus));
+}
+.bulkRowLocked {
+  cursor: default;
 }
 .checkLabel {
   display: flex;
-  flex: 1 1 16rem;
   align-items: center;
   gap: var(--sl-spacing-sm);
   min-width: 0;
   min-height: var(--um-target);
-  padding: var(--sl-spacing-xs) 0;
   cursor: pointer;
-}
-div.checkLabel {
-  cursor: default;
 }
 .checkbox,
 .checkSpacer {
   flex: none;
   width: 1.25rem;
   height: 1.25rem;
-  margin: 0 var(--sl-spacing-xs);
-  accent-color: hsl(var(--sl-color-text-primary));
+  margin: 0;
+  accent-color: hsl(var(--sl-color-primary-text));
+  cursor: pointer;
 }
 .bulkWho {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  line-height: var(--sl-line-height-tight);
+  gap: 2px;
 }
-.bulkMeta {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-md);
-  padding-bottom: var(--sl-spacing-xs);
+.bulkWho .email {
+  font-size: var(--sl-text-xs);
 }
 .bulkRole {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
+  min-width: 0;
+}
+.bulkStatus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+}
+.failedBadge {
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-badge);
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.failure {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-sm);
+  margin: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-xs) var(--sl-spacing-sm) var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-alert-border-error));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-alert-background-error));
+  color: hsl(var(--sl-alert-text-error));
+}
+.failure:focus {
+  outline: none;
+}
+.failure:focus-visible {
+  box-shadow: var(--sl-shadow-focus);
+}
+.failureIcon {
+  flex: none;
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+  margin-top: 0.2em;
+}
+.failureBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+}
+.failureTitle {
+  margin: 0;
+  font-weight: var(--sl-font-weight-semibold);
+}
+.failure .nameList {
+  color: inherit;
+}
+.failureActions {
+  display: flex;
+  gap: var(--sl-spacing-sm);
+  margin-top: var(--sl-spacing-xs);
+}
+.failure .buttonGhost {
+  color: inherit;
+}
+
+/* The action bar sticks to the bottom of the screen while there is a selection. */
+.actionBar {
+  position: sticky;
+  bottom: var(--sl-spacing-sm);
+  z-index: var(--sl-z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  margin: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-sm) var(--sl-spacing-sm) var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface-raised));
+  box-shadow: var(--sl-shadow-dropdown);
+  animation: barIn var(--sl-transition-fast);
+}
+.barCount {
+  margin: 0;
+  font-weight: var(--sl-font-weight-semibold);
+  white-space: nowrap;
+}
+.barSpacer {
+  flex: 1;
+}
+@keyframes barIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+@keyframes barInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+}
+/* A toast that arrives while the bar is up sits above it, not on it. */
+.root:has(.actionBar) .toastRegion {
+  bottom: calc(var(--um-target) + var(--sl-spacing-sm) * 4 + 2px);
+}
+
+@container (max-width: 40rem) {
+  .bulk {
+    --um-cols: 1.25rem minmax(0, 1fr);
+  }
+  .bulkHeadCols {
+    display: none;
+  }
+  .bulkRole,
+  .bulkStatus {
+    grid-column: 2;
+  }
+  .bulkRole {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 var(--sl-spacing-sm);
+    font-size: var(--sl-text-xs);
+  }
+  .bulkRow {
+    align-items: start;
+  }
+  .bulkRow > .checkbox,
+  .bulkRow > .checkSpacer {
+    margin-top: 0.1rem;
+  }
+  /* On a phone the bar sits at the top, under the thumb's way to the list. */
+  .actionBar {
+    order: -1;
+    top: 0;
+    bottom: auto;
+    margin: 0;
+    border-width: 0 0 1px;
+    border-radius: var(--sl-radius-md) var(--sl-radius-md) 0 0;
+    animation-name: barInTop;
+  }
+  .actionBar .button {
+    flex: 1 1 auto;
+  }
+  .barSpacer {
+    display: none;
+  }
+  .barCount {
+    flex: 1 1 100%;
+  }
+  .root:has(.actionBar) .toastRegion {
+    bottom: var(--sl-spacing-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actionBar {
+    animation: none;
+  }
+  .splitItem,
+  .radio,
+  .bulkRow {
+    transition-duration: 1ms;
+  }
 }
 
 /* ── States ── */
@@ -1002,6 +1439,10 @@ div.checkLabel {
   margin: 0;
   padding-left: var(--sl-spacing-md);
   color: hsl(var(--sl-color-text-secondary));
+}
+.nameListMore {
+  margin-left: calc(var(--sl-spacing-md) * -1);
+  list-style: none;
 }
 .dialogActions {
   display: flex;
