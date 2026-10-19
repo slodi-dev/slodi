@@ -1,12 +1,14 @@
-/* The Staða family: the Dagatal as a planning-status map.
+/* D4 · Stimplar: the Dagatal as a stamp book.
 
-   Every entry carries its status as four local aliases, set from data-status:
-     --st-bg     the tint (success / info / warning subtle, neutral for "?")
-     --st-ink    text and mark colour on that tint (the -text tier: AAA on its subtle)
-     --st-edge   the border
-     --st-solid  the full colour, for phone marks and bars
-   and its flokkur as --pc / --pc-fg (the vivid patrol fill and its near-black foreground; the
-   whole sveit wears the inverse surface). Only tokens, so light, dark and the patrol theme hold.
+   An entry's status sets four local aliases (data-status / data-state):
+     --st-bg     the tint behind the entry (success / info / warning subtle, neutral for "?")
+     --st-ink    text colour on that tint (the -text tier, AAA on its subtle)
+     --st-edge   the entry's border
+     --st-solid  the full colour, for the phone strips
+   A stamp sets its own --ink from data-state. Patrol colour is --pc / --pc-fg (the vivid
+   patrol fill and its near-black foreground; the whole sveit wears the inverse surface).
+   Only tokens, so light, dark and the patrol theme hold. No shadows or glows: in dark mode
+   the inks are the lighter -text tiers, and nothing blooms.
 
    The grid follows its own width (container query): below 40rem, days become buttons. */
 
@@ -22,38 +24,36 @@
 
 /* ── Status aliases ── */
 
-:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status] {
+:is(.entry, .stripMark)[data-status] {
   --st-bg: var(--sl-color-background-secondary);
   --st-ink: var(--sl-color-text-secondary);
   --st-edge: var(--sl-color-border-strong);
   --st-solid: var(--sl-color-border-strong);
 }
 
-:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status="confirmed"] {
+:is(.entry, .stripMark)[data-status="confirmed"] {
   --st-bg: var(--sl-color-success-subtle);
   --st-ink: var(--sl-color-success-text);
   --st-edge: var(--sl-color-success);
   --st-solid: var(--sl-color-success);
 }
 
-:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status="draft"] {
+:is(.entry, .stripMark)[data-status="draft"] {
   --st-bg: var(--sl-color-info-subtle);
   --st-ink: var(--sl-color-info-text);
   --st-edge: var(--sl-color-info);
   --st-solid: var(--sl-color-info);
 }
 
-:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status="tentative"] {
+:is(.entry, .stripMark)[data-status="tentative"] {
   --st-bg: var(--sl-color-warning-subtle);
   --st-ink: var(--sl-color-warning-text);
   --st-edge: var(--sl-color-warning);
   --st-solid: var(--sl-color-warning);
 }
 
-/* The past keeps its marks (a passport of done fundir) but drops the tint: colour marks the
-   work that is left. Cancelled is not a planning state at all: neutral and dashed. */
-:is(.entry, .mark, .markTile, .keyTile, .spanMark):is([data-past], [data-kind="cancelled"]),
-:is(.entry, .markTile)[data-past] .mark {
+/* Past and cancelled leave the heatmap: colour marks the work that is left. */
+:is(.entry, .stripMark):is([data-state="past"], [data-state="cancelled"]) {
   --st-bg: var(--sl-color-surface);
   --st-ink: var(--sl-color-text-secondary);
   --st-edge: var(--sl-color-border);
@@ -106,8 +106,7 @@
 }
 
 .root button:focus-visible,
-.closeCell button:focus-visible,
-.key button:focus-visible {
+.closeCell button:focus-visible {
   outline: 2px solid hsl(var(--sl-color-focus-ring));
   outline-offset: 1px;
 }
@@ -122,21 +121,6 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.rhythm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
-}
-
-.rhythmLabel {
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.rhythmList,
 .keyList {
   display: flex;
   flex-wrap: wrap;
@@ -146,60 +130,42 @@
   list-style: none;
 }
 
-.rhythmItem,
-.keyItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.rhythmItem {
-  font-variant-numeric: tabular-nums;
-}
-
 /* ── The key ── */
 
 .key {
   display: grid;
-  gap: var(--sl-spacing-gap-sm);
+  gap: var(--sl-spacing-gap-md);
   font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.keyItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.key:not(.keyCompact) .keyList:first-child {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--sl-spacing-gap-md);
 }
 
 .keyCompact {
   font-size: var(--sl-text-xs);
 }
 
-.keyLead {
-  margin: 0;
+.keyCompact .keyItem {
+  gap: 4px;
+}
+
+.keyName {
+  display: block;
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.keyLooks {
   color: hsl(var(--sl-color-text-secondary));
-}
-
-.keyTile {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 2px;
-  border: 1px solid hsl(var(--st-edge, var(--sl-color-border)));
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--st-bg, var(--sl-color-surface)));
-}
-
-.keyTile[data-status="unknown"],
-.keyTile[data-kind="cancelled"] {
-  border-style: dashed;
-}
-
-.key:not(.keyCompact) .keyTile {
-  min-width: 2.25rem;
-  height: 2.25rem;
-}
-
-/* The badge and the stamp are their own frame. */
-:is(.look_merki, .look_stimplar) :is(.keyTile, .markTile) {
-  border-color: transparent;
-  background: none;
 }
 
 /* ── Week rows ── */
@@ -234,7 +200,7 @@
   border-right: 0;
 }
 
-/* Implicit rows: 1 day numbers, 2… one per span lane, then the day's entries, then the note. */
+/* Implicit rows: 1 day numbers, 2… one per strip lane, then the day's entries, then the note. */
 .week {
   position: relative;
   z-index: 0;
@@ -342,15 +308,13 @@
 /* ── The entry ── */
 
 .entry {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 5px;
-  row-gap: 1px;
+  display: flex;
   align-items: center;
+  gap: 6px;
   width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 3px 5px;
+  padding: 3px 5px 3px 4px;
   border: 1px solid hsl(var(--st-edge));
   border-radius: var(--sl-radius-sm);
   background: hsl(var(--st-bg));
@@ -361,17 +325,23 @@
 }
 
 .entry[data-status="unknown"],
-.entry[data-kind="cancelled"] {
+.entry[data-state="cancelled"] {
   border-style: dashed;
 }
 
-.entry[data-past],
-.entry[data-kind="cancelled"] {
+.entry:is([data-state="past"], [data-state="cancelled"]) {
   color: hsl(var(--sl-color-text-secondary));
 }
 
 .entry:hover {
   box-shadow: inset 0 0 0 1px hsl(var(--st-edge));
+}
+
+.body {
+  display: grid;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
 }
 
 .line {
@@ -391,7 +361,7 @@
   font-weight: var(--sl-font-weight-emphasis);
 }
 
-/* The usual fundur on its usual evening: one quiet line, no time (the rhythm legend has it). */
+/* The usual fundur on its usual evening: one quiet line, no time (the legend has it). */
 .entry[data-kind="routine"] {
   padding-block: 1px;
 }
@@ -404,13 +374,12 @@
   font-weight: var(--sl-font-weight-medium);
 }
 
-/* Anything that breaks the rhythm is loud: heavier title and a second line saying why. */
-.entry:is([data-kind="exception"], [data-kind="span"]) .title {
+/* Anything that breaks the rhythm is loud: heavier title and a line saying why. */
+.entry:is([data-kind="exception"], [data-kind="span"]):not([data-state="past"]) .title {
   font-weight: var(--sl-font-weight-heading);
 }
 
 .meta {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -453,49 +422,83 @@
   line-height: 1;
 }
 
-/* ── Span bars ── */
-
-.span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  width: auto;
-  align-self: start;
-  margin: 1px 4px 2px;
-  border-width: 1.5px;
-  border-radius: var(--sl-radius-md);
+/* Past fundir step back: no tint, grey text, and the chip goes quiet too. */
+.entry[data-state="past"] .chip {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
 }
 
-.span .title {
+/* ── The multi-day strip ── */
+
+/* A stamped strip, like a ticket roll: a row of punched holes at each end. Where it runs on
+   from last week's row or into next week's, that end is a flat dashed cut instead. */
+.strip {
+  position: relative;
+  align-self: start;
+  width: auto;
+  margin: 1px 4px 2px;
+  padding-inline: 12px;
+  border-width: 1.5px;
+  border-radius: var(--sl-radius-sm);
+}
+
+.strip::before,
+.strip::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 4px;
+  background: radial-gradient(
+      circle at 2px 2.5px,
+      hsl(var(--sl-color-surface)) 1.2px,
+      transparent 1.5px
+    )
+    0 0 / 4px 5px repeat-y;
+  box-shadow: none;
+}
+
+.strip::before {
+  left: 3px;
+}
+
+.strip::after {
+  right: 3px;
+}
+
+.strip .title {
   display: block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-/* Running on from last week's row, or on into next week's: the cut edge is flat and meets
-   the grid's edge, so the bar reads as one bar broken by the row. */
-.span.fromBefore {
+.strip.fromBefore {
   margin-left: 0;
   border-left-style: dashed;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
 
-.span.intoNext {
+.strip.fromBefore::before,
+.strip.intoNext::after {
+  display: none;
+}
+
+.strip.intoNext {
   margin-right: 0;
   border-right-style: dashed;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
 
-.spanText {
+.stripText {
   display: grid;
   flex: 1;
   min-width: 0;
 }
 
-.spanRange {
+.stripRange {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -503,179 +506,6 @@
   font-weight: var(--sl-font-weight-emphasis);
   font-variant-numeric: tabular-nums;
   color: hsl(var(--st-ink));
-}
-
-.typeBadge {
-  display: inline-grid;
-  place-items: center;
-  width: 1.375rem;
-  height: 1.375rem;
-  border-radius: 50%;
-  background: hsl(var(--sl-color-surface-inverse));
-  color: hsl(var(--sl-color-text-inverse));
-}
-
-/* ── The marks ── */
-
-.mark {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  color: hsl(var(--st-ink));
-  font-weight: var(--sl-font-weight-heading);
-  line-height: 1;
-}
-
-.size_sm {
-  width: 0.875rem;
-  height: 0.875rem;
-  font-size: var(--sl-primitive-font-size-2xs);
-}
-
-.size_md {
-  width: 1.125rem;
-  height: 1.125rem;
-  font-size: var(--sl-text-overline);
-}
-
-.size_lg {
-  width: 1.75rem;
-  height: 1.75rem;
-  font-size: var(--sl-text-body);
-}
-
-.markCancelled {
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-/* D2 · Merki: a round sewn-on badge. A solid outer edge and a dashed inner ring for the
-   stitching; an empty, dashed badge for "?" (nothing sewn on yet). A small swallowtail flag
-   tab in the flokkur's colour hangs off its shoulder. */
-.mark_merki {
-  border: 1.5px solid hsl(var(--st-ink));
-  border-radius: 50%;
-  background: hsl(var(--st-bg));
-  outline: 1px dashed hsl(var(--st-ink));
-  outline-offset: -4px;
-  margin-right: 0.35rem;
-}
-
-.mark_merki.size_md {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.mark_merki.size_lg {
-  width: 2.25rem;
-  height: 2.25rem;
-  outline-offset: -5px;
-}
-
-.mark_merki.size_sm {
-  width: 1rem;
-  height: 1rem;
-  outline: 0;
-  margin-right: 0;
-}
-
-.mark_merki[data-status="unknown"] {
-  border-style: dashed;
-  outline: 0;
-}
-
-.flagTab {
-  position: absolute;
-  top: -3px;
-  right: -0.55rem;
-  display: grid;
-  place-items: center start;
-  width: 0.85rem;
-  height: 0.7rem;
-  padding-left: 1px;
-  background: hsl(var(--pc));
-  color: hsl(var(--pc-fg));
-  font-size: var(--sl-primitive-font-size-2xs);
-  line-height: 1;
-  clip-path: polygon(0 0, 100% 0, 72% 50%, 100% 100%, 0 100%);
-}
-
-.size_sm .flagTab {
-  display: none;
-}
-
-.size_lg .flagTab {
-  width: 1.1rem;
-  height: 0.9rem;
-  right: -0.75rem;
-}
-
-/* D3 · Varðeldur: the icon grows with the plan. Sticks, a spark, a flame, a fire on logs.
-   A lit fire flickers three times when it appears; never under reduced motion. */
-.mark_vardeldur[data-status="confirmed"] svg {
-  transform-origin: 50% 90%;
-  animation: flicker 0.9s ease-in-out 3;
-}
-
-@keyframes flicker {
-  0%,
-  100% {
-    transform: scale(1) rotate(0deg);
-  }
-  35% {
-    transform: scale(1.08, 0.94) rotate(-3deg);
-  }
-  70% {
-    transform: scale(0.96, 1.06) rotate(2deg);
-  }
-}
-
-/* D4 · Stimplar: a passport stamp with the fundur's theme. Stamped (staðfest) is rotated with
-   a dashed rubber edge; drög is the stamp lined up but not pressed; óvíst a dotted outline;
-   "?" an empty dotted box waiting for its stamp. */
-.mark_stimplar {
-  border: 1.5px dashed hsl(var(--st-ink));
-  border-radius: 4px;
-  background: hsl(var(--st-bg));
-}
-
-.mark_stimplar.size_md {
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-block: -1px;
-}
-
-.mark_stimplar.size_lg {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-width: 2px;
-}
-
-.mark_stimplar.size_sm {
-  width: 1rem;
-  height: 1rem;
-}
-
-.mark_stimplar[data-status="confirmed"] {
-  transform: rotate(-8deg);
-  animation: thunk 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.3);
-}
-
-.mark_stimplar:is([data-status="tentative"], [data-status="unknown"]) {
-  border-style: dotted;
-}
-
-.mark_stimplar[data-status="unknown"] {
-  background: none;
-}
-
-@keyframes thunk {
-  from {
-    transform: scale(1.5) rotate(-18deg);
-  }
-  to {
-    transform: scale(1) rotate(-8deg);
-  }
 }
 
 /* ── Phone marks ── */
@@ -690,28 +520,13 @@
   max-width: 100%;
 }
 
-.markTile {
-  display: inline-grid;
-  place-items: center;
-  width: 1.05rem;
-  height: 1.05rem;
-  border: 1px solid hsl(var(--st-edge));
-  border-radius: 3px;
-  background: hsl(var(--st-bg));
-}
-
-.markTile[data-status="unknown"],
-.markTile[data-kind="cancelled"] {
-  border-style: dashed;
-}
-
 .markMore {
   font-size: var(--sl-primitive-font-size-2xs);
   font-weight: var(--sl-font-weight-heading);
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.spanMark {
+.stripMark {
   display: none;
   align-self: center;
   height: 6px;
@@ -720,18 +535,18 @@
   background: hsl(var(--st-solid));
 }
 
-.spanMark[data-status="unknown"] {
+.stripMark[data-status="unknown"] {
   background: none;
   border: 1.5px dashed hsl(var(--st-solid));
 }
 
-.spanMark.fromBefore {
+.stripMark.fromBefore {
   margin-left: 0;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
 
-.spanMark.intoNext {
+.stripMark.intoNext {
   margin-right: 0;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
@@ -764,10 +579,23 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
+.entryDetail {
+  min-height: 3.5rem;
+  padding: 6px 10px 6px 8px;
+  gap: 10px;
+}
+
+.entryDetail .title,
+.entryDetail[data-kind="routine"] .title {
+  display: block;
+  white-space: normal;
+  font-size: var(--sl-text-body-sm);
+}
+
 @container plancal (max-width: 40rem) {
   .dayHd,
   .dayBody,
-  .span {
+  .strip {
     display: none;
   }
 
@@ -805,7 +633,7 @@
     box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
   }
 
-  .spanMark {
+  .stripMark {
     display: block;
   }
 
@@ -817,18 +645,6 @@
   .dayPanel {
     display: block;
     margin-top: var(--sl-spacing-gap-md);
-  }
-
-  .panelList .entry {
-    min-height: 3rem;
-    padding: 6px 8px;
-  }
-
-  .panelList .title,
-  .panelList .entry[data-kind="routine"] .title {
-    display: block;
-    white-space: normal;
-    font-size: var(--sl-text-body-sm);
   }
 }
 
@@ -855,11 +671,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mark_vardeldur[data-status="confirmed"] svg,
-  .mark_stimplar[data-status="confirmed"] {
-    animation: none;
-  }
-
   .entry,
   .more,
   .nav {

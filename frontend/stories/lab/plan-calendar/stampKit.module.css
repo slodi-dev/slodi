@@ -1,0 +1,257 @@
+/* Stamp kit: the rubber-stamp language (see stampKit.tsx). Tokens only.
+
+   A stamp's ink is its `color`, set from data-state:
+     staðfest  success-text, inked, double rule, roughened edge, tilted, the thunk
+     drög      info-text, dashed rule, the picture in pencil grey
+     óvíst     warning-text, dotted rule, a faint pencil sketch and a "?"
+     óákveðið  text-secondary, an empty dotted box and a "?"
+     lokið     border-strong, smaller and grey: the past stays quiet
+     fellur niður  border-strong, pressed and crossed out, a little smaller
+   The -text tiers are already the lighter inks in dark mode; nothing glows. */
+
+.stamp {
+  --ink: var(--sl-color-text-secondary);
+  --pencil: var(--sl-color-text-secondary);
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  color: hsl(var(--ink));
+  transform: rotate(var(--rot, 0deg));
+}
+
+.stamp svg {
+  display: block;
+  overflow: visible;
+}
+
+.stamp_sm {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.stamp_md {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.stamp_lg {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.stamp_xl {
+  width: 5rem;
+  height: 5rem;
+}
+
+.outer,
+.inner {
+  fill: none;
+  stroke: currentColor;
+}
+
+.outer {
+  stroke-width: 2.6;
+}
+
+.inner {
+  stroke-width: 1.1;
+}
+
+.bandFill {
+  fill: currentColor;
+}
+
+.icon {
+  color: currentColor;
+}
+
+.question {
+  fill: currentColor;
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: 24px;
+}
+
+.strike {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.bandText {
+  fill: currentColor;
+  font-family: var(--sl-font-family-body);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: 7.4px;
+  letter-spacing: 0.06em;
+}
+
+/* The word is cut out of the inked band, like a real rubber stamp. */
+.bandKnockout {
+  fill: hsl(var(--sl-color-surface));
+}
+
+/* Staðfest: inked. Double rule, roughened edge (the filter), its own tilt. */
+.stamp[data-state="confirmed"] {
+  --ink: var(--sl-color-success-text);
+}
+
+/* Drög: the frame is ruled in dashes and the picture drawn in pencil; not pressed yet. */
+.stamp[data-state="draft"] {
+  --ink: var(--sl-color-info-text);
+}
+
+.stamp[data-state="draft"] .outer {
+  stroke-width: 1.8;
+  stroke-dasharray: 5 3.5;
+}
+
+.stamp[data-state="draft"] .icon {
+  color: hsl(var(--pencil));
+}
+
+/* Óvíst: a dotted outline, the picture only a faint pencil sketch, and a "?" in the corner. */
+.stamp[data-state="tentative"] {
+  --ink: var(--sl-color-warning-text);
+}
+
+.stamp[data-state="tentative"] .outer,
+.stamp[data-state="unknown"] .outer {
+  stroke-width: 2.6;
+  stroke-dasharray: 0.1 4.4;
+  stroke-linecap: round;
+}
+
+.stamp[data-state="tentative"] .icon {
+  color: hsl(var(--pencil));
+  opacity: 0.55;
+}
+
+.stamp[data-state="tentative"] .question {
+  font-size: 14px;
+}
+
+/* Óákveðið: an empty dotted box with a "?": room for a stamp, nothing in it. */
+.stamp[data-state="unknown"] {
+  --ink: var(--sl-color-text-secondary);
+}
+
+/* Lokið: smaller and faded into the grey, so the past half of the month stays quiet. */
+.stamp[data-state="past"] {
+  --ink: var(--sl-color-border-strong);
+  transform: rotate(var(--rot, 0deg)) scale(0.8);
+}
+
+/* Fellur niður: a grey stamp, crossed out. */
+.stamp[data-state="cancelled"] {
+  --ink: var(--sl-color-border-strong);
+  transform: rotate(var(--rot, 0deg)) scale(0.9);
+}
+
+.stamp[data-state="cancelled"] .icon {
+  opacity: 0.5;
+}
+
+/* The thunk: pressed down past its size, then settling, with a ring of ink spreading out.
+   CSS runs it when the stamp mounts or its state turns to staðfest, never on a re-render. */
+.stamp[data-state="confirmed"] {
+  animation: thunk 380ms cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
+.stamp[data-state="confirmed"]::after {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  opacity: 0;
+  animation: spread 460ms ease-out 200ms both;
+  pointer-events: none;
+}
+
+@keyframes thunk {
+  0% {
+    transform: rotate(calc(var(--rot, 0deg) - 7deg)) scale(1.45);
+  }
+  55% {
+    transform: rotate(var(--rot, 0deg)) scale(0.9);
+  }
+  78% {
+    transform: rotate(var(--rot, 0deg)) scale(1.03);
+  }
+  100% {
+    transform: rotate(var(--rot, 0deg)) scale(1);
+  }
+}
+
+@keyframes spread {
+  from {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+/* ── Fundir vikunnar ── */
+
+.rhythm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
+  font-size: var(--sl-text-xs);
+}
+
+.rhythmLabel {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.rhythmList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rhythmItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: hsl(var(--sl-color-text-primary));
+  font-variant-numeric: tabular-nums;
+}
+
+.rhythmChip {
+  display: inline-grid;
+  place-items: center;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 3px;
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+  font-size: var(--sl-primitive-font-size-2xs);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp[data-state="confirmed"],
+  .stamp[data-state="confirmed"]::after {
+    animation: none;
+  }
+
+  .stamp[data-state="confirmed"]::after {
+    display: none;
+  }
+}

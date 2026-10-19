@@ -3,197 +3,126 @@ import * as Stories from "./PlanCalendarLab.stories";
 
 <Meta of={Stories} name="Rationale" />
 
-# PlanCalendar day entries: the Staða family
+# PlanCalendar day entries: D4 · Stimplar
 
-## A month is a rhythm plus exceptions
+## Why Stimplar
 
-A sveit almost always meets the same way every week: each flokkur on its own weekday at its own
-time (Refir mán 17:30, Ernir þri 19:30, Uglur mið 19:30, Birnir fim 18:00). Around that rhythm
-sit a few exceptions: a fös–sun útilega, a laugardags dagsferð, a mót, a fundur moved because of
-a sveitarfundur, a week that falls out for vetrarfrí.
+Two rounds led here. From the first (Fáni, Dagbók, Miði, Staða, Tákn) the user picked **Staða**:
+the month as a planning-status map, because the question a sveitarforingi opens the month for is
+"what haven't I sorted yet?". From the four Staða variations (plain glyph, sewn-on badge,
+campfire, passport stamp) the user picked **Stimplar**.
 
-So roughly 80% of the entries in a month are the same recurring fundur, and they're the least
-interesting thing on the page. The current Dagatal gives each one the same white card with the
-time printed again, so the rhythm becomes a wall of cards and the exceptions drown in it. Every
-variation here follows the same rules:
+It keeps Staða's heatmap (green sorted, blue drafted, amber unsure, grey "?") and adds two things
+the others lacked:
 
-- **The usual fundur is one quiet line.** It has the status mark, the flokkur's initial and the
-  title, and no time. The times are printed once, in the **Fundir vikunnar** legend above the
-  grid.
-- **Anything that breaks the rhythm is loud.** It gets a bold title and a second line saying why:
-  its time, "Fært frá mið." for a moved fundur, the date range for a span, "+15 mín." over budget.
-- **A fundur that falls out says so.** It shows a ⊘ mark with "Refir fellur niður" and the
-  reason, instead of silently vanishing. A gap and a cancellation are different facts.
-- **A multi-day event is one bar** across its days. When it crosses a week row, the bar
-  continues on the next row, with a flat, dashed cut edge and "↳ … framhald". Only the first
-  segment is a button, named e.g. _"Haustútilega á Úlfljótsvatni, fös 30. okt.–sun 1. nóv., öll
-  sveitin, Úlfljótsvatn, drög"_.
-- **Week notes** ("Vetrarfrí í skólum 22.–26. okt.", "Jólafrí") run along the bottom of their
-  week row, so a quiet week explains itself.
+- **A ritual.** A fundur is _stamped_ when it's ready, the way a scout gets a stamp in a book.
+  Finishing a plan feels like something.
+- **Information.** The stamp's picture is the fundur's **theme** (compass for Ratleikni, tree for
+  Útilíf …) or, for anything that isn't a flokksfundur, its **type** (tent, mountain, flag …). A
+  month of compasses and no trees is a programme-balance signal for free.
 
-## Why Staða
+It also speaks the same dashed "stamp" dialect as Alert, so the planner and the app's messages
+look like one product.
 
-From the first round (Fáni, Dagbók, Miði, Staða, Tákn), the user picked **Staða**: the month as
-a planning-status map. It answers the question a sveitarforingi actually opens the month for,
-"what haven't I sorted yet?". It is also the only one where the A8 ramp (progressive detailing)
-reads at a glance: green near today, blue and amber after that, dashed "?" further out. Colour
-carries **status**; the flokkur is second, as a small initial. The four variations keep that
-heatmap and change only the **mark** each entry wears, from plain to playful.
+## The month: a rhythm plus exceptions
 
-Common to all four:
+Roughly 80% of a month is the same weekly fundur per flokkur (Refir mán 17:30, Ernir þri 19:30,
+Uglur mið 19:30, Birnir fim 18:00). The rest are exceptions: a fös–sun útilega, a laugardags
+dagsferð, a mót, a moved fundur, a week that falls out.
 
-- The tint is the spec's status mapping: staðfest → success, drög → info, óvíst → warning,
-  óákveðið → neutral, dashed, "?".
-- The mark always differs in **shape** per status, so status never depends on colour alone.
-- Past entries keep their mark but lose the tint, because colour is for work that's left.
-- Each entry is a button with the whole story as its name (_"Flokksfundur Arna: Kortalestur og
-  GPS, 20. október kl. 19:30, Skátaheimilið, staðfest, 15 mínútur umfram"_).
-- A day folds after 3 entries behind "+N fleiri".
-- Below 40rem of its own width, each day is a 48px button with mini marks, spans become thin bars
-  across the days, and the chosen day is listed below the grid in full. A span is listed as
-  "Dagur 2 af 3".
-- Dates come from `lib/format.ts`, counts from `countIs`, colours from `--sl-*` tokens only.
-- Animation is limited to a stamp "thunk" and three flame flickers, transform only, and none under
-  `prefers-reduced-motion`.
+- **The usual fundur is one quiet line:** stamp, flokkur initial, title, no time. The times are
+  printed once, in **Fundir vikunnar** above the grid.
+- **Anything that breaks the rhythm is loud:** a bold title and a line saying why (its time,
+  "Fært frá mið.", the date range, "+15 mín.").
+- **A multi-day event is one stamped strip** across its days, with punched holes at each end like
+  a ticket roll. Where it crosses a week row, the bar continues on the next row from a flat,
+  dashed cut, marked "↳ … framhald". Only the first segment is a button: _"Haustútilega á
+  Úlfljótsvatni, fös 30. okt.–sun 1. nóv., öll sveitin, Úlfljótsvatn, drög"_.
+- **A fundur that falls out** gets a crossed-out stamp and "Birnir fellur niður · vetrarfrí",
+  instead of vanishing.
+- **Week notes** ("Vetrarfrí í skólum 22.–26. okt.", "Jólafrí") run along the bottom of their row.
+
+## The stamp language
+
+<Canvas of={Stories.StampStatesStory} />
+
+Each state is a different **shape**, not only a different colour. A stamp is only drawn once it's
+_earned_; until then the box shows how far the fundur has come.
+
+- **Staðfest** (KLÁRT): inked: double rule, roughened edge, its picture, a slight tilt. The only pressed planning stamp. A month of these is a month that's ready.
+- **Drög** (DRÖG): a dashed rule, the picture drawn in pencil grey. The plan exists and its picture is known, but it hasn't been pressed.
+- **Óvíst** (ÓVÍST): a dotted outline, a faint pencil sketch, a small "?" in the corner. An idea, not a decision. Dotted, not dashed, so it can't be confused with drög.
+- **Óákveðið**: an empty dotted box with a big "?". ADR-002 §3's first-class "?": a place for a fundur, with nothing in it yet.
+- **Lokið** (LOKIÐ): smaller (80%), in border grey, no tint behind it. The past is reference. Stamped past weeks were too loud in the grid lab, so they recede.
+- **Fellur niður** (FELLUR NIÐUR): pressed in grey, crossed out. A cancellation is a fact worth showing, and it's not the same as "not planned".
+
+The words on the band only appear from the list-row size up (the phone day list, the key). In a
+50–150px cell the frame, picture and "?" carry the state, and every entry's accessible name says
+it in words ("…, drög", "…, lokið", "… fellur niður, 22. október: vetrarfrí").
+
+**Craft:**
+
+- **The ink edge** is an SVG filter: turbulence drives a small displacement, and a second, finer
+  noise is used as a speckle mask, so no two edges are perfectly straight. There are no images,
+  and the colour is a token. The band's word is drawn outside the filter, so it stays crisp.
+- **The tilt** comes from the fundur's id (`rotationFor`, −9° … +6°). It's the same on every
+  render and in every view, but neighbours differ, so a stamped month looks hand-stamped rather
+  than tiled.
+- **The thunk** is a quick press past full size, a settle, and a ring of ink spreading out. It's
+  CSS on the staðfest state, so it plays when a stamp first appears or turns staðfest, and never
+  on a re-render. It uses transform only, and is off under `prefers-reduced-motion`.
+- **Dark mode:** the inks are the `-text` tiers, which are the lighter steps in dark. There are no
+  shadows or glows, and the knocked-out band word is the surface colour.
 
 <Canvas of={Stories.Key} />
 
----
+## Information hierarchy
 
-## D1 · Staða
+1. **Status**, from the stamp's state and the entry's tint.
+2. **What it is**: the title. A quiet line for the usual fundur, bold for an exception.
+3. **Whose and when**: the flokkur initial, then the time and the reason it's an exception.
+   The stamp's picture adds the theme.
 
-<Canvas of={Stories.StadaBusy} />
+## Trade-offs
 
-**Story it tells:** where the planning work is. Green is sorted, blue is drafted, amber is
-unsure, and dashed grey is still a "?".
+- **Two things vary per stamp** (the picture and the state), so it's busier than a plain glyph.
+  The tint does a lot of the status work at cell size.
+- **Bands are illegible at cell size**, so the words only appear from the list row up. In the grid
+  the states rely on shape: ink, dashes, dots, an empty box, a cross.
+- **The picture needs `theme`**, which is optional in the contract. Without it every flokksfundur
+  falls back to a flag.
+- **Tilt costs a pixel or two** of alignment, and a thunk on page load is a small flurry. It plays
+  once per stamp and never on re-render.
+- **The rough edge is a filter per stamp.** That's fine at a month's 30–40 stamps; a season list
+  of hundreds would want one shared filter in a `<defs>`.
 
-**Information hierarchy:**
-
-1. Status, from the tint plus a glyph: ✓ staðfest, ✎ drög, ⧗ óvíst, ? óákveðið.
-2. The title: a quiet line for the usual fundur, bold for an exception.
-3. The flokkur initial, then the time and the reason it's an exception.
-
-**Why it looks this way:** it's the picked look, adapted to the rhythm. The glyph is the smallest
-mark that still separates four states without colour, so the tint and the title carry the cell.
-
-**Trade-offs:** the most sober of the four. Nothing here is fun, and the glyphs are small at 13px.
-It's still a bordered rounded rectangle, though the tint and the quiet routine lines keep it from
-reading as the old card.
-
-## D2 · Merki
-
-<Canvas of={Stories.MerkiBusy} />
-
-**Story it tells:** every fundur earns a sewn-on badge as it's planned. A month full of stitched
-checks is a month that's ready.
-
-**Information hierarchy:**
-
-1. Status, as a round badge with a solid edge and a dashed inner ring (the embroidery). The badge
-   holds a check (staðfest), a pencil (drög) or a question mark (óvíst). An empty, dashed badge
-   means óákveðið, because nothing has been sewn on yet.
-2. The title.
-3. The flokkur, as a small swallowtail flag tab in its colour, with its initial, on the badge's
-   shoulder. A troop-wide event's tab is black with "S" (white in dark).
-
-**Why it looks this way:** merki are what a scout collects and sews on, so "earning the badge" is
-a metaphor the people using this already live with. The flag tab carries the patrol colour
-without competing with the status tint.
-
-**Trade-offs:** the badge is the widest mark (24px plus the tab), so titles get less room. The
-tab's initial is 10px. On a phone the badge shrinks to 16px and loses its stitching and its tab,
-so it becomes D1 with a circle.
-
-## D3 · Varðeldur
-
-<Canvas of={Stories.VardeldurBusy} />
-
-**Story it tells:** the fire grows with the plan. The month shows where the fires are already lit
-and where there are still only sticks.
-
-**Information hierarchy:**
-
-1. Status as a fire that grows:
-   - unlit crossed sticks (óákveðið), a small inline SVG;
-   - a spark (`Sparkles`, óvíst);
-   - a flame (`Flame`, drög);
-   - a fire on logs (`FlameKindling`, staðfest), which flickers three times when it appears.
-2. The title.
-3. The flokkur initial and the time. Multi-day útilegur, mót and dagsferðir also carry a round
-   **tent / tent-and-tree / mountain badge**, so a span says what kind of weekend it is.
-
-**Why it looks this way:** the campfire is the centre of scouting, and "getting the fire going"
-is exactly what planning a fundur feels like. The four steps read as a sequence even to someone
-who never opens the key. That's the biggest advantage over a set of unrelated icons.
-
-**Trade-offs:** spark vs flame is the subtlest pair at 15px. The fire on logs is busy at small
-sizes. The metaphor implies urgency ("the fire is out!") that an óákveðið fundur three weeks away
-doesn't deserve, so the dashed grey tint has to keep "?" calm. The flicker is decoration and must
-stay off under reduced motion, which it does.
-
-## D4 · Stimplar
-
-<Canvas of={Stories.StimplarBusy} />
-
-**Story it tells:** a passport of fundir. A ready fundur gets its stamp, and the month fills up
-like a stamp book. Undecided ones are empty boxes waiting.
-
-**Information hierarchy:**
-
-1. Status as the stamp's state:
-   - **staðfest:** pressed, rotated −8° with a solid dashed rubber edge, and a short "thunk" as it
-     lands;
-   - **drög:** lined up but not pressed (straight, dashed);
-   - **óvíst:** a dotted outline;
-   - **óákveðið:** an empty dotted box with "?".
-2. The title.
-3. The stamp's picture, which is the fundur's **theme** for a flokksfundur and its **type** for
-   anything else (see the key). Then the flokkur initial and the time.
-
-**Why it looks this way:** it reuses the dashed "stamp" language we picked for Alert, so the
-planner and the app's messages speak the same visual dialect. The icon carries real information
-the other three don't: what the fundur is _about_. A month of Ratleikni compasses with no Útilíf
-tree is a programme-balance signal for free.
-
-**Trade-offs:** two things vary per stamp (picture and pressing), so it's the busiest. The rotation
-costs a pixel or two of alignment. The theme icon needs `theme`, which is optional in the contract;
-without it every flokksfundur falls back to a flag. Drög vs óvíst (dashed vs dotted) is subtle,
-so the tint does most of that work.
-
----
-
-## What the data needs
+## What the data needs (sc-646)
 
 Checked against `services/plan.service.ts` and `docs/frontend/plan-api-contract.md` (on
 `origin/release/vinnubekkur-v1`):
 
-- **No recurrence.** The contract has individual events only; a `Patrol` carries `id`, `name`
-  and `accent`, with no weekday or time. The lab **derives** each flokkur's rhythm: the most
-  common weekday and time among its fundir, needing at least three. That works for a full
-  starfsár but not for a new or sparse one. The real fix is a rule per flokkur (e.g.
-  `Patrol.meets: { weekday, time, venue }`), or a series id on generated fundir.
-- **No moved-from.** "Fært frá mið." is inferred: the flokkur had nothing, not even a cancelled
-  fundur, on its usual day that week. A `moved_from` date, or the series link above, would make
-  it a fact.
-- **No end.** There is `starts_at` but no `ends_at`, and `span_weeks` counts weeks, not days. A
-  fös–sun útilega can't be drawn as fös–sun without an **`ends_at`** (or `ends_on`) on
-  `PlanBand`/`PlanCell`. The lab adds it as a lab-only field.
-- **No "falls out".** `PlanStatus` is `unknown | tentative | draft | confirmed`. A cancelled fundur
-  can only be deleted, which makes it indistinguishable from "not planned yet". The lab adds
-  `cancelled: { reason }`. A status `cancelled` (or `fellur_nidur`) with a reason would do.
-  `PlanWeek.note` already covers whole-sveit breaks ("Vetrarfrí", "Jólafrí") and is used as-is.
-- **Band weeks vs the rhythm.** The contract says _"a band week holds no per-flokkur cells"_ and
-  _"one band per week"_. Real weeks contradict both: a fös–sun útilega sits in the same week as
-  four ordinary weekday fundir, and mið 28. here has a foreldrakynning and a skipulagsfundur
-  alongside a flokksfundur. The month view handles it, but the Rist's band rule needs revisiting.
-- **Readiness is the fundur's own status.** `item_count` is a total and liður status lives in the
-  bench data, so no variation can show "4 of 5 liðir decided" without a `decided_count`.
-- **Theme** (`theme`, optional) drives D4's stamps. It's already in the contract.
+- **Recurrence.** No rule exists; a `Patrol` has `id`, `name` and `accent` only. The lab derives
+  each flokkur's rhythm from the most common weekday and time among its fundir (at least three).
+  A real `Patrol.meets: { weekday, time, venue }` or a series id would make it a fact.
+- **`moved_from`.** "Fært frá mið." is inferred: the flokkur had nothing, not even a cancelled
+  fundur, on its usual day that week.
+- **`cancelled`.** `PlanStatus` has no "falls out", so today a cancelled fundur is deleted, which
+  looks the same as "not planned yet". The lab adds `cancelled: { reason }`. `PlanWeek.note`
+  already covers sveit-wide breaks.
+- **`ends_at`** (or `ends_on`). There is `starts_at` only, and `span_weeks` counts weeks, not days.
+  A fös–sun strip needs an end. The lab adds it.
+- **`decided_count`.** Readiness is the fundur's own status. `item_count` is a total, so "4 of 5
+  liðir decided" can't be shown yet.
+- **Band rules.** The contract's "a band week holds no per-flokkur cells" and "one band per week"
+  don't match real weeks: an útilega shares its week with four weekday fundir.
 
----
+## In the stories
 
-## Close up and on a phone
+<Canvas of={Stories.BusyMonth} />
 
 <Canvas of={Stories.OneDayCloseUp} />
 
-<Canvas of={Stories.VardeldurPhone} />
+<Canvas of={Stories.Phone} />
+
+The stamp primitives (`Stamp`, `stampStateOf`, `STAMP_MEANING`, `rotationFor`, `RhythmLegend`)
+live in `stampKit.tsx`, so the PlanGrid lab can draw the same stamps.

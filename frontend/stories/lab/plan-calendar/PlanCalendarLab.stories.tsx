@@ -1,16 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
 import PlanCalendar from "@/components/plan/PlanCalendar";
 import PlanCalendarLab, {
   DayCellLab,
-  LOOKS,
-  LOOK_LABEL,
-  StatusKey,
-  type StatusLook,
+  STAMP_MEANING,
+  STAMP_STATES,
+  Stamp,
+  StampKey,
+  sampleEntry,
 } from "./PlanCalendarLab";
 import {
-  BUSY_MONTH,
   LAB_TODAY,
   QUIET_MONTH,
   coversDay,
@@ -21,25 +21,24 @@ import {
 } from "./planCalendarLabData";
 
 /**
- * The Staða family: the Dagatal's day entries as a planning-status map, the direction the user
- * picked from the first round (A Fáni, B Dagbók, C Miði and E Tákn were removed on 2026-10-19).
- * Four variations differ in the mark each entry wears for its status: D1 the plain glyph, D2 a
- * sewn-on badge, D3 a campfire that grows, D4 a passport stamp.
+ * D4 · Stimplar, the direction the user picked (from the Staða family; D1 Staða, D2 Merki and
+ * D3 Varðeldur were removed on 2026-10-19, as were A, B, C and E before them). The Dagatal is a
+ * stamp book: a ready fundur is stamped in ink with its theme's picture, a draft is ruled in
+ * dashes and pencilled, an unsure one is a dotted sketch with "?", an undecided one an empty
+ * dotted box. The past fades to a small grey "LOKIÐ"; a fundur that falls out is crossed out.
  *
- * Every variation draws the month as a **rhythm plus exceptions**: the usual weekly fundur per
- * flokkur is one quiet line (its time is in the "Fundir vikunnar" legend), anything that breaks
- * the rhythm is a full block, a fundur that falls out says so, and a multi-day event is one bar
- * across its days, continuing onto the next week row. Rationale: the **Rationale** page beside
- * these stories. See Lab → About the lab.
+ * The month is a **rhythm plus exceptions**: the usual weekly fundur is one quiet line (its time
+ * is in "Fundir vikunnar"), anything that breaks the rhythm is a full block with its reason, and
+ * a multi-day event is one perforated strip across its days, continuing onto the next week row.
+ * Rationale: the **Rationale** page beside these stories. See Lab → About the lab.
  */
 const meta = {
   title: "Lab/PlanCalendar",
   component: PlanCalendarLab,
   tags: ["skip-visual"],
   parameters: { layout: "padded" },
-  args: { look: "stada", month: BUSY_MONTH, today: LAB_TODAY, onSelect: fn() },
+  args: { today: LAB_TODAY, onSelect: fn() },
   argTypes: {
-    look: { control: "inline-radio", options: LOOKS },
     data: { control: false },
     month: { control: false },
     today: { control: false },
@@ -48,22 +47,6 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
-
-/** The short rationale on the Comparison story; the full one is on the Rationale page. */
-const STORY: Record<StatusLook, string> = {
-  stada:
-    "Where the planning work is: green is sorted, blue drafted, amber unsure, dashed grey a '?'. " +
-    "A check, pencil, hourglass or '?' says the same without colour.",
-  merki:
-    "Every fundur earns a sewn-on badge as it is planned: a stitched check, a pencil, a question " +
-    "mark, or an empty dashed badge. The flokkur is the little flag on its shoulder.",
-  vardeldur:
-    "The fire grows with the plan: unlit sticks, a spark, a flame, a full campfire. The month " +
-    "shows where the fires are already lit. Útilegur and mót wear a tent badge.",
-  stimplar:
-    "A passport of fundir: a ready fundur is stamped (rotated, with its theme's icon), drafts are " +
-    "lined up but not pressed, and undecided ones are empty dotted boxes with '?'.",
-};
 
 const section: CSSProperties = {
   paddingBottom: "var(--sl-spacing-xl)",
@@ -81,7 +64,7 @@ const idea: CSSProperties = {
   color: "hsl(var(--sl-color-text-secondary))",
 };
 
-/** The current calendar, then every variation, on the same October. */
+/** The current calendar, then Stimplar, on the same October. */
 export const Comparison: Story = {
   render: () => (
     <div>
@@ -96,15 +79,18 @@ export const Comparison: Story = {
         </p>
         <PlanCalendar data={currentGrid()} today={LAB_TODAY} />
       </section>
-      {LOOKS.map((look) => (
-        <section key={look} style={section} aria-labelledby={`pc-${look}`}>
-          <h2 id={`pc-${look}`} style={heading}>
-            {LOOK_LABEL[look]}
-          </h2>
-          <p style={idea}>{STORY[look]}</p>
-          <PlanCalendarLab look={look} />
-        </section>
-      ))}
+      <section style={section} aria-labelledby="pc-stimplar">
+        <h2 id="pc-stimplar" style={heading}>
+          D4 · Stimplar
+        </h2>
+        <p style={idea}>
+          A stamp book of fundir. Ready ones are stamped in ink with their theme&apos;s picture,
+          drafts are pencilled into a dashed frame, unsure ones are a dotted sketch with
+          &ldquo;?&rdquo;, and undecided ones are an empty dotted box. The status tint keeps the
+          month a planning map. The weekly rhythm is quiet, the exceptions are loud.
+        </p>
+        <PlanCalendarLab />
+      </section>
     </div>
   ),
 };
@@ -113,23 +99,23 @@ const DESKTOP = { viewport: { value: "desktop", isRotated: false } };
 const PHONE = { viewport: { value: "phone", isRotated: false } };
 
 /**
- * Desktop October: the routine fundur, the moved one, the one that falls out, the span that
+ * Desktop October: the routine fundur, the moved one, the one that falls out, the strip that
  * crosses a week row (one button, not two), and the fold on mið 28.
  */
-const busy = (look: StatusLook): Story => ({
-  args: { look },
+export const BusyMonth: Story = {
+  name: "Busy month",
   globals: DESKTOP,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const routine = canvas.getByRole("button", {
-      name: /^Flokksfundur Arna: .+, 20\. október kl\. 19:30, Skátaheimilið, staðfest, 15 mínútur umfram$/,
-    });
-    await userEvent.click(routine);
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: /^Flokksfundur Arna: .+, 20\. október kl\. 19:30, Skátaheimilið, staðfest, 15 mínútur umfram$/,
+      })
+    );
     await expect(args.onSelect).toHaveBeenCalled();
-
     await expect(
       canvas.getByRole("button", {
-        name: /^Flokksfundur Uglna: .+, 15\. október kl\. 19:30, .*fært frá 14\. október/,
+        name: /^Flokksfundur Uglna: .+, 15\. október kl\. 19:30, .*fært frá 14\. október, lokið$/,
       })
     ).toBeVisible();
     await expect(
@@ -157,21 +143,21 @@ const busy = (look: StatusLook): Story => ({
       })
     ).toBeVisible();
   },
-});
+};
 
-const quiet = (look: StatusLook): Story => ({
-  args: { look, month: QUIET_MONTH },
+export const QuietMonth: Story = {
+  name: "Quiet month",
+  args: { month: QUIET_MONTH },
   globals: DESKTOP,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/^\d+ viðburð(ur|ir) í mánuðinum/)).toBeVisible();
     await expect(canvas.getAllByText("Jólafrí: engir fundir fram yfir áramót")[0]).toBeVisible();
   },
-});
+};
 
-/** Phone: the útilega's Saturday lists it as "Dagur 2 af 3". */
-const phone = (look: StatusLook): Story => ({
-  args: { look },
+/** Phone: the útilega's Saturday lists it with a full-size stamp as "Dagur 2 af 3". */
+export const Phone: Story = {
   globals: PHONE,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -181,57 +167,15 @@ const phone = (look: StatusLook): Story => ({
     await expect(canvas.getByRole("heading", { name: "Laugardagur 31. október" })).toBeVisible();
     await expect(canvas.getByText(/^Dagur 2 af 3 · Öll sveitin/)).toBeVisible();
   },
-});
-
-const dark = (look: StatusLook): Story => ({ args: { look }, globals: { theme: "dark" } });
-
-export const StadaBusy: Story = { name: "D1 · Staða: busy month", ...busy("stada") };
-export const StadaQuiet: Story = { name: "D1 · Staða: quiet month", ...quiet("stada") };
-export const StadaPhone: Story = { name: "D1 · Staða: phone", ...phone("stada") };
-export const StadaDark: Story = { name: "D1 · Staða: dark", ...dark("stada") };
-
-export const MerkiBusy: Story = { name: "D2 · Merki: busy month", ...busy("merki") };
-export const MerkiQuiet: Story = { name: "D2 · Merki: quiet month", ...quiet("merki") };
-export const MerkiPhone: Story = { name: "D2 · Merki: phone", ...phone("merki") };
-export const MerkiDark: Story = { name: "D2 · Merki: dark", ...dark("merki") };
-
-export const VardeldurBusy: Story = { name: "D3 · Varðeldur: busy month", ...busy("vardeldur") };
-export const VardeldurQuiet: Story = { name: "D3 · Varðeldur: quiet month", ...quiet("vardeldur") };
-export const VardeldurPhone: Story = { name: "D3 · Varðeldur: phone", ...phone("vardeldur") };
-export const VardeldurDark: Story = { name: "D3 · Varðeldur: dark", ...dark("vardeldur") };
-
-export const StimplarBusy: Story = { name: "D4 · Stimplar: busy month", ...busy("stimplar") };
-export const StimplarQuiet: Story = { name: "D4 · Stimplar: quiet month", ...quiet("stimplar") };
-export const StimplarPhone: Story = { name: "D4 · Stimplar: phone", ...phone("stimplar") };
-export const StimplarDark: Story = { name: "D4 · Stimplar: dark", ...dark("stimplar") };
-
-/* ── The key ── */
-
-/** Every mark of every variation and what it means. */
-export const Key: Story = {
-  name: "Key: every mark",
-  render: () => (
-    <div style={{ display: "grid", gap: "var(--sl-spacing-lg)" }}>
-      {LOOKS.map((look) => (
-        <section key={look} aria-labelledby={`key-${look}`}>
-          <h2 id={`key-${look}`} style={heading}>
-            {LOOK_LABEL[look]}
-          </h2>
-          <StatusKey look={look} />
-        </section>
-      ))}
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getAllByText("Fellur niður")).toHaveLength(LOOKS.length);
-  },
 };
+
+export const Dark: Story = { globals: { theme: "dark" } };
 
 /* ── One day, close up ── */
 
 const day = (d: number) => new Date(2026, 9, d);
 
-/** A stress case the fixture's rhythm never makes: mið 28. with a fifth entry squeezed in. */
+/** A stress case the rhythm never makes: mið 28. with a fifth entry squeezed in. */
 function fiveOn28(entries: LabEntry[]): LabEntry[] {
   const on28 = entries.filter((e) => coversDay(e, day(28)));
   const extra = entries.find((e) => e.kind === "routine" && coversDay(e, day(27)));
@@ -245,8 +189,8 @@ const onDay = (d: Date) => (all: LabEntry[]) => all.filter((e) => coversDay(e, d
 const CLOSE_DAYS: { label: string; date: Date; pick: (all: LabEntry[]) => LabEntry[] }[] = [
   { label: "1 routine fundur", date: day(21), pick: onDay(day(21)) },
   { label: "2: routine + troop (today)", date: day(19), pick: onDay(day(19)) },
-  { label: "Moved fundur", date: day(15), pick: onDay(day(15)) },
-  { label: "Falls out + span", date: day(26), pick: onDay(day(26)) },
+  { label: "Past: moved fundur", date: day(15), pick: onDay(day(15)) },
+  { label: "Falls out + strip", date: day(26), pick: onDay(day(26)) },
   { label: "5 entries", date: day(28), pick: fiveOn28 },
 ];
 
@@ -262,43 +206,114 @@ const cellLabel: CSSProperties = {
   color: "hsl(var(--sl-color-text-secondary))",
 };
 
-/** Every variation's single cell at desktop width, side by side. */
+/** Single cells at desktop width: 1, 2 and 5 entries, a past day, a cancellation and a strip. */
 export const OneDayCloseUp: Story = {
   name: "One day, close up",
   globals: DESKTOP,
   render: (args) => {
     const entries = placeEntries(labGrid(), LAB_TODAY);
     return (
-      <div style={{ display: "grid", gap: "var(--sl-spacing-lg)" }}>
-        {LOOKS.map((look) => (
-          <section key={look} aria-labelledby={`close-${look}`}>
-            <h2 id={`close-${look}`} style={heading}>
-              {LOOK_LABEL[look]}
-            </h2>
-            <div style={closeGrid}>
-              {CLOSE_DAYS.map(({ label, date, pick }) => (
-                <div key={label}>
-                  <p style={cellLabel}>{label}</p>
-                  <DayCellLab
-                    look={look}
-                    day={date}
-                    entries={pick(entries)}
-                    onSelect={args.onSelect}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
+      <div style={closeGrid}>
+        {CLOSE_DAYS.map(({ label, date, pick }) => (
+          <div key={label}>
+            <p style={cellLabel}>{label}</p>
+            <DayCellLab day={date} entries={pick(entries)} onSelect={args.onSelect} />
+          </div>
         ))}
       </div>
     );
   },
   play: async ({ canvasElement }) => {
     await expect(
-      within(canvasElement).getAllByRole("button", { name: /^\+\d fleiri 28\. október$/ })
-    ).toHaveLength(LOOKS.length);
+      within(canvasElement).getByRole("button", { name: "+3 fleiri 28. október" })
+    ).toBeVisible();
   },
 };
 
-/** Any variation, with controls. */
+/* ── Stamp states ── */
+
+const statesRow: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 30rem), 1fr))",
+};
+const statesPanel: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(8.5rem, 1fr))",
+  gap: "var(--sl-spacing-lg) var(--sl-spacing-md)",
+  padding: "var(--sl-spacing-lg)",
+  background: "hsl(var(--sl-color-surface))",
+  color: "hsl(var(--sl-color-text-primary))",
+};
+const stateCell: CSSProperties = { display: "grid", justifyItems: "center", gap: "6px" };
+const stateName: CSSProperties = {
+  fontSize: "var(--sl-text-body-sm)",
+  fontWeight: "var(--sl-font-weight-semibold)",
+};
+const stateLooks: CSSProperties = {
+  fontSize: "var(--sl-text-xs)",
+  textAlign: "center",
+  color: "hsl(var(--sl-color-text-secondary))",
+};
+const replay: CSSProperties = {
+  marginBottom: "var(--sl-spacing-md)",
+  minHeight: "2.75rem",
+  padding: "0 var(--sl-spacing-md)",
+  border: "1px solid hsl(var(--sl-color-border-strong))",
+  borderRadius: "var(--sl-radius-button)",
+  background: "hsl(var(--sl-color-surface))",
+  color: "hsl(var(--sl-color-text-primary))",
+  font: "inherit",
+  cursor: "pointer",
+};
+
+function StampStates() {
+  // Remounting the stamps is what replays the thunk: it never runs on a plain re-render.
+  const [round, setRound] = useState(0);
+  return (
+    <div>
+      <button type="button" style={replay} onClick={() => setRound((r) => r + 1)}>
+        Stimpla aftur
+      </button>
+      <div style={statesRow}>
+        {(["light", "dark"] as const).map((theme) => (
+          <section
+            key={theme}
+            data-theme={theme === "dark" ? "dark" : undefined}
+            aria-label={theme === "dark" ? "Dökkt" : "Ljóst"}
+            style={statesPanel}
+          >
+            {STAMP_STATES.map((state) => (
+              <div key={`${state}-${round}`} style={stateCell}>
+                <Stamp entry={sampleEntry(state, `ástand-${round}`)} size="xl" />
+                <span style={stateName}>{STAMP_MEANING[state].name}</span>
+                <span style={stateLooks}>{STAMP_MEANING[state].looks}</span>
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Every stamp state, large, in light and dark side by side. "Stimpla aftur" replays the thunk. */
+export const StampStatesStory: Story = {
+  name: "Stamp states",
+  globals: { theme: "light" },
+  render: () => <StampStates />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Stimpla aftur" }));
+    await expect(canvas.getAllByText("Fellur niður")).toHaveLength(2);
+  },
+};
+
+/** Every stamp and picture, and what it means. */
+export const Key: Story = {
+  render: () => <StampKey />,
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText("Óákveðið")).toBeVisible();
+  },
+};
+
 export const Playground: Story = {};
