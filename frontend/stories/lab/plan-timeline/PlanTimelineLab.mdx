@@ -1,0 +1,169 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./PlanTimelineLab.stories";
+
+<Meta of={Stories} name="Rationale" />
+
+# PlanTimeline: variations
+
+## What the view is for
+
+A flokksforingi opens the timeline to ask **"where are we in the term, and what is coming
+up for my flokkur?"** It's Signý's view from the user research (#21): one flokkur, time running
+along, "hvernig þetta keyrir". The grid answers "is every flokkur covered this week?" and the
+calendar answers "what happens on which day?". The timeline answers how one flokkur's term is
+going: what's behind, what's next, where the gaps are, and which weeks aren't ordinary.
+
+Most weeks are the same: one flokksfundur on the same evening at the same time. The things a
+leader plans around are the **exceptions**: a fös–sun útilega, a dagsferð on a Saturday, a
+sveitarfundur, a fundur moved to another evening. So every direction says the weekly rhythm
+**once** ("Vikulegur fundur á þriðjudögum kl. 19:30"), draws the routine fundir quietly, and
+gives the ink to the exceptions. A multi-day event is one span: _fös 30. okt.–sun 1. nóv._
+
+The current component is a month-grouped list of the same rounded chips as everywhere else.
+Every fundur looks the same, today isn't marked, and a gap in the term is invisible.
+
+## What it has to convey, ranked
+
+| #   | Information                                                        | Why it ranks here                                                                                       |
+| --- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| 1   | **Where today is**, and the next fundur                            | The first question on opening any plan. Everything before it is reference.                              |
+| 2   | **The exceptions**: útilega, dagsferð, sveitarfundur, moved fundir | These shape the term: kit, drivers, parents, a different evening. They're what the leader plans around. |
+| 3   | **How decided each fundur ahead is**                               | The planning question, in the calendar Staða's language: ✓ staðfest, ✎ drög, ⧗ óvíst, ? óákveðið.       |
+| 4   | **The sequence and the gaps**                                      | Weeks with nothing on them, and a badge running over two weeks.                                         |
+| 5   | **The rhythm**: the usual evening and time                         | Said once. A routine fundur only needs its date.                                                        |
+| 6   | Titles of routine fundir                                           | Needed to tell fundir apart, but not to plan the term.                                                  |
+| 7   | Past fundir                                                        | Context. They recede and lose their status mark, as in Staða.                                           |
+| —   | Venue, kit, liðir, budget                                          | Bench and window detail. In the accessible name where it helps, not on the timeline.                    |
+
+## The rules every direction keeps
+
+- **One family with the calendar and the window** (`planFamily.tsx`, copied in both labs):
+  - status uses the calendar **Staða** marks and colours: ✓ success, ✎ info, ⧗ warning,
+    and a dashed neutral "?" for óákveðið. There's always a glyph with the colour;
+  - exceptions use the calendar's type icons: tent for útilega, mountain for dagsferð, people
+    for sveitarfundur, clipboard for skipulagsfundur, party poppers for uppskeruhátíð;
+  - troop-wide events wear the inverse surface, "the one colour no flokkur has";
+  - the flokkur is a swallow-tailed pennant with its initial, the calendar's Fáni shape.
+- Each fundur is a `<button>` with the whole story as its name, the same shape as the calendar's:
+  _"Útilega: Haustútilega á Úlfljótsvatni, 30. október til 1. nóvember kl. 17:00, öll sveitin,
+  drög"_, with _"breyttur tími"_ for a moved fundur and _"lokið"_ for a past one.
+- Dates come from `lib/format.ts` (weekday abbreviations are the lab's own, as in the calendar
+  lab). Counts go through `countIs` ("1 vika án fundar", "8 fundir búnir").
+- Vivid `--sl-color-patrol-*` with its `-foreground`. Every 48px target holds at phone width.
+  Nothing moves.
+- The rhythm is the most common weekday and time among the flokkur's own flokksfundir. It only
+  counts if at least three fundir and half of them share it. Without one, every flokksfundur is
+  routine and only the event type marks an exception.
+
+---
+
+## A · Slóð (trail)
+
+<Canvas of={Stories.TrailBusy} />
+
+**Story it tells:** the term is a route. The walked part is a solid line; ahead is dashed. The
+flokkur's flag is planted at Í dag. Routine fundir are small waypoints on the path. Exceptions
+are camps: a square with the type's icon. A gap on the path is "2 vikur án fundar".
+
+**Hierarchy:**
+
+1. The flag at Í dag, and the next fundur under it (bigger, filled with the flokkur's colour).
+2. The camps: útilega, dagsferð, sveitarfundur, with their span and time.
+3. The routine fundir: date and title on one line, with a status mark ahead and none behind.
+
+**Why it looks this way:** a scout already reads a route. Solid against dashed says
+walked against not walked without a legend. Ahead, the waypoint ring is the status colour, so
+the gradient from green near today to dashed grey further out shows A8 (progressive
+detailing) along the path. Routine stops shrink because the weekly fundur is the path itself,
+not a place on it.
+
+**Trade-offs:** it's long. A 20-week term is a tall page, and on a wide screen most of the
+width is unused. It shows one flokkur only. The camp icons need the word beside them the first
+few times.
+
+## B · Kvarði (ruler)
+
+<Canvas of={Stories.RulerBusy} />
+
+**Story it tells:** time runs left to right, as Signý drew it. Weeks are ticks on a ruler, and
+each fundur hangs off its week on a string. A thin string is the weekly fundur; a heavy one is
+an exception, tagged with its type. The string's colour is the status. It opens scrolled so
+last week is at the left edge.
+
+**Hierarchy:**
+
+1. The Í dag line, and the strings to its right.
+2. Exceptions: heavy strings, the type and the span, in the inverse colour when it's for the
+   whole sveit.
+3. Routine titles: just the title, because the tick already gives the date.
+
+**Why it looks this way:** it's the only direction with time on the x-axis, which is how the
+person who asked for a timeline pictured it. Spacing is honest: a two-week badge is two weeks
+wide, and an empty week is an empty tick.
+
+**Trade-offs:** on a phone you see two and a half weeks at once and scroll sideways for the
+rest. Stacking two fundir in a week works, but titles wrap in a 7.5rem column. Status rides on
+string colour plus a small glyph, so it's quieter here than in Staða.
+
+## C · Dagbók (diary)
+
+<Canvas of={Stories.DiaryBusy} />
+
+**Story it tells:** a hand-kept diary with a ruled line per week, every week of the term, so
+an empty week is an empty line. The usual time is a ditto mark (〃 = "same as usual"). An
+exception writes its icon in the time column and its type and span under the title. The
+week's ATH note sits on its line.
+
+**Hierarchy:**
+
+1. The Í dag week, ruled off above and below with a tab in the margin.
+2. Exceptions: an icon where the ditto would be, a bold title, the type and span.
+3. Routine lines: 〃 and the title. Notes and "framhald" lines in small italics.
+
+**Why it looks this way:** the ditto mark says the rhythm on every routine line without
+repeating "19:30" twenty times, and any line that isn't a ditto is worth reading. It's the only
+direction that shows the week notes (öskudagur, vetrarfrí), which matter when planning a week.
+The red margin rule makes it read as paper.
+
+**Trade-offs:** it's the densest. The status mark is small, and the eye goes to exceptions
+first, then to status. It's the closest to a plain list, so it says the least about the
+_shape_ of the term. The calendar dropped its own Dagbók look. This one stays because the week
+row, unlike a day cell, has room.
+
+## D · Brautir (swimlanes)
+
+<Canvas of={Stories.LanesBusy} />
+
+**Story it tells:** every flokkur on one time axis. The chosen one is tall and on top, the
+others are context below, and the whole sveit has its own lane at the top. The weekly fundur
+is the flokkur's pale tint with a thin edge of its colour. An exception, or a moved fundur, is
+the full vivid colour, so the eye lands on it. Clashes and gaps across the sveit show at once.
+
+**Hierarchy:**
+
+1. The vivid blocks: exceptions and moved fundir, by flokkur.
+2. The chosen flokkur's lane: its titles in full, with status marks.
+3. The other lanes: one line each, truncated, for comparison.
+
+**Why it looks this way:** "rhythm and exceptions" is easiest to see when the rhythm is pale and
+continuous and the exceptions break it. Patrol colour carries identity here, so status keeps to
+the glyph (in the fill's own ink on a vivid block, where the status colours wouldn't reach AA).
+
+**Trade-offs:** it's the grid again, turned on its side. It loses what makes a timeline a
+timeline: one flokkur's story. It's wide, and on a phone it's mostly sideways scrolling. Other
+lanes' titles truncate. Two of the six patrol fills (yellow and green) are close in lightness,
+so the pennant initial and the name carry the flokkur for colour-blind leaders.
+
+---
+
+## Edge states
+
+<Canvas of={Stories.Undated} />
+
+The scratchpad has no dates, so there's no Í dag and no past, and the axes count weeks instead.
+With no times there's no rhythm to break, so every flokksfundur is routine and only the other
+event types stand out.
+
+<Canvas of={Stories.NothingAhead} />
+
+<Canvas of={Stories.Empty} />

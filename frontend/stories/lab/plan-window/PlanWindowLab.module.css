@@ -1,0 +1,778 @@
+/* Lab directions for PlanWindow, the rolling "next few fundir" (A7). Every colour is a
+   token. No card chrome: paper index cards, a written to-do list, a timetable strip and a
+   front page. Readiness is drawn as a tally (strokes for what is settled), never a progress
+   bar, and is always also written in words.
+
+   --pw-flag / --pw-flag-fg are the flokkur's vivid ramp and its text colour. */
+
+.root {
+  --pw-target: 2.75rem;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.root :is(button, select):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* :where() keeps this at element weight, so each look's own classes win without fuss. */
+:where(.root) button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ── Header, summary, shared marks ── */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.pickerLabel {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.picker {
+  min-height: var(--pw-target);
+  padding: 0 var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: var(--sl-text-body);
+}
+
+/* The same swallowtail as the calendar's Fáni and the timeline's flag. */
+.flag {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.4rem;
+  padding-right: 0.35rem;
+  background: hsl(var(--pw-flag));
+  color: hsl(var(--pw-flag-fg));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+  clip-path: polygon(0 0, 100% 0, 75% 50%, 100% 100%, 0 100%);
+}
+
+.summary {
+  display: grid;
+  gap: 2px;
+}
+
+.summary p {
+  margin: 0;
+  font-size: var(--sl-text-body);
+}
+
+.summary p.summaryMeta {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-body-sm);
+}
+
+/* What makes a fundur an exception, said in words beside its icon. */
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  margin-right: var(--sl-spacing-gap-sm);
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  vertical-align: 0.05em;
+}
+
+.summaryLead {
+  margin: 0;
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.empty {
+  margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.nothing {
+  display: grid;
+  gap: var(--sl-spacing-stack-xs);
+  padding: var(--sl-spacing-inset-md) 0;
+  border-top: 1px dashed hsl(var(--sl-color-border-strong));
+  border-bottom: 1px dashed hsl(var(--sl-color-border-strong));
+}
+
+.troop {
+  display: inline-block;
+  margin-right: var(--sl-spacing-gap-xs);
+  padding: 0 var(--sl-spacing-inset-xs);
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  vertical-align: 0.1em;
+}
+
+.overline {
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-primary-text));
+}
+
+.linkish {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: hsl(var(--sl-color-text-link));
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+/* The tally: a settled item is a firm stroke; an open one a faint dotted placeholder. The
+   fifth stroke closes the gate. */
+.tally {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 1.75rem;
+  overflow: visible;
+}
+
+.tally[data-size="sm"] {
+  width: 1.6rem;
+  height: 1.1rem;
+}
+
+.tally line {
+  stroke: hsl(var(--sl-color-text-tertiary));
+  stroke-width: 1.5;
+  stroke-dasharray: 2 3;
+  stroke-linecap: round;
+}
+
+.tally line[data-ok] {
+  stroke: hsl(var(--sl-color-text-primary));
+  stroke-width: 3;
+  stroke-dasharray: none;
+}
+
+.tally[data-complete] line {
+  stroke: hsl(var(--sl-color-success-text));
+}
+
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.checklist li {
+  display: grid;
+  grid-template-columns: 1.25rem 4.5rem minmax(0, 1fr);
+  align-items: baseline;
+  min-height: 2rem;
+  padding: var(--sl-spacing-inset-xs) 0;
+}
+
+.checkGlyph {
+  color: hsl(var(--sl-color-text-secondary));
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.checklist li[data-ok] .checkGlyph {
+  color: hsl(var(--sl-color-success-text));
+}
+
+.checkLabel {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.checkText {
+  overflow-wrap: anywhere;
+}
+
+/* What is still open is the work, so it gets the ink. */
+.checklist li:not([data-ok]) .checkText {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.needs {
+  margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.needsLead {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* ── A · Spjöld (index cards) ── */
+
+.cards {
+  display: grid;
+  gap: var(--sl-spacing-stack-sm);
+  max-width: 38rem;
+}
+
+/* Divider tabs on a card box: one per fundur, the date written on it. */
+.cardTabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-bottom: calc(-1 * var(--sl-spacing-stack-sm) - 1px);
+  overflow-x: auto;
+  padding: 4px 4px 0;
+}
+
+.cardTab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  min-height: var(--pw-target);
+  padding: 0 var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-bottom: 0;
+  border-radius: var(--sl-radius-sm) var(--sl-radius-sm) 0 0;
+  background: hsl(var(--sl-color-background-secondary));
+  white-space: nowrap;
+}
+
+.cardTab[aria-selected="true"] {
+  z-index: 1;
+  padding-bottom: 1px;
+  background: hsl(var(--sl-color-surface));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.cardTab[data-done] {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.cardTabWhen {
+  font-variant-numeric: tabular-nums;
+}
+
+.cardTabDone {
+  font-size: var(--sl-text-overline);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* A ruled index card. The cards behind it are flat paper edges, not a blurred shadow. */
+.card {
+  position: relative;
+  display: grid;
+  gap: var(--sl-spacing-stack-sm);
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-lg) var(--sl-spacing-inset-lg);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  background: hsl(var(--sl-color-surface));
+  animation: pw-card-in var(--sl-transition-base) both;
+}
+
+.card[data-more] {
+  margin: 0 8px 8px 0;
+  box-shadow:
+    4px 4px 0 -1px hsl(var(--sl-color-surface)),
+    4px 4px 0 0 hsl(var(--sl-color-border-strong)),
+    8px 8px 0 -1px hsl(var(--sl-color-surface)),
+    8px 8px 0 0 hsl(var(--sl-color-border-strong));
+}
+
+@keyframes pw-card-in {
+  from {
+    opacity: 0;
+    transform: translateX(0.75rem) rotate(0.5deg);
+  }
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-sm);
+  padding-bottom: var(--sl-spacing-inset-xs);
+  /* The red header rule of an index card, in the falkar ramp so it follows the theme. */
+  border-bottom: 2px solid hsl(var(--sl-color-patrol-falkar) / 0.7);
+}
+
+.cardWhen {
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardClock {
+  color: hsl(var(--sl-color-text-secondary));
+  font-weight: var(--sl-font-weight-body);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-5);
+  line-height: var(--sl-line-height-heading);
+  overflow-wrap: anywhere;
+}
+
+/* The blue rules of the card, one per line written on it. */
+.card .checklist li {
+  border-bottom: 1px solid hsl(var(--sl-color-info) / 0.35);
+}
+
+/* Lokið is stamped, the scouting stamp language the Alert lab picked. */
+.stamp {
+  margin-left: auto;
+  padding: 0 var(--sl-spacing-inset-xs);
+  border: 2px solid hsl(var(--sl-color-text-secondary));
+  border-radius: var(--sl-radius-xs);
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  rotate: -6deg;
+}
+
+.card[data-done] .cardTitle {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.action,
+.navButton {
+  min-height: var(--pw-target);
+  padding: 0 var(--sl-spacing-inset-md);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+}
+
+.action {
+  justify-self: start;
+  border-color: transparent;
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.navButton:hover:not(:disabled) {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.navButton:disabled {
+  cursor: default;
+  color: hsl(var(--sl-color-text-disabled));
+}
+
+.cardNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.cardCount {
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── B · Verkefni (to-do) ── */
+
+.todo {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.todo > li {
+  padding: var(--sl-spacing-inset-xs) 0 var(--sl-spacing-inset-sm);
+  border-top: 1px solid hsl(var(--sl-color-border));
+}
+
+.todoHead {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--sl-spacing-gap-md);
+  width: 100%;
+  min-height: var(--pw-target);
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-xs);
+  border: 0;
+  border-radius: var(--sl-radius-sm);
+  background: none;
+  text-align: left;
+}
+
+.todoHead:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.todoWhen {
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+.todoTitle {
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.todoBadge {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.todoFundur[data-ready] .todoBadge {
+  color: hsl(var(--sl-color-success-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.todoItems {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--sl-spacing-inset-xs) 0
+    calc(8rem + var(--sl-spacing-gap-md) + var(--sl-spacing-inset-xs));
+}
+
+.todoFundur > .needs {
+  padding-left: calc(8rem + var(--sl-spacing-gap-md) + var(--sl-spacing-inset-xs));
+  font-size: var(--sl-text-caption);
+}
+
+.todoItem {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-sm);
+  padding: 2px 0;
+  font-size: var(--sl-text-body);
+}
+
+/* An empty box to fill: what the paper sheet would have. Not a control: the fundur is. */
+.todoBox {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1.5px solid hsl(var(--sl-color-text-secondary));
+  border-radius: 2px;
+  translate: 0 0.1rem;
+}
+
+.todoSettled {
+  padding: 2px 0;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+}
+
+.todoFundur[data-quiet] .todoTitle {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-body);
+}
+
+.todoBehind .todoTitle {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-body);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── C · Röð (strip) ── */
+
+.strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(11rem, 1fr);
+  gap: var(--sl-spacing-gap-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--sl-spacing-inset-sm);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+}
+
+.stripItem {
+  display: flex;
+  scroll-snap-align: start;
+}
+
+/* A column of a timetable: a heavy rule on top, the date as its heading. */
+.stripButton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-xs);
+  min-height: var(--pw-target);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  border: 0;
+  border-top: 4px solid hsl(var(--sl-color-text-primary));
+  background: none;
+  text-align: left;
+}
+
+.stripButton:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+/* The column's rule is its status colour, as the calendar Staða tints a fundur. */
+.stripItem[data-status="confirmed"] .stripButton {
+  border-top-color: hsl(var(--sl-color-success));
+}
+
+.stripItem[data-status="draft"] .stripButton {
+  border-top-color: hsl(var(--sl-color-info));
+}
+
+.stripItem[data-status="tentative"] .stripButton {
+  border-top-color: hsl(var(--sl-color-warning));
+}
+
+.stripItem[data-status="unknown"] .stripButton {
+  border-top-style: dashed;
+  border-top-color: hsl(var(--sl-color-text-secondary));
+}
+
+.stripItem[data-done] .stripButton {
+  border-top-color: hsl(var(--sl-color-text-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.stripDate {
+  font-variant-numeric: tabular-nums;
+}
+
+.stripDay {
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-4);
+  font-weight: var(--sl-font-weight-semibold);
+  line-height: 1;
+}
+
+.stripClock {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.stripTitle {
+  /* Two lines reserved, so every column's tally starts at the same height. */
+  min-height: calc(2 * var(--sl-line-height-body) * 1em);
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.stripMeter {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.stripState {
+  display: grid;
+  font-size: var(--sl-text-caption);
+}
+
+.stripMissing {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── D · Næst (focus) ── */
+
+.focus {
+  display: grid;
+  gap: var(--sl-spacing-stack-md);
+}
+
+.focusMain {
+  display: grid;
+  gap: var(--sl-spacing-stack-xs);
+  padding-top: var(--sl-spacing-inset-sm);
+  border-top: 4px solid hsl(var(--sl-color-text-primary));
+}
+
+.focusWhen {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-3);
+  font-weight: var(--sl-font-weight-semibold);
+  line-height: var(--sl-line-height-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.focusClock {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-body);
+}
+
+.focusTitle {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-5);
+  line-height: var(--sl-line-height-heading);
+}
+
+.focusTitleButton {
+  min-height: var(--pw-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-weight: inherit;
+  overflow-wrap: anywhere;
+}
+
+.focusTitleButton:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.focusReady {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.focusRestTitle {
+  margin: 0 0 var(--sl-spacing-stack-xs);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.focusRest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid hsl(var(--sl-color-border));
+}
+
+.focusRest > li {
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.focusRow {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--sl-spacing-gap-sm);
+  width: 100%;
+  min-height: var(--pw-target);
+  padding: var(--sl-spacing-inset-xs);
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.focusRow:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.focusRowWhen {
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+.focusRowTitle {
+  overflow-wrap: anywhere;
+}
+
+.focusRowReady {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.focusBehind {
+  margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}
+
+/* ── Container widths: last, so they win over the base rules. ── */
+
+@container (min-width: 50rem) {
+  .focus {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    column-gap: var(--sl-spacing-gap-xl);
+    align-items: start;
+  }
+
+  .focusBehind {
+    grid-column: 2;
+  }
+}
+
+@container (max-width: 40rem) {
+  .head,
+  .cards,
+  .todo,
+  .strip,
+  .focus {
+    --pw-target: var(--sl-size-button-lg);
+  }
+
+  .todoHead {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "when badge" "title title";
+  }
+
+  .todoWhen {
+    grid-area: when;
+  }
+
+  .todoBadge {
+    grid-area: badge;
+  }
+
+  .todoTitle {
+    grid-area: title;
+  }
+
+  .todoItems,
+  .todoFundur > .needs {
+    padding-left: var(--sl-spacing-inset-xs);
+  }
+
+  .strip {
+    grid-auto-columns: minmax(70%, 1fr);
+  }
+
+  .card {
+    padding-inline: var(--sl-spacing-inset-md);
+  }
+}

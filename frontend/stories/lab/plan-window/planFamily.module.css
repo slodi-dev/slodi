@@ -1,0 +1,55 @@
+/* The status marks, in the calendar Staða's colours: success, info, warning, neutral "?". */
+
+.status {
+  --st-ink: var(--sl-color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  color: hsl(var(--st-ink));
+  font-weight: var(--sl-font-weight-heading);
+  vertical-align: -0.1em;
+}
+
+.status[data-status="confirmed"] {
+  --st-ink: var(--sl-color-success-text);
+}
+
+.status[data-status="draft"] {
+  --st-ink: var(--sl-color-info-text);
+}
+
+.status[data-status="tentative"] {
+  --st-ink: var(--sl-color-warning-text);
+}
+
+.status[data-tone="inherit"] {
+  color: inherit;
+}
+
+.glyph {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.05em;
+  height: 1.05em;
+  line-height: 1;
+}
+
+/* ADR-002 §3: "?" is a state, not an error: dashed and neutral, never red. */
+.status[data-status="unknown"] .glyph {
+  border: 1.5px dashed currentColor;
+  border-radius: var(--sl-radius-pill);
+  font-size: 0.8em;
+  min-width: 1.4em;
+  height: 1.4em;
+}
+
+.word {
+  font-size: var(--sl-text-overline);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.typeIcon {
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+}

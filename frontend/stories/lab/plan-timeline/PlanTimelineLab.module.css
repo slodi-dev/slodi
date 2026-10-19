@@ -1,0 +1,817 @@
+/* Lab directions for PlanTimeline. Every colour is a token, so each look works in light,
+   dark and the patrol themes. No card chrome anywhere: a fundur is a waypoint, a hanging
+   label, a diary line or a block of patrol colour, never a white box with a stripe.
+
+   --tl-flag / --tl-flag-fg are the flokkur's vivid ramp and its text colour (bare triplets,
+   set inline from the patrol's accent). */
+
+.root {
+  --tl-target: 2.75rem;
+  --tl-week: 9rem;
+  --tl-head: 7.5rem;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-sm);
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.root :is(button, select):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* ── Header, summary, shared marks ── */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.pickerLabel {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.picker {
+  min-height: var(--tl-target);
+  padding: 0 var(--sl-spacing-inset-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: var(--sl-text-body);
+}
+
+.summary {
+  display: grid;
+  gap: 2px;
+}
+
+.summary p {
+  margin: 0;
+}
+
+.summary p:first-child {
+  font-size: var(--sl-text-body);
+}
+
+.summaryLead {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.summaryWhen {
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryCount {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.flag {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.4rem;
+  padding-right: 0.35rem;
+  background: hsl(var(--tl-flag));
+  color: hsl(var(--tl-flag-fg));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+  /* Swallow-tailed pennant. */
+  clip-path: polygon(0 0, 100% 0, 75% 50%, 100% 100%, 0 100%);
+}
+
+.flag[data-size="sm"] {
+  width: 1.5rem;
+  height: 1.1rem;
+  font-size: var(--sl-text-overline);
+}
+
+/* Status colours for the marks a direction draws itself (waypoints, stems), matching the
+   glyph colours in planFamily.module.css and the calendar's Staða. */
+.root [data-status] {
+  --tl-status: var(--sl-color-text-secondary);
+}
+
+.root [data-status="confirmed"] {
+  --tl-status: var(--sl-color-success);
+}
+
+.root [data-status="draft"] {
+  --tl-status: var(--sl-color-info);
+}
+
+.root [data-status="tentative"] {
+  --tl-status: var(--sl-color-warning);
+}
+
+/* What makes a fundur an exception, said in words beside its icon. */
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  margin-right: var(--sl-spacing-gap-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.moved {
+  margin-right: var(--sl-spacing-gap-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.troop {
+  display: inline-block;
+  margin-right: var(--sl-spacing-gap-xs);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.overline {
+  display: block;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-primary-text));
+}
+
+.title {
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: block;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.meta .troop {
+  margin: 0 0 0 var(--sl-spacing-gap-sm);
+}
+
+/* Every entry is a real button; the look decides what it is drawn as. */
+.entry {
+  min-height: var(--tl-target);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--sl-transition-fast);
+}
+
+.entry[data-done] {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.empty {
+  margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.todayLabel {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-primary-text));
+  white-space: nowrap;
+}
+
+/* ── A · Slóð ── */
+
+.trail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trail > li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--sl-spacing-gap-sm);
+}
+
+.trailRail {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+}
+
+/* The path. Walked is a solid line; ahead is still to be walked, so it is dashed. */
+.trailRail::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 50%;
+  translate: -50% 0;
+  border-left: 3px dashed hsl(var(--sl-color-text-secondary));
+}
+
+[data-part="walked"] > .trailRail::before {
+  border-left-style: solid;
+  border-left-color: hsl(var(--sl-color-text-tertiary));
+}
+
+.trail > li:first-child > .trailRail::before {
+  top: 50%;
+}
+
+.trail > li:last-child > .trailRail::before {
+  bottom: 50%;
+}
+
+.waypoint {
+  position: relative;
+  align-self: center;
+  width: 1rem;
+  height: 1rem;
+  border: 3px solid hsl(var(--sl-color-text-primary));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-background));
+}
+
+.waypoint[data-done] {
+  border-color: hsl(var(--sl-color-text-tertiary));
+  background: hsl(var(--sl-color-text-tertiary));
+}
+
+.waypoint[data-status="unknown"]:not([data-done]) {
+  border-style: dashed;
+}
+
+/* Troop-wide stops are a different kind of place on the route: a square marker. */
+.waypoint[data-troop] {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: var(--sl-radius-xs);
+  rotate: 45deg;
+}
+
+[data-next] .waypoint {
+  width: 1.25rem;
+  height: 1.25rem;
+  background: hsl(var(--tl-flag));
+  box-shadow:
+    0 0 0 4px hsl(var(--sl-color-background)),
+    0 0 0 6px hsl(var(--sl-color-text-primary));
+}
+
+.trailEntry {
+  display: block;
+  width: 100%;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border-radius: var(--sl-radius-md);
+}
+
+.trailEntry:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.trailEntry .title {
+  display: block;
+  font-size: var(--sl-text-body);
+}
+
+.trailQuiet {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-sm);
+}
+
+.trailQuietWhen {
+  flex: 0 0 4.5rem;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.trailEntry .trailQuiet .title {
+  display: inline;
+  font-size: var(--sl-text-body-sm);
+}
+
+[data-quiet] .trailEntry {
+  min-height: 2.25rem;
+}
+
+.trailStop:not([data-quiet]) .trailEntry .title {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+[data-next] .trailEntry .title {
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.trailMonth {
+  min-height: 2.25rem;
+}
+
+.trailMonthLabel {
+  padding-top: var(--sl-spacing-inset-sm);
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.trailGap {
+  min-height: 2rem;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-style: italic;
+}
+
+.trailGap > .trailRail::before {
+  border-left-style: dotted;
+}
+
+.trailToday {
+  min-height: 3rem;
+}
+
+.trailToday > .trailRail {
+  align-items: center;
+}
+
+/* The flokkur's flag planted where the path stands today. */
+.trailToday .flag {
+  position: relative;
+  z-index: 1;
+}
+
+.trail > .trailToday {
+  grid-template-columns: 2.5rem auto minmax(0, 1fr);
+}
+
+.trailNothing {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── Horizontal axes, shared by B and D ── */
+
+.scroller {
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: var(--sl-spacing-inset-sm);
+}
+
+.tick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 2.75rem;
+  padding: 0 var(--sl-spacing-inset-xs) var(--sl-spacing-inset-xs);
+  border-left: 1px solid hsl(var(--sl-color-border-strong));
+}
+
+.tick[data-month-start] {
+  border-left: 2px solid hsl(var(--sl-color-text-primary));
+}
+
+.tickMonth {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tickDate {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.todayLine {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--tl-offset, 0rem) + var(--tl-at) * var(--tl-week));
+  border-left: 2px solid hsl(var(--sl-color-primary-text));
+  pointer-events: none;
+}
+
+.todayLine > .todayLabel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0 var(--sl-spacing-inset-xs);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.axisNothing {
+  margin: var(--sl-spacing-stack-sm) 0 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── B · Kvarði ── */
+
+.ruler {
+  position: relative;
+  width: calc(var(--tl-weeks) * var(--tl-week));
+  padding-top: 1.25rem;
+}
+
+.rulerAxis {
+  display: grid;
+  grid-template-columns: repeat(var(--tl-weeks), var(--tl-week));
+  border-bottom: 3px solid hsl(var(--sl-color-text-primary));
+}
+
+.hangers {
+  display: grid;
+  grid-template-columns: repeat(var(--tl-weeks), var(--tl-week));
+  grid-auto-flow: row dense;
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* A label hanging from its tick on a string: the stem is the flokkur's colour ahead,
+   grey behind, dashed while still a "?". */
+.hanger {
+  min-width: 0;
+  padding: var(--sl-spacing-inset-md) var(--sl-spacing-inset-xs) 0 0;
+  margin-left: -1px;
+  border-left: 3px solid hsl(var(--tl-status));
+}
+
+/* The weekly fundur hangs on a thin string; an exception on a heavy one. */
+.hanger[data-routine] {
+  border-left-width: 2px;
+}
+
+.hanger:not([data-routine]) {
+  border-left-width: 4px;
+}
+
+.hanger[data-done] {
+  border-left: 1px solid hsl(var(--sl-color-text-tertiary));
+}
+
+.hanger[data-status="unknown"]:not([data-done]) {
+  border-left-style: dashed;
+  border-left-color: hsl(var(--sl-color-text-secondary));
+}
+
+.hangerLabel {
+  display: block;
+  width: 100%;
+  /* Opaque, so the today line passes behind a label rather than through its text. */
+  background: hsl(var(--sl-color-background));
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border-radius: 0 var(--sl-radius-md) var(--sl-radius-md) 0;
+}
+
+.hangerLabel:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.hangerLabel .title {
+  display: block;
+}
+
+.hangerLabel:not([data-routine]) .title {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.hangerLabel .kind,
+.hangerLabel .moved {
+  display: flex;
+  font-size: var(--sl-text-caption);
+}
+
+.hangerLabel[data-troop]:not([data-done]) {
+  border-radius: 0 var(--sl-radius-xs) var(--sl-radius-xs) 0;
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.hangerLabel[data-troop]:not([data-done]) :is(.meta, .kind) {
+  color: inherit;
+}
+
+.hangerLabel .troop {
+  display: block;
+}
+
+/* ── C · Dagbók ── */
+
+.diary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-stack-md);
+}
+
+.diaryMonthTitle {
+  margin: 0 0 var(--sl-spacing-stack-xs);
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.diaryWeeks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid hsl(var(--sl-color-border-strong));
+}
+
+.diaryWeek {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  min-height: var(--tl-target);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+}
+
+.diaryWeek[data-today] {
+  border-top: 2px solid hsl(var(--sl-color-primary-text));
+  border-bottom-width: 2px;
+  border-bottom-color: hsl(var(--sl-color-primary-text));
+}
+
+.diaryGutter {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  column-gap: var(--sl-spacing-gap-xs);
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm) var(--sl-spacing-inset-xs) 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.diaryWeekNo {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.diaryDate {
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+}
+
+.diaryTodayTab {
+  padding: 0 var(--sl-spacing-inset-xs);
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The red margin rule of a paper diary, in the falkar ramp so it flips with the theme. */
+.diaryLines {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: var(--sl-spacing-inset-sm);
+  border-left: 2px solid hsl(var(--sl-color-patrol-falkar) / 0.6);
+}
+
+.diaryLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-gap-sm);
+  width: 100%;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-xs);
+  font-size: var(--sl-text-body);
+}
+
+.diaryLine:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.diaryClock {
+  flex: 0 0 2.75rem;
+  display: inline-flex;
+  justify-content: center;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.diaryKey {
+  margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* The usual time is a ditto mark, as a hand-kept diary writes "same as above". */
+.ditto {
+  font-weight: var(--sl-font-weight-heading);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.diaryText {
+  display: grid;
+}
+
+.diaryLine:not([data-routine]) .title {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.diaryLine[data-done] .title {
+  font-weight: var(--sl-font-weight-body);
+}
+
+.diaryCarried,
+.diaryNote {
+  padding: 0 var(--sl-spacing-inset-xs) var(--sl-spacing-inset-xs);
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  font-style: italic;
+}
+
+/* ── D · Brautir ── */
+
+.lanes {
+  --tl-week: 7rem;
+  --tl-offset: var(--tl-head);
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--tl-head) calc(var(--tl-weeks) * var(--tl-week));
+  width: calc(var(--tl-head) + var(--tl-weeks) * var(--tl-week));
+  row-gap: var(--sl-spacing-gap-xs);
+  padding-top: 1.25rem;
+}
+
+.lanes .todayLine {
+  top: 0;
+}
+
+.laneCorner {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: hsl(var(--sl-color-background));
+}
+
+.lanesAxis {
+  display: grid;
+  grid-template-columns: repeat(var(--tl-weeks), var(--tl-week));
+  border-bottom: 2px solid hsl(var(--sl-color-text-primary));
+}
+
+.laneHead {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+  margin: 0;
+  padding-right: var(--sl-spacing-inset-sm);
+  background: hsl(var(--sl-color-background));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.laneHead[data-active],
+.laneHead[data-troop] {
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.laneName {
+  overflow-wrap: anywhere;
+}
+
+.lane {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--tl-weeks), var(--tl-week));
+  grid-auto-flow: row dense;
+  /* Rows only: a column gap would drift the blocks off the axis ticks week by week. */
+  row-gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.block {
+  min-width: 0;
+  display: flex;
+  padding-right: 2px;
+}
+
+/* A block is the flokkur's colour itself: vivid ahead, its pale step behind. */
+.blockButton {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  border: 2px solid transparent;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--tl-flag));
+  color: hsl(var(--tl-flag-fg));
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-medium);
+  line-height: var(--sl-line-height-tight);
+}
+
+.blockButton .title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.lane[data-active] .blockButton {
+  min-height: 4rem;
+  font-size: var(--sl-text-body-sm);
+}
+
+.lane[data-active] .blockButton .title {
+  -webkit-line-clamp: 3;
+}
+
+.lane[data-troop] .blockButton .title {
+  -webkit-line-clamp: 2;
+}
+
+/* The weekly fundur is the flokkur's pale step with a thin edge of its colour, so the
+   exceptions, in full colour, are what the eye lands on. */
+.blockButton[data-routine] {
+  border-color: hsl(var(--tl-flag));
+  background: hsl(var(--tl-flag) / 0.18);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.blockButton[data-done] {
+  border-color: transparent;
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.lane[data-active] .blockButton[data-done] {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.blockButton[data-status="unknown"]:not([data-done]) {
+  border-style: dashed;
+  border-color: hsl(var(--sl-color-text-secondary));
+  background: hsl(var(--sl-color-background));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.blockButton[data-troop]:not([data-done]):not([data-status="unknown"]) {
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.blockButton:hover {
+  border-color: hsl(var(--sl-color-text-primary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry {
+    transition-duration: 1ms;
+  }
+}
+
+/* Phone-narrow: last, so it wins over the base rules above. */
+@container (max-width: 40rem) {
+  .ruler {
+    --tl-week: 7.5rem;
+  }
+
+  .diaryWeek {
+    grid-template-columns: 5rem minmax(0, 1fr);
+  }
+
+  .head,
+  .trail,
+  .diary,
+  .scroller {
+    --tl-target: var(--sl-size-button-lg);
+  }
+}

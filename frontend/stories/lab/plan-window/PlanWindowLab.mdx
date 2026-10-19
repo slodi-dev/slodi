@@ -1,0 +1,170 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./PlanWindowLab.stories";
+
+<Meta of={Stories} name="Rationale" />
+
+# PlanWindow: variations
+
+## What the view is for
+
+The window is A7: one flokkur, the last fundur and the next few. It's the paper
+**Fundarhugmyndir** sheet, where the scouts write down the next four meetings. A leader opens it
+to ask **"what still needs sorting before the next few fundir?"** The timeline answers "what is
+coming". The window answers "what's left to do for it". So these directions make **readiness**
+the content: what's settled about each fundur and what's still open.
+
+Most fundir are the weekly flokksfundur at the usual time, and once its liðir are set there's
+nothing to do. The work sits in the fundir that differ: the útilega that needs a venue and kit,
+the dagsferð with no plan yet, the fundur moved to Thursday. So the window says the rhythm once,
+lets a ready routine fundur shrink to one line (in Verkefni), and marks every exception with
+its type and its span (_fös 30. okt.–sun 1. nóv._).
+
+The current component is the timeline cut to five chips, with nothing on them about what's left.
+
+## What it has to convey, ranked
+
+| #   | Information                                              | Why it ranks here                                                                         |
+| --- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1   | **What is still open**, per fundur, in words             | The work itself: "2 liðir óákveðnir", "Vantar staðsetningu", "15 mínútur umfram".         |
+| 2   | **Which fundur is next**, and its date                   | Work on the nearest first. A8 says the far ones are _meant_ to be thin.                   |
+| 3   | **How ready each one is**, at a glance                   | A tally of five checks, plus the fundur's status in the calendar Staða's marks (✓ ✎ ⧗ ?). |
+| 4   | **What kind of fundur**: the weekly one, or an exception | An útilega or a moved fundur brings its own work (kit, venue, telling parents).           |
+| 5   | **What to bring** (`needs`)                              | The kit list for the next fundur, the thing a leader forgets.                             |
+| 6   | The last fundur                                          | Context only: a footnote or a "Búið" card.                                                |
+
+### The five checks
+
+Readiness is five things, each either settled or open:
+
+| Check  | Settled                           | Open                                                  |
+| ------ | --------------------------------- | ----------------------------------------------------- |
+| Efni   | the fundur isn't "?"              | "Efni fundar óákveðið"                                |
+| Dagur  | a day: "fös 30. okt.–sun 1. nóv." | "Vantar dag (vika frá 2. nóv.)"                       |
+| Staður | the venue                         | "Vantar staðsetningu"                                 |
+| Liðir  | "6 liðir ákveðnir"                | "Engir liðir enn", "2 liðir óákveðnir"                |
+| Tími   | "85 / 90 mín"                     | "105 / 90 mín, 15 mínútur umfram", "Engin tímaáætlun" |
+
+An undated scratchpad drops _Dagur_: it has no dates by design, and asking for one on every
+fundur would be noise.
+
+**What the data can't say yet.** "2 liðir óákveðnir" needs the number of _decided_ liðir per
+fundur. The grid contract has `item_count` but not liður status, which lives in the bench data.
+The lab adds `decided_count` to its fixture. The calendar lab hit the same gap and proposed the
+same field, so it's one the contract would grow once for both.
+
+## The rules every direction keeps
+
+- **One family with the calendar and the timeline** (`planFamily.tsx`): the Staða status marks
+  and colours, the calendar's type icons for exceptions, the inverse surface for öll sveitin,
+  and the swallow-tailed flokkur pennant.
+- The tally is never alone. "4 af 5 klár" and the open items are always written next to it.
+  A missing stroke is a faint dotted placeholder, and a closed gate (all five) turns success green.
+- Each fundur is focusable, and its name carries title, date, venue, status and readiness:
+  _"Hjálp í viðlögum (1/2), 3. nóvember kl. 19:30, Skátaheimilið, drög, 4 af 5 klár. 2 liðir
+  óákveðnir"_.
+- Dates from `lib/format.ts`; counts through `countIs` ("1 atriði opið", "2 liðir óákveðnir",
+  "í 5 fundum"). Card flips respect reduced motion. 48px targets at phone width.
+
+---
+
+## A · Spjöld (index cards)
+
+<Canvas of={Stories.CardsBusy} />
+
+**Story it tells:** a box of index cards, one per fundur, with divider tabs that carry the date,
+a tiny tally, and an icon for an exception. The card is ruled: a red header line, then a blue
+line per check, open ones in bold. The cards behind it show as flat paper edges.
+
+**Hierarchy:**
+
+1. The card in front: date, title and status.
+2. Its checklist, open items in bold, and _Taka með_.
+3. The tabs: where the other fundir are, and roughly how ready (their tallies).
+
+**Why it looks this way:** it's the closest to the paper sheet the leaders already think in
+("ég hugsa um þetta blað"), and one card at a time suits the job of sitting down to sort one
+fundur. The tabs are a real tablist: one Tab stop, ← → Home End flip the cards, and focus moves
+with them.
+
+**Trade-offs:** you only see one fundur's detail at a time. Comparing two means flipping. The
+tab row overflows sideways past five fundir, or less on a phone. The flat-edge stack is decoration.
+
+## B · Verkefni (to-do)
+
+<Canvas of={Stories.TodoBusy} />
+
+**Story it tells:** the open items are the content. Under each fundur there's a box for every
+thing still to do, then one quiet line for what's settled ("Efni, dagur og tími klár") and the
+kit. A routine fundur with nothing open shrinks to one line ending in "Allt klárt".
+
+**Hierarchy:**
+
+1. The open items, at body size with a box each.
+2. The fundur they belong to: date, exception tag, title and status.
+3. "4 af 5 klár" on the right, the settled line, the kit.
+
+**Why it looks this way:** it answers the window's question the most directly: read down
+it and you have the list of things to do this week. Collapsing ready routine fundir means the
+page gets shorter as the work gets done.
+
+**Trade-offs:** the boxes look like checkboxes but aren't controls. The fundur is what you
+open, and you tick things off in the bench. That's the main risk, and it would need either real
+actions per item or a different mark. A ready útilega still takes several lines, on purpose. It
+has the weakest sense of time: everything looks equally urgent.
+
+## C · Röð (strip)
+
+<Canvas of={Stories.StripBusy} />
+
+**Story it tells:** the next few side by side, like columns of a timetable. Each column's top
+rule is the fundur's status colour (Staða). Readiness is a tally: a stroke for each settled
+check, and the fifth closes the gate. Under it are the count and the first open thing.
+
+**Hierarchy:**
+
+1. The tallies across the row: which fundir are a closed gate and which are still sticks.
+2. Each column's date (big day number) and title.
+3. The first open item, and "og 2 atriði í viðbót".
+
+**Why it looks this way:** a tally is a scout's way to count, and it reads at a glance without
+being a progress bar. Five strokes is exactly the five checks, so a full gate means "ready".
+Side by side, you can compare fundir without opening any.
+
+**Trade-offs:** only the first open item is written, so you open the fundur for the rest. Five
+columns need a wide screen; on a phone it scrolls with snap, one and a bit at a time. A tally
+needs learning the first time (the text beside it covers that). An undated scratchpad has four
+checks, so no gate.
+
+## D · Næst (focus)
+
+<Canvas of={Stories.FocusBusy} />
+
+**Story it tells:** the next fundur as a front page, with the date big, its full checklist and
+kit. The ones after it are a short list with a small tally and "3/5" each. The last fundur is a
+footnote.
+
+**Hierarchy:**
+
+1. The next fundur: date, title, status, "4 af 5 klár".
+2. Its checklist and _Taka með_.
+3. "Svo": the rest, one line each, with exception tags.
+
+**Why it looks this way:** most of the time the next fundur is the only one that needs work
+today. Making it big and the rest small matches A8: the near one gets detail, the far ones just
+need to exist. Side by side on a wide screen, stacked on a phone.
+
+**Trade-offs:** the rest get very little. An útilega three weeks out that needs booking now is
+one line. It's the most conventional layout of the four.
+
+---
+
+## Edge states
+
+<Canvas of={Stories.Undated} />
+
+<Canvas of={Stories.NothingAhead} />
+
+When the whole term is behind, every direction says "Ekkert skráð framundan hjá þessum flokki."
+and links to the last fundur, rather than showing an empty frame.
+
+<Canvas of={Stories.Empty} />
