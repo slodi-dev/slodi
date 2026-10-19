@@ -1,37 +1,56 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   Backpack,
+  Ban,
+  CalendarClock,
   Check,
-  ChevronDown,
-  CircleHelp,
+  ClipboardList,
+  Flag,
+  Flame,
+  FlameKindling,
+  Hourglass,
   MessageSquareText,
-  Pin,
+  Mountain,
+  PartyPopper,
+  Pencil,
+  Tent,
+  TentTree,
   ThumbsUp,
+  Users,
   Wrench,
   X,
+  type LucideIcon,
 } from "lucide-react";
-import Modal from "@/components/Modal/Modal";
 import PlanEntryChip from "@/components/plan/PlanEntryChip";
 import gridStyles from "@/components/plan/PlanGrid.module.css";
-import { accentVarFor, parseWeekStart } from "@/components/plan/planEntries";
+import { accentVarFor, isWeekDone, parseWeekStart } from "@/components/plan/planEntries";
 import {
+  STATUS_LABEL,
   cellKey,
-  type PlanBand,
-  type PlanCell,
-  type PlanGrid,
+  type EventType,
+  type Patrol,
+  type PlanStatus,
   type PlanWeek,
 } from "@/services/plan.service";
 import { countIs, formatIcelandicDateShort } from "@/lib/format";
 import {
   GEAR,
+  LAB_TODAY,
+  exceptionOf,
   gatherGear,
+  patrolInitial,
   sortGear,
+  usualSlots,
+  type Exception,
   type GatheredGear,
   type GearState,
+  type LabBand,
+  type LabCell,
   type LabEndurmat,
-  type LabReminder,
+  type LabGridData,
   type LabSeason,
+  type UsualSlot,
   type WeekSide,
 } from "./planGridLabData";
 import styles from "./PlanGridLab.module.css";
@@ -39,34 +58,56 @@ import styles from "./PlanGridLab.module.css";
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 /**
- * - `dalkar`: A · two columns, re-sourced: Endurmat and Búnaður.
- * - `minnismidi`: B · ATH holds reminders and endurmat; Búnaður has a three-way state per item.
- * - `vikan`: C · one quiet "Vikan" cell with counts; the details open in a dialog.
- * - `spjald`: D · the same cell picks a week; a docked panel beside the grid holds the details.
+ * The picked direction is A · Two columns (Endurmat and Búnaður). These are its variations,
+ * which differ in the fundur element in each cell, plus the side-column touches that suit it:
+ *
+ * - `chip`: A as picked, with today's PlanEntryChip (for reference).
+ * - `stada`: A1 · Staða. Status first, like the Dagatal's picked look.
+ * - `merki`: A2 · Merki. Each fundur is a scout patch: sewn on once it's decided.
+ * - `vardeldur`: A3 · Varðeldur. A fire that grows as the liðir are decided, with a tally.
+ * - `stimpill`: A4 · Stimpill. A passport stamp once ready; a dotted empty stamp until then.
  */
-export type PlanGridLook = "dalkar" | "minnismidi" | "vikan" | "spjald";
+export type FundurLook = "chip" | "stada" | "merki" | "vardeldur" | "stimpill";
+
+export const LOOK_NAME: Record<FundurLook, string> = {
+  chip: "A · Two columns (current chip)",
+  stada: "A1 · Staða",
+  merki: "A2 · Merki",
+  vardeldur: "A3 · Varðeldur",
+  stimpill: "A4 · Stimpill",
+};
 
 export interface PlanGridLabProps {
-  look: PlanGridLook;
+  look: FundurLook;
   season: LabSeason;
   /** Opens a liður on the bench. The real app would navigate to `/plan/bekkur#<lidurId>`. */
   onOpenLidur?: (lidurId: string) => void;
   onSelectEvent?: (eventId: string) => void;
-  /** C and D: the week open at first. */
-  defaultWeek?: number;
 }
 
 /* ── Copy ──────────────────────────────────────────────────────────────────── */
 
-const STATES: GearState[] = ["eigum", "vantar", "ovist"];
+/** Short weekday names; lib/format.ts has no weekday helper yet. */
+const WEEKDAY = ["mán.", "þri.", "mið.", "fim.", "fös.", "lau.", "sun."];
 const STATE_LABEL: Record<GearState, string> = { eigum: "Eigum", vantar: "Vantar", ovist: "Óvíst" };
-const STATE_ICON: Record<GearState, typeof Check> = { eigum: Check, vantar: X, ovist: CircleHelp };
-const NEXT_STATE: Record<GearState, GearState> = {
-  vantar: "eigum",
-  eigum: "ovist",
-  ovist: "vantar",
-};
 const TONE_LABEL = { positive: "Gekk vel", corrective: "Laga næst" } as const;
+
+const TYPE_ICON: Record<EventType, LucideIcon> = {
+  flokks: Flag,
+  sveitar: Users,
+  skipulags: ClipboardList,
+  utilega: Tent,
+  dagsferd: Mountain,
+  mot: TentTree,
+  uppskeru: PartyPopper,
+};
+
+const STATUS_GLYPH: Record<PlanStatus, LucideIcon | "?"> = {
+  confirmed: Check,
+  draft: Pencil,
+  tentative: Hourglass,
+  unknown: "?",
+};
 
 /** `Vasaljós ×12`, `Eldsneyti · 4 brúsar`, `Sjúkrakassi`. */
 export function gearLabel({ item, qty }: GatheredGear): string {
@@ -75,9 +116,9 @@ export function gearLabel({ item, qty }: GatheredGear): string {
   return qty > 1 ? `${item.name} ×${qty}` : item.name;
 }
 
-/** An ISO date (`YYYY-MM-DD`) as a local day, so it doesn't move west of UTC. */
+/** An ISO date as a local day, so it doesn't move west of UTC. */
 function localDay(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 
@@ -86,16 +127,374 @@ function weekDate(week: PlanWeek): string {
   return start ? formatIcelandicDateShort(start) : "";
 }
 
-const vantarName = (n: number) => `Vantar ${countIs(n, "hlut", "hluti")}`;
+const slotText = (s: UsualSlot) => `${WEEKDAY[s.weekday]} ${s.clock}`;
+
+/* ── What one fundur element needs to know ─────────────────────────────────── */
+
+interface EntryInfo {
+  entry: LabCell | LabBand;
+  /** The flokkar it is for. Empty for the whole sveit. */
+  patrols: { patrol: Patrol; index: number }[];
+  exception: Exception;
+  past: boolean;
+  hasEndurmat: boolean;
+  decided: number;
+  items: number;
+  /** Minutes over the fundur's budget; 0 when on or under, and for multi-day events. */
+  over: number;
+}
+
+function exceptionText(ex: Exception): string | null {
+  if (!ex) return null;
+  if (ex.kind === "cancelled") return "Fellur niður";
+  if (ex.kind === "moved") return `Færður · ${WEEKDAY[ex.weekday]} ${ex.clock}`;
+  if (ex.kind === "multiday") return `${WEEKDAY[ex.fromDay]}–${WEEKDAY[ex.toDay]}`;
+  return `${WEEKDAY[ex.weekday]} ${ex.clock}`;
+}
+
+/** The whole story in one sentence, for the element's accessible name. */
+function spokenName(info: EntryInfo): string {
+  const { entry, patrols, exception, past, hasEndurmat } = info;
+  const who = patrols.length ? patrols.map((p) => p.patrol.name).join(" og ") : "Öll sveitin";
+  const parts = [`${who}: ${entry.title}`];
+  if (entry.starts_at) {
+    const day = formatIcelandicDateShort(localDay(entry.starts_at));
+    if (exception?.kind === "multiday" && entry.ends_at) {
+      parts.push(`${day} til ${formatIcelandicDateShort(localDay(entry.ends_at))}`);
+    } else {
+      parts.push(`${day} kl. ${entry.starts_at.slice(11, 16)}`);
+    }
+  }
+  if (exception?.kind === "cancelled") parts.push(`fellur niður: ${exception.reason}`);
+  else {
+    if (exception?.kind === "moved") parts.push("færður af venjulegum fundartíma");
+    parts.push(past ? "lokið" : STATUS_LABEL[entry.status].toLowerCase());
+    if (!past && info.items) parts.push(`ákveðnir liðir ${info.decided} af ${info.items}`);
+    if (info.over > 0) parts.push(`${countIs(info.over, "mínúta", "mínútur")} umfram`);
+  }
+  if (hasEndurmat) parts.push("endurmat frá síðast");
+  return parts.join(", ");
+}
+
+/** The flokkur's ramp as local aliases (`--pc`, `--pc-fg`); the whole sveit wears the inverse surface. */
+function patrolVars(info: EntryInfo): CSSProperties {
+  const [first, second] = info.patrols;
+  if (!first) {
+    return {
+      "--pc": "var(--sl-color-surface-inverse)",
+      "--pc-fg": "var(--sl-color-text-inverse)",
+      "--pc2": "var(--sl-color-surface-inverse)",
+    } as CSSProperties;
+  }
+  const ramp = (p: { patrol: Patrol; index: number }) => accentVarFor(p.patrol, p.index);
+  return {
+    "--pc": ramp(first),
+    "--pc-fg": ramp(first).replace(/\)$/, "-foreground)"),
+    "--pc2": ramp(second ?? first),
+  } as CSSProperties;
+}
+
+function PatrolChips({ info }: { info: EntryInfo }) {
+  const list = info.patrols.length ? info.patrols : [null];
+  return (
+    <span className={styles.chips} aria-hidden="true">
+      {list.map((p, i) => (
+        <span
+          key={p?.patrol.id ?? "sveit"}
+          className={styles.chip}
+          style={i === 1 ? ({ "--pc": "var(--pc2)" } as CSSProperties) : undefined}
+        >
+          {patrolInitial(p?.patrol)}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function ExceptionFlag({ info }: { info: EntryInfo }) {
+  const text = exceptionText(info.exception);
+  if (!text || !info.exception) return null;
+  const Icon =
+    info.exception.kind === "cancelled"
+      ? Ban
+      : info.exception.kind === "moved"
+        ? CalendarClock
+        : TYPE_ICON[info.entry.type];
+  return (
+    <span className={styles.flag} data-kind={info.exception.kind}>
+      <Icon aria-hidden="true" />
+      {text}
+    </span>
+  );
+}
+
+function Minutes({ info }: { info: EntryInfo }) {
+  const { actual_minutes: actual, planned_minutes: planned } = info.entry;
+  // Nothing decided yet: the minutes are a placeholder, not a plan.
+  if (!actual || !planned || planned > 600 || info.decided === 0) return null;
+  return (
+    <span className={styles.minutes} data-over={info.over > 0 || undefined}>
+      {actual}/{planned} mín
+    </span>
+  );
+}
+
+function EndurmatMark({ info }: { info: EntryInfo }) {
+  return info.hasEndurmat ? (
+    <MessageSquareText aria-hidden="true" className={styles.endurMark} />
+  ) : null;
+}
+
+/* ── The fundur elements ───────────────────────────────────────────────────── */
+
+interface ElementProps {
+  info: EntryInfo;
+  onSelect?: (eventId: string) => void;
+}
+
+function ElementButton({
+  info,
+  className,
+  onSelect,
+  children,
+}: ElementProps & { className: string; children: ReactNode }) {
+  const { entry, exception, past } = info;
+  return (
+    <button
+      type="button"
+      className={`${styles.el} ${className}`}
+      style={patrolVars(info)}
+      data-status={entry.status}
+      data-past={past || undefined}
+      data-exception={exception?.kind}
+      data-troop={info.patrols.length === 0 || undefined}
+      aria-label={spokenName(info)}
+      onClick={() => onSelect?.(entry.event_id)}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A1 · Staða: the state is the first thing you read; the flokkur is a small initial. */
+function StadaElement(props: ElementProps) {
+  const { info } = props;
+  const cancelled = info.exception?.kind === "cancelled";
+  const Glyph = cancelled ? Ban : info.past ? Check : STATUS_GLYPH[info.entry.status];
+  const word = cancelled ? "Fellur niður" : info.past ? "Lokið" : STATUS_LABEL[info.entry.status];
+  return (
+    <ElementButton {...props} className={styles.stada}>
+      <span className={styles.stState} aria-hidden="true">
+        {Glyph === "?" ? <b className={styles.q}>?</b> : <Glyph />}
+        {word}
+        <EndurmatMark info={info} />
+      </span>
+      <span className={styles.elTitle}>{info.entry.title}</span>
+      {!cancelled && <ExceptionFlag info={info} />}
+      <span className={styles.meta} aria-hidden="true">
+        <PatrolChips info={info} />
+        {!info.past && !cancelled && info.items > 0 && (
+          <span>
+            {info.decided}/{info.items} liðir
+          </span>
+        )}
+        {!info.past && !cancelled && <Minutes info={info} />}
+      </span>
+    </ElementButton>
+  );
+}
+
+/** A2 · Merki: a patch sewn on once decided, outlined while in drög, an empty ring while "?". */
+function MerkiElement(props: ElementProps) {
+  const { info } = props;
+  const cancelled = info.exception?.kind === "cancelled";
+  const Icon = TYPE_ICON[info.entry.type];
+  const fill = cancelled
+    ? "cancelled"
+    : info.past || info.entry.status === "confirmed"
+      ? "sewn"
+      : info.entry.status === "unknown"
+        ? "empty"
+        : "outline";
+  const sub = cancelled ? "Fellur niður" : info.past ? "Lokið" : STATUS_LABEL[info.entry.status];
+  return (
+    <ElementButton {...props} className={styles.merki}>
+      <span className={styles.patch} data-fill={fill} aria-hidden="true">
+        {fill === "empty" ? <b className={styles.q}>?</b> : <Icon />}
+      </span>
+      <span className={styles.mkText} aria-hidden="true">
+        <span className={styles.elTitle}>{info.entry.title}</span>
+        <span className={styles.mkSub}>
+          {sub}
+          <EndurmatMark info={info} />
+        </span>
+        {!cancelled && <ExceptionFlag info={info} />}
+      </span>
+    </ElementButton>
+  );
+}
+
+/** How big the fire is: 0 kindling only, 1 a small flame, 2 burning, 3 everything decided. */
+function fireLevel(info: EntryInfo): number {
+  if (!info.items || info.decided === 0) return 0;
+  if (info.decided >= info.items) return 3;
+  return info.decided / info.items < 0.5 ? 1 : 2;
+}
+
+/** A3 · Varðeldur: the fire grows as liðir are decided; a tally and the minutes say exactly. */
+function VardeldurElement(props: ElementProps) {
+  const { info } = props;
+  const cancelled = info.exception?.kind === "cancelled";
+  const level = cancelled ? 0 : info.past ? 3 : fireLevel(info);
+  const Fire = level === 0 ? FlameKindling : Flame;
+  return (
+    <ElementButton {...props} className={styles.vardeldur}>
+      <span className={styles.fire} data-level={level} aria-hidden="true">
+        <Fire />
+      </span>
+      <span className={styles.vdText} aria-hidden="true">
+        <span className={styles.elTitle}>{info.entry.title}</span>
+        {cancelled ? (
+          <span className={styles.flag} data-kind="cancelled">
+            <Ban aria-hidden="true" /> Fellur niður
+          </span>
+        ) : (
+          <>
+            <ExceptionFlag info={info} />
+            <span className={styles.meta}>
+              <PatrolChips info={info} />
+              {!info.past && info.items > 0 && (
+                <span className={styles.tally}>
+                  {Array.from({ length: info.items }, (_, i) => (
+                    <i key={i} data-on={i < info.decided || undefined} />
+                  ))}
+                </span>
+              )}
+              {!info.past && <Minutes info={info} />}
+              <EndurmatMark info={info} />
+            </span>
+          </>
+        )}
+      </span>
+    </ElementButton>
+  );
+}
+
+/** A4 · Stimpill: stamped once it's ready (or done); a dotted empty stamp until then. */
+function StimpillElement(props: ElementProps) {
+  const { info } = props;
+  const cancelled = info.exception?.kind === "cancelled";
+  const ready = info.past || (info.entry.status === "confirmed" && info.decided >= info.items);
+  const left = Math.max(0, info.items - info.decided);
+  const word = cancelled ? "Fellur niður" : info.past ? "Lokið" : ready ? "Klárt" : null;
+  return (
+    <ElementButton
+      {...props}
+      className={`${styles.stimpill} ${ready || cancelled ? styles.stamped : styles.unstamped}`}
+    >
+      {word && (
+        <span className={styles.stampWord} aria-hidden="true">
+          {cancelled ? <Ban /> : <Check />}
+          {word}
+        </span>
+      )}
+      <span className={styles.elTitle} aria-hidden="true">
+        {info.entry.title}
+      </span>
+      {!cancelled && <ExceptionFlag info={info} />}
+      <span className={styles.meta} aria-hidden="true">
+        <PatrolChips info={info} />
+        {!ready && !cancelled && (
+          <span>
+            {info.entry.status === "unknown" && info.decided === 0
+              ? "Óákveðið"
+              : `${countIs(left, "liður", "liðir")} eftir`}
+          </span>
+        )}
+        <EndurmatMark info={info} />
+      </span>
+    </ElementButton>
+  );
+}
+
+const ELEMENT: Record<Exclude<FundurLook, "chip">, (p: ElementProps) => ReactNode> = {
+  stada: StadaElement,
+  merki: MerkiElement,
+  vardeldur: VardeldurElement,
+  stimpill: StimpillElement,
+};
+
+/** One fundur in the given look. `chip` is today's PlanEntryChip. */
+export function FundurElement({
+  look,
+  info,
+  onSelect,
+}: {
+  look: FundurLook;
+  info: EntryInfo;
+  onSelect?: (eventId: string) => void;
+}) {
+  if (look === "chip") {
+    const first = info.patrols[0];
+    return (
+      <PlanEntryChip
+        entry={info.entry}
+        patrol={first?.patrol}
+        patrolIndex={first?.index ?? 0}
+        meta="budget"
+        isTroopWide={!first}
+        onSelect={onSelect}
+      />
+    );
+  }
+  const Element = ELEMENT[look];
+  return <Element info={info} onSelect={onSelect} />;
+}
+
+/* ── Deriving entry info for a season ──────────────────────────────────────── */
+
+/** Every entry's info, keyed by event id. */
+export function entryInfos(season: LabSeason): Map<string, EntryInfo> {
+  const { grid, sides } = season;
+  const slots = usualSlots(grid);
+  const withEndurmat = new Set(
+    Object.values(sides).flatMap((s) => s.endurmat.map((e) => e.fundurId))
+  );
+  const weekByIndex = new Map(grid.weeks.map((w) => [w.index, w]));
+  const infos = new Map<string, EntryInfo>();
+
+  const add = (entry: LabCell | LabBand, patrols: EntryInfo["patrols"], usual?: UsualSlot) => {
+    const week = weekByIndex.get(entry.week_index);
+    const actual = entry.actual_minutes ?? 0;
+    const planned = entry.planned_minutes ?? 0;
+    infos.set(entry.event_id, {
+      entry,
+      patrols,
+      exception: exceptionOf(entry, usual),
+      past: week ? isWeekDone(week, LAB_TODAY) : false,
+      hasEndurmat: withEndurmat.has(entry.event_id),
+      decided: entry.decided_count ?? 0,
+      items: entry.item_count ?? 0,
+      over: planned && planned <= 600 && actual > planned ? actual - planned : 0,
+    });
+  };
+
+  for (const band of grid.bands) add(band, []);
+  for (const cell of grid.cells) {
+    const index = grid.patrols.findIndex((p) => p.id === cell.patrol_id);
+    const patrols = grid.patrols
+      .slice(index, index + (cell.span_patrols ?? 1))
+      .map((patrol, i) => ({ patrol, index: index + i }));
+    add(cell, patrols, slots.get(cell.patrol_id));
+  }
+  return infos;
+}
 
 /* ── State ─────────────────────────────────────────────────────────────────── */
-
-type GearStateMap = Record<number, Record<string, GearState>>;
 
 interface WeekModel {
   week: PlanWeek;
   side: WeekSide;
-  reminders: LabReminder[];
   gear: GatheredGear[];
   stateOf: (itemId: string) => GearState;
   setState: (itemId: string, state: GearState) => void;
@@ -109,22 +508,21 @@ export default function PlanGridLab({
   season,
   onOpenLidur,
   onSelectEvent,
-  defaultWeek,
 }: PlanGridLabProps) {
-  const [gearState, setGearState] = useState<GearStateMap>(season.initialState);
-  const [addedReminders, setAddedReminders] = useState<Record<number, LabReminder[]>>({});
+  const [gearState, setGearState] = useState(season.initialState);
   const [announcement, setAnnouncement] = useState("");
+  const infos = useMemo(() => entryInfos(season), [season]);
+  const slots = useMemo(() => usualSlots(season.grid), [season]);
 
   const models = useMemo(() => {
     const map = new Map<number, WeekModel>();
     for (const week of season.grid.weeks) {
-      const side = season.sides[week.index] ?? { endurmat: [], reminders: [], gear: [] };
+      const side = season.sides[week.index] ?? { endurmat: [], gear: [] };
       const gear = gatherGear(side.gear, GEAR);
       const stateOf = (itemId: string): GearState => gearState[week.index]?.[itemId] ?? "ovist";
       map.set(week.index, {
         week,
         side,
-        reminders: [...side.reminders, ...(addedReminders[week.index] ?? [])],
         gear,
         stateOf,
         vantar: gear.filter((g) => stateOf(g.item.id) === "vantar").length,
@@ -139,111 +537,39 @@ export default function PlanGridLab({
       });
     }
     return map;
-  }, [season, gearState, addedReminders]);
+  }, [season, gearState]);
 
-  const addReminder = (weekIndex: number, text: string, dueOn: string | null) => {
-    setAddedReminders((prev) => ({
-      ...prev,
-      [weekIndex]: [
-        ...(prev[weekIndex] ?? []),
-        { id: `new-${weekIndex}-${(prev[weekIndex] ?? []).length}`, text, dueOn, by: "Þú" },
-      ],
-    }));
-    setAnnouncement(`Minnismiða bætt við viku ${weekIndex}`);
-  };
-
-  const model = (week: PlanWeek) => models.get(week.index) as WeekModel;
-
-  let body: ReactNode;
-  if (look === "dalkar") {
-    body = (
+  return (
+    <div className={styles.root} data-look={look}>
       <LabGrid
         grid={season.grid}
-        onSelectEvent={onSelectEvent}
-        sideHeads={["Endurmat", "Búnaður"]}
-        sideClass={styles.sideWide}
+        slots={slots}
+        renderEntry={(id) => {
+          const info = infos.get(id);
+          return info ? <FundurElement look={look} info={info} onSelect={onSelectEvent} /> : null;
+        }}
         renderSide={(week) => {
-          const m = model(week);
+          const m = models.get(week.index) as WeekModel;
           return (
             <>
               <td className={styles.side}>
                 {m.side.endurmat.length ? (
-                  <EndurmatList items={m.side.endurmat} max={2} onOpenLidur={onOpenLidur} />
+                  <EndurmatList
+                    items={m.side.endurmat}
+                    patrols={season.grid.patrols}
+                    onOpenLidur={onOpenLidur}
+                  />
                 ) : (
                   <Nothing />
                 )}
               </td>
               <td className={styles.side}>
-                {m.gear.length ? <GearChecklist model={m} variant="check" /> : <Nothing />}
+                {m.gear.length ? <GearChecklist look={look} model={m} /> : <Nothing />}
               </td>
             </>
           );
         }}
       />
-    );
-  } else if (look === "minnismidi") {
-    body = (
-      <LabGrid
-        grid={season.grid}
-        onSelectEvent={onSelectEvent}
-        sideHeads={["ATH", "Búnaður"]}
-        sideClass={styles.sideWide}
-        renderSide={(week) => {
-          const m = model(week);
-          const any = m.reminders.length + m.side.endurmat.length > 0;
-          return (
-            <>
-              <td className={styles.side}>
-                {any ? (
-                  <div className={styles.stack}>
-                    {m.reminders.length > 0 && <ReminderList items={m.reminders} compact />}
-                    {m.side.endurmat.length > 0 && (
-                      <EndurmatList
-                        items={m.side.endurmat}
-                        max={1}
-                        onOpenLidur={onOpenLidur}
-                        labelled
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <Nothing />
-                )}
-              </td>
-              <td className={styles.side}>
-                {m.gear.length ? <GearChecklist model={m} variant="cycle" /> : <Nothing />}
-              </td>
-            </>
-          );
-        }}
-      />
-    );
-  } else if (look === "vikan") {
-    body = (
-      <VikanLook
-        season={season}
-        model={model}
-        defaultWeek={defaultWeek}
-        onOpenLidur={onOpenLidur}
-        onSelectEvent={onSelectEvent}
-      />
-    );
-  } else {
-    body = (
-      <SpjaldLook
-        season={season}
-        model={model}
-        defaultWeek={defaultWeek}
-        onOpenLidur={onOpenLidur}
-        onSelectEvent={onSelectEvent}
-        onAddReminder={addReminder}
-      />
-    );
-  }
-
-  return (
-    <div className={styles.root} data-look={look}>
-      {body}
       <p role="status" className={styles.srOnly}>
         {announcement}
       </p>
@@ -255,24 +581,23 @@ export default function PlanGridLab({
 
 /**
  * A faithful copy of PlanGrid's table: the same classes, the same band/cell spanning and
- * clipping, the real PlanEntryChip. Only the side columns are swapped. It leaves out the
- * "swallowed cell" notice, which the lab fixtures never trigger.
+ * clipping. Two additions: the flokkur's usual evening under its name, and a joint event of
+ * adjacent flokkar spanning their columns (`span_patrols`). The "swallowed cell" notice is left
+ * out; the fixtures never trigger it.
  */
 function LabGrid({
   grid,
-  sideHeads,
-  sideClass,
+  slots,
+  renderEntry,
   renderSide,
-  onSelectEvent,
 }: {
-  grid: PlanGrid;
-  sideHeads: string[];
-  sideClass: string;
+  grid: LabGridData;
+  slots: Map<string, UsualSlot>;
+  renderEntry: (eventId: string) => ReactNode;
   renderSide: (week: PlanWeek) => ReactNode;
-  onSelectEvent?: (eventId: string) => void;
 }) {
-  const { patrols, weeks, bands, cells } = grid;
-  const layout = useMemo(() => spanLayout(weeks, bands, cells), [weeks, bands, cells]);
+  const { patrols, weeks } = grid;
+  const layout = useMemo(() => spanLayout(grid), [grid]);
 
   const weekHead = (week: PlanWeek) => (
     <th scope="row" className={`${gridStyles.weekHead} ${styles.weekHead}`}>
@@ -295,23 +620,32 @@ function LabGrid({
               <th scope="col" className={`${gridStyles.cornerHead} ${styles.cornerHead}`}>
                 Vika
               </th>
-              {patrols.map((patrol, i) => (
-                <th key={patrol.id} scope="col" className={gridStyles.patrolHead}>
-                  <span className={gridStyles.flokk}>
-                    <i aria-hidden="true" style={{ ["--c" as string]: accentVarFor(patrol, i) }} />
-                    {patrol.name}
-                  </span>
-                </th>
-              ))}
-              {sideHeads.map((head) => (
-                <th
-                  key={head}
-                  scope="col"
-                  className={`${gridStyles.utilHead} ${styles.sideHead} ${sideClass}`}
-                >
-                  {head}
-                </th>
-              ))}
+              {patrols.map((patrol, i) => {
+                const slot = slots.get(patrol.id);
+                return (
+                  <th key={patrol.id} scope="col" className={gridStyles.patrolHead}>
+                    <span className={gridStyles.flokk}>
+                      <i
+                        aria-hidden="true"
+                        style={{ ["--c" as string]: accentVarFor(patrol, i) }}
+                      />
+                      {patrol.name}
+                    </span>
+                    {slot && (
+                      <span className={styles.usual}>
+                        <span className={styles.srOnly}>, venjulega </span>
+                        {slotText(slot)}
+                      </span>
+                    )}
+                  </th>
+                );
+              })}
+              <th scope="col" className={`${gridStyles.utilHead} ${styles.sideHead}`}>
+                Endurmat
+              </th>
+              <th scope="col" className={`${gridStyles.utilHead} ${styles.sideHead}`}>
+                Búnaður
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -324,14 +658,9 @@ function LabGrid({
                     <td
                       colSpan={patrols.length}
                       rowSpan={layout.bandSpan.get(week.index) ?? 1}
-                      className={gridStyles.bandCell}
+                      className={`${gridStyles.bandCell} ${styles.cell}`}
                     >
-                      <PlanEntryChip
-                        entry={band}
-                        meta="budget"
-                        isTroopWide
-                        onSelect={onSelectEvent}
-                      />
+                      {renderEntry(band.event_id)}
                     </td>
                     {renderSide(week)}
                   </tr>
@@ -348,27 +677,18 @@ function LabGrid({
               return (
                 <tr key={week.index}>
                   {weekHead(week)}
-                  {patrols.map((patrol, i) => {
+                  {patrols.map((patrol) => {
                     const key = cellKey(week.index, patrol.id);
                     if (layout.covered.has(key)) return null;
-                    const entry = layout.placed.get(key);
+                    const placed = layout.placed.get(key);
                     return (
                       <td
                         key={patrol.id}
-                        className={gridStyles.cell}
-                        rowSpan={entry && entry.span > 1 ? entry.span : undefined}
+                        className={`${gridStyles.cell} ${styles.cell}`}
+                        rowSpan={placed && placed.span > 1 ? placed.span : undefined}
+                        colSpan={placed && placed.cols > 1 ? placed.cols : undefined}
                       >
-                        {entry ? (
-                          <PlanEntryChip
-                            entry={entry.cell}
-                            patrol={patrol}
-                            patrolIndex={i}
-                            meta="budget"
-                            onSelect={onSelectEvent}
-                          />
-                        ) : (
-                          <Nothing />
-                        )}
+                        {placed ? renderEntry(placed.cell.event_id) : <Nothing />}
                       </td>
                     );
                   })}
@@ -383,8 +703,9 @@ function LabGrid({
   );
 }
 
-/** PlanGrid's spanning rules, condensed: bands clip at the next band, cells at the next cell or band. */
-function spanLayout(weeks: PlanWeek[], bands: PlanBand[], cells: PlanCell[]) {
+/** PlanGrid's spanning rules, condensed, plus column spans for joint events. */
+function spanLayout(grid: LabGridData) {
+  const { weeks, bands, cells, patrols } = grid;
   const lastWeek = weeks.length ? weeks[weeks.length - 1].index : 0;
   const clip = (start: number, wanted: number, blockers: Set<number>) => {
     const capped = Math.min(Math.max(1, wanted), Math.max(1, lastWeek - start + 1));
@@ -405,7 +726,7 @@ function spanLayout(weeks: PlanWeek[], bands: PlanBand[], cells: PlanCell[]) {
     for (let o = 0; o < span; o++) bandWeeks.add(week + o);
   }
 
-  const placed = new Map<string, { cell: PlanCell; span: number }>();
+  const placed = new Map<string, { cell: LabCell; span: number; cols: number }>();
   const covered = new Set<string>();
   for (const cell of [...cells].sort((a, b) => a.week_index - b.week_index)) {
     const key = cellKey(cell.week_index, cell.patrol_id);
@@ -415,8 +736,15 @@ function spanLayout(weeks: PlanWeek[], bands: PlanBand[], cells: PlanCell[]) {
       ...bandWeeks,
     ]);
     const span = clip(cell.week_index, cell.span_weeks, blockers);
-    placed.set(key, { cell, span });
-    for (let o = 1; o < span; o++) covered.add(cellKey(cell.week_index + o, cell.patrol_id));
+    const col = patrols.findIndex((p) => p.id === cell.patrol_id);
+    const cols = Math.max(1, Math.min(cell.span_patrols ?? 1, patrols.length - col));
+    placed.set(key, { cell, span, cols });
+    for (let o = 0; o < span; o++) {
+      for (let c = 0; c < cols; c++) {
+        if (o === 0 && c === 0) continue;
+        covered.add(cellKey(cell.week_index + o, patrols[col + c].id));
+      }
+    }
   }
   return { bandStart, bandSpan, bandWeeks, placed, covered };
 }
@@ -434,25 +762,24 @@ function Nothing() {
 
 function EndurmatList({
   items,
-  max,
+  patrols,
   onOpenLidur,
-  labelled,
+  max = 2,
 }: {
   items: LabEndurmat[];
+  patrols: Patrol[];
+  onOpenLidur?: (lidurId: string) => void;
   /** Show this many, and the rest behind "+ N í viðbót". */
   max?: number;
-  onOpenLidur?: (lidurId: string) => void;
-  /** B: always head the list with "N endurmat", to tell it from the reminders by word and icon. */
-  labelled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const listId = useId();
-  const shown = max && !open ? items.slice(0, max) : items;
+  const shown = open ? items : items.slice(0, max);
   const rest = items.length - shown.length;
 
   return (
     <div className={styles.endurmat}>
-      {max !== undefined && (labelled || items.length > 1) && (
+      {items.length > 1 && (
         <p className={styles.cellHead}>
           <MessageSquareText aria-hidden="true" />
           {countIs(items.length, "endurmat", "endurmöt")}
@@ -461,9 +788,26 @@ function EndurmatList({
       <ul className={styles.notes} id={listId}>
         {shown.map((note) => {
           const Tone = note.tone === "positive" ? ThumbsUp : Wrench;
+          const index = patrols.findIndex((p) => p.id === note.patrolId);
+          const patrol = patrols[index];
           return (
             <li key={note.id} className={styles.note} data-tone={note.tone}>
               <span className={styles.noteKind}>
+                <span
+                  className={styles.chip}
+                  aria-hidden="true"
+                  style={
+                    patrol
+                      ? ({
+                          "--pc": accentVarFor(patrol, index),
+                          "--pc-fg": accentVarFor(patrol, index).replace(/\)$/, "-foreground)"),
+                        } as CSSProperties)
+                      : undefined
+                  }
+                >
+                  {patrolInitial(patrol)}
+                </span>
+                <span className={styles.srOnly}>{patrol?.name ?? "Öll sveitin"}: </span>
                 <Tone aria-hidden="true" />
                 {TONE_LABEL[note.tone]}
               </span>
@@ -476,17 +820,11 @@ function EndurmatList({
                 {note.lidurName}
               </button>
               <q className={styles.quote}>{note.text}</q>
-              {max === undefined && (
-                <span className={styles.byline}>
-                  {note.by}, {formatIcelandicDateShort(localDay(note.writtenOn))} ·{" "}
-                  {note.fundurTitle}
-                </span>
-              )}
             </li>
           );
         })}
       </ul>
-      {(rest > 0 || open) && max !== undefined && items.length > max && (
+      {items.length > max && (
         <button
           type="button"
           className={styles.more}
@@ -501,93 +839,116 @@ function EndurmatList({
   );
 }
 
-/* ── Reminders ─────────────────────────────────────────────────────────────── */
+/* ── Búnaður ───────────────────────────────────────────────────────────────── */
 
-function ReminderList({ items, compact }: { items: LabReminder[]; compact?: boolean }) {
+/**
+ * The count above the list, in each look's own language. Every form also says it in words
+ * for a screen reader: "Vantar 3 hluti".
+ */
+function KitSummary({
+  look,
+  gear,
+  stateOf,
+}: {
+  look: FundurLook;
+  gear: GatheredGear[];
+  stateOf: (id: string) => GearState;
+}) {
+  const vantar = gear.filter((g) => stateOf(g.item.id) === "vantar").length;
+  const owned = gear.filter((g) => stateOf(g.item.id) === "eigum").length;
+  const all = owned === gear.length;
+  const spoken = all
+    ? "Allt til"
+    : `${vantar ? `Vantar ${countIs(vantar, "hlut", "hluti")}. ` : ""}${owned} af ${gear.length} til`;
+
+  let visual: ReactNode;
+  if (look === "vardeldur") {
+    visual = (
+      <>
+        <span className={styles.kitTally}>
+          {sortGear(gear, stateOf).map((g) => (
+            <i key={g.item.id} data-state={stateOf(g.item.id)} />
+          ))}
+        </span>
+        <span>
+          {owned}/{gear.length} til
+        </span>
+        {vantar > 0 && <span className={styles.badge}>{vantar} vantar</span>}
+      </>
+    );
+  } else if (look === "stimpill") {
+    visual = all ? (
+      <span className={styles.kitStamp}>
+        <Check /> Allt til
+      </span>
+    ) : (
+      <span className={styles.kitSlot}>
+        {vantar > 0 ? `${vantar} vantar` : `${owned}/${gear.length} til`}
+      </span>
+    );
+  } else if (look === "merki") {
+    visual = all ? (
+      <span className={styles.badgeOk}>
+        <Check /> Allt til
+      </span>
+    ) : vantar > 0 ? (
+      <span className={styles.kitPatch}>
+        <b>{vantar}</b> vantar
+      </span>
+    ) : null;
+  } else {
+    visual = all ? (
+      <span className={styles.badgeOk}>
+        <Check /> Allt til
+      </span>
+    ) : vantar > 0 ? (
+      <span className={styles.badge}>
+        {look === "stada" && <X />}
+        {vantar} vantar
+      </span>
+    ) : null;
+  }
+
   return (
-    <ul className={styles.notes}>
-      {items.map((r) => (
-        <li key={r.id} className={styles.reminder}>
-          {/* In a cell each reminder says "Muna"; under the dialog's "Muna" heading it doesn't. */}
-          {compact ? (
-            <span className={styles.noteKind}>
-              <Pin aria-hidden="true" />
-              Muna
-              {r.dueOn && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span>fyrir {formatIcelandicDateShort(localDay(r.dueOn))}</span>
-                </>
-              )}
-            </span>
-          ) : (
-            r.dueOn && (
-              <span className={styles.noteKind}>
-                Fyrir {formatIcelandicDateShort(localDay(r.dueOn))}
-              </span>
-            )
-          )}
-          <span className={styles.reminderText}>{r.text}</span>
-          {!compact && <span className={styles.byline}>{r.by}</span>}
-        </li>
-      ))}
-    </ul>
+    <p className={styles.cellHead}>
+      <Backpack aria-hidden="true" />
+      <span aria-hidden="true" className={styles.kitVisual}>
+        {visual}
+      </span>
+      <span className={styles.srOnly}>{spoken}</span>
+    </p>
   );
 }
 
-/* ── Búnaður ───────────────────────────────────────────────────────────────── */
-
-export type GearVariant = "check" | "cycle" | "radio";
-
 /**
- * The week's equipment, gathered from its liðir. Vantar floats to the top when the list
- * opens; it doesn't re-sort while you tick, so an item never jumps out from under a finger.
+ * The week's equipment, gathered from its liðir. A tick means "eigum"; unticked means vantar,
+ * and óvíst is the checkbox's mixed state. Vantar floats to the top when the list opens, and
+ * what the sveit already had folds away; neither moves while you tick.
  */
-function GearChecklist({ model, variant }: { model: WeekModel; variant: GearVariant }) {
-  const { gear, stateOf, setState, vantar } = model;
+function GearChecklist({ look, model }: { look: FundurLook; model: WeekModel }) {
+  const { gear, stateOf, setState } = model;
   const [order] = useState(() => sortGear(gear, stateOf).map((g) => g.item.id));
+  const [ownedAtOpen] = useState(
+    () => new Set(gear.filter((g) => stateOf(g.item.id) === "eigum").map((g) => g.item.id))
+  );
+  const [showOwned, setShowOwned] = useState(false);
+  const listId = useId();
   const byId = new Map(gear.map((g) => [g.item.id, g]));
   const rows = [
     ...order.map((id) => byId.get(id)).filter((g): g is GatheredGear => !!g),
     ...gear.filter((g) => !order.includes(g.item.id)),
   ];
-  const allOwned = gear.length > 0 && gear.every((g) => stateOf(g.item.id) === "eigum");
-  const wide = variant === "radio";
-  // In a grid cell, what the sveit already had when the list opened folds away, so a row
-  // grows with what is still open rather than with the whole list.
-  const [ownedAtOpen] = useState(
-    () =>
-      new Set(wide ? [] : gear.filter((g) => stateOf(g.item.id) === "eigum").map((g) => g.item.id))
-  );
-  const [showOwned, setShowOwned] = useState(false);
-  const listId = useId();
   const visible = showOwned ? rows : rows.filter((g) => !ownedAtOpen.has(g.item.id));
 
   return (
-    <div className={styles.gear} data-variant={variant}>
-      <p className={styles.cellHead}>
-        {!wide && <Backpack aria-hidden="true" />}
-        {wide && <span>{countIs(gear.length, "hlutur", "hlutir")}</span>}
-        {vantar > 0 && (
-          <span className={styles.badge} data-testid="vantar-badge">
-            <span aria-hidden="true">{vantar} vantar</span>
-            <span className={styles.srOnly}>{vantarName(vantar)}</span>
-          </span>
-        )}
-        {allOwned && (
-          <span className={styles.badgeOk}>
-            <Check aria-hidden="true" />
-            Allt til
-          </span>
-        )}
-      </p>
+    <div className={styles.gear}>
+      <KitSummary look={look} gear={gear} stateOf={stateOf} />
       <ul className={styles.gearList} id={listId}>
         {visible.map((g) => (
           <GearRow
             key={g.item.id}
             gear={g}
             state={stateOf(g.item.id)}
-            variant={variant}
             onChange={(s) => setState(g.item.id, s)}
           />
         ))}
@@ -612,386 +973,54 @@ function GearChecklist({ model, variant }: { model: WeekModel; variant: GearVari
 function GearRow({
   gear,
   state,
-  variant,
   onChange,
 }: {
   gear: GatheredGear;
   state: GearState;
-  variant: GearVariant;
   onChange: (state: GearState) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const sourcesId = useId();
-  const name = useId();
-  const checkRef = useRef<HTMLInputElement>(null);
+  const ref = useRef<HTMLInputElement>(null);
   const label = gearLabel(gear);
-  const Icon = STATE_ICON[state];
-
   useEffect(() => {
-    if (checkRef.current) checkRef.current.indeterminate = state === "ovist";
+    if (ref.current) ref.current.indeterminate = state === "ovist";
   }, [state]);
-
-  const sources = (
-    <ul id={sourcesId} className={styles.sources} hidden={!open}>
-      {gear.sources.map((s) => (
-        <li key={`${s.lidurId}-${s.itemId}`}>
-          <b>{s.lidurName}</b>
-          {s.qty > 1 && <span> ×{s.qty}</span>}
-          <span className={styles.sourceFundur}>{s.fundurTitle}</span>
-        </li>
-      ))}
-    </ul>
-  );
-
-  const disclosure = (
-    <button
-      type="button"
-      className={styles.gearName}
-      aria-expanded={open}
-      aria-controls={sourcesId}
-      onClick={() => setOpen((v) => !v)}
-    >
-      <span>{label}</span>
-      <span className={styles.sourceCount}>{countIs(gear.sources.length, "liður", "liðir")}</span>
-      <ChevronDown aria-hidden="true" className={styles.chevron} />
-    </button>
-  );
-
-  if (variant === "check") {
-    return (
-      <li className={styles.gearRow} data-state={state}>
-        <label className={styles.check}>
-          <input
-            ref={checkRef}
-            type="checkbox"
-            checked={state === "eigum"}
-            aria-label={`Eigum ${label}`}
-            onChange={(e) => onChange(e.target.checked ? "eigum" : "vantar")}
-          />
-          <span aria-hidden="true" className={styles.checkText}>
-            {label}
-            {state !== "eigum" && (
-              <em className={styles.stateWord}>{state === "vantar" ? "vantar" : "óvíst"}</em>
-            )}
-          </span>
-        </label>
-      </li>
-    );
-  }
-
-  if (variant === "cycle") {
-    const next = NEXT_STATE[state];
-    return (
-      <li className={`${styles.gearRow} ${styles.cycleRow}`} data-state={state}>
-        <button
-          type="button"
-          className={styles.cycle}
-          data-state={state}
-          aria-label={`${label}: ${STATE_LABEL[state].toLowerCase()}. Breyta í ${STATE_LABEL[next].toLowerCase()}`}
-          onClick={() => onChange(next)}
-        >
-          <Icon aria-hidden="true" />
-        </button>
-        {disclosure}
-        {sources}
-      </li>
-    );
-  }
+  const whoId = useId();
+  const who = gear.sources.map((s) => s.lidurName).join(", ");
 
   return (
     <li className={styles.gearRow} data-state={state}>
-      {disclosure}
-      <fieldset className={styles.seg}>
-        <legend className={styles.srOnly}>{label}</legend>
-        {STATES.map((s) => {
-          const SIcon = STATE_ICON[s];
-          return (
-            <label key={s} className={styles.segOption} data-state={s}>
-              <input type="radio" name={name} checked={state === s} onChange={() => onChange(s)} />
-              <SIcon aria-hidden="true" />
-              {STATE_LABEL[s]}
-            </label>
-          );
-        })}
-      </fieldset>
-      {sources}
+      <span id={whoId} className={styles.srOnly}>
+        Fyrir: {who}
+      </span>
+      <label className={styles.check}>
+        <input
+          ref={ref}
+          type="checkbox"
+          checked={state === "eigum"}
+          aria-label={`Eigum ${label}`}
+          aria-describedby={whoId}
+          onChange={(e) => onChange(e.target.checked ? "eigum" : "vantar")}
+        />
+        <span aria-hidden="true" className={styles.checkText}>
+          {label}
+          {state !== "eigum" && (
+            <em className={styles.stateWord}>{state === "vantar" ? "vantar" : "óvíst"}</em>
+          )}
+        </span>
+      </label>
     </li>
   );
 }
 
-/* ── C and D: one "Vikan" cell ─────────────────────────────────────────────── */
-
-function weekSummary(m: WeekModel) {
-  const parts: { icon: typeof Pin; text: string; tone?: "warn" }[] = [];
-  if (m.side.endurmat.length)
-    parts.push({
-      icon: MessageSquareText,
-      text: countIs(m.side.endurmat.length, "endurmat", "endurmöt"),
-    });
-  if (m.vantar) parts.push({ icon: Backpack, text: `${m.vantar} vantar`, tone: "warn" });
-  if (m.reminders.length)
-    parts.push({ icon: Pin, text: countIs(m.reminders.length, "minnismiði", "minnismiðar") });
-  const spoken = [
-    m.side.endurmat.length && countIs(m.side.endurmat.length, "endurmat", "endurmöt"),
-    m.vantar && vantarName(m.vantar).toLowerCase(),
-    m.reminders.length && countIs(m.reminders.length, "minnismiði", "minnismiðar"),
-  ].filter(Boolean);
-  const name = `${m.week.label}: ${spoken.length ? spoken.join(", ") : "ekkert skráð"}`;
-  return { parts, name };
-}
-
-function SummaryLines({ m }: { m: WeekModel }) {
-  const { parts } = weekSummary(m);
-  if (!parts.length) return <span className={styles.quiet}>Ekkert</span>;
-  return (
-    <>
-      {parts.map((p) => (
-        <span key={p.text} className={styles.summaryLine} data-tone={p.tone}>
-          <p.icon aria-hidden="true" />
-          {p.text}
-        </span>
-      ))}
-    </>
-  );
-}
-
-function WeekDetail({
-  m,
-  onOpenLidur,
-  onAddReminder,
-}: {
-  m: WeekModel;
-  onOpenLidur?: (lidurId: string) => void;
-  onAddReminder?: (text: string, dueOn: string | null) => void;
-}) {
-  const id = useId();
-  return (
-    <div className={styles.detail}>
-      <section aria-labelledby={`${id}-muna`}>
-        <h3 id={`${id}-muna`} className={styles.detailHead}>
-          <Pin aria-hidden="true" /> Muna
-        </h3>
-        {m.reminders.length ? (
-          <ReminderList items={m.reminders} />
-        ) : (
-          <p className={styles.quiet}>Enginn minnismiði.</p>
-        )}
-        {onAddReminder && <ReminderForm key={m.week.index} onAdd={onAddReminder} />}
-      </section>
-      <section aria-labelledby={`${id}-endurmat`}>
-        <h3 id={`${id}-endurmat`} className={styles.detailHead}>
-          <MessageSquareText aria-hidden="true" /> Endurmat frá síðast
-        </h3>
-        {m.side.endurmat.length ? (
-          <EndurmatList items={m.side.endurmat} onOpenLidur={onOpenLidur} />
-        ) : (
-          <p className={styles.quiet}>Enginn liður vikunnar ber endurmat.</p>
-        )}
-      </section>
-      <section aria-labelledby={`${id}-bunadur`}>
-        <h3 id={`${id}-bunadur`} className={styles.detailHead}>
-          <Backpack aria-hidden="true" /> Búnaður
-        </h3>
-        {m.gear.length ? (
-          <GearChecklist key={m.week.index} model={m} variant="radio" />
-        ) : (
-          <p className={styles.quiet}>Liðir vikunnar þurfa engan búnað.</p>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function ReminderForm({ onAdd }: { onAdd: (text: string, dueOn: string | null) => void }) {
-  const [text, setText] = useState("");
-  const [due, setDue] = useState("");
-  const [error, setError] = useState("");
-  const textId = useId();
-  const dueId = useId();
-  const errorId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!text.trim()) {
-      setError("Skrifaðu minnismiðann fyrst.");
-      inputRef.current?.focus();
-      return;
-    }
-    onAdd(text.trim(), due || null);
-    setText("");
-    setDue("");
-    setError("");
-  };
-
-  return (
-    <form className={styles.form} onSubmit={submit} noValidate>
-      <label htmlFor={textId}>Nýr minnismiði</label>
-      <input
-        ref={inputRef}
-        id={textId}
-        value={text}
-        placeholder="Muna leyfisbréf fyrir útileguna"
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        onChange={(e) => {
-          setText(e.target.value);
-          if (error && e.target.value.trim()) setError("");
-        }}
-      />
-      {error && (
-        <p id={errorId} role="alert" className={styles.error}>
-          {error}
-        </p>
-      )}
-      <label htmlFor={dueId}>Fyrir (valfrjálst)</label>
-      <div className={styles.formRow}>
-        <input id={dueId} type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-        <button type="submit" className={styles.primary}>
-          Bæta við
-        </button>
-      </div>
-    </form>
-  );
-}
-
-interface OneCellProps {
-  season: LabSeason;
-  model: (week: PlanWeek) => WeekModel;
-  defaultWeek?: number;
-  onOpenLidur?: (lidurId: string) => void;
-  onSelectEvent?: (eventId: string) => void;
-}
-
-function VikanLook({ season, model, defaultWeek, onOpenLidur, onSelectEvent }: OneCellProps) {
-  const [openWeek, setOpenWeek] = useState<number | null>(defaultWeek ?? null);
-  const openerRef = useRef<HTMLButtonElement | null>(null);
-  const week = season.grid.weeks.find((w) => w.index === openWeek);
-
-  // The shared Modal neither moves focus in nor gives it back; the lab does both.
-  useEffect(() => {
-    if (openWeek === null) return;
-    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
-    dialog?.querySelector<HTMLElement>("button, input")?.focus();
-  }, [openWeek]);
-
-  const close = () => {
-    setOpenWeek(null);
-    openerRef.current?.focus();
-  };
-
-  return (
-    <>
-      <LabGrid
-        grid={season.grid}
-        onSelectEvent={onSelectEvent}
-        sideHeads={["Vikan"]}
-        sideClass={styles.sideNarrow}
-        renderSide={(w) => {
-          const m = model(w);
-          const { name } = weekSummary(m);
-          return (
-            <td className={`${styles.side} ${styles.sideSticky}`}>
-              <button
-                type="button"
-                className={styles.weekButton}
-                aria-label={`${name}. Opna vikuna`}
-                aria-haspopup="dialog"
-                onClick={(e) => {
-                  openerRef.current = e.currentTarget;
-                  setOpenWeek(w.index);
-                }}
-              >
-                <SummaryLines m={m} />
-              </button>
-            </td>
-          );
-        }}
-      />
-      {week && (
-        <Modal open onClose={close} title={`${week.label} · ${weekDate(week) || "ódagsett"}`}>
-          <WeekDetail m={model(week)} onOpenLidur={onOpenLidur} />
-        </Modal>
-      )}
-    </>
-  );
-}
-
-function SpjaldLook({
-  season,
-  model,
-  defaultWeek,
-  onOpenLidur,
-  onSelectEvent,
-  onAddReminder,
-}: OneCellProps & { onAddReminder: (week: number, text: string, dueOn: string | null) => void }) {
-  const [selected, setSelected] = useState(defaultWeek ?? season.grid.weeks[0]?.index ?? 1);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
-  const week = season.grid.weeks.find((w) => w.index === selected);
-
-  return (
-    <div className={styles.dock}>
-      <LabGrid
-        grid={season.grid}
-        onSelectEvent={onSelectEvent}
-        sideHeads={["Vikan"]}
-        sideClass={styles.sideNarrow}
-        renderSide={(w) => {
-          const m = model(w);
-          const { name } = weekSummary(m);
-          return (
-            <td
-              className={`${styles.side} ${styles.sideSticky}`}
-              data-selected={w.index === selected || undefined}
-            >
-              <button
-                type="button"
-                className={styles.weekButton}
-                aria-label={name}
-                aria-pressed={w.index === selected}
-                aria-controls="vikuspjald"
-                onClick={(e) => {
-                  setSelected(w.index);
-                  // Stacked under the grid (a phone): take the reader to the panel.
-                  const panel = panelRef.current?.getBoundingClientRect();
-                  if (panel && panel.top > e.currentTarget.getBoundingClientRect().bottom) {
-                    requestAnimationFrame(() => headingRef.current?.focus());
-                  }
-                }}
-              >
-                <SummaryLines m={m} />
-              </button>
-            </td>
-          );
-        }}
-      />
-      <aside ref={panelRef} id="vikuspjald" className={styles.panel} aria-labelledby="vikuspjald-h">
-        {week && (
-          <>
-            <h2 id="vikuspjald-h" ref={headingRef} tabIndex={-1} className={styles.panelHead}>
-              {week.label}
-              <span>{weekDate(week)}</span>
-            </h2>
-            <WeekDetail
-              m={model(week)}
-              onOpenLidur={onOpenLidur}
-              onAddReminder={(text, due) => onAddReminder(week.index, text, due)}
-            />
-          </>
-        )}
-      </aside>
-    </div>
-  );
-}
-
-/** The close-up: one week's checklist on its own, in the full three-way form. */
+/** The close-up: one week's checklist on its own. */
 export function GearChecklistCloseUp({
   season,
   week: weekIndex,
+  look = "stada",
 }: {
   season: LabSeason;
   week: number;
+  look?: FundurLook;
 }) {
   const [state, setState] = useState(season.initialState[weekIndex] ?? {});
   const [announcement, setAnnouncement] = useState("");
@@ -1002,7 +1031,6 @@ export function GearChecklistCloseUp({
   const m: WeekModel = {
     week,
     side,
-    reminders: side.reminders,
     gear,
     stateOf,
     vantar: gear.filter((g) => stateOf(g.item.id) === "vantar").length,
@@ -1013,15 +1041,41 @@ export function GearChecklistCloseUp({
     },
   };
   return (
-    <div className={`${styles.root} ${styles.closeUp}`}>
-      <h2 className={styles.panelHead}>
+    <div className={`${styles.root} ${styles.closeUp}`} data-look={look}>
+      <h2 className={styles.closeHead}>
         Búnaður · {week.label}
         <span>{weekDate(week)}</span>
       </h2>
-      <GearChecklist model={m} variant="radio" />
+      <GearChecklist look={look} model={m} />
       <p role="status" className={styles.srOnly}>
         {announcement}
       </p>
     </div>
+  );
+}
+
+/** The cell states story: one look's element for a chosen set of fundir, each in a cell-sized box. */
+export function ElementStates({
+  look,
+  season,
+  ids,
+}: {
+  look: FundurLook;
+  season: LabSeason;
+  ids: { id: string; label: string }[];
+}) {
+  const infos = useMemo(() => entryInfos(season), [season]);
+  return (
+    <ul className={`${styles.root} ${styles.states}`} data-look={look}>
+      {ids.map(({ id, label }) => {
+        const info = infos.get(id);
+        return (
+          <li key={id} className={styles.stateCell}>
+            <span className={styles.stateLabel}>{label}</span>
+            {info && <FundurElement look={look} info={info} />}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

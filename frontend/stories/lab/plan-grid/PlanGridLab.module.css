@@ -1,5 +1,5 @@
-/* Lab variations of the Rist's two side columns. The table itself borrows PlanGrid.module.css,
-   so the grid's rhythm is the real one; everything here is the side columns, the week panel
+/* Lab: A · Two columns and its four fundur elements. The table borrows PlanGrid.module.css,
+   so the grid's rhythm is the real one; everything here is the elements, the side columns
    and the phone behaviour. Every colour goes through a --sl-* token. Layout follows the
    component's own width (container queries), so the Comparison story and a phone agree. */
 
@@ -16,8 +16,8 @@
 
 @container (max-width: 40rem) {
   .rist,
-  .panel,
-  .gear {
+  .gear,
+  .states {
     --pg-target: var(--sl-size-button-lg);
   }
 }
@@ -34,8 +34,7 @@
   border: 0;
 }
 
-.root :is(button, input, [tabindex]):focus-visible,
-.segOption:has(input:focus-visible) {
+.root :is(button, input):focus-visible {
   outline: 2px solid hsl(var(--sl-color-border-focus));
   outline-offset: 2px;
 }
@@ -58,17 +57,11 @@
   position: relative;
 }
 
-/* Too narrow for four flokkar and the side columns: scroll sideways, with the week column
-   pinned on the left (and, in C and D, the Vikan column on the right). Today's grid squeezes
-   instead and clips Innkaup off the edge. */
-@container (max-width: 52rem) {
+/* Too narrow for four flokkar and two side columns: scroll sideways with the week column
+   pinned. Today's grid squeezes instead and clips Innkaup off the edge. */
+@container (max-width: 56rem) {
   .table {
-    min-width: 52rem;
-  }
-
-  .root[data-look="vikan"] .table,
-  .root[data-look="spjald"] .table {
-    min-width: 42rem;
+    min-width: 56rem;
   }
 
   .weekHead,
@@ -81,32 +74,32 @@
   .cornerHead {
     z-index: 3;
   }
+}
 
-  .sideSticky,
-  .root[data-look="vikan"] .sideHead,
-  .root[data-look="spjald"] .sideHead {
-    position: sticky;
-    right: 0;
-    z-index: 1;
-    box-shadow: -1px 0 0 hsl(var(--sl-color-border));
+@container (max-width: 40rem) {
+  .cornerHead {
+    width: 4.75rem;
   }
+}
 
-  .root[data-look="vikan"] .sideHead,
-  .root[data-look="spjald"] .sideHead {
-    z-index: 3;
-  }
+.usual {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+.cell {
+  vertical-align: top;
 }
 
 .sideHead {
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.sideWide {
   width: 11.5rem;
-}
-
-.sideNarrow {
-  width: 8.5rem;
+  color: hsl(var(--sl-color-text-secondary));
 }
 
 .side {
@@ -124,26 +117,430 @@
   border-right: 0;
 }
 
-.side[data-selected] {
-  background: hsl(var(--sl-color-primary-subtle));
-  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary-text));
-}
-
-.none,
-.quiet {
+.none {
   color: hsl(var(--sl-color-text-secondary));
   font-size: var(--sl-text-overline);
 }
 
-.quiet {
+/* ── Shared parts of every element ─────────────────────────────────────── */
+
+.el {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--pg-target);
   margin: 0;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--sl-radius-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--sl-text-overline);
+  line-height: var(--sl-line-height-tight);
+  color: hsl(var(--sl-color-text-primary));
+  text-align: left;
+  cursor: pointer;
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-gap-sm);
+.elTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-emphasis);
 }
+
+.el[data-past] .elTitle {
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.el[data-exception="cancelled"] .elTitle {
+  text-decoration: line-through;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+.chips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.chip {
+  display: inline-grid;
+  place-items: center;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 3px;
+  /* Outside an element (the endurmat notes) the whole sveit has no --pc: inverse surface. */
+  background: hsl(var(--pc, var(--sl-color-surface-inverse)));
+  color: hsl(var(--pc-fg, var(--sl-color-text-inverse)));
+  font-size: var(--sl-primitive-font-size-2xs);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+}
+
+/* An exception says so in words, with an icon: moved, fös–sun, a Saturday, cancelled. */
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  justify-self: start;
+  padding: 1px 5px 1px 3px;
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-info-subtle));
+  color: hsl(var(--sl-color-info-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.flag svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.flag[data-kind="multiday"],
+.flag[data-kind="oneday"] {
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+.flag[data-kind="cancelled"] {
+  background: hsl(var(--sl-color-error-subtle));
+  color: hsl(var(--sl-color-error-text));
+}
+
+.minutes[data-over] {
+  color: hsl(var(--sl-color-error-text));
+}
+
+.endurMark {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.root .endurMark {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.q {
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+}
+
+/* ═══ A1 · Staða ═══
+   The state first, in a word with a glyph, and the tile wears it. Routine fundir are quiet
+   tiles; an exception adds a flag. Past weeks go neutral and say "Lokið". */
+
+.stada {
+  --st-bg: var(--sl-color-background-secondary);
+  --st-ink: var(--sl-color-text-secondary);
+  --st-edge: var(--sl-color-border-strong);
+  border-color: hsl(var(--st-edge));
+  background: hsl(var(--st-bg));
+}
+
+.stada[data-status="confirmed"] {
+  --st-bg: var(--sl-color-success-subtle);
+  --st-ink: var(--sl-color-success-text);
+  --st-edge: var(--sl-color-success);
+}
+
+.stada[data-status="draft"] {
+  --st-bg: var(--sl-color-info-subtle);
+  --st-ink: var(--sl-color-info-text);
+  --st-edge: var(--sl-color-info);
+}
+
+.stada[data-status="tentative"] {
+  --st-bg: var(--sl-color-warning-subtle);
+  --st-ink: var(--sl-color-warning-text);
+  --st-edge: var(--sl-color-warning);
+}
+
+.stada[data-status="unknown"] {
+  border-style: dashed;
+}
+
+.stada[data-past],
+.stada[data-exception="cancelled"] {
+  --st-bg: var(--sl-color-surface);
+  --st-ink: var(--sl-color-text-secondary);
+  --st-edge: var(--sl-color-border);
+}
+
+.stada[data-exception="cancelled"] {
+  --st-ink: var(--sl-color-error-text);
+  border-style: dashed;
+}
+
+/* Exceptions stand out from the routine: a heavier edge. */
+.stada[data-exception="multiday"],
+.stada[data-exception="oneday"],
+.stada[data-exception="moved"] {
+  box-shadow: inset 3px 0 0 hsl(var(--st-edge));
+}
+
+.stada:hover {
+  box-shadow: inset 0 0 0 1px hsl(var(--st-edge));
+}
+
+.stState {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsl(var(--st-ink));
+}
+
+.stState .endurMark {
+  margin-left: auto;
+}
+
+.stState svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* ═══ A2 · Merki ═══
+   Each fundur is a patch in the flokkur's colour: sewn on (filled, with a stitched edge) once
+   it's staðfest, an outline while drög or óvíst, an empty dashed ring while "?". An útilega
+   is a shield. No card around it: the cell is the card. */
+
+.merki {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 6px;
+}
+
+.merki:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.patch {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--pc));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.root .patch svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.patch[data-fill="sewn"] {
+  border-color: hsl(var(--pc));
+  background: linear-gradient(90deg, hsl(var(--pc)) 50%, hsl(var(--pc2)) 50%);
+  color: hsl(var(--pc-fg));
+  outline: 1.5px dashed hsl(var(--pc-fg) / 0.55);
+  outline-offset: -5px;
+}
+
+.merki[data-past] .patch[data-fill="sewn"] {
+  border-color: hsl(var(--sl-color-border-strong));
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+  outline-color: hsl(var(--sl-color-border-strong));
+}
+
+.patch[data-fill="empty"] {
+  border: 2px dashed hsl(var(--sl-color-border-strong));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.patch[data-fill="cancelled"] {
+  border-color: hsl(var(--sl-color-border-strong));
+  background:
+    linear-gradient(
+      135deg,
+      transparent 46%,
+      hsl(var(--sl-color-error-text)) 46% 54%,
+      transparent 54%
+    ),
+    hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.merki[data-exception="multiday"] .patch,
+.merki[data-exception="oneday"] .patch {
+  width: 2.2rem;
+  height: 2.4rem;
+  border-radius: 45% 45% 50% 50% / 30% 30% 70% 70%;
+}
+
+.mkText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mkSub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ═══ A3 · Varðeldur ═══
+   A fire beside the title that grows as liðir are decided: kindling while nothing is, a small
+   flame, a fire, a big fire on a glow once everything is. The tally and the minutes say
+   exactly. Past fundir show a grey, spent fire. */
+
+.vardeldur {
+  grid-template-columns: 1.7rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: 5px;
+  border-color: hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  box-shadow: inset 3px 0 0 hsl(var(--pc));
+}
+
+.vardeldur[data-past] {
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.vardeldur:hover {
+  border-color: hsl(var(--sl-color-border-strong));
+}
+
+.fire {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.root .fire[data-level="0"] svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.root .fire[data-level="1"] svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.root .fire[data-level="2"] svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.root .fire[data-level="3"] svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.fire:is([data-level="1"], [data-level="2"], [data-level="3"]) {
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.fire[data-level="3"] {
+  background: hsl(var(--sl-color-warning-subtle));
+}
+
+.vardeldur[data-past] .fire,
+.vardeldur[data-exception="cancelled"] .fire {
+  background: none;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.vdText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tally {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.tally i {
+  width: 5px;
+  height: 9px;
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: 1px;
+}
+
+.tally i[data-on] {
+  border-color: hsl(var(--sl-color-success-text));
+  background: hsl(var(--sl-color-success-text));
+}
+
+/* ═══ A4 · Stimpill ═══
+   The passport: a fundur gets its stamp (a double rule in the flokkur's colour, a little
+   crooked, "Klárt") once it's staðfest and every liður is decided. Until then it's a dotted
+   empty stamp that says how many liðir are left. Past fundir carry a grey "Lokið" stamp. */
+
+.stimpill {
+  justify-items: start;
+}
+
+.unstamped {
+  border: 1.5px dashed hsl(var(--sl-color-border-strong));
+  background: none;
+}
+
+.unstamped:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.stamped {
+  border: 3px double hsl(var(--pc));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface));
+  transform: rotate(-1.5deg);
+}
+
+.stimpill[data-past] {
+  border-color: hsl(var(--sl-color-border-strong));
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+.stimpill[data-exception="cancelled"] {
+  border-color: hsl(var(--sl-color-error-text));
+}
+
+.stampWord {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.stimpill[data-exception="cancelled"] .stampWord {
+  color: hsl(var(--sl-color-error-text));
+}
+
+.stampWord svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* ── Endurmat ──────────────────────────────────────────────────────────── */
 
 .cellHead {
   display: flex;
@@ -155,8 +552,6 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-/* ── Endurmat and reminders ────────────────────────────────────────────── */
-
 .notes {
   display: flex;
   flex-direction: column;
@@ -166,17 +561,12 @@
   list-style: none;
 }
 
-.note,
-.reminder {
+.note {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding-left: var(--sl-spacing-inset-xs);
   border-left: 2px solid hsl(var(--sl-color-border-strong));
-}
-
-.reminder {
-  border-left-color: hsl(var(--sl-color-info-text));
 }
 
 .note[data-tone="corrective"] {
@@ -192,7 +582,6 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 3px;
-  font-size: var(--sl-text-overline);
   font-weight: var(--sl-font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -206,7 +595,7 @@
 
 .lidurLink {
   align-self: flex-start;
-  min-height: var(--pg-target);
+  min-height: 1.5rem;
   margin: 0;
   padding: 0;
   border: 0;
@@ -220,25 +609,12 @@
   cursor: pointer;
 }
 
-.side .lidurLink {
-  min-height: 1.5rem;
-}
-
-.quote,
-.reminderText {
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.side .quote {
+.quote {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.byline {
-  font-size: var(--sl-text-overline);
-  color: hsl(var(--sl-color-text-secondary));
+  color: hsl(var(--sl-color-text-primary));
 }
 
 .more {
@@ -250,10 +626,18 @@
   font: inherit;
   font-weight: var(--sl-font-weight-semibold);
   color: hsl(var(--sl-color-text-link));
+  text-align: left;
   cursor: pointer;
 }
 
 /* ── Búnaður ───────────────────────────────────────────────────────────── */
+
+.kitVisual {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 
 .badge,
 .badgeOk {
@@ -262,8 +646,14 @@
   gap: 3px;
   padding: 1px var(--sl-spacing-inset-xs);
   border-radius: var(--sl-radius-chip);
-  font-size: var(--sl-text-overline);
   font-weight: var(--sl-font-weight-semibold);
+}
+
+.root .badge svg,
+.root .badgeOk svg,
+.root .kitStamp svg {
+  width: 0.8rem;
+  height: 0.8rem;
 }
 
 .badge {
@@ -277,6 +667,80 @@
   color: hsl(var(--sl-color-success-text));
 }
 
+/* A1: the badge is a status tile, like the fundur's. */
+.root[data-look="stada"] .badge {
+  border-radius: var(--sl-radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* A2: the count is a round patch. */
+.kitPatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: hsl(var(--sl-color-warning-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.kitPatch b {
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--sl-color-warning-text));
+  background: hsl(var(--sl-color-warning-subtle));
+  outline: 1px dashed hsl(var(--sl-color-warning-text) / 0.6);
+  outline-offset: -4px;
+}
+
+/* A3: a tally of the kit, one mark per item. */
+.kitTally {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.kitTally i {
+  width: 7px;
+  height: 9px;
+  border-radius: 1px;
+  border: 1px dashed hsl(var(--sl-color-border-strong));
+}
+
+.kitTally i[data-state="eigum"] {
+  border: 1px solid hsl(var(--sl-color-success-text));
+  background: hsl(var(--sl-color-success-text));
+}
+
+.kitTally i[data-state="vantar"] {
+  border: 1px solid hsl(var(--sl-color-warning-text));
+  background: hsl(var(--sl-color-warning-subtle));
+}
+
+/* A4: "Allt til" is a stamp; anything else a dotted slot. */
+.kitStamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border: 3px double hsl(var(--sl-color-success-text));
+  border-radius: var(--sl-radius-sm);
+  color: hsl(var(--sl-color-success-text));
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  transform: rotate(-2deg);
+}
+
+.kitSlot {
+  padding: 1px 6px;
+  border: 1.5px dashed hsl(var(--sl-color-warning-text));
+  border-radius: var(--sl-radius-sm);
+  color: hsl(var(--sl-color-warning-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
 .gearList {
   display: flex;
   flex-direction: column;
@@ -286,24 +750,20 @@
   list-style: none;
 }
 
-.gearRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs);
-}
-
-.gear[data-variant="radio"] .gearRow {
-  padding: var(--sl-spacing-inset-xs) 0;
-  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
-}
-
 .check {
   display: flex;
   align-items: flex-start;
   gap: var(--sl-spacing-gap-xs);
   min-height: 1.5rem;
   cursor: pointer;
+}
+
+@container (max-width: 40rem) {
+  .check,
+  .lidurLink,
+  .more {
+    min-height: var(--pg-target);
+  }
 }
 
 .check input {
@@ -334,289 +794,18 @@
   color: hsl(var(--sl-color-warning-text));
 }
 
-.gearName {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  flex: 1 1 8rem;
-  min-width: 0;
-  min-height: var(--pg-target);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: hsl(var(--sl-color-text-primary));
-  text-align: left;
-  cursor: pointer;
-}
+/* ── Close-ups ─────────────────────────────────────────────────────────── */
 
-.side .gearName {
-  min-height: 1.5rem;
-  flex-basis: 100%;
-}
-
-.sourceCount {
-  font-size: var(--sl-text-overline);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.gearName .chevron {
-  width: 0.85rem;
-  height: 0.85rem;
-  color: hsl(var(--sl-color-text-secondary));
-  transition: transform var(--sl-transition-fast);
-}
-
-.gearName[aria-expanded="true"] .chevron {
-  transform: rotate(180deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gearName .chevron {
-    transition-duration: 1ms;
-  }
-}
-
-.sources {
-  flex-basis: 100%;
-  margin: 0;
-  padding: 0 0 0 var(--sl-spacing-inset-sm);
-  list-style: none;
-  font-size: var(--sl-text-overline);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.sources li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 4px;
-}
-
-.sources b {
-  font-weight: var(--sl-font-weight-semibold);
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.sourceFundur {
-  flex-basis: 100%;
-}
-
-/* B: one button that steps Vantar → Eigum → Óvíst. */
-.cycle {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  min-height: 1.5rem;
-  padding: 0 var(--sl-spacing-inset-xs);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-button);
-  background: hsl(var(--sl-color-surface));
-  font: inherit;
-  font-weight: var(--sl-font-weight-semibold);
-  color: hsl(var(--sl-color-text-secondary));
-  cursor: pointer;
-}
-
-.cycle[data-state="vantar"] {
-  background: hsl(var(--sl-color-warning-subtle));
-  border-color: hsl(var(--sl-color-warning-text) / 0.5);
-  color: hsl(var(--sl-color-warning-text));
-}
-
-.cycle[data-state="eigum"] {
-  background: hsl(var(--sl-color-success-subtle));
-  border-color: hsl(var(--sl-color-success-text) / 0.5);
-  color: hsl(var(--sl-color-success-text));
-}
-
-@container (max-width: 40rem) {
-  .side .cycleRow .cycle {
-    width: var(--pg-target);
-    height: var(--pg-target);
-  }
-
-  .side .gearName,
-  .side .lidurLink,
-  .side .more,
-  .check {
-    min-height: var(--pg-target);
-  }
-}
-
-.cycleRow {
-  flex-wrap: nowrap;
-  align-items: flex-start;
-}
-
-.cycleRow .cycle {
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  min-height: 0;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.side .cycleRow .gearName {
-  flex: 1 1 auto;
-}
-
-.cycleRow:has(.gearName[aria-expanded="true"]) {
-  flex-wrap: wrap;
-}
-
-/* C, D and the close-up: three named options per item. */
-.seg {
-  display: inline-flex;
-  margin: 0;
-  padding: 0;
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-button);
-  overflow: hidden;
-}
-
-.segOption {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  min-height: var(--pg-target);
-  padding: 0 var(--sl-spacing-inset-sm);
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-medium);
-  color: hsl(var(--sl-color-text-secondary));
-  background: hsl(var(--sl-color-surface));
-  cursor: pointer;
-}
-
-.segOption + .segOption {
-  border-left: 1px solid hsl(var(--sl-color-border-strong));
-}
-
-.segOption input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.segOption:has(input:checked) {
-  font-weight: var(--sl-font-weight-semibold);
-  color: hsl(var(--sl-color-text-primary));
-  background: hsl(var(--sl-color-background-tertiary));
-}
-
-.segOption[data-state="vantar"]:has(input:checked) {
-  color: hsl(var(--sl-color-warning-text));
-  background: hsl(var(--sl-color-warning-subtle));
-}
-
-.segOption[data-state="eigum"]:has(input:checked) {
-  color: hsl(var(--sl-color-success-text));
-  background: hsl(var(--sl-color-success-subtle));
-}
-
-/* ── C and D: the Vikan cell ───────────────────────────────────────────── */
-
-.weekButton {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  min-height: var(--pg-target);
-  padding: var(--sl-spacing-inset-xs);
-  border: 1px solid transparent;
-  border-radius: var(--sl-radius-sm);
-  background: none;
-  font: inherit;
-  color: hsl(var(--sl-color-text-secondary));
-  text-align: left;
-  cursor: pointer;
-}
-
-.weekButton:hover {
-  border-color: hsl(var(--sl-color-border-strong));
-  background: hsl(var(--sl-color-surface));
-}
-
-.weekButton[aria-pressed="true"] {
-  border-color: hsl(var(--sl-color-primary-text));
-  background: hsl(var(--sl-color-surface));
-}
-
-.summaryLine {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: var(--sl-font-weight-medium);
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.summaryLine[data-tone="warn"] {
-  font-weight: var(--sl-font-weight-semibold);
-  color: hsl(var(--sl-color-warning-text));
-}
-
-.detail {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-stack-md);
-  font-size: var(--sl-text-body-sm);
-}
-
-.detail section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-gap-sm);
-}
-
-.detailHead {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs);
-  margin: 0;
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.detail .noteKind {
-  font-size: var(--sl-text-overline);
-}
-
-/* D: the docked panel. Beside the grid when there is room, under it when not. */
-.dock {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 22rem;
-  gap: var(--sl-spacing-gap-md);
-  align-items: start;
-}
-
-@container (max-width: 64rem) {
-  .dock {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.panel {
-  position: sticky;
-  top: var(--sl-spacing-gap-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-stack-md);
+.closeUp {
+  max-width: 20rem;
   padding: var(--sl-spacing-inset-md);
   border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-lg);
-  background: hsl(var(--sl-color-surface));
-  box-shadow: var(--sl-shadow-card);
+  background: hsl(var(--sl-color-background-secondary));
+  font-size: var(--sl-text-body-sm);
 }
 
-.panelHead {
+.closeHead {
   display: flex;
   align-items: baseline;
   gap: var(--sl-spacing-gap-sm);
@@ -625,100 +814,32 @@
   font-weight: var(--sl-font-weight-heading);
 }
 
-.panelHead span {
+.closeHead span {
   font-size: var(--sl-text-body-sm);
   font-weight: var(--sl-font-weight-body);
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.form {
+.states {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--sl-spacing-gap-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stateCell {
   display: flex;
   flex-direction: column;
   gap: var(--sl-spacing-gap-xs);
-  padding-top: var(--sl-spacing-gap-sm);
-  border-top: 1px dashed hsl(var(--sl-color-border));
-}
-
-.form label {
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-medium);
-}
-
-.form input {
-  min-height: var(--pg-target);
-  padding: 0 var(--sl-spacing-inset-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-input);
-  background: hsl(var(--sl-color-background));
-  font: inherit;
-  font-size: max(16px, var(--sl-text-body-sm));
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.form input::placeholder {
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.form input[aria-invalid="true"] {
-  border-color: hsl(var(--sl-color-error-text));
-}
-
-.formRow {
-  display: flex;
-  gap: var(--sl-spacing-gap-sm);
-}
-
-.formRow input {
-  flex: 1;
-  min-width: 0;
-}
-
-.primary {
-  min-height: var(--pg-target);
-  padding: 0 var(--sl-spacing-inset-md);
-  border: 0;
-  border-radius: var(--sl-radius-button);
-  background: hsl(var(--sl-color-primary-text));
-  color: hsl(var(--sl-color-text-inverse));
-  font: inherit;
-  font-weight: var(--sl-font-weight-semibold);
-  cursor: pointer;
-}
-
-.error {
-  margin: 0;
-  font-size: var(--sl-text-body-sm);
-  color: hsl(var(--sl-color-error-text));
-}
-
-/* The close-up story. */
-.closeUp {
-  max-width: 26rem;
-  padding: var(--sl-spacing-inset-md);
+  padding: 6px 8px;
   border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-lg);
+  border-radius: var(--sl-radius-sm);
   background: hsl(var(--sl-color-surface));
-  font-size: var(--sl-text-body-sm);
 }
 
-/* The per-item liður count is in the dialog and panel; a cell has no room for it. */
-.side .sourceCount {
-  display: none;
-}
-
-/* Phone: give the flokkar more of the 390px; the panel stops being sticky once it sits under the grid. */
-@container (max-width: 40rem) {
-  .cornerHead {
-    width: 4.75rem;
-  }
-
-  .sideNarrow {
-    width: 7.5rem;
-  }
-}
-
-@container (max-width: 64rem) {
-  .panel {
-    position: static;
-  }
+.stateLabel {
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-secondary));
 }

@@ -1,16 +1,23 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import PlanGrid from "@/components/plan/PlanGrid";
-import PlanGridLab, { GearChecklistCloseUp, type PlanGridLook } from "./PlanGridLab";
+import PlanGridLab, {
+  ElementStates,
+  GearChecklistCloseUp,
+  LOOK_NAME,
+  type FundurLook,
+} from "./PlanGridLab";
 import { busySeason, emptySeason } from "./planGridLabData";
 
 /**
- * The Rist's ATH and Innkaup columns, reconnected to the plan: endurmat from the week's liðir,
- * the leader's reminders, and the búnaður the week's liðir need, with Eigum / Vantar / Óvíst.
- * See the Docs page (PlanGridLab.mdx) for the data note and the reasoning, and Lab → About the lab.
+ * The Rist with A · Two columns (picked 2026-10-19): Endurmat from last time and a Búnaður
+ * checklist gathered from the week's liðir. B, C and D were removed. The variations A1–A4
+ * change the fundur element in each cell, so routine weeks read quietly and the exceptions
+ * (a moved fundur, a fös–sun útilega, a Saturday dagsferð, a cancelled week) stand out.
+ * See the Docs page (PlanGridLab.mdx) for the data note and the reasoning.
  */
 
-const LOOK_OPTIONS: PlanGridLook[] = ["dalkar", "minnismidi", "vikan", "spjald"];
+const LOOK_OPTIONS: FundurLook[] = ["chip", "stada", "merki", "vardeldur", "stimpill"];
 
 const meta = {
   title: "Lab/PlanGrid side columns",
@@ -18,7 +25,7 @@ const meta = {
   // The docs page is PlanGridLab.mdx, so no autodocs page.
   tags: ["!autodocs", "skip-visual"],
   args: {
-    look: "dalkar",
+    look: "stada",
     season: busySeason(),
     onOpenLidur: fn(),
     onSelectEvent: fn(),
@@ -32,28 +39,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const LOOKS: { look: PlanGridLook; name: string; idea: string }[] = [
-  {
-    look: "dalkar",
-    name: "A · Two columns",
-    idea: "The same two columns, re-sourced: Endurmat from last time, and a Búnaður checklist where a tick means “eigum”.",
-  },
-  {
-    look: "minnismidi",
-    name: "B · Reminders and kit",
-    idea: "ATH holds the leader's reminders pinned above the endurmat; each búnaður item steps Vantar → Eigum → Óvíst.",
-  },
-  {
-    look: "vikan",
-    name: "C · One Vikan cell",
-    idea: "One quiet cell of counts per week; the details open in a dialog.",
-  },
-  {
-    look: "spjald",
-    name: "D · Week panel",
-    idea: "The same counts pick a week; a docked panel beside the grid shows it and takes new reminders.",
-  },
-];
+const IDEA: Record<FundurLook, string> = {
+  chip: "A as picked: Endurmat and Búnaður columns, with today's PlanEntryChip in the cells.",
+  stada:
+    "Status first, like the Dagatal's Staða: the tile wears the state, with a glyph and a word; the flokkur is a small initial.",
+  merki:
+    "Each fundur is a scout patch in the flokkur's colour: sewn on once staðfest, outlined in drög, an empty ring while “?”. An útilega is a shield.",
+  vardeldur: "A fire that grows as the liðir are decided, with a tally and the minutes beside it.",
+  stimpill:
+    "A passport stamp once a fundur is ready, “Klárt”; a dotted empty stamp, with the liðir left, until then.",
+};
 
 const heading = {
   margin: "0 0 var(--sl-spacing-xs)",
@@ -65,7 +60,7 @@ const idea = {
   fontSize: "var(--sl-text-body-sm)",
 } as const;
 
-/** The real grid first, with the same season's notes and needs, then each direction. */
+/** The real grid first, then A with today's chip, then each variation, all with the same season. */
 export const Comparison: Story = {
   name: "Comparison",
   render: (args) => (
@@ -73,107 +68,106 @@ export const Comparison: Story = {
       <section>
         <h3 style={heading}>Current</h3>
         <p style={idea}>
-          PlanGrid today: ATH is the free week note, Innkaup the union of the fundir&apos;s `needs`
-          strings, with no quantities, no owner state and no link back to a liður.
+          PlanGrid today: ATH is the free week note and Innkaup the union of the fundir&apos;s
+          `needs` strings. Every fundur is the same card.
         </p>
         <PlanGrid data={args.season.grid} onSelectEvent={args.onSelectEvent} />
       </section>
-      {LOOKS.map((l) => (
-        <section key={l.look}>
-          <h3 style={heading}>{l.name}</h3>
-          <p style={idea}>{l.idea}</p>
-          <PlanGridLab {...args} look={l.look} />
+      {LOOK_OPTIONS.map((look) => (
+        <section key={look}>
+          <h3 style={heading}>{LOOK_NAME[look]}</h3>
+          <p style={idea}>{IDEA[look]}</p>
+          <PlanGridLab {...args} look={look} />
         </section>
       ))}
     </div>
   ),
 };
 
-/* ── One set of stories per look ── */
+/* ── One set of stories per variation ── */
 
 const phone = { viewport: { value: "phone", isRotated: false } };
 
-function storiesFor(look: PlanGridLook, name: string, defaultWeek?: number) {
+function storiesFor(look: FundurLook) {
+  const name = LOOK_NAME[look];
   return {
-    busy: { name, args: { look, defaultWeek } } satisfies Story,
+    busy: { name, args: { look } } satisfies Story,
     empty: {
       name: `${name} — empty season`,
       args: { look, season: emptySeason() },
     } satisfies Story,
-    phone: {
-      name: `${name} — phone`,
-      args: { look, defaultWeek },
-      globals: phone,
-    } satisfies Story,
+    phone: { name: `${name} — phone`, args: { look }, globals: phone } satisfies Story,
   };
 }
 
-const a = storiesFor("dalkar", "A · Two columns");
-export const TwoColumns: Story = a.busy;
-export const TwoColumnsEmpty: Story = a.empty;
-export const TwoColumnsPhone: Story = a.phone;
+const a1 = storiesFor("stada");
+export const Stada: Story = a1.busy;
+export const StadaEmpty: Story = a1.empty;
+export const StadaPhone: Story = a1.phone;
 
-const b = storiesFor("minnismidi", "B · Reminders and kit");
-export const Reminders: Story = b.busy;
-export const RemindersEmpty: Story = b.empty;
-export const RemindersPhone: Story = b.phone;
+const a2 = storiesFor("merki");
+export const Merki: Story = a2.busy;
+export const MerkiEmpty: Story = a2.empty;
+export const MerkiPhone: Story = a2.phone;
 
-const c = storiesFor("vikan", "C · One Vikan cell");
-export const OneCell: Story = c.busy;
-export const OneCellEmpty: Story = c.empty;
-export const OneCellPhone: Story = c.phone;
+const a3 = storiesFor("vardeldur");
+export const Vardeldur: Story = a3.busy;
+export const VardeldurEmpty: Story = a3.empty;
+export const VardeldurPhone: Story = a3.phone;
 
-/** C with week 3 opened: the dialog takes focus and gives it back to the cell on close. */
-export const OneCellOpen: Story = {
-  name: "C · One Vikan cell — open",
-  args: { look: "vikan" },
+const a4 = storiesFor("stimpill");
+export const Stimpill: Story = a4.busy;
+export const StimpillEmpty: Story = a4.empty;
+export const StimpillPhone: Story = a4.phone;
+
+/* ── The fundur element, state by state ── */
+
+const STATES = [
+  { id: "lab-cell-mock-refir-1", label: "Routine, past" },
+  { id: "lab-cell-mock-ernir-2", label: "Moved to fimmtudag, past" },
+  { id: "lab-cell-mock-birnir-3", label: "Routine, this week" },
+  { id: "lab-cell-mock-refir-3", label: "Joint útilega, fös–sun" },
+  { id: "lab-band-4", label: "Whole sveit, over budget" },
+  { id: "lab-cell-mock-refir-5", label: "Routine, drög" },
+  { id: "lab-cell-mock-uglur-5", label: "Cancelled" },
+  { id: "lab-cell-mock-birnir-7", label: "Dagsferð on a Saturday" },
+  { id: "lab-cell-mock-refir-7", label: "Routine, óvíst" },
+  { id: "lab-cell-mock-birnir-8", label: "Nothing decided (“?”)" },
+];
+
+/** Every variation's element for the same ten fundir, side by side. */
+export const FundurElementStates: Story = {
+  name: "Fundur element states",
+  render: (args) => (
+    <div style={{ display: "grid", gap: "var(--sl-spacing-lg)" }}>
+      {LOOK_OPTIONS.map((look) => (
+        <section key={look}>
+          <h3 style={heading}>{LOOK_NAME[look]}</h3>
+          <ElementStates look={look} season={args.season} ids={STATES} />
+        </section>
+      ))}
+    </div>
+  ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const opener = canvas.getByRole("button", { name: /^Vika 3: .*Opna vikuna$/ });
-    await userEvent.click(opener);
-    const dialog = await canvas.findByRole("dialog", { name: /Vika 3/ });
-    // The Modal fades in.
-    await waitFor(() =>
-      expect(within(dialog).getByRole("heading", { name: /Búnaður/ })).toBeVisible()
-    );
-    await userEvent.keyboard("{Escape}");
-    await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
-    await expect(opener).not.toBeNull();
-  },
-};
-
-const d = storiesFor("spjald", "D · Week panel", 1);
-export const WeekPanel: Story = d.busy;
-export const WeekPanelEmpty: Story = d.empty;
-export const WeekPanelPhone: Story = d.phone;
-
-/** D: picking a week fills the panel; an empty reminder is refused inline, a real one is added. */
-export const WeekPanelAddReminder: Story = {
-  name: "D · Week panel — add a reminder",
-  args: { look: "spjald", defaultWeek: 1 },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: /^Vika 5:/ }));
-    const panel = canvas.getByRole("complementary", { name: /Vika 5/ });
-    await userEvent.click(within(panel).getByRole("button", { name: "Bæta við" }));
-    await expect(within(panel).getByRole("alert")).toHaveTextContent(
-      "Skrifaðu minnismiðann fyrst."
-    );
-    await userEvent.type(
-      within(panel).getByLabelText("Nýr minnismiði"),
-      "Sækja fánann í geymsluna"
-    );
-    await userEvent.click(within(panel).getByRole("button", { name: "Bæta við" }));
-    await expect(within(panel).getByText("Sækja fánann í geymsluna")).toBeVisible();
-    await expect(canvas.getByRole("button", { name: /^Vika 5: .*2 minnismiðar/ })).toBeVisible();
+    // The accessible name tells the whole story, exceptions included.
+    const cancelled = canvas.getAllByRole("button", {
+      name: /^Uglur: .*fellur niður: Skólaferðalag/,
+    });
+    // Four lab elements; today's chip doesn't say either.
+    await expect(cancelled).toHaveLength(LOOK_OPTIONS.length - 1);
+    const moved = canvas.getAllByRole("button", {
+      name: /^Ernir: .*færður af venjulegum fundartíma/,
+    });
+    await expect(moved.length).toBe(LOOK_OPTIONS.length - 1);
   },
 };
 
 /* ── The checklist on its own ── */
 
 /**
- * One week's búnaður in the three-way form C and D use. Vantar first; each item names the liðir
- * that need it. Ticking Vasaljós from Vantar to Eigum drops the badge from 3 to 2.
+ * One week's búnaður: vantar first, owned folded away. Ticking Vasaljós from vantar to eigum
+ * drops the badge from 3 to 2 and is announced.
  */
 export const GearChecklist: Story = {
   name: "Búnaður checklist",
@@ -182,28 +176,22 @@ export const GearChecklist: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("3 vantar")).toBeVisible();
 
-    const vasaljos = canvas.getByRole("group", { name: "Vasaljós ×6" });
-    await expect(within(vasaljos).getByRole("radio", { name: "Vantar" })).toBeChecked();
-    await userEvent.click(within(vasaljos).getByRole("radio", { name: "Eigum" }));
-    await expect(within(vasaljos).getByRole("radio", { name: "Eigum" })).toBeChecked();
+    const vasaljos = canvas.getByRole("checkbox", { name: "Eigum Vasaljós ×6" });
+    await expect(vasaljos).not.toBeChecked();
+    await expect(vasaljos).toHaveAccessibleDescription("Fyrir: Ratleikur í Öskjuhlíð");
+    await userEvent.click(vasaljos);
+    await expect(vasaljos).toBeChecked();
     await expect(canvas.getByText("2 vantar")).toBeVisible();
     await expect(canvas.getByRole("status")).toHaveTextContent("Vasaljós ×6: eigum");
 
-    // Which liðir need it.
-    const more = canvas.getByRole("button", { name: /^Vasaljós ×6/ });
-    await userEvent.click(more);
-    await expect(more).toHaveAttribute("aria-expanded", "true");
-    const sources = canvasElement.querySelector(
-      `#${CSS.escape(more.getAttribute("aria-controls") ?? "")}`
-    );
-    await expect(sources).toBeVisible();
-    await expect(sources).toHaveTextContent("Ratleikur í Öskjuhlíð");
+    // The owned items fold away until asked for.
+    await userEvent.click(canvas.getByRole("button", { name: "Sýna 5 hluti sem við eigum" }));
+    await expect(canvas.getByRole("checkbox", { name: "Eigum Prímus ×3" })).toBeChecked();
   },
 };
 
-/** Any look, with controls. Changing the look remounts it with fresh state. */
+/** Any variation, with controls. Changing the look remounts it with fresh state. */
 export const Playground: Story = {
   name: "Playground",
-  args: { defaultWeek: 1 },
   render: (args) => <PlanGridLab key={args.look} {...args} />,
 };
