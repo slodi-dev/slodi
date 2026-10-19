@@ -1,259 +1,175 @@
 import { Canvas, Meta } from "@storybook/addon-docs/blocks";
 import * as Stories from "./SplitGridLab.stories";
 
-<Meta of={Stories} name="Purpose and directions" />
+<Meta of={Stories} name="Purpose and styles" />
 
-# SplitGrid: purpose and directions
+# SplitGrid: purpose and styles
 
 SplitGrid is what a section of a fundur turns into after "Skipta á flokka": one lane per flokkur,
-running at the same time. It sits inside the fundur sheet (see **Lab → FundurSheet**, which is
-being redesigned alongside this), in place of the section's list of liðir.
+running at the same time. It sits inside the fundur sheet (**Lab → FundurSheet**) in place of the
+section's list of liðir.
 
-All four directions here are live. Every move dispatches the real `benchReducer` intents
-(`laneMoveAcross`, `laneMove`, `laneAdd`), so the announcements are the bench's own, and the drag
-uses the same `dragId` vocabulary and collision rule as `BenchProvider`. The lab adds only what
-the merge proposal needs (`labMerge`, `labRestore` in `labBench.tsx`).
+All four styles are live. Every move dispatches the real `benchReducer` intents
+(`laneMoveAcross`, `laneMove`, `laneAdd`), so the announcements are the bench's own, and drag uses
+the same `dragId` vocabulary and collision rule as `BenchProvider`. The lab adds only what the
+merge proposal needs (`labMerge` and `labRestore` in `labBench.tsx`).
 
-## 1. Why a leader splits a section
+## 1. Why a leader splits a section, and what they need to see
 
-The sveit splits up for part of the evening and comes back together. Typical reasons:
+The sveit splits up for part of the evening and comes back together: a stöðvaleikur (each
+flokkur starts at a different station and rotates), different levels, flokkastarf, or one-of gear
+like a single prímus. The lanes run at the same time, and the section ends when the last flokkur
+is done: "Lengsti flokkur ræður."
 
-- **A stöðvaleikur.** Four stations (hnútar, áttaviti, skyndihjálp, eldfæri), and each flokkur
-  starts at a different one and rotates. This is the most common case, and the default fixture.
-- **Different levels.** The older flokkur does a harder version, or something else entirely.
-- **Flokkastarf.** Each flokkur plans its own 30 minutes.
-- **Space or gear.** There is one prímus station, so only one flokkur can be there at a time.
+What the leader needs, in order:
 
-What they all share: **the lanes run at the same time, and the section ends when the last flokkur
-is done.** "Lengsti flokkur ræður."
+1. **Which flokkur does what, and when.** This is the plan, and it's read at the fundur from a
+   phone.
+2. **Whether the lanes are balanced.** The longest lane sets the section's length. A flokkur that
+   finishes early is standing around, so a wait has to be visible, with a number.
+3. **How to move a liður to another flokkur:** ← →, drag, or the "Færa til:" buttons, and every
+   move is announced.
+4. **What merging does.** Today it is silent about what it keeps.
 
-## 2. What the leader needs to see, ranked
+Patrol identity is always the vivid colour **and** the name together. Colour is never the only
+cue.
 
-1. **Which flokkur does what, and when.** This is the plan itself. It has to be readable at the
-   fundur, from a phone, between activities.
-2. **Whether the lanes are balanced.** The longest lane sets the section's length and moves
-   everything after it. A flokkur that finishes 20 minutes early is 20 minutes of kids with
-   nothing to do. Waits have to be visible as waits, with a number, and the lane that sets the
-   length has to be named.
-3. **Clashes** (stöðvaleikur only). Two flokkar at the same station at the same time is a
-   mistake that the current grid can't show at all.
-4. **How to move a liður to another flokkur.** That's the main edit in a split section. It
-   needs to work by keyboard (← →), by drag, and by a visible button, and it has to be
-   announced.
-5. **What merging does.** Rare, but consequential, and today it's silent about what it keeps.
+## 2. Why the form stays
 
-Secondary: theme, status, venue. None of the directions show them on the block. They belong in
-the liður editor.
+The current form is right for the job. Time runs down the side, so the lanes are visibly
+_simultaneous_. Each liður is as tall as it is long, so a short lane _looks_ short, and its free
+tail is offered as "+ N mín bið" rather than left blank. Leaders already know it from the hi-fi.
+What it lacks is finish:
 
-**Patrol identity** is always the vivid patrol colour _and_ the name together: a coloured name
-tag on every lane, plus a colour edge on every liður. Colour is never the only cue. Two patrols
-with similar colours, or a colour-blind leader, still read the name.
+- generic cards with a left stripe;
+- a 3px top border as the only patrol cue;
+- 12px uppercase footer text;
+- a merge that drops lanes without saying so.
 
-## 3. The current grid, briefly
+So the four variations keep the DOM, the behaviour and the copy, and change only the styling:
+the axis, one column per flokkur, liðir stacked, the hint "← → færa milli flokka", the summary
+line "Ristin er 75 mín — frá 19:40 til 20:55. Lengsti flokkur ræður: Uglur (75 mín). Bið: …", and
+"Sameina í eitt".
 
-Time runs down the side and there is one column per flokkur, so liðir are as tall as they are
-long and the idle tail shows as "N mín laus". That works for two to four flokkar on a laptop. It
-breaks in three places:
+**What every style shares:**
 
-- **Six flokkar on a phone** gives six columns about 50px wide. Titles wrap a letter at a time.
-- **A stöðvaleikur** can't be read as one. The question "who's at Skyndihjálp at 20:10?" means
-  scanning every column.
-- **"Sameina í eitt"** keeps only the first flokkur's lane and drops the rest without saying so.
-  The reducer's comment says "it takes one and says so", but the button doesn't say it.
+- Heights are exact (a fixed number of rem per minute), so each column lines up with the axis and
+  with the others.
+- The waiting lane says "+ 30 mín bið", and that wait is a button that adds a liður sized to fit.
+- The column header gives the total in minutes, plus "N mín bið" or "ræður lengd".
+- A tapped liður shows a strip with a named button for every other flokkur ("Færa til: Ernir,
+  Uglur…"), plus ↑ Fyrr, ↓ Síðar and ✕.
+- Keyboard: ← → moves a liður to the previous or next flokkur and ↑ ↓ reorders it. Focus follows
+  the liður to its new column, and the reducer announces "Liður færður milli flokka: … Fyrri
+  flokkur: Refir. Nýr flokkur: Ernir."
+- Drag onto another column.
+- Handles 2 to 6 flokkar, an empty lane ("Ekkert skráð · + Bæta við"), long titles and flokkur
+  names, and an undated fundur (the axis reads "+15 mín").
+- Tokens only. The patrol colour arrives as `--lane` / `--lane-on`, and it only ever sits behind
+  its own `-foreground`, as an edge or a swatch, or as a 14% tint under primary text. That gives
+  AA in light and dark, and axe passes in every theme.
+- `countIs` for every count. Transitions only under `prefers-reduced-motion: no-preference`.
+
+**On a phone** (the box narrower than 40rem): the same form, **scrolled sideways with snap**.
+Two columns are in view and a sliver of the third shows, so it's clear there's more. The axis is
+pinned on the left, and a line above the grid says "Strjúktu til hliðar til að sjá alla 6
+flokka." A liður is 0.3rem per minute there, so a 10-minute liður is 48px tall.
+
+Why not stacked columns: stacking would lose the one thing the form exists for, which is seeing
+two flokkar side by side at the same clock. Snap keeps that, two at a time, and focus scrolls a
+moved liður into view.
 
 <Canvas of={Stories.Comparison} />
 
-## 4. The directions
+## 3. The styles
 
-### A · Time axis
+### S1 · Clean
 
-<Canvas of={Stories.TimeAxisUneven} />
+<Canvas of={Stories.CleanUneven} />
 
-**The story it tells:** "Here is the evening on one clock. Ernir are standing around for 30
-minutes."
+**Story:** the current grid, tidied. "Refir · 70 mín · 5 mín bið" sits on a band of Refir's
+blue, and below it the evening reads like a timetable.
 
-**Hierarchy:**
+**Why:** the patrol colour does the most work as a full header band with dark text. It's
+unmistakable from a distance and always paired with the name. The liðir lose their card chrome
+(border, shadow, stripe) and become plain rows: time and minutes on one line, then the title.
+That halves the visual noise, so the hatched waits are what stands out.
 
-1. Rows of liðir, each as wide as it is long.
-2. Hatched gaps labelled "30 mín bið".
-3. Each lane's name tag and total, with "ræður lengd" on the longest lane.
-4. A shared ruler and "Allir saman aftur kl. 20:55".
+**Trade-offs:** it's the least distinctive style. With six vivid bands side by side the header
+row is loud, though it's the only loud thing on the screen.
 
-**Why it looks this way:** it turns the current grid on its side. Rows stack on a phone, where
-columns can't, and a horizontal bar is the shape people already read as "duration" (the
-FundurSheet lab's bar direction uses the same idea). Waits are hatched, the same pattern the
-sheet uses for overrun, so balance is something you see before you read it. A gap is a button:
-a wait is somewhere to put something.
+### S2 · Stamped
 
-**When to use it:** whenever balance is the question, which is most of the time when planning.
-It's the strongest general replacement for the current grid.
+<Canvas of={Stories.StampedUneven} />
 
-**Trade-offs:**
+**Story:** the Dagatal's picked D4 · Stimplar, carried into the fundur. Each flokkur's column is
+labelled like an inked rubber stamp (a double rule in the patrol colour, uppercase, a slight
+tilt), and each liður carries its status as a small stamp: **KLÁRT** pressed and tilted, **DRÖG**
+dashed, **ÓVÍST** dotted amber, and **?** for óákveðið.
 
-- Short liðir on a phone get a one-line, cut-off title ("Hnú…"). The full name is in the
-  button's accessible name and in the selection strip once it's tapped. At six flokkar × six
-  10-minute liðir it's legible as a pattern, not as text.
-- ← → moves to the previous or next flokkur, which is up and down on screen in this layout. We
-  kept ← → in every direction so leaders learn one rule, and the strip's buttons name the
-  flokkur, but it's less spatial here than in the current grid.
+**Why:** it's the only style that shows status in the grid, which matters for the last check
+before a fundur ("is everything klárt?"). It matches the calendar, so the plan reads as one
+system. The calendar's `stampKit.tsx` was mid-build when this was written (its CSS module didn't
+exist yet), so the stamp is mirrored in CSS here. Swap in `Stamp` once the kit lands. The stamp
+is decorative (`aria-hidden`), and the status is spoken in each liður's accessible name
+("…, 15 mín, drög").
 
-### B · Stations
+**Trade-offs:** the stamps take about 4rem of every row, so titles wrap sooner. Five-minute liðir
+have no room for a stamp to sit beside the time.
 
-<Canvas of={Stories.StationsUneven} />
+### S3 · Patrol flags
 
-**The story it tells:** "This is the rotation. Refir start at Hnútar, then go to Áttaviti… and
-at 20:10 Ernir and Uglur are both at Hnútar."
+<Canvas of={Stories.FlagsUneven} />
 
-**Hierarchy:**
+**Story:** each column flies its flokkur's swallowtail pennant. Under it is the total as a tally
+(one mark per 5 minutes, struck in fives) and the longest lane is inked **ræður lengd**.
 
-1. Stations as rows, time slots as columns.
-2. The flokkar as coloured, named tokens in the cells.
-3. Clashes: an amber cell, the word "Árekstur", and a count above the table.
-4. The flokkar strip with totals and waits (also the drop targets).
-5. A "Bið" row showing who is idle in each slot.
+**Why:** a pennant is how a scout flokkur marks itself in camp, so the column reads as _ours_.
+The tally makes balance something you count at a glance: three full fives against two. Liðir
+are tinted in the patrol colour so the lanes stay apart without stripes.
 
-**Why it looks this way:** a stöðvaleikur is planned as a rotation chart on paper, with stations
-down the side and groups moving across. It's the only direction that answers "who is at this
-station?" in one look, and the only one that can show a clash. The tokens are the vivid patrol
-colour with the name in dark text, so they can be read from across a room.
+**Trade-offs:** the most decorative style. The tally is aria-hidden; the minutes next to it are
+the accessible total. At 90 minutes or more the tally gets long and wraps.
 
-**When to use it:** when the lanes share stations, as in stöðvaleikir or a rotation of activity
-tables. It's also the most useful view right after "Skipta á flokka": every lane is a copy, so
-every station clashes (story _B · Stations: just split_), which tells the leader exactly what
-to rotate.
+### S4 · Paper
 
-**Trade-offs:**
+<Canvas of={Stories.PaperUneven} />
 
-- When the flokkar do unrelated things, every liður becomes its own station and the table turns
-  into a sparse diagonal. Use A or C for that.
-- Slot columns come from every lane's start and end times, so uneven lengths produce narrow
-  slots (the 5-minute "20:50" column). The table scrolls sideways on a phone, with the station
-  column pinned.
-- A liður that spans two slots shows as a token and then "frh.". Only the first is focusable.
+**Story:** the plan as a printed sheet to pin up or take to the fundur. It's ruled every 5
+minutes with a heavier rule every 15, the times are in typewriter face, there's a margin rule by
+the axis, and ink lines frame it.
 
-### C · Matrix
+**Why:** a lot of leaders still print the evening. A sheet that already looks printed prints
+well: `@media print` hides the buttons and the hint and lets the grid run full width. The ruled
+lines make the minutes countable by eye. The patrol colour shrinks to a swatch and a left edge,
+which survive greyscale printing because the name is always next to them.
 
-<Canvas of={Stories.MatrixUneven} />
+**Trade-offs:** it's the quietest on screen, and the patrol colour is the weakest here. The
+monospace times are wider, so the numbers in a narrow column crowd sooner.
 
-**The story it tells:** "Each flokkur's evening, row by row, on one timetable." It reads like the
-Rist, with flokkar down the side.
-
-**Hierarchy:**
-
-1. One row per flokkur.
-2. Cells for each liður, spanning a fixed number of time slots.
-3. A "Samtals" column with the total, the wait, and a bar against the longest lane.
-4. Slot times in the header.
-
-**Why it looks this way:** it's the densest direction and puts text first. Titles wrap in full,
-start times are printed in each cell, and the totals column lines the lanes up for comparison
-without reading the whole row. The slot size is the largest one every liður fits exactly (never
-under 5 minutes), so cells in the same column start at the same time. It's a real `<table>`, so
-a screen reader can move by row (flokkur) and column (time).
-
-**When to use it:** printing, or a projector at a foringjafundur, or six flokkar with many short
-liðir, where A's blocks get too small to read.
-
-**Trade-offs:**
-
-- It's not proportional in the way A is: a column is a slot, not a minute. Balance is read from
-  the totals column more than from the shape.
-- On a phone it scrolls sideways (about 6rem per 10 minutes).
-- One odd-length liður (5 minutes among 15s) makes the slots 5 minutes wide and the table three
-  times wider.
-
-### D · Cards
-
-<Canvas of={Stories.CardsPhone} />
-
-**The story it tells:** "Here's what Refir do tonight, in order. The other flokkar are one tap
-away, and you can see their totals."
-
-**Hierarchy:**
-
-1. The open flokkur's liðir as full-width cards, with times, full titles and minutes.
-2. The end card: "Lok 20:50 · 5 mín bið þar til allir eru búnir", or "þessi flokkur ræður
-   lengdinni".
-3. The switcher: every flokkur's tag, total, wait and a bar against the longest lane.
-
-**Why it looks this way:** it's built for the phone at the fundur. A flokksforingi only needs
-their own flokkur's plan, so one lane at a time gives every title room to wrap. The switcher
-keeps the balance check on screen, because each tab's bar and "30 mín bið" are the comparison.
-On a wide screen the switcher becomes a column on the left.
-
-**When to use it:** on a phone, and for handing a flokkur its own running order. It's the phone
-form for whichever desktop direction is picked.
-
-**Trade-offs:**
-
-- You can't see two lanes at once, so moving a liður "to where Ernir have a gap" means checking
-  the Ernir tab first.
-- When a liður is moved with the keyboard or a "Færa til" button, the view follows it to its new
-  flokkur, so a second → keeps moving it. A drag onto another tab doesn't follow, because the
-  leader is still working on this lane.
-
-## 5. What every direction does the same
-
-- **Moving between flokkar:** ← → on a focused liður moves it to the previous or next flokkur,
-  ↑ ↓ reorders it within its lane, and focus follows the liður. A drag onto another lane (A and C:
-  the row; B: the flokkur's chip; D: its tab) does the same, using the bench's dnd-kit setup.
-  A tapped liður shows a strip with a named button for every other flokkur ("Færa til: Ernir,
-  Uglur…"), so a phone can send a liður from the first flokkur to the sixth in one tap. Every move
-  is announced by the reducer: "Liður færður milli flokka: … Fyrri flokkur: Refir. Nýr flokkur:
-  Ernir."
-- **Balance sentence:** "Lengsti flokkur ræður: Uglur (75 mín). Bið: Refir 5 mín · Ernir 30 mín ·
-  Birnir 15 mín." Or "Jafnt: 4 flokkar, allir 60 mín." It uses `countIs` and never inflects a
-  patrol name. Names are user data, so they're always in the nominative after a colon.
-- **Edge cases:** 2 to 6 flokkar, an empty lane ("Ekkert skráð · + Bæta við"), long titles and a
-  long flokkur name, and an undated fundur, where clocks become "+15 mín" and cards show "2.
-  liður". See each direction's _2 flokkar, long titles, undated_ and _empty lane_ stories.
-- **Tokens only.** The patrol colour comes in as `--lane` / `--lane-on`. The vivid colour is only
-  ever a background behind its own `-foreground`, an edge, a bar, or a 14% tint under primary
-  text, which gives AA in light and dark. Touch targets are 48px when the box is phone-narrow.
-  Transitions only run under `prefers-reduced-motion: no-preference`.
-
-## 6. Merging: "Sameina í eitt" that says what it keeps
+## 4. "Sameina í eitt" that says what it keeps
 
 <Canvas of={Stories.Merge} />
 
-Today the button keeps the first flokkur's lane and drops the others in silence. The leader finds
-out later, if they notice at all.
+Today the button keeps the first flokkur's lane and drops the others in silence.
 
-**Proposal:**
-
-1. **If the lanes are identical,** for example right after a split, nothing is lost. Merge at
-   once and offer "Afturkalla" for 10 seconds (UX rule 5: reversible acts happen at once, with
-   undo). The button reads "Sameina í eitt".
-2. **If they differ,** the button reads "Sameina í eitt…" (the ellipsis means a question
-   follows) and opens an inline confirmation under the header. Focus moves to its heading. It
-   offers two choices:
-   - **Halda öllu, hvað á eftir öðru** (the default). Every distinct liður that any flokkur has is
-     kept once, in the first flokkur's order, followed by whatever the others had beyond that. A
-     liður one flokkur has twice is kept twice. The preview lists each liður with the flokkar
-     that had it, and gives the cost in time: "6 liðir í einni röð, 85 mín í stað 75 mín
+1. **Lanes still identical** (for example right after a split): nothing is lost, so it merges at
+   once, with "Afturkalla" for 10 seconds (UX rule 5).
+2. **Lanes that differ:** the button reads "Sameina í eitt…" and opens an inline confirmation,
+   which takes focus when the leader opens it.
+   - **Halda öllu, hvað á eftir öðru** (the default) keeps every distinct liður once, in the
+     first flokkur's order, then whatever the others had beyond that. The preview says which
+     flokkar had each liður and what it costs: "6 liðir í einni röð, 85 mín í stað 75 mín
      samhliða. Fundurinn lengist um 10 mín."
-   - **Halda einni dagskrá** plus a choice of flokkur. Under it is a red list, "Fellur út: 3
-     liðir · 40 mín", with each dropped liður and whose it was. The confirm button turns red and
-     says so: "Sameina og sleppa 3 liðum".
-3. "Hætta við" comes first, is quiet, and returns focus to the button. After merging, there's
-   "Afturkalla" for 10 seconds, and the announcement says how many liðir were kept and dropped.
+   - **Halda einni dagskrá** plus a choice of flokkur. A red list shows what goes, "Fellur út: 3
+     liðir · 40 mín", and the button turns red: "Sameina og sleppa 3 liðum".
+3. "Hætta við" comes first, is quiet, and returns focus to the button. After merging,
+   "Afturkalla" stays for 10 seconds, and the announcement says how many liðir were kept and
+   dropped.
 
-**Why keeping everything is the default:** it's the only option that never deletes what a leader
-wrote. Its cost, a longer evening, is shown in minutes before they confirm, and shows up again
-in the sheet's total afterwards, where it's easy to fix. Dropping work is still one choice away,
-but it has to be chosen, and it names what goes. A modal wasn't used because the decision is
-about the lanes right below it, and the leader may want to look at them while deciding.
+**Why keep everything by default:** it's the only choice that never deletes what a leader wrote.
+Its cost, a longer evening, is shown in minutes before they confirm, and shows up again in the
+sheet's total afterwards. To ship it, `mergeBand` needs a `keep: "all" | patrolId` argument, as
+`labMerge` has here.
 
 <Canvas of={Stories.MergeKeepOne} />
-
-**What the reducer would need:** `mergeBand` with a `keep: "all" | patrolId` argument, as
-`labMerge` does here (`labBench.tsx` · `planMerge`), plus a snapshot for undo.
-
-## 7. Recommendation
-
-- **A · Time axis** as the desktop replacement for the current grid.
-- **D · Cards** as its phone form.
-- **B · Stations** as a second view of the same lanes, offered when the lanes share stations,
-  since it's the only one that catches clashes.
-- **C** if printing turns out to matter more than expected.
-- **The merge proposal** whichever direction is picked.

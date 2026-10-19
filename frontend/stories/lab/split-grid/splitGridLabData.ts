@@ -19,6 +19,7 @@ import {
   type Patrol,
   type PatrolLane,
   type PlanBenchData,
+  type PlanStatus,
 } from "@/services/plan.service";
 
 export const LAB_FUNDUR = FUNDUR.overTime;
@@ -50,6 +51,13 @@ const LONG_STATIONS = [
   "Eldfæri, prímusar og öryggi við eldunarstöðina",
 ];
 
+/** A spread of statuses, so S2's stamps show every state. */
+const STATUS_OF: Record<string, PlanStatus> = {
+  Skyndihjálp: "draft",
+  "Eldfæri og prímus": "tentative",
+  Merkjamál: "unknown",
+};
+
 let counter = 0;
 function lidur(name: string, minutes: number, patrolId: string): Lidur {
   counter += 1;
@@ -58,7 +66,7 @@ function lidur(name: string, minutes: number, patrolId: string): Lidur {
     name,
     kind: "dagskra",
     minutes,
-    status: "confirmed",
+    status: STATUS_OF[name] ?? "confirmed",
     theme: "Ratleikni",
     venue: null,
     endurmat: null,

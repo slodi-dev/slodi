@@ -5,17 +5,16 @@ import SplitGridLab, { type SplitGridLabProps, type SplitGridLook } from "./Spli
 import { FIXTURES, LAB_FUNDUR, type FixtureName } from "./splitGridLabData";
 
 /**
- * SplitGrid variations: one section of a fundur split by flokkur, one lane per flokkur. The
- * current grid puts time down the side and a column per flokkur; at six flokkar on a phone the
- * columns are 50px wide, "Sameina í eitt" quietly keeps only the first flokkur's plan, and a
- * stöðvaleikur (the commonest reason to split) can't be read as one. Four directions, all on the
- * real bench reducer, with a merge that says what it keeps. Purpose and trade-offs: the
- * SplitGrid lab page (SplitGridLab.mdx). See Lab → About the lab.
+ * SplitGrid style variations. The form is the current SplitGrid's: time down the side, a column
+ * per flokkur with its liðir stacked, "← → færa milli flokka", the summary line and "Sameina í
+ * eitt". Four styles change only the look, and every one carries the merge proposal (say what
+ * is kept, keep everything by default, Afturkalla). All moves go through the real bench
+ * reducer. Purpose and trade-offs: Lab → SplitGrid → Purpose and styles.
  */
 
 type LabArgs = Omit<SplitGridLabProps, "data"> & { fixture: FixtureName };
 
-const LOOK_OPTIONS: SplitGridLook[] = ["timaas", "stodvar", "fylki", "spjold"];
+const LOOK_OPTIONS: SplitGridLook[] = ["ren", "stimplar", "veifur", "blad"];
 
 const heading = {
   margin: "0 0 var(--sl-spacing-xs)",
@@ -31,11 +30,10 @@ const wide = { maxWidth: "64rem" } as const;
 const meta = {
   title: "Lab/SplitGrid",
   tags: ["skip-visual"],
-  args: { look: "timaas", fixture: "uneven" },
+  args: { look: "ren", fixture: "uneven" },
   argTypes: {
     look: { control: "inline-radio", options: LOOK_OPTIONS },
     fixture: { control: "select", options: Object.keys(FIXTURES) },
-    defaultLane: { control: { type: "number", min: 0, max: 5 } },
   },
   render: ({ fixture, ...args }) => (
     <div style={wide}>
@@ -49,38 +47,35 @@ type Story = StoryObj<typeof meta>;
 
 const LOOKS: { look: SplitGridLook; name: string; idea: string }[] = [
   {
-    look: "timaas",
-    name: "A · Time axis",
-    idea: "One row per flokkur on a shared clock; a liður is as wide as it is long, so waits show as hatched gaps.",
+    look: "ren",
+    name: "S1 · Clean",
+    idea: "The patrol colour as a full header band with name and minutes; liðir as plain ruled rows.",
   },
   {
-    look: "stodvar",
-    name: "B · Stations",
-    idea: "Stations as rows, time as columns, flokkar as coloured tokens moving through them. Clashes are flagged.",
+    look: "stimplar",
+    name: "S2 · Stamped",
+    idea: "The Dagatal's Stimplar language: ink-stamped column labels and each liður's status as a stamp.",
   },
   {
-    look: "fylki",
-    name: "C · Matrix",
-    idea: "Flokkar as rows and fixed time slots as columns, like the Rist. Dense, text first, totals at the end.",
+    look: "veifur",
+    name: "S3 · Patrol flags",
+    idea: "Each column under its flokkur's swallowtail pennant; the total as a tally; “ræður lengd” inked.",
   },
   {
-    look: "spjold",
-    name: "D · Cards",
-    idea: "One flokkur at a time as a list of cards, with a switcher that shows every flokkur's total.",
+    look: "blad",
+    name: "S4 · Paper",
+    idea: "A printed sheet: ruled every 5 minutes, typewriter times, a margin rule. For printing and the meeting.",
   },
 ];
 
-/** The current SplitGrid first, then each direction, all with the same uneven stöðvaleikur. */
+/** The current SplitGrid first, then each style, all with the same uneven stöðvaleikur. */
 export const Comparison: Story = {
   name: "Comparison",
   render: () => (
     <div style={{ ...wide, display: "grid", gap: "var(--sl-spacing-xl)" }}>
       <section>
         <h2 style={heading}>Current</h2>
-        <p style={idea}>
-          What the app uses today: time down the side, a column per flokkur, “Sameina í eitt” keeps
-          the first flokkur only.
-        </p>
+        <p style={idea}>What the app uses today. “Sameina í eitt” keeps the first flokkur only.</p>
         <Bench data={FIXTURES.uneven()}>
           <LiveSplit fundurId={LAB_FUNDUR} band="kjarni" />
         </Bench>
@@ -96,12 +91,12 @@ export const Comparison: Story = {
   ),
 };
 
-/* ── One set of stories per direction ── */
+/* ── One set of stories per style ── */
 
 const phone = { viewport: { value: "phone", isRotated: false } };
 const dark = { theme: "dark" };
 
-/** Lane totals as shown on screen; every direction marks them with `data-lane-total`. */
+/** Lane totals as shown in each column header (`data-lane-total`). */
 function totalOf(root: HTMLElement, patrolId: string): string | null | undefined {
   return root.querySelector(`[data-lane-total="${patrolId}"]`)?.textContent;
 }
@@ -111,14 +106,14 @@ function storiesFor(look: SplitGridLook, name: string) {
     even: { name: `${name}: even`, args: { look, fixture: "even" } } satisfies Story,
     uneven: { name: `${name}: uneven`, args: { look, fixture: "uneven" } } satisfies Story,
     six: { name: `${name}: 6 flokkar`, args: { look, fixture: "six" } } satisfies Story,
-    empty: { name: `${name}: empty lane`, args: { look, fixture: "empty" } } satisfies Story,
-    /** Two flokkar; and three with long titles, a long flokkur name and no date. */
+    /** An empty lane; two flokkar; three with long titles, a long name and no date. */
     edge: {
-      name: `${name}: 2 flokkar, long titles, undated`,
+      name: `${name}: empty lane, 2 flokkar, long titles, undated`,
       render: () => (
         <div style={{ ...wide, display: "grid", gap: "var(--sl-spacing-lg)" }}>
+          <SplitGridLab look={look} data={FIXTURES.empty()} />
           <SplitGridLab look={look} data={FIXTURES.two()} />
-          <SplitGridLab look={look} data={FIXTURES.longUndated()} defaultLane={2} />
+          <SplitGridLab look={look} data={FIXTURES.longUndated()} />
         </div>
       ),
     } satisfies Story,
@@ -163,51 +158,41 @@ function storiesFor(look: SplitGridLook, name: string) {
   };
 }
 
-const a = storiesFor("timaas", "A · Time axis");
-export const TimeAxisEven: Story = a.even;
-export const TimeAxisUneven: Story = a.uneven;
-export const TimeAxisSix: Story = a.six;
-export const TimeAxisEmptyLane: Story = a.empty;
-export const TimeAxisEdge: Story = a.edge;
-export const TimeAxisPhone: Story = a.phone;
-export const TimeAxisDark: Story = a.dark;
-export const TimeAxisKeyboard: Story = a.keyboard;
+const clean = storiesFor("ren", "S1 · Clean");
+export const CleanEven: Story = clean.even;
+export const CleanUneven: Story = clean.uneven;
+export const CleanSix: Story = clean.six;
+export const CleanEdge: Story = clean.edge;
+export const CleanPhone: Story = clean.phone;
+export const CleanDark: Story = clean.dark;
+export const CleanKeyboard: Story = clean.keyboard;
 
-const b = storiesFor("stodvar", "B · Stations");
-export const StationsEven: Story = b.even;
-export const StationsUneven: Story = b.uneven;
-export const StationsSix: Story = b.six;
-export const StationsEmptyLane: Story = b.empty;
-export const StationsEdge: Story = b.edge;
-export const StationsPhone: Story = b.phone;
-export const StationsDark: Story = b.dark;
-export const StationsKeyboard: Story = b.keyboard;
+const stamped = storiesFor("stimplar", "S2 · Stamped");
+export const StampedEven: Story = stamped.even;
+export const StampedUneven: Story = stamped.uneven;
+export const StampedSix: Story = stamped.six;
+export const StampedEdge: Story = stamped.edge;
+export const StampedPhone: Story = stamped.phone;
+export const StampedDark: Story = stamped.dark;
+export const StampedKeyboard: Story = stamped.keyboard;
 
-/** Right after "Skipta á flokka" every lane is a copy, so every flokkur is at every station at once. */
-export const StationsCopied: Story = {
-  name: "B · Stations: just split (all clash)",
-  args: { look: "stodvar", fixture: "copied" },
-};
+const flags = storiesFor("veifur", "S3 · Patrol flags");
+export const FlagsEven: Story = flags.even;
+export const FlagsUneven: Story = flags.uneven;
+export const FlagsSix: Story = flags.six;
+export const FlagsEdge: Story = flags.edge;
+export const FlagsPhone: Story = flags.phone;
+export const FlagsDark: Story = flags.dark;
+export const FlagsKeyboard: Story = flags.keyboard;
 
-const c = storiesFor("fylki", "C · Matrix");
-export const MatrixEven: Story = c.even;
-export const MatrixUneven: Story = c.uneven;
-export const MatrixSix: Story = c.six;
-export const MatrixEmptyLane: Story = c.empty;
-export const MatrixEdge: Story = c.edge;
-export const MatrixPhone: Story = c.phone;
-export const MatrixDark: Story = c.dark;
-export const MatrixKeyboard: Story = c.keyboard;
-
-const d = storiesFor("spjold", "D · Cards");
-export const CardsEven: Story = d.even;
-export const CardsUneven: Story = d.uneven;
-export const CardsSix: Story = d.six;
-export const CardsEmptyLane: Story = { ...d.empty, args: { ...d.empty.args, defaultLane: 2 } };
-export const CardsEdge: Story = d.edge;
-export const CardsPhone: Story = d.phone;
-export const CardsDark: Story = d.dark;
-export const CardsKeyboard: Story = d.keyboard;
+const paper = storiesFor("blad", "S4 · Paper");
+export const PaperEven: Story = paper.even;
+export const PaperUneven: Story = paper.uneven;
+export const PaperSix: Story = paper.six;
+export const PaperEdge: Story = paper.edge;
+export const PaperPhone: Story = paper.phone;
+export const PaperDark: Story = paper.dark;
+export const PaperKeyboard: Story = paper.keyboard;
 
 /* ── Merge ── */
 
@@ -218,13 +203,13 @@ export const CardsKeyboard: Story = d.keyboard;
  */
 export const Merge: Story = {
   name: "Merge",
-  args: { look: "timaas", fixture: "uneven", defaultMergeOpen: true },
+  args: { look: "ren", fixture: "uneven", defaultMergeOpen: true },
 };
 
 /** The same confirmation, with "Halda einni dagskrá" chosen: what falls out is listed in red. */
 export const MergeKeepOne: Story = {
   name: "Merge: keep one flokkur",
-  args: { look: "fylki", fixture: "uneven", defaultMergeOpen: true },
+  args: { look: "stimplar", fixture: "uneven", defaultMergeOpen: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("radio", { name: /Halda einni dagskrá/ }));
@@ -236,7 +221,7 @@ export const MergeKeepOne: Story = {
 /** The whole path: confirm, choose, merge, hear it, undo it. */
 export const MergeFlow: Story = {
   name: "Merge: confirm and undo",
-  args: { look: "stodvar", fixture: "uneven" },
+  args: { look: "veifur", fixture: "uneven" },
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);
 
@@ -276,7 +261,7 @@ export const MergeFlow: Story = {
 /** Lanes that are still identical lose nothing, so there is no question: merge, then Afturkalla. */
 export const MergeIdentical: Story = {
   name: "Merge: identical lanes",
-  args: { look: "timaas", fixture: "copied" },
+  args: { look: "blad", fixture: "copied" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Sameina í eitt" }));

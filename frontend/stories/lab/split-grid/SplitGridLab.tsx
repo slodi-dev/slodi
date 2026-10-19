@@ -1,7 +1,6 @@
 import {
   useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -16,8 +15,10 @@ import {
   BANDS,
   BAND_KIND,
   BAND_OF,
+  STATUS_LABEL,
   type BandId,
   type Fundur,
+  type Lidur,
   type PatrolAccent,
   type PlanBenchData,
 } from "@/services/plan.service";
@@ -40,23 +41,27 @@ import styles from "./SplitGridLab.module.css";
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 /**
- * - `timaas`: A · lanes on a shared time axis. One row per flokkur, liðir as wide as they are long.
- * - `stodvar`: B · station rotation. Stations as rows, time as columns, flokkar as tokens.
- * - `fylki`: C · compact matrix. Flokkar as rows, fixed time slots as columns, like the Rist.
- * - `spjold`: D · cards per flokkur, with a switcher. One lane at a time; built for the phone.
+ * Style variations of the current SplitGrid. The form stays: a time axis down the side, one
+ * column per flokkur, liðir stacked in each column as tall as they are long, the free tail as
+ * "N mín bið", the hint, the summary line and "Sameina í eitt". Only the look changes.
+ *
+ * - `ren`: S1 · Clean. The patrol colour as a full header band; liðir as plain ruled rows.
+ * - `stimplar`: S2 · Stamped. The Dagatal's D4 Stimplar language: ink-stamped column labels,
+ *   and each liður's status as a small rubber stamp.
+ * - `veifur`: S3 · Patrol flags. Each column under its flokkur's swallowtail pennant, with the
+ *   lane total as a tally.
+ * - `blad`: S4 · Paper. A printed sheet: ruled lines, typewriter times, ink on paper.
  */
-export type SplitGridLook = "timaas" | "stodvar" | "fylki" | "spjold";
+export type SplitGridLook = "ren" | "stimplar" | "veifur" | "blad";
 
 export interface SplitGridLabProps {
-  /** Which lab direction to render. */
+  /** Which style variation to render. */
   look: SplitGridLook;
   data: PlanBenchData;
   fundurId?: string;
   band?: BandId;
   /** Open the merge confirmation straight away. */
   defaultMergeOpen?: boolean;
-  /** D: the flokkur shown first, by lane position. */
-  defaultLane?: number;
 }
 
 /* ── Root ──────────────────────────────────────────────────────────────────── */
@@ -71,6 +76,7 @@ export default function SplitGridLab({ data, ...props }: SplitGridLabProps) {
 
 /** What every direction gets from the band: the model and the shared move paths. */
 type Ctx = {
+  look: SplitGridLook;
   model: SplitModel;
   selected: string | null;
   hintId: string;
@@ -95,7 +101,6 @@ function SplitBand({
   fundurId = LAB_FUNDUR,
   band = "kjarni",
   defaultMergeOpen = false,
-  defaultLane = 0,
 }: Omit<SplitGridLabProps, "data">) {
   const { state, dispatch } = useLabBench();
   const fundur = state.data.fundir.find((f) => f.event_id === fundurId);
@@ -106,7 +111,6 @@ function SplitBand({
   const mergeButtonRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
   const mergeId = useId();
-  const [activeLane, setActiveLane] = useState(defaultLane);
   const [mergeOpen, setMergeOpen] = useState(defaultMergeOpen);
   // Focus moves into the confirmation only when the leader opened it, not when a story starts
   // with it open (that would scroll a Docs page to it).
@@ -123,7 +127,7 @@ function SplitBand({
     if (!id) return;
     focusTarget.current = null;
     rootRef.current?.querySelector<HTMLElement>(`[data-lidur-id="${CSS.escape(id)}"]`)?.focus();
-  }, [state.data, activeLane]);
+  }, [state.data]);
 
   // UX rule 5: "Afturkalla" stays for at least 8 seconds.
   useEffect(() => {
@@ -180,7 +184,6 @@ function SplitBand({
       id: li.item.id,
     });
     focusTarget.current = li.item.id;
-    setActiveLane(toLane);
   };
 
   const reorder = (lane: LaneModel, li: LaneItem, to: number) => {
@@ -227,6 +230,7 @@ function SplitBand({
   });
 
   const ctx: Ctx = {
+    look,
     model,
     selected,
     hintId,
@@ -240,7 +244,7 @@ function SplitBand({
   const picked = findSelected(model, selected);
 
   return (
-    <div ref={rootRef} className={styles.root} data-look={look}>
+    <div ref={rootRef} className={styles.root} data-style={look}>
       <div className={styles.head}>
         <div className={styles.headText}>
           <h3 className={styles.title}>{model.label}</h3>
@@ -282,26 +286,19 @@ function SplitBand({
         />
       )}
 
-      <p className={styles.balance} data-balanced={model.balanced || undefined}>
-        {balanceSentence(model)}
-      </p>
+      <Columns ctx={ctx} />
 
-      {look === "timaas" && <TimeAxis ctx={ctx} />}
-      {look === "stodvar" && <Stations ctx={ctx} />}
-      {look === "fylki" && <Matrix ctx={ctx} />}
-      {look === "spjold" && (
-        <Cards
-          ctx={ctx}
-          activeLane={Math.min(activeLane, model.lanes.length - 1)}
-          onLane={setActiveLane}
-        />
-      )}
+      {picked && <MoveStrip ctx={ctx} lane={picked.lane} li={picked.li} />}
 
-      {picked && look !== "spjold" && <MoveStrip ctx={ctx} lane={picked.lane} li={picked.li} />}
-
-      <p id={hintId} className={styles.hint}>
-        ← → færa í fyrri eða næsta flokk · ↑ ↓ breyta röð · eða dragðu á annan flokk
-      </p>
+      <div className={styles.foot}>
+        <p id={hintId} className={styles.hint}>
+          ← → færa milli flokka · ↑ ↓ breyta röð · eða dragðu á annan flokk
+        </p>
+        <p className={styles.summary} data-balanced={model.balanced || undefined}>
+          Ristin er {model.duration} mín
+          {model.from ? ` — frá ${model.from} til ${model.to}` : ""}. {balanceSentence(model)}
+        </p>
+      </div>
     </div>
   );
 }
@@ -310,7 +307,7 @@ function SplitBand({
 
 function itemLabel(lane: LaneModel, li: LaneItem): string {
   const when = li.clock ? `kl. ${li.clock}` : `${li.index + 1}. liður`;
-  return `${lane.name} ${when}: ${li.item.name}, ${li.item.minutes} mín`;
+  return `${lane.name} ${when}: ${li.item.name}, ${li.item.minutes} mín, ${STATUS_LABEL[li.item.status].toLowerCase()}`;
 }
 
 function findSelected(model: SplitModel, id: string | null) {
@@ -473,574 +470,159 @@ function MoveStrip({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem 
   );
 }
 
-/* ── A · Tímaás ────────────────────────────────────────────────────────────── */
+/* ── The current form ──────────────────────────────────────────────────────── */
 
-function tickStep(duration: number): number {
-  if (duration <= 30) return 5;
-  if (duration <= 90) return 15;
-  return 30;
+/** The status word on S2's stamp. Óákveðið is an empty box with a "?". */
+const STAMP_WORD: Record<Lidur["status"], string> = {
+  confirmed: "Klárt",
+  draft: "Drög",
+  tentative: "Óvíst",
+  unknown: "?",
+};
+
+/** The same small tilt for a liður on every render: −4° … +3°. */
+function tiltOf(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return (hash % 8) - 4;
 }
 
-function TimeAxis({ ctx }: { ctx: Ctx }) {
+/**
+ * Time down the side and one column per flokkur, as SplitGrid has it. Heights are exact
+ * (`--ppm` per minute), so the columns stay level with the axis and with each other. On a phone
+ * the columns scroll sideways with snap, two at a time, and the axis stays pinned.
+ */
+function Columns({ ctx }: { ctx: Ctx }) {
   const { model } = ctx;
   const span = Math.max(model.duration, 15);
-  const step = tickStep(span);
   const ticks: number[] = [];
-  for (let m = 0; m < span - step / 2; m += step) ticks.push(m);
-  ticks.push(span);
-  // On a phone only the half hours are labelled; the rest would run into each other.
-  const minor = (m: number) => m !== 0 && m !== span && m % 30 !== 0;
+  for (let m = 0; m <= span; m += 15) ticks.push(m);
 
   return (
-    <div className={styles.axis}>
-      <div className={styles.ruler} aria-hidden="true">
-        <span />
-        <div className={styles.rulerTrack}>
-          {ticks.map((m) => (
-            <span
-              key={m}
-              className={styles.tick}
-              data-edge={m === 0 ? "start" : m === span ? "end" : undefined}
-              data-minor={minor(m) || undefined}
-              style={{ left: `${(m / span) * 100}%` }}
-            >
-              {at(model, m)}
-            </span>
+    <div className={styles.columnsWrap}>
+      {model.lanes.length > 2 && (
+        <p className={styles.swipe}>
+          Strjúktu til hliðar til að sjá alla {countIs(model.lanes.length, "flokk", "flokka")}.
+        </p>
+      )}
+      <div className={styles.scroller}>
+        <div
+          className={styles.grid}
+          style={{ ["--n" as string]: model.lanes.length, ["--span" as string]: span }}
+        >
+          <div className={styles.axisHead} aria-hidden="true">
+            kl.
+          </div>
+          {model.lanes.map((lane) => (
+            <LaneHead key={lane.patrolId} ctx={ctx} lane={lane} />
+          ))}
+          <div className={styles.axis} aria-hidden="true">
+            {ticks.map((m) => (
+              <span key={m} className={styles.tick} style={{ top: `calc(var(--ppm) * ${m})` }}>
+                {at(model, m)}
+              </span>
+            ))}
+          </div>
+          {model.lanes.map((lane) => (
+            <LaneColumn key={lane.patrolId} ctx={ctx} lane={lane} />
           ))}
         </div>
       </div>
-      {model.lanes.map((lane) => (
-        <AxisLane key={lane.patrolId} ctx={ctx} lane={lane} span={span} />
-      ))}
-      {model.from && model.duration > 0 && (
-        <p className={styles.regroup}>Allir saman aftur kl. {model.to}</p>
-      )}
     </div>
   );
 }
 
-function AxisLane({ ctx, lane, span }: { ctx: Ctx; lane: LaneModel; span: number }) {
-  const { model } = ctx;
+function LaneHead({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
+  const { model, look } = ctx;
+  const tilt = look === "stimplar" ? (lane.laneIndex % 2 ? 1.5 : -1.5) : 0;
+  return (
+    <div className={styles.laneHead} style={laneVars(lane.accent)}>
+      <span className={styles.laneName} style={{ ["--tilt" as string]: `${tilt}deg` }}>
+        {lane.name}
+      </span>
+      <span className={styles.laneNums}>
+        <LaneTotal lane={lane} />
+        <LaneState lane={lane} model={model} />
+      </span>
+      {look === "veifur" && <Tally minutes={lane.used} />}
+    </div>
+  );
+}
+
+/** One mark per 5 minutes, struck through in fives, like a tally on a patrol's notebook. */
+function Tally({ minutes }: { minutes: number }) {
+  const marks = Math.round(minutes / 5);
+  const groups = Array.from({ length: Math.ceil(marks / 5) }, (_, g) => Math.min(5, marks - g * 5));
+  return (
+    <span className={styles.tally} aria-hidden="true">
+      {groups.map((n, g) => (
+        <span key={g} className={styles.tallyGroup} data-full={n === 5 || undefined}>
+          {Array.from({ length: Math.min(n, 4) }, (_, i) => (
+            <span key={i} className={styles.tallyMark} />
+          ))}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function LaneColumn({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
+  const { model, look } = ctx;
   const { setNodeRef, over } = useLaneDrop(model, lane.laneIndex);
-  const labelId = useId();
-  const pct = (m: number) => `${(m / span) * 100}%`;
+  const span = Math.max(model.duration, 15);
+  const rest = span - lane.used;
 
   return (
     <div
       ref={setNodeRef}
-      role="group"
-      aria-labelledby={labelId}
-      className={styles.axisRow}
+      className={styles.lane}
       data-over={over || undefined}
       style={laneVars(lane.accent)}
     >
-      <div className={styles.axisLabel} id={labelId}>
-        <PatrolTag lane={lane} />
-        <span className={styles.axisNums}>
-          <LaneTotal lane={lane} />
-          <LaneState lane={lane} model={model} />
-        </span>
-      </div>
-      <div className={styles.track}>
-        {lane.items.map((li) => {
-          const narrow = li.item.minutes / span < 0.12;
-          return (
-            <DragItem
-              key={li.item.id}
-              ctx={ctx}
-              lane={lane}
-              li={li}
-              className={styles.block}
-              style={{ left: pct(li.start), width: pct(li.item.minutes) }}
-            >
-              {!narrow && <span className={styles.blockTitle}>{li.item.name}</span>}
-              <span className={styles.blockMeta}>{li.item.minutes} mín</span>
-            </DragItem>
-          );
-        })}
-        {lane.items.length === 0 ? (
-          <button
-            type="button"
-            className={styles.gap}
-            style={{ left: 0, width: "100%" }}
-            aria-label={`Bæta verkefni við hjá ${lane.name}`}
-            onClick={() => ctx.addTo(lane)}
-          >
-            Ekkert skráð · + Bæta við
-          </button>
-        ) : (
-          lane.idle > 0 && (
-            <button
-              type="button"
-              className={styles.gap}
-              style={{ left: pct(lane.used), width: pct(lane.idle) }}
-              aria-label={`${lane.idle} mín bið. Bæta verkefni við hjá ${lane.name}`}
-              onClick={() => ctx.addTo(lane)}
-            >
-              {lane.idle} mín bið
-            </button>
-          )
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── B · Stöðvar ───────────────────────────────────────────────────────────── */
-
-type Slot = { start: number; end: number };
-
-function slotsOf(model: SplitModel): Slot[] {
-  const edges = new Set<number>([0, model.duration]);
-  for (const lane of model.lanes) {
-    for (const li of lane.items) {
-      edges.add(li.start);
-      edges.add(li.start + li.item.minutes);
-    }
-  }
-  const sorted = [...edges].sort((a, b) => a - b);
-  return sorted.slice(0, -1).map((start, i) => ({ start, end: sorted[i + 1] }));
-}
-
-function Stations({ ctx }: { ctx: Ctx }) {
-  const { model } = ctx;
-  const slots = slotsOf(model);
-
-  // Stations in the order they first start, so the table reads top-left to bottom-right.
-  const stations = useMemo(() => {
-    const first = new Map<string, number>();
-    for (const lane of model.lanes) {
-      for (const li of lane.items) {
-        const seen = first.get(li.item.name);
-        if (seen === undefined || li.start < seen) first.set(li.item.name, li.start);
-      }
-    }
-    return [...first.entries()].sort((a, b) => a[1] - b[1]).map(([name]) => name);
-  }, [model]);
-
-  const occupants = (station: string, slot: Slot) =>
-    model.lanes.flatMap((lane) =>
-      lane.items
-        .filter(
-          (li) =>
-            li.item.name === station &&
-            li.start <= slot.start &&
-            slot.start < li.start + li.item.minutes
-        )
-        .map((li) => ({ lane, li, first: li.start === slot.start }))
-    );
-
-  const clashes = stations.reduce(
-    (n, station) =>
-      n +
-      slots.filter((slot) => new Set(occupants(station, slot).map((o) => o.lane.patrolId)).size > 1)
-        .length,
-    0
-  );
-
-  const waiting = (slot: Slot) => model.lanes.filter((lane) => lane.used <= slot.start);
-
-  return (
-    <div className={styles.stations}>
-      <ul className={styles.legend} aria-label="Flokkar">
-        {model.lanes.map((lane) => (
-          <LegendChip key={lane.patrolId} ctx={ctx} lane={lane} />
-        ))}
-      </ul>
-
-      {clashes > 0 && (
-        <p className={styles.clashNote}>
-          <span aria-hidden="true">⚠ </span>
-          {countIs(clashes, "árekstur", "árekstrar")}: fleiri en einn flokkur á sömu stöð á sama
-          tíma.
-        </p>
-      )}
-
-      {stations.length === 0 ? (
-        <p className={styles.empty}>Engar stöðvar enn.</p>
-      ) : (
-        <div className={styles.scroll}>
-          <table className={styles.table}>
-            <caption className={styles.srOnly}>
-              Hvaða flokkur er á hvaða stöð, og hvenær.{" "}
-              {countIs(stations.length, "stöð", "stöðvar")}.
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col" className={styles.corner}>
-                  Stöð
-                </th>
-                {slots.map((slot) => (
-                  <th key={slot.start} scope="col" className={styles.slotHead}>
-                    <span className={styles.num}>{at(model, slot.start)}</span>
-                    <span className={styles.slotLen}>{slot.end - slot.start} mín</span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {stations.map((station) => (
-                <tr key={station}>
-                  <th scope="row" className={styles.stationName}>
-                    {station}
-                  </th>
-                  {slots.map((slot) => {
-                    const here = occupants(station, slot);
-                    const clash = new Set(here.map((o) => o.lane.patrolId)).size > 1;
-                    return (
-                      <td key={slot.start} className={styles.cell} data-clash={clash || undefined}>
-                        {here.map(({ lane, li, first }) =>
-                          first ? (
-                            <DragItem
-                              key={li.item.id}
-                              ctx={ctx}
-                              lane={lane}
-                              li={li}
-                              className={styles.token}
-                            >
-                              {lane.name}
-                            </DragItem>
-                          ) : (
-                            <span
-                              key={li.item.id}
-                              className={styles.tokenCont}
-                              style={laneVars(lane.accent)}
-                            >
-                              {lane.name} frh.
-                            </span>
-                          )
-                        )}
-                        {clash && <span className={styles.clashTag}>Árekstur</span>}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-              {slots.some((slot) => waiting(slot).length > 0) && (
-                <tr className={styles.waitRow}>
-                  <th scope="row" className={styles.stationName}>
-                    Bið
-                  </th>
-                  {slots.map((slot) => (
-                    <td key={slot.start} className={styles.cell}>
-                      {waiting(slot).map((lane) => (
-                        <PatrolTag key={lane.patrolId} lane={lane} small />
-                      ))}
-                    </td>
-                  ))}
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LegendChip({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
-  const { setNodeRef, over } = useLaneDrop(ctx.model, lane.laneIndex);
-  return (
-    <li
-      ref={setNodeRef}
-      className={styles.legendChip}
-      data-over={over || undefined}
-      style={laneVars(lane.accent)}
-    >
-      <PatrolTag lane={lane} />
-      <LaneTotal lane={lane} />
-      <LaneState lane={lane} model={ctx.model} />
-    </li>
-  );
-}
-
-/* ── C · Fylki ─────────────────────────────────────────────────────────────── */
-
-function gcd(a: number, b: number): number {
-  return b === 0 ? a : gcd(b, a % b);
-}
-
-function Matrix({ ctx }: { ctx: Ctx }) {
-  const { model } = ctx;
-  // The coarsest slot every liður fits exactly, never under 5 mín.
-  const slot = Math.max(
-    MIN_MINUTES,
-    model.lanes
-      .flatMap((l) => l.items)
-      .reduce((g, li) => gcd(g, li.item.minutes), model.duration) || 15
-  );
-  const columns = Math.max(1, Math.round(model.duration / slot));
-  const labelEvery = Math.max(1, Math.round(15 / slot));
-  // 0.6rem per minute: a 10-minute liður gets 6rem, room for "Skyndihjálp".
-  const slotRem = slot * 0.6;
-
-  return (
-    <div className={styles.scroll}>
-      {/* Fixed column widths, so a 15-minute liður gets room for its name and a narrow box
-          scrolls sideways instead of crushing every cell to one word per line. */}
-      <table
-        className={`${styles.table} ${styles.matrixTable}`}
-        style={{ minWidth: `${14 + columns * slotRem}rem` }}
-      >
-        <colgroup>
-          <col style={{ width: "7rem" }} />
-          {Array.from({ length: columns }, (_, i) => (
-            <col key={i} style={{ width: `${slotRem}rem` }} />
-          ))}
-          <col style={{ width: "7rem" }} />
-        </colgroup>
-        <caption className={styles.srOnly}>
-          Hvað hver flokkur gerir, í {slot} mínútna hólfum.
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col" className={styles.corner}>
-              Flokkur
-            </th>
-            {Array.from({ length: columns }, (_, i) => (
-              <th key={i} scope="col" className={styles.matrixHead}>
-                {i % labelEvery === 0 ? (
-                  <span className={styles.num}>{at(model, i * slot)}</span>
-                ) : (
-                  <span className={styles.srOnly}>{at(model, i * slot)}</span>
-                )}
-              </th>
-            ))}
-            <th scope="col" className={styles.matrixTotalHead}>
-              Samtals
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {model.lanes.map((lane) => (
-            <MatrixRow key={lane.patrolId} ctx={ctx} lane={lane} slot={slot} columns={columns} />
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function MatrixRow({
-  ctx,
-  lane,
-  slot,
-  columns,
-}: {
-  ctx: Ctx;
-  lane: LaneModel;
-  slot: number;
-  columns: number;
-}) {
-  const { model } = ctx;
-  const { setNodeRef, over } = useLaneDrop(model, lane.laneIndex);
-  const idleCols = Math.round(lane.idle / slot);
-  const share = model.duration ? (lane.used / model.duration) * 100 : 0;
-
-  return (
-    <tr ref={setNodeRef} data-over={over || undefined} className={styles.matrixRow}>
-      <th scope="row" className={styles.matrixName}>
-        <PatrolTag lane={lane} />
-      </th>
       {lane.items.map((li) => (
-        <td
+        <DragItem
           key={li.item.id}
-          colSpan={Math.max(1, Math.round(li.item.minutes / slot))}
-          className={styles.matrixCell}
+          ctx={ctx}
+          lane={lane}
+          li={li}
+          className={styles.item}
+          style={{ height: `calc(var(--ppm) * ${li.item.minutes})` }}
         >
-          <DragItem ctx={ctx} lane={lane} li={li} className={styles.chip}>
-            <span className={styles.chipTitle}>{li.item.name}</span>
-            <span className={styles.chipMeta}>
-              {li.clock ? `${li.clock} · ` : ""}
-              {li.item.minutes} mín
+          <span className={styles.itemTop} data-tight={li.item.minutes < 15 || undefined}>
+            <span className={styles.itemTime}>{li.clock ?? `+${li.start}`}</span>
+            <span className={styles.itemMin}>{li.item.minutes} mín</span>
+          </span>
+          <span className={styles.itemTitle} data-tight={li.item.minutes < 15 || undefined}>
+            {li.item.name}
+          </span>
+          {look === "stimplar" && (
+            <span
+              className={styles.stamp}
+              data-state={li.item.status}
+              style={{ ["--tilt" as string]: `${tiltOf(li.item.id)}deg` }}
+              aria-hidden="true"
+            >
+              {STAMP_WORD[li.item.status]}
             </span>
-          </DragItem>
-        </td>
+          )}
+        </DragItem>
       ))}
-      {lane.items.length === 0 && columns > 0 ? (
-        <td colSpan={columns} className={styles.matrixCell}>
-          <button type="button" className={styles.gapCell} onClick={() => ctx.addTo(lane)}>
-            Ekkert skráð · + Bæta við
-          </button>
-        </td>
-      ) : (
-        idleCols > 0 && (
-          <td colSpan={idleCols} className={styles.matrixCell}>
-            <span className={styles.idleCell}>{lane.idle} mín bið</span>
-          </td>
-        )
+      {rest > 0 && (
+        <button
+          type="button"
+          className={styles.gap}
+          style={{ height: `calc(var(--ppm) * ${rest})` }}
+          aria-label={
+            lane.items.length === 0
+              ? `Ekkert skráð. Bæta verkefni við hjá ${lane.name}`
+              : `${rest} mín bið. Bæta verkefni við hjá ${lane.name}`
+          }
+          onClick={() => ctx.addTo(lane)}
+        >
+          {lane.items.length === 0 ? "Ekkert skráð · + Bæta við" : `+ ${rest} mín bið`}
+        </button>
       )}
-      <td className={styles.matrixTotal}>
-        <span className={styles.matrixTotalTop}>
-          <LaneTotal lane={lane} />
-          <LaneState lane={lane} model={model} />
-        </span>
-        <span className={styles.bar} aria-hidden="true" style={laneVars(lane.accent)}>
-          <span style={{ width: `${share}%` }} />
-        </span>
-      </td>
-    </tr>
-  );
-}
-
-/* ── D · Spjöld ────────────────────────────────────────────────────────────── */
-
-function Cards({
-  ctx,
-  activeLane,
-  onLane,
-}: {
-  ctx: Ctx;
-  activeLane: number;
-  onLane: (lane: number) => void;
-}) {
-  const { model, selected } = ctx;
-  const panelId = useId();
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const lane = model.lanes[activeLane];
-
-  const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
-    const n = model.lanes.length;
-    const next =
-      e.key === "ArrowRight" || e.key === "ArrowDown"
-        ? (i + 1) % n
-        : e.key === "ArrowLeft" || e.key === "ArrowUp"
-          ? (i - 1 + n) % n
-          : e.key === "Home"
-            ? 0
-            : e.key === "End"
-              ? n - 1
-              : null;
-    if (next === null) return;
-    e.preventDefault();
-    onLane(next);
-    tabRefs.current[next]?.focus();
-  };
-
-  return (
-    <div className={styles.cards}>
-      <div role="tablist" aria-label="Flokkar" className={styles.tabs}>
-        {model.lanes.map((l, i) => (
-          <LaneTab
-            key={l.patrolId}
-            ctx={ctx}
-            lane={l}
-            active={i === activeLane}
-            panelId={panelId}
-            refFn={(node) => {
-              tabRefs.current[i] = node;
-            }}
-            onSelect={() => onLane(i)}
-            onKeyDown={(e) => onTabKey(e, i)}
-          />
-        ))}
-      </div>
-
-      <div
-        role="tabpanel"
-        id={panelId}
-        aria-label={lane.name}
-        className={styles.panel}
-        style={laneVars(lane.accent)}
-      >
-        {lane.items.length === 0 ? (
-          <div className={styles.endCard}>
-            <p>Ekkert skráð enn.</p>
-            <button type="button" className={styles.quiet} onClick={() => ctx.addTo(lane)}>
-              + Bæta við
-            </button>
-          </div>
-        ) : (
-          <ol className={styles.cardList}>
-            {lane.items.map((li) => (
-              <li key={li.item.id} className={styles.cardItem}>
-                <DragItem ctx={ctx} lane={lane} li={li} className={styles.card}>
-                  <span className={styles.cardWhen}>
-                    {li.clock ? `${li.clock}–${li.clockEnd}` : `${li.index + 1}. liður`}
-                  </span>
-                  <span className={styles.cardTitle}>{li.item.name}</span>
-                  <span className={styles.cardMin}>{li.item.minutes} mín</span>
-                </DragItem>
-                {selected === li.item.id && <MoveStrip ctx={ctx} lane={lane} li={li} />}
-              </li>
-            ))}
-          </ol>
-        )}
-        {lane.items.length > 0 && (
-          <div className={styles.endCard} data-waits={lane.idle > 0 || undefined}>
-            {lane.idle > 0 ? (
-              <>
-                <p>
-                  <span className={styles.num}>
-                    Lok {at(model, lane.used)} · {lane.idle} mín bið
-                  </span>{" "}
-                  þar til allir eru búnir.
-                </p>
-                <button type="button" className={styles.quiet} onClick={() => ctx.addTo(lane)}>
-                  + Fylla biðina
-                </button>
-              </>
-            ) : (
-              <p className={styles.num}>
-                Lok {at(model, lane.used)}
-                {model.balanced
-                  ? " · allir búnir á sama tíma."
-                  : " · þessi flokkur ræður lengdinni."}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
     </div>
-  );
-}
-
-function LaneTab({
-  ctx,
-  lane,
-  active,
-  panelId,
-  refFn,
-  onSelect,
-  onKeyDown,
-}: {
-  ctx: Ctx;
-  lane: LaneModel;
-  active: boolean;
-  panelId: string;
-  refFn: (node: HTMLButtonElement | null) => void;
-  onSelect: () => void;
-  onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void;
-}) {
-  const { model } = ctx;
-  const { setNodeRef, over } = useLaneDrop(model, lane.laneIndex);
-  const share = model.duration ? (lane.used / model.duration) * 100 : 0;
-  return (
-    <button
-      ref={(node) => {
-        setNodeRef(node);
-        refFn(node);
-      }}
-      type="button"
-      role="tab"
-      aria-selected={active}
-      aria-controls={active ? panelId : undefined}
-      tabIndex={active ? 0 : -1}
-      className={styles.tab}
-      data-over={over || undefined}
-      style={laneVars(lane.accent)}
-      onClick={onSelect}
-      onKeyDown={onKeyDown}
-    >
-      <PatrolTag lane={lane} />
-      <span className={styles.tabNums}>
-        <LaneTotal lane={lane} />
-        <LaneState lane={lane} model={model} />
-      </span>
-      <span className={styles.bar} aria-hidden="true">
-        <span style={{ width: `${share}%` }} />
-      </span>
-    </button>
   );
 }
 
