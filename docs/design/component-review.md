@@ -30,6 +30,14 @@ once a variation is picked it is **promoted** into the real component and its la
   reader's list. Also fixed: hidden "Lesa nánar" text showed on every card; a failed load-more did
   nothing; inline code rendered its backticks.
 
+- **RangeInput → C2 · Tap to edit.** Two handles with their values on them; tapping a value
+  opens a popover (a bottom sheet on phones) with a field, −/+ and "Í lagi". Tested with iPhone
+  emulation and real touch: dragging never scrolls the page, the keyboard never covers the
+  field, no iOS zoom, 48px steppers with a 400ms hold before repeating. Changes are reported on
+  release. Filters: 0–180 mín, 0–120 mín, 1–60.
+- **Header → A2 · Wordmark + logo**, with a skip link, 48px targets, focus rings, aria-current,
+  labelled navs, and the Storybook Auth0 leak fixed.
+
 ## Picked, to promote
 
 - **Side nav (DashboardSidebar) → B · Groups.** Group headings Skipuleggja / Bankinn / Umsjón /
@@ -49,8 +57,8 @@ once a variation is picked it is **promoted** into the real component and its la
 
 ## In the Lab
 
-- **PlanGrid**: next, a variation that matches the calendar's Stimplar so the two views are one
-  family (waits for the calendar's stamp kit).
+- **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the calendar's stamp kit so
+  the grid and calendar are one family (see "Grid next to calendar").
 - **SplitGrid**: the current form stays; variations are styles only (clean, stamped, patrol
   flags, paper), with the honest merge.
 
@@ -59,10 +67,6 @@ once a variation is picked it is **promoted** into the real component and its la
   becomes user-owned categories too: favourite **albums** next to the built-in sources. Needs
   the real favourites backend (sc-620), extended to albums.
 
-- **RangeInput → C2 · Tap to edit, promoting.** Tapping a handle's value opens a small popover
-  (a bottom sheet on phones) with a field, −/+ and "Í lagi". Must be solid on mobile: no page
-  scroll while dragging, keyboard never covers the field, no iOS zoom, 48px steppers with sane
-  hold-to-repeat.
 - **Header → A, A2, B, B2.** A2 and B2 add the logo (green mark in light, white in dark; B2's band
   stays deep green in dark so the white logo reads). Logo as big as the wordmark; B's tagline is
   "Meira en bara dagskrárvefur". The green gradient behind the headers is gone. Problems in the
