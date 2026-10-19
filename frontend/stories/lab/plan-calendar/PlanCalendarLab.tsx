@@ -1,77 +1,115 @@
 "use client";
 
-import { useId, useMemo, useState, type ComponentType, type CSSProperties } from "react";
+import { Fragment, useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
+  Anchor,
+  Ban,
   Check,
+  CircleHelp,
   ClipboardList,
+  Compass,
   Flag,
+  Flame,
+  FlameKindling,
+  Footprints,
+  HeartHandshake,
   Hourglass,
   Mountain,
   PartyPopper,
   Pencil,
+  PencilLine,
+  Sparkles,
   Tent,
   TentTree,
-  Users,
+  TreePine,
   type LucideIcon,
 } from "lucide-react";
 import { countIs, formatIcelandicDayMonth, formatIcelandicMonthYear } from "@/lib/format";
 import { isSameDay } from "@/components/plan/planEntries";
-import { STATUS_LABEL, type EventType, type PlanGrid } from "@/services/plan.service";
+import { STATUS_LABEL, type EventType, type PlanStatus } from "@/services/plan.service";
 import { cn } from "@/lib/util";
 import {
   BUSY_MONTH,
-  LAB_PATROLS,
   LAB_TODAY,
+  WEEKDAY_FULL,
+  WEEKDAY_SHORT,
+  coversDay,
+  dayOfSpan,
+  deriveRhythms,
   entryName,
   labGrid,
+  mondayOf,
   patrolInitial,
   placeEntries,
+  spanRange,
+  weekdayOf,
   type LabEntry,
+  type LabGrid,
 } from "./planCalendarLabData";
 import styles from "./PlanCalendarLab.module.css";
 
 /**
- * Lab copies of the Dagatal's day entry (PlanEntryChip in `meta="venue"`), each inside a lab
- * copy of the month grid. The grid is the real one's layout (a <table>, Monday first, trimmed
- * trailing row); only the entries differ. Rationale for every look: PlanCalendarLab.mdx.
+ * The Staða family: the Dagatal as a planning-status map, in four variations that differ in the
+ * mark each entry wears for its status. Rationale: PlanCalendarLab.mdx.
  *
- * Below 40rem of its own width the grid stops trying to print titles into 50px cells: each day
- * becomes a button with small markers, and the chosen day's entries are listed under the grid
- * in the look's full form.
+ * The month is a rhythm plus exceptions, so entries come in four kinds (see `EntryKind`): the
+ * flokkur's usual fundur is one quiet line, anything else on a day is a full block, a fundur
+ * that falls out says so, and a multi-day event is one bar across its days. The grid is week
+ * rows of CSS grid rather than a <table>, because a bar has to span cells.
+ *
+ * Below 40rem of its own width each day becomes a button with small marks and the chosen day is
+ * listed under the grid in full, a span there as "dagur 2 af 3".
  */
-export type DayEntryLook = "ribbon" | "agenda" | "ticket" | "readiness" | "icons";
+export type StatusLook = "stada" | "merki" | "vardeldur" | "stimplar";
 
-export const LOOK_LABEL: Record<DayEntryLook, string> = {
-  ribbon: "A · Fáni",
-  agenda: "B · Dagbók",
-  ticket: "C · Miði",
-  readiness: "D · Staða",
-  icons: "E · Tákn",
+export const LOOKS: StatusLook[] = ["stada", "merki", "vardeldur", "stimplar"];
+
+export const LOOK_LABEL: Record<StatusLook, string> = {
+  stada: "D1 · Staða",
+  merki: "D2 · Merki",
+  vardeldur: "D3 · Varðeldur",
+  stimplar: "D4 · Stimplar",
 };
 
-/** How many entries a day shows before the rest fold into "+N fleiri". */
-export const LOOK_CAPACITY: Record<DayEntryLook, number> = {
-  ribbon: 3,
-  agenda: 4,
-  ticket: 3,
-  readiness: 3,
-  icons: 4,
-};
+/** Entries a day shows before the rest fold behind "+N fleiri". */
+const CAPACITY = 3;
 
-const WEEKDAYS = ["Mán", "Þri", "Mið", "Fim", "Fös", "Lau", "Sun"];
-const WEEKDAYS_FULL = [
-  "Mánudagur",
-  "Þriðjudagur",
-  "Miðvikudagur",
-  "Fimmtudagur",
-  "Föstudagur",
-  "Laugardagur",
-  "Sunnudagur",
-];
+const STATUS_ORDER: PlanStatus[] = ["confirmed", "draft", "tentative", "unknown"];
+
+/* ── Icons ── */
+
+/** Unlit sticks: the campfire before anyone has decided anything. */
+function Sticks({ size }: { size: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.25}
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M4 19 20 12.5" />
+      <path d="M4 12.5 20 19" />
+      <path d="M12 9.5v-2" strokeDasharray="1 3" />
+    </svg>
+  );
+}
+
+const THEME_ICON: Record<string, LucideIcon> = {
+  Útilíf: TreePine,
+  Ratleikni: Compass,
+  Hreyfing: Footprints,
+  Sjómennska: Anchor,
+  Hefðir: Flame,
+  Umhyggja: HeartHandshake,
+};
 
 const TYPE_ICON: Record<EventType, LucideIcon> = {
   flokks: Flag,
-  sveitar: Users,
+  sveitar: Flag,
   skipulags: ClipboardList,
   utilega: Tent,
   dagsferd: Mountain,
@@ -79,268 +117,320 @@ const TYPE_ICON: Record<EventType, LucideIcon> = {
   uppskeru: PartyPopper,
 };
 
-/** The big troop outings: the icons look gives them a whole row. */
-const OUTING: ReadonlySet<EventType> = new Set(["utilega", "dagsferd", "mot", "uppskeru"]);
+/** The stamp a fundur earns: its theme for a flokksfundur, its type for anything else. */
+function stampIcon(entry: Pick<LabEntry, "type" | "theme">): LucideIcon {
+  if (entry.type === "flokks" && entry.theme && THEME_ICON[entry.theme]) {
+    return THEME_ICON[entry.theme];
+  }
+  return TYPE_ICON[entry.type];
+}
+
+/* ── The status mark, per look ── */
+
+type MarkSize = "sm" | "md" | "lg";
+const PX: Record<MarkSize, number> = { sm: 11, md: 13, lg: 18 };
+
+const STADA_GLYPH: Record<PlanStatus, LucideIcon | null> = {
+  confirmed: Check,
+  draft: Pencil,
+  tentative: Hourglass,
+  unknown: null,
+};
+
+const MERKI_ICON: Record<PlanStatus, LucideIcon | null> = {
+  confirmed: Check,
+  draft: PencilLine,
+  tentative: CircleHelp,
+  unknown: null,
+};
+
+const FIRE_ICON: Record<PlanStatus, LucideIcon | null> = {
+  confirmed: FlameKindling,
+  draft: Flame,
+  tentative: Sparkles,
+  unknown: null,
+};
+
+interface MarkProps {
+  look: StatusLook;
+  entry: Pick<LabEntry, "status" | "type" | "theme" | "kind" | "patrol" | "troopWide"> &
+    Partial<Pick<LabEntry, "patrolVar">>;
+  size?: MarkSize;
+}
+
+/** The look's mark for an entry's status. Always decorative: the name says the status. */
+export function StatusMark({ look, entry, size = "md" }: MarkProps) {
+  const px = PX[size];
+  if (entry.kind === "cancelled") {
+    return (
+      <span
+        className={cn(styles.mark, styles.markCancelled, styles[`size_${size}`])}
+        aria-hidden="true"
+      >
+        <Ban size={px} strokeWidth={2.5} />
+      </span>
+    );
+  }
+  const status = entry.status;
+  let inner: ReactNode = "?";
+  if (look === "stada") {
+    const Glyph = STADA_GLYPH[status];
+    if (Glyph) inner = <Glyph size={px} strokeWidth={2.5} />;
+  } else if (look === "merki") {
+    const Icon = MERKI_ICON[status];
+    inner = Icon ? <Icon size={px} strokeWidth={2.5} /> : null;
+  } else if (look === "vardeldur") {
+    const Icon = FIRE_ICON[status];
+    inner = Icon ? <Icon size={px + 2} strokeWidth={2.25} /> : <Sticks size={px + 2} />;
+  } else {
+    const Icon = stampIcon(entry);
+    inner = status === "unknown" ? "?" : <Icon size={px} strokeWidth={2.25} />;
+  }
+  return (
+    <span
+      className={cn(styles.mark, styles[`mark_${look}`], styles[`size_${size}`])}
+      data-status={status}
+      aria-hidden="true"
+    >
+      {inner}
+      {look === "merki" && (
+        <span className={styles.flagTab} style={patrolVars(entry)}>
+          {entry.troopWide ? "S" : (entry.patrol?.name.charAt(0) ?? "")}
+        </span>
+      )}
+    </span>
+  );
+}
 
 /* ── Shared bits ── */
 
-/**
- * The flokkur's ramp as local aliases, so each look's CSS reads `--pc`, `--pc-fg` and
- * `--pc-subtle`. A troop-wide event wears the inverse surface: the one colour no flokkur has.
- */
-function entryVars(entry: LabEntry): CSSProperties {
+/** The flokkur's ramp as local aliases; the whole sveit wears the inverse surface. */
+function patrolVars(entry: Partial<Pick<LabEntry, "patrolVar">>): CSSProperties {
   if (!entry.patrolVar) {
     return {
       "--pc": "var(--sl-color-surface-inverse)",
       "--pc-fg": "var(--sl-color-text-inverse)",
-      "--pc-subtle": "var(--sl-color-background-tertiary)",
     } as CSSProperties;
   }
   return {
     "--pc": `var(${entry.patrolVar})`,
     "--pc-fg": `var(${entry.patrolVar}-foreground)`,
-    "--pc-subtle": `var(${entry.patrolVar}-subtle)`,
   } as CSSProperties;
 }
 
 function dataAttrs(entry: LabEntry) {
   return {
     "data-status": entry.status,
+    "data-kind": entry.kind,
     "data-past": entry.past || undefined,
-    "data-troop": entry.troopWide || undefined,
   };
 }
 
-/** Who, where and how decided: the line an entry gains when it has room (the phone list). */
-function DetailLine({ entry }: { entry: LabEntry }) {
-  const parts = [entry.patrol?.name ?? "Öll sveitin"];
-  if (entry.venue) parts.push(entry.venue);
-  parts.push(STATUS_LABEL[entry.status]);
-  if (entry.overMinutes > 0)
+function PatrolChip({ entry }: { entry: LabEntry }) {
+  return (
+    <span className={styles.chip} style={patrolVars(entry)} aria-hidden="true">
+      {patrolInitial(entry)}
+    </span>
+  );
+}
+
+/** Who, where and how decided: the line an entry gains in the phone day list. */
+function DetailLine({ entry, day }: { entry: LabEntry; day?: Date }) {
+  const parts: string[] = [];
+  if (entry.kind === "span" && day) {
+    parts.push(`Dagur ${dayOfSpan(entry, day)} af ${entry.spanDays}`);
+  }
+  parts.push(entry.patrol?.name ?? "Öll sveitin");
+  if (entry.kind !== "cancelled") {
+    if (entry.venue) parts.push(entry.venue);
+    parts.push(STATUS_LABEL[entry.status]);
+  }
+  if (entry.overMinutes > 0) {
     parts.push(`${countIs(entry.overMinutes, "mínúta", "mínútur")} umfram`);
+  }
   return <span className={styles.detail}>{parts.join(" · ")}</span>;
 }
 
+/* ── One entry ── */
+
 interface EntryProps {
+  look: StatusLook;
   entry: LabEntry;
-  /** Room for a second line: who, where and the status in words. */
+  /** Room for a second line: the phone day list. */
   detail?: boolean;
+  /** The day it is shown on, for "dagur 2 af 3". */
+  day?: Date;
   onSelect?: (eventId: string) => void;
 }
 
-function EntryButton({
-  entry,
-  className,
-  onSelect,
-  children,
-}: {
-  entry: LabEntry;
-  className: string;
-  onSelect?: (eventId: string) => void;
-  children: React.ReactNode;
-}) {
+/**
+ * One entry in a day cell. The status tint is the first read; the mark makes it readable without
+ * colour; the flokkur is second. Routine fundir are one line with no time (the rhythm legend
+ * holds the times), anything else gets its time and its reason for being different.
+ */
+export function StatusEntry({ look, entry, detail, day, onSelect }: EntryProps) {
+  const routine = entry.kind === "routine";
+  const cancelled = entry.kind === "cancelled";
+  const notes: string[] = [];
+  if (entry.kind === "span") notes.push(spanRange(entry));
+  if (entry.movedFrom) notes.push(`Fært frá ${WEEKDAY_SHORT[weekdayOf(entry.movedFrom)]}.`);
+  if (cancelled && entry.cancelledReason) notes.push(entry.cancelledReason);
+
   return (
     <button
       type="button"
-      className={cn(styles.entry, className)}
-      style={entryVars(entry)}
+      className={cn(styles.entry, styles[`look_${look}`])}
+      style={patrolVars(entry)}
       aria-label={entryName(entry)}
       onClick={() => onSelect?.(entry.id)}
       {...dataAttrs(entry)}
     >
-      {children}
+      <StatusMark look={look} entry={entry} />
+      <span className={styles.line}>
+        {look !== "merki" && (routine || cancelled) && <PatrolChip entry={entry} />}
+        <span className={styles.title}>
+          {cancelled ? `${entry.patrol?.name ?? "Fundur"} fellur niður` : entry.title}
+        </span>
+      </span>
+      {!routine && !detail && (
+        <span className={styles.meta}>
+          {look !== "merki" && !cancelled && <PatrolChip entry={entry} />}
+          {!cancelled && entry.clock && <span className={styles.num}>{entry.clock}</span>}
+          {notes.map((note) => (
+            <span key={note} className={styles.note}>
+              {note}
+            </span>
+          ))}
+          {entry.overMinutes > 0 && !entry.past && (
+            <span className={styles.over}>+{entry.overMinutes} mín.</span>
+          )}
+        </span>
+      )}
+      {detail && (
+        <span className={styles.meta}>
+          {!cancelled && entry.clock && <span className={styles.num}>{entry.clock}</span>}
+          {notes.map((note) => (
+            <span key={note} className={styles.note}>
+              {note}
+            </span>
+          ))}
+          <DetailLine entry={entry} day={day} />
+        </span>
+      )}
     </button>
   );
 }
 
-function Undecided({ entry }: { entry: LabEntry }) {
-  return entry.status === "unknown" ? (
-    <span className={styles.q} aria-hidden="true">
-      ?
-    </span>
-  ) : null;
-}
-
-/* ── A · Fáni: the flokkur's flag ── */
-
-function RibbonEntry({ entry, detail, onSelect }: EntryProps) {
-  return (
-    <EntryButton entry={entry} className={styles.ribbon} onSelect={onSelect}>
-      <span className={styles.rbTime}>{entry.clock}</span>
-      <span className={styles.rbTitle}>
-        {entry.title}
-        <Undecided entry={entry} />
-      </span>
-      {detail && <DetailLine entry={entry} />}
-    </EntryButton>
-  );
-}
-
-/* ── B · Dagbók: a line in a paper diary ── */
-
-function AgendaEntry({ entry, detail, onSelect }: EntryProps) {
-  return (
-    <EntryButton entry={entry} className={styles.agenda} onSelect={onSelect}>
-      <span className={styles.agDot} aria-hidden="true">
-        {entry.troopWide ? "" : patrolInitial(entry)}
-      </span>
-      <span className={styles.agTime}>{entry.status === "unknown" ? "?" : entry.clock}</span>
-      <span className={styles.agTitle}>{entry.title}</span>
-      {detail && <DetailLine entry={entry} />}
-    </EntryButton>
-  );
-}
-
-/* ── C · Miði: a ticket stub ── */
-
-const STUB_WORD: Partial<Record<LabEntry["status"], string>> = {
-  draft: "drög",
-  tentative: "óvíst",
-  unknown: "?",
-};
-
-function TicketEntry({ entry, detail, onSelect }: EntryProps) {
-  // A used ticket needs no word: the grey stub says it. Spelling "lokið" on every past
-  // evening made the first half of the month the loudest part of it.
-  const word = entry.past ? undefined : STUB_WORD[entry.status];
-  return (
-    <EntryButton entry={entry} className={styles.ticket} onSelect={onSelect}>
-      <span className={styles.tkStub} aria-hidden="true">
-        <span className={styles.tkTime}>{entry.clock}</span>
-        {word && <span className={styles.tkWord}>{word}</span>}
-      </span>
-      <span className={styles.tkBody}>
-        <span className={styles.tkTitle}>{entry.title}</span>
-        {detail && <DetailLine entry={entry} />}
-      </span>
-    </EntryButton>
-  );
-}
-
-/* ── D · Staða: how ready it is ── */
-
-const STATUS_GLYPH: Record<LabEntry["status"], LucideIcon | "?"> = {
-  confirmed: Check,
-  draft: Pencil,
-  tentative: Hourglass,
-  unknown: "?",
-};
-
-function StatusGlyph({ status }: { status: LabEntry["status"] }) {
-  const Glyph = STATUS_GLYPH[status];
-  return (
-    <span className={styles.rdGlyph} aria-hidden="true">
-      {Glyph === "?" ? "?" : <Glyph size={12} strokeWidth={2.5} />}
-    </span>
-  );
-}
-
-function ReadinessEntry({ entry, detail, onSelect }: EntryProps) {
-  return (
-    <EntryButton entry={entry} className={styles.readiness} onSelect={onSelect}>
-      {!entry.past && <StatusGlyph status={entry.status} />}
-      <span className={styles.rdTitle}>{entry.title}</span>
-      <span className={styles.rdMeta}>
-        <span className={styles.rdChip} aria-hidden="true">
-          {patrolInitial(entry)}
+/** A multi-day event: one bar across its days. Only one segment is a button. */
+function SpanBar({
+  look,
+  entry,
+  segment,
+  onSelect,
+}: {
+  look: StatusLook;
+  entry: LabEntry;
+  segment: Segment;
+  onSelect?: (eventId: string) => void;
+}) {
+  const TypeIcon = TYPE_ICON[entry.type];
+  const content = (
+    <>
+      <StatusMark look={look} entry={entry} />
+      {look === "vardeldur" && (
+        <span className={styles.typeBadge} aria-hidden="true">
+          <TypeIcon size={13} strokeWidth={2.25} />
         </span>
-        <span className={styles.num}>{entry.clock}</span>
-        {entry.overMinutes > 0 && !entry.past && (
-          <span className={styles.rdOver}>+{entry.overMinutes} mín.</span>
-        )}
+      )}
+      <span className={styles.spanText}>
+        <span className={styles.title}>
+          {segment.continuesFromBefore ? "↳ " : ""}
+          {entry.title}
+        </span>
+        <span className={styles.spanRange}>
+          {segment.continuesFromBefore ? "framhald · " : `${entry.clock} · `}
+          {spanRange(entry)}
+        </span>
       </span>
-      {detail && <DetailLine entry={entry} />}
-    </EntryButton>
+      {look !== "merki" && <PatrolChip entry={entry} />}
+    </>
   );
-}
-
-/* ── E · Tákn: the shape says what kind of thing it is ── */
-
-function IconEntry({ entry, detail, onSelect }: EntryProps) {
-  const Icon = TYPE_ICON[entry.type];
-  return (
-    <EntryButton
-      entry={entry}
-      className={cn(styles.icons, OUTING.has(entry.type) && styles.icOuting)}
-      onSelect={onSelect}
-    >
-      <span className={styles.icTile} aria-hidden="true">
-        <Icon size={14} strokeWidth={2.25} />
-        <Undecided entry={entry} />
-      </span>
-      <span className={styles.icText}>
-        <span className={styles.icTime}>{entry.clock}</span>{" "}
-        <span className={styles.icTitle}>{entry.title}</span>
-      </span>
-      {detail && <DetailLine entry={entry} />}
-    </EntryButton>
+  const className = cn(
+    styles.entry,
+    styles.span,
+    styles[`look_${look}`],
+    segment.continuesFromBefore && styles.fromBefore,
+    segment.continuesAfter && styles.intoNext
   );
-}
-
-export const LOOK_ENTRY: Record<DayEntryLook, ComponentType<EntryProps>> = {
-  ribbon: RibbonEntry,
-  agenda: AgendaEntry,
-  ticket: TicketEntry,
-  readiness: ReadinessEntry,
-  icons: IconEntry,
-};
-
-/* ── Compact markers: what a 50px phone cell can hold ── */
-
-function Marker({ look, entry }: { look: DayEntryLook; entry: LabEntry }) {
-  const Icon = TYPE_ICON[entry.type];
+  const style = {
+    ...patrolVars(entry),
+    gridColumn: `${segment.start + 1} / ${segment.end + 2}`,
+    gridRow: 2 + segment.lane,
+  };
+  if (!segment.focusable) {
+    // The rest of a bar that has already been named once: drawn, not announced twice.
+    return (
+      <div className={className} style={style} aria-hidden="true" {...dataAttrs(entry)}>
+        {content}
+      </div>
+    );
+  }
   return (
-    <span
-      className={cn(styles.marker, styles[`mk_${look}`])}
-      style={entryVars(entry)}
+    <button
+      type="button"
+      className={className}
+      style={style}
+      aria-label={entryName(entry)}
+      onClick={() => onSelect?.(entry.id)}
       {...dataAttrs(entry)}
     >
-      {look === "icons" && <Icon size={11} strokeWidth={2.5} />}
-    </span>
+      {content}
+    </button>
   );
 }
 
-const MARKER_LIMIT = 3;
+/* ── Phone marks ── */
 
-function Markers({ look, entries }: { look: DayEntryLook; entries: LabEntry[] }) {
-  const shown = entries.length > MARKER_LIMIT ? entries.slice(0, MARKER_LIMIT - 1) : entries;
+function Marks({ look, entries }: { look: StatusLook; entries: LabEntry[] }) {
+  const LIMIT = 3;
+  const shown = entries.length > LIMIT ? entries.slice(0, LIMIT - 1) : entries;
   const rest = entries.length - shown.length;
   return (
-    <span className={styles.markers} aria-hidden="true">
+    <span className={styles.marks} aria-hidden="true">
       {shown.map((entry) => (
-        <Marker key={entry.id} look={look} entry={entry} />
+        <span key={entry.id} className={styles.markTile} {...dataAttrs(entry)}>
+          <StatusMark look={look} entry={entry} size="sm" />
+        </span>
       ))}
-      {rest > 0 && <span className={styles.markerMore}>+{rest}</span>}
+      {rest > 0 && <span className={styles.markMore}>+{rest}</span>}
     </span>
   );
 }
 
-/* ── One day's entries, with the overflow fold ── */
+/* ── A day's entries, with the fold ── */
 
-export interface DayEntriesProps {
-  look: DayEntryLook;
+export function DayEntries({
+  look,
+  day,
+  entries,
+  onSelect,
+}: {
+  look: StatusLook;
   day: Date;
   entries: LabEntry[];
   onSelect?: (eventId: string) => void;
-}
-
-/** A day's entries as a list; past `LOOK_CAPACITY` the rest fold behind "+N fleiri". */
-export function DayEntries({ look, day, entries, onSelect }: DayEntriesProps) {
+}) {
   const [open, setOpen] = useState(false);
   const listId = useId();
-  const capacity = LOOK_CAPACITY[look];
-  const folds = entries.length > capacity;
-  const shown = folds && !open ? entries.slice(0, capacity - 1) : entries;
-  const hidden = entries.length - shown.length;
-  const Entry = LOOK_ENTRY[look];
-
+  const folds = entries.length > CAPACITY;
+  const shown = folds && !open ? entries.slice(0, CAPACITY - 1) : entries;
   if (entries.length === 0) return null;
   return (
     <>
       <ul className={styles.entries} id={listId}>
         {shown.map((entry) => (
           <li key={entry.id}>
-            <Entry entry={entry} onSelect={onSelect} />
+            <StatusEntry look={look} entry={entry} onSelect={onSelect} />
           </li>
         ))}
       </ul>
@@ -352,7 +442,7 @@ export function DayEntries({ look, day, entries, onSelect }: DayEntriesProps) {
           aria-controls={listId}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? "Færri" : `+${hidden} fleiri`}
+          {open ? "Færri" : `+${entries.length - shown.length} fleiri`}
           <span className="sl-sr-only"> {formatIcelandicDayMonth(day)}</span>
         </button>
       )}
@@ -360,121 +450,159 @@ export function DayEntries({ look, day, entries, onSelect }: DayEntriesProps) {
   );
 }
 
-/* ── Status keys: each look explains its marks with its own entries ── */
+/* ── The key ── */
 
-const KEY_SAMPLES: { status: LabEntry["status"]; past?: boolean; label: string }[] = [
-  { status: "confirmed", label: "Staðfest" },
-  { status: "draft", label: "Drög" },
-  { status: "tentative", label: "Óvíst" },
-  { status: "unknown", label: "Óákveðið" },
-  { status: "confirmed", past: true, label: "Lokið" },
-];
-
-/**
- * The key is drawn with the look's own entry, titled with the status, so it can never drift
- * from what the grid shows. It is `inert`: a picture, not five more buttons to tab through.
- * Each real entry already says its status in its accessible name.
- */
-function StatusKey({ look }: { look: DayEntryLook }) {
-  const Entry = LOOK_ENTRY[look];
-  return (
-    <div className={styles.statusKey} inert aria-hidden="true">
-      {KEY_SAMPLES.map((sample) => (
-        <span key={sample.label} className={styles.keySample}>
-          <Entry
-            entry={{
-              ...SAMPLE,
-              id: `key-${sample.label}`,
-              title: sample.label,
-              status: sample.status,
-              past: Boolean(sample.past),
-            }}
-          />
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** A stand-in entry for the key: the first flokkur, a weekday evening. */
-const SAMPLE: LabEntry = {
-  id: "sample",
-  title: "",
-  type: "flokks",
-  status: "confirmed",
-  clock: "19:30",
-  venue: null,
-  day: LAB_TODAY,
-  patrol: LAB_PATROLS[0],
-  patrolVar: "--sl-color-patrol-rekkar",
-  troopWide: false,
-  overMinutes: 0,
-  past: false,
+const KEY_TYPES: Record<StatusLook, string> = {
+  stada: "Litur og tákn segja stöðuna.",
+  merki: "Hver fundur fær merki; flipinn er flokkurinn.",
+  vardeldur: "Eldurinn vex eftir því sem fundurinn skýrist.",
+  stimplar: "Tilbúinn fundur fær stimpil eftir þema eða gerð.",
 };
 
-function Legend({ look, data }: { look: DayEntryLook; data: PlanGrid }) {
+const SAMPLE_BASE = {
+  type: "flokks" as EventType,
+  theme: "Ratleikni",
+  kind: "routine" as const,
+  troopWide: false,
+  patrol: { id: "k", name: "Refir", accent: "rekkar" as const },
+  patrolVar: "--sl-color-patrol-rekkar",
+};
+
+/** Every mark of a look and what it means, as text. */
+export function StatusKey({ look, compact = false }: { look: StatusLook; compact?: boolean }) {
   return (
-    <div className={styles.legend}>
-      <ul className={styles.keyList} aria-label="Flokkar">
-        {data.patrols.map((patrol) => (
-          <li key={patrol.id} className={styles.keyItem}>
-            <span
-              className={styles.patrolSwatch}
-              style={
-                { "--pc": `var(--sl-color-patrol-${patrol.accent ?? "adrir"})` } as CSSProperties
-              }
-              aria-hidden="true"
-            />
-            {patrol.name}
+    <div className={cn(styles.key, compact && styles.keyCompact)}>
+      {!compact && <p className={styles.keyLead}>{KEY_TYPES[look]}</p>}
+      <ul className={styles.keyList} aria-label="Staða">
+        {STATUS_ORDER.map((status) => (
+          <li key={status} className={styles.keyItem}>
+            <span className={styles.keyTile} data-status={status}>
+              <StatusMark
+                look={look}
+                entry={{ ...SAMPLE_BASE, status }}
+                size={compact ? "md" : "lg"}
+              />
+            </span>
+            {STATUS_LABEL[status]}
           </li>
         ))}
         <li className={styles.keyItem}>
-          <span className={cn(styles.patrolSwatch, styles.troopSwatch)} aria-hidden="true" />
-          Öll sveitin
+          <span className={styles.keyTile} data-kind="cancelled">
+            <StatusMark
+              look={look}
+              entry={{ ...SAMPLE_BASE, status: "confirmed", kind: "cancelled" }}
+              size={compact ? "md" : "lg"}
+            />
+          </span>
+          Fellur niður
         </li>
       </ul>
-      <StatusKey look={look} />
+      {!compact && look === "stimplar" && (
+        <ul className={styles.keyList} aria-label="Stimplar">
+          {(
+            [
+              ["Útilíf", TreePine],
+              ["Ratleikni", Compass],
+              ["Hreyfing", Footprints],
+              ["Sjómennska", Anchor],
+              ["Hefðir", Flame],
+              ["Umhyggja", HeartHandshake],
+              ["Útilega", Tent],
+              ["Dagsferð", Mountain],
+              ["Mót", TentTree],
+              ["Sveitarfundur", Flag],
+              ["Skipulagsfundur", ClipboardList],
+              ["Uppskeruhátíð", PartyPopper],
+            ] as [string, LucideIcon][]
+          ).map(([label, Icon]) => (
+            <li key={label} className={styles.keyItem}>
+              <Icon size={16} strokeWidth={2.25} aria-hidden="true" />
+              {label}
+            </li>
+          ))}
+        </ul>
+      )}
+      {!compact && look === "vardeldur" && (
+        <ul className={styles.keyList} aria-label="Merki á viðburðum">
+          {(
+            [
+              ["Útilega", Tent],
+              ["Dagsferð", Mountain],
+              ["Mót", TentTree],
+            ] as [string, LucideIcon][]
+          ).map(([label, Icon]) => (
+            <li key={label} className={styles.keyItem}>
+              <span className={styles.typeBadge} aria-hidden="true">
+                <Icon size={13} strokeWidth={2.25} />
+              </span>
+              {label} (fleiri dagar)
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
-/* ── The month ── */
+/* ── The month, as week rows ── */
 
-function mondayOnOrBefore(date: Date): Date {
-  const weekday = (date.getDay() + 6) % 7;
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - weekday);
-}
+type Segment = {
+  entry: LabEntry;
+  start: number;
+  end: number;
+  lane: number;
+  continuesFromBefore: boolean;
+  continuesAfter: boolean;
+  focusable: boolean;
+};
 
-function monthRows(month: Date): Date[][] {
-  const start = mondayOnOrBefore(month);
-  const rows: Date[][] = [];
-  for (let r = 0; r < 6; r++) {
-    rows.push(
-      Array.from(
-        { length: 7 },
-        (_, c) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + r * 7 + c)
-      )
+function weeksOf(month: Date): Date[][] {
+  const start = mondayOf(month);
+  const weeks: Date[][] = [];
+  for (let w = 0; w < 6; w++) {
+    const days = Array.from(
+      { length: 7 },
+      (_, d) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + d)
     );
+    if (w > 0 && days[0].getMonth() !== month.getMonth()) break;
+    weeks.push(days);
   }
-  // Whole rows only, as in the real calendar: a month is five or six weeks.
-  while (rows.length > 1 && rows[rows.length - 1].every((d) => d.getMonth() !== month.getMonth())) {
-    rows.pop();
-  }
-  return rows;
+  return weeks;
 }
 
-function weekdayName(day: Date): string {
-  return WEEKDAYS_FULL[(day.getDay() + 6) % 7];
+/** A week's span segments, each in the first lane free over its days. */
+function segmentsOf(week: Date[], spans: LabEntry[], named: Set<string>): Segment[] {
+  const lanes: boolean[][] = [];
+  const out: Segment[] = [];
+  for (const entry of spans) {
+    const cols = week.map((d, i) => (coversDay(entry, d) ? i : -1)).filter((i) => i >= 0);
+    if (cols.length === 0) continue;
+    const start = cols[0];
+    const end = cols[cols.length - 1];
+    let lane = 0;
+    while (lanes[lane]?.slice(start, end + 1).some(Boolean)) lane++;
+    lanes[lane] = lanes[lane] ?? Array(7).fill(false);
+    for (let i = start; i <= end; i++) lanes[lane][i] = true;
+    out.push({
+      entry,
+      start,
+      end,
+      lane,
+      continuesFromBefore: !isSameDay(week[start], entry.day),
+      continuesAfter: !isSameDay(week[end], entry.endDay),
+      focusable: !named.has(entry.id),
+    });
+    named.add(entry.id);
+  }
+  return out;
 }
 
 export interface PlanCalendarLabProps {
-  /** Which day-entry variation to render. */
-  look: DayEntryLook;
-  /** Same contract as PlanCalendar. Defaults to the lab's fixed October/December grid. */
-  data?: PlanGrid;
-  /** The month to open on. */
+  /** Which variation of the status mark to use. */
+  look: StatusLook;
+  /** Defaults to the lab's fixed autumn-2026 grid. */
+  data?: LabGrid;
   month?: Date;
-  /** Injectable "today", as on the real component. */
   today?: Date;
   onSelect?: (eventId: string) => void;
 }
@@ -488,30 +616,27 @@ export default function PlanCalendarLab({
 }: PlanCalendarLabProps) {
   const data = useMemo(() => given ?? labGrid(), [given]);
   const entries = useMemo(() => placeEntries(data, today), [data, today]);
+  const rhythms = useMemo(() => deriveRhythms(data), [data]);
   const [offset, setOffset] = useState(0);
+  const [picked, setPicked] = useState<Date | null>(null);
+  const headingId = useId();
+  const panelId = useId();
+
   const month = new Date(initialMonth.getFullYear(), initialMonth.getMonth() + offset, 1);
   const inMonth = (d: Date) =>
     d.getFullYear() === month.getFullYear() && d.getMonth() === month.getMonth();
+  const weeks = weeksOf(month);
+  const spans = entries.filter((e) => e.kind === "span");
+  const singlesOn = (d: Date) => entries.filter((e) => e.kind !== "span" && isSameDay(e.day, d));
+  const allOn = (d: Date) => entries.filter((e) => coversDay(e, d));
 
-  const rows = monthRows(month);
-  const onDay = (d: Date) => entries.filter((e) => isSameDay(e.day, d));
-  const monthEntries = entries.filter((e) => inMonth(e.day));
-
-  const firstBusy = monthEntries[0]?.day ?? month;
-  const [picked, setPicked] = useState<Date | null>(null);
+  const monthEntries = entries.filter((e) => inMonth(e.day) && e.kind !== "cancelled");
+  const undecided = monthEntries.filter((e) => e.status === "unknown").length;
   const selected =
-    picked && inMonth(picked)
-      ? picked
-      : inMonth(today)
-        ? today
-        : monthEntries.length
-          ? firstBusy
-          : month;
-
-  const headingId = useId();
-  const panelId = useId();
-  const Entry = LOOK_ENTRY[look];
-  const selectedEntries = onDay(selected);
+    picked && inMonth(picked) ? picked : inMonth(today) ? today : (monthEntries[0]?.day ?? month);
+  const named = new Set<string>();
+  const noteOf = (week: Date[]) =>
+    data.weeks.find((w) => w.starts_on && isSameDay(parseIso(w.starts_on), week[0]))?.note;
 
   return (
     <div className={cn(styles.root, styles[`look_${look}`])}>
@@ -537,92 +662,165 @@ export default function PlanCalendarLab({
         </button>
         <span className={styles.eyebrow}>
           {countIs(monthEntries.length, "viðburður", "viðburðir")} í mánuðinum
+          {undecided > 0 && ` · ${countIs(undecided, "óákveðinn", "óákveðnir")}`}
         </span>
       </div>
 
-      <Legend look={look} data={data} />
-
-      <div className={styles.cal}>
-        <table className={styles.table} aria-labelledby={headingId}>
-          <thead>
-            <tr>
-              {WEEKDAYS.map((d) => (
-                <th key={d} scope="col" className={styles.dayHead}>
-                  {d}
-                </th>
+      <div className={styles.legend}>
+        {rhythms.length > 0 && (
+          <div className={styles.rhythm}>
+            <span className={styles.rhythmLabel}>Fundir vikunnar</span>
+            <ul className={styles.rhythmList}>
+              {rhythms.map((r) => (
+                <li key={r.patrol.id} className={styles.rhythmItem}>
+                  <span
+                    className={styles.chip}
+                    style={
+                      {
+                        "--pc": `var(--sl-color-patrol-${r.patrol.accent ?? "adrir"})`,
+                        "--pc-fg": `var(--sl-color-patrol-${r.patrol.accent ?? "adrir"}-foreground)`,
+                      } as CSSProperties
+                    }
+                    aria-hidden="true"
+                  >
+                    {r.patrol.name.charAt(0)}
+                  </span>
+                  {r.patrol.name} {WEEKDAY_SHORT[r.weekday]} {r.clock}
+                </li>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row[0].toDateString()}>
-                {row.map((d) => {
-                  const out = !inMonth(d);
-                  const isToday = isSameDay(d, today);
-                  const dayEntries = onDay(d);
-                  const isSelected = isSameDay(d, selected);
-                  return (
-                    <td
-                      key={d.toDateString()}
-                      className={cn(
-                        styles.day,
-                        out && styles.out,
-                        isToday && styles.today,
-                        d < today && !isToday && styles.pastDay
-                      )}
+            </ul>
+          </div>
+        )}
+        <StatusKey look={look} compact />
+      </div>
+
+      <div className={styles.cal} role="group" aria-labelledby={headingId}>
+        <div className={styles.weekHead} aria-hidden="true">
+          {WEEKDAY_SHORT.map((d) => (
+            <span key={d} className={styles.dayHead}>
+              {d}
+            </span>
+          ))}
+        </div>
+        {weeks.map((week) => {
+          const segments = segmentsOf(week, spans, named);
+          const lanes = segments.reduce((max, s) => Math.max(max, s.lane + 1), 0);
+          const note = noteOf(week);
+          return (
+            // A day's items go in DOM order (number, bars that start here, its entries), so Tab
+            // reads the week day by day; the grid places them.
+            <div key={week[0].toDateString()} className={styles.week}>
+              {week.map((d, c) => (
+                <span
+                  key={`bg-${c}`}
+                  className={cn(styles.dayBg, !inMonth(d) && styles.out, c >= 5 && styles.weekend)}
+                  style={{ gridColumn: c + 1 }}
+                  aria-hidden="true"
+                />
+              ))}
+              {week.map((d, c) => {
+                const isToday = isSameDay(d, today);
+                const singles = singlesOn(d);
+                const covering = allOn(d);
+                const live = covering.filter((e) => e.kind !== "cancelled").length;
+                const cancelled = covering.length - live;
+                const daySpans = segments.filter((s) => s.start === c);
+                return (
+                  <Fragment key={d.toDateString()}>
+                    <span
+                      className={cn(styles.dayHd, isToday && styles.today)}
+                      style={{ gridColumn: c + 1, gridRow: 1 }}
                     >
-                      <div className={styles.wide}>
-                        <span className={styles.dayHd}>
-                          <span
-                            className={styles.dayNumber}
-                            aria-current={isToday ? "date" : undefined}
-                          >
-                            {d.getDate()}
-                          </span>
+                      <span
+                        className={styles.dayNumber}
+                        aria-current={isToday ? "date" : undefined}
+                      >
+                        {d.getDate()}
+                        <span className="sl-sr-only">
+                          . {formatIcelandicDayMonth(d).replace(/^\d+\. /, "")},{" "}
+                          {WEEKDAY_FULL[weekdayOf(d)]}
                         </span>
-                        <DayEntries look={look} day={d} entries={dayEntries} onSelect={onSelect} />
-                      </div>
-                      {out ? (
-                        <span className={styles.compactDay}>
-                          <span className={styles.dayNumber}>{d.getDate()}</span>
-                          <Markers look={look} entries={dayEntries} />
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          className={styles.compactDay}
-                          aria-pressed={isSelected}
-                          aria-controls={panelId}
-                          aria-current={isToday ? "date" : undefined}
-                          aria-label={`${formatIcelandicDayMonth(d)}, ${
-                            dayEntries.length
-                              ? countIs(dayEntries.length, "viðburður", "viðburðir")
-                              : "ekkert skráð"
-                          }`}
-                          onClick={() => setPicked(d)}
-                        >
-                          <span className={styles.dayNumber}>{d.getDate()}</span>
-                          <Markers look={look} entries={dayEntries} />
-                        </button>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      </span>
+                    </span>
+                    {inMonth(d) ? (
+                      <button
+                        type="button"
+                        className={cn(styles.compactDay, isToday && styles.today)}
+                        style={{ gridColumn: c + 1, gridRow: 1 }}
+                        aria-pressed={isSameDay(d, selected)}
+                        aria-controls={panelId}
+                        aria-current={isToday ? "date" : undefined}
+                        aria-label={`${formatIcelandicDayMonth(d)}, ${
+                          live ? countIs(live, "viðburður", "viðburðir") : "ekkert skráð"
+                        }${cancelled ? `, ${countIs(cancelled, "fundur fellur", "fundir falla")} niður` : ""}`}
+                        onClick={() => setPicked(d)}
+                      >
+                        <span className={styles.dayNumber}>{d.getDate()}</span>
+                        <Marks look={look} entries={singles} />
+                      </button>
+                    ) : (
+                      <span
+                        className={styles.compactDay}
+                        style={{ gridColumn: c + 1, gridRow: 1 }}
+                        aria-hidden="true"
+                      >
+                        <span className={styles.dayNumber}>{d.getDate()}</span>
+                        <Marks look={look} entries={singles} />
+                      </span>
+                    )}
+                    {daySpans.map((segment) => (
+                      <SpanBar
+                        key={segment.entry.id}
+                        look={look}
+                        entry={segment.entry}
+                        segment={segment}
+                        onSelect={onSelect}
+                      />
+                    ))}
+                    {daySpans.map((segment) => (
+                      <span
+                        key={`mk-${segment.entry.id}`}
+                        className={cn(
+                          styles.spanMark,
+                          segment.continuesFromBefore && styles.fromBefore,
+                          segment.continuesAfter && styles.intoNext
+                        )}
+                        style={{
+                          gridColumn: `${segment.start + 1} / ${segment.end + 2}`,
+                          gridRow: 2 + segment.lane,
+                        }}
+                        aria-hidden="true"
+                        {...dataAttrs(segment.entry)}
+                      />
+                    ))}
+                    <div
+                      className={styles.dayBody}
+                      style={{ gridColumn: c + 1, gridRow: 2 + lanes }}
+                    >
+                      <DayEntries look={look} day={d} entries={singles} onSelect={onSelect} />
+                    </div>
+                  </Fragment>
+                );
+              })}
+              {note && (
+                <p className={styles.weekNote} style={{ gridRow: 3 + lanes }}>
+                  {note}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <section className={styles.dayPanel} id={panelId} aria-live="polite">
         <h3 className={styles.dayPanelTitle}>
-          {weekdayName(selected)} {formatIcelandicDayMonth(selected)}
+          {capitalise(WEEKDAY_FULL[weekdayOf(selected)])} {formatIcelandicDayMonth(selected)}
         </h3>
-        {selectedEntries.length ? (
+        {allOn(selected).length ? (
           <ul className={styles.panelList}>
-            {selectedEntries.map((entry) => (
+            {allOn(selected).map((entry) => (
               <li key={entry.id}>
-                <Entry entry={entry} detail onSelect={onSelect} />
+                <StatusEntry look={look} entry={entry} detail day={selected} onSelect={onSelect} />
               </li>
             ))}
           </ul>
@@ -634,27 +832,45 @@ export default function PlanCalendarLab({
   );
 }
 
-/* ── One day, close up: a single cell outside the grid ── */
+function parseIso(iso: string): Date {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
 
-export interface DayCellLabProps {
-  look: DayEntryLook;
+function capitalise(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/* ── One day, close up ── */
+
+/** One cell at the grid's desktop width, with any span drawn above its entries. */
+export function DayCellLab({
+  look,
+  day,
+  entries,
+  today = LAB_TODAY,
+  onSelect,
+}: {
+  look: StatusLook;
   day: Date;
   entries: LabEntry[];
   today?: Date;
   onSelect?: (eventId: string) => void;
-}
-
-/** One calendar cell at the grid's desktop width, for comparing looks day by day. */
-export function DayCellLab({ look, day, entries, today = LAB_TODAY, onSelect }: DayCellLabProps) {
+}) {
   const isToday = isSameDay(day, today);
+  const spans = entries.filter((e) => e.kind === "span");
+  const singles = entries.filter((e) => e.kind !== "span");
   return (
-    <div className={cn(styles.closeCell, styles[`look_${look}`], isToday && styles.today)}>
-      <span className={styles.dayHd}>
+    <div className={cn(styles.closeCell, styles[`look_${look}`])}>
+      <span className={cn(styles.dayHd, isToday && styles.today)}>
         <span className={styles.dayNumber} aria-current={isToday ? "date" : undefined}>
           {day.getDate()}
         </span>
       </span>
-      <DayEntries look={look} day={day} entries={entries} onSelect={onSelect} />
+      {spans.map((entry) => (
+        <StatusEntry key={entry.id} look={look} entry={entry} day={day} onSelect={onSelect} />
+      ))}
+      <DayEntries look={look} day={day} entries={singles} onSelect={onSelect} />
     </div>
   );
 }

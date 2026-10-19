@@ -1,14 +1,14 @@
-/* Lab copies of the Dagatal day entry, inside a lab copy of the month grid.
+/* The Staða family: the Dagatal as a planning-status map.
 
-   Every colour is a token, so each look works in light, dark and the patrol theme. An entry
-   gets its flokkur's ramp as three local aliases, set inline by the component:
-     --pc         the patrol fill (the vivid --sl-color-patrol-* step)
-     --pc-fg      its foreground (near-black, AA on every patrol fill in both themes)
-     --pc-subtle  its pale tint (AA with text-primary/secondary in both themes)
-   A troop-wide event gets the inverse surface instead: the one colour no flokkur has.
+   Every entry carries its status as four local aliases, set from data-status:
+     --st-bg     the tint (success / info / warning subtle, neutral for "?")
+     --st-ink    text and mark colour on that tint (the -text tier: AAA on its subtle)
+     --st-edge   the border
+     --st-solid  the full colour, for phone marks and bars
+   and its flokkur as --pc / --pc-fg (the vivid patrol fill and its near-black foreground; the
+   whole sveit wears the inverse surface). Only tokens, so light, dark and the patrol theme hold.
 
-   The grid follows its own width (container query), not the viewport, so a narrow story
-   and a phone behave the same way. */
+   The grid follows its own width (container query): below 40rem, days become buttons. */
 
 .root {
   container: plancal / inline-size;
@@ -20,7 +20,47 @@
   color: hsl(var(--sl-color-text-primary));
 }
 
-/* ── Bar: as the real calendar ── */
+/* ── Status aliases ── */
+
+:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status] {
+  --st-bg: var(--sl-color-background-secondary);
+  --st-ink: var(--sl-color-text-secondary);
+  --st-edge: var(--sl-color-border-strong);
+  --st-solid: var(--sl-color-border-strong);
+}
+
+:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status="confirmed"] {
+  --st-bg: var(--sl-color-success-subtle);
+  --st-ink: var(--sl-color-success-text);
+  --st-edge: var(--sl-color-success);
+  --st-solid: var(--sl-color-success);
+}
+
+:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status="draft"] {
+  --st-bg: var(--sl-color-info-subtle);
+  --st-ink: var(--sl-color-info-text);
+  --st-edge: var(--sl-color-info);
+  --st-solid: var(--sl-color-info);
+}
+
+:is(.entry, .mark, .markTile, .keyTile, .spanMark)[data-status="tentative"] {
+  --st-bg: var(--sl-color-warning-subtle);
+  --st-ink: var(--sl-color-warning-text);
+  --st-edge: var(--sl-color-warning);
+  --st-solid: var(--sl-color-warning);
+}
+
+/* The past keeps its marks (a passport of done fundir) but drops the tint: colour marks the
+   work that is left. Cancelled is not a planning state at all: neutral and dashed. */
+:is(.entry, .mark, .markTile, .keyTile, .spanMark):is([data-past], [data-kind="cancelled"]),
+:is(.entry, .markTile)[data-past] .mark {
+  --st-bg: var(--sl-color-surface);
+  --st-ink: var(--sl-color-text-secondary);
+  --st-edge: var(--sl-color-border);
+  --st-solid: var(--sl-color-border-strong);
+}
+
+/* ── Bar and legend ── */
 
 .bar {
   display: flex;
@@ -50,7 +90,6 @@
   color: hsl(var(--sl-color-text-secondary));
   font: inherit;
   cursor: pointer;
-  flex-shrink: 0;
 }
 
 .nav:hover {
@@ -66,14 +105,12 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-/* One focus ring for everything that takes focus; the fills retune it below. */
-.root :is(button):focus-visible,
-.closeCell :is(button):focus-visible {
+.root button:focus-visible,
+.closeCell button:focus-visible,
+.key button:focus-visible {
   outline: 2px solid hsl(var(--sl-color-focus-ring));
   outline-offset: 1px;
 }
-
-/* ── Legend ── */
 
 .legend {
   display: flex;
@@ -85,6 +122,21 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
+.rhythm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
+}
+
+.rhythmLabel {
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.rhythmList,
 .keyList {
   display: flex;
   flex-wrap: wrap;
@@ -94,35 +146,63 @@
   list-style: none;
 }
 
+.rhythmItem,
 .keyItem {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  color: hsl(var(--sl-color-text-primary));
 }
 
-.patrolSwatch {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 2px;
-  background: hsl(var(--pc));
+.rhythmItem {
+  font-variant-numeric: tabular-nums;
 }
 
-.troopSwatch {
-  background: hsl(var(--sl-color-surface-inverse));
+/* ── The key ── */
+
+.key {
+  display: grid;
+  gap: var(--sl-spacing-gap-sm);
+  font-size: var(--sl-text-body-sm);
 }
 
-.statusKey {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sl-spacing-gap-xs);
+.keyCompact {
+  font-size: var(--sl-text-xs);
 }
 
-.keySample {
-  width: max-content;
-  min-width: 6.5rem;
+.keyLead {
+  margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
 }
 
-/* ── The grid: as the real calendar ── */
+.keyTile {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 2px;
+  border: 1px solid hsl(var(--st-edge, var(--sl-color-border)));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--st-bg, var(--sl-color-surface)));
+}
+
+.keyTile[data-status="unknown"],
+.keyTile[data-kind="cancelled"] {
+  border-style: dashed;
+}
+
+.key:not(.keyCompact) .keyTile {
+  min-width: 2.25rem;
+  height: 2.25rem;
+}
+
+/* The badge and the stamp are their own frame. */
+:is(.look_merki, .look_stimplar) :is(.keyTile, .markTile) {
+  border-color: transparent;
+  background: none;
+}
+
+/* ── Week rows ── */
 
 .cal {
   background: hsl(var(--sl-color-surface));
@@ -132,10 +212,10 @@
   overflow: hidden;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+.weekHead,
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .dayHead {
@@ -148,39 +228,52 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: hsl(var(--sl-color-text-secondary));
-  text-align: left;
 }
 
 .dayHead:last-child {
   border-right: 0;
 }
 
-.day {
-  height: 6.5rem;
-  padding: 5px 6px;
+/* Implicit rows: 1 day numbers, 2… one per span lane, then the day's entries, then the note. */
+.week {
+  position: relative;
+  z-index: 0;
+  grid-auto-rows: auto;
+  align-content: start;
+  min-height: 7rem;
+  padding-bottom: 4px;
   border-bottom: 1px solid hsl(var(--sl-color-border));
-  border-right: 1px solid hsl(var(--sl-color-border));
-  vertical-align: top;
-  min-width: 0;
 }
 
-.day:last-child {
+.week:last-child {
+  border-bottom: 0;
+}
+
+/* Absolutely placed in its column, so it fills the whole row height behind the entries. */
+.dayBg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-right: 1px solid hsl(var(--sl-color-border));
+}
+
+.dayBg:nth-child(7) {
   border-right: 0;
 }
 
-.out {
-  background: hsl(var(--sl-color-background-secondary) / 0.5);
+.weekend {
+  background: hsl(var(--sl-color-background-secondary) / 0.45);
 }
 
-.out .dayNumber {
-  color: hsl(var(--sl-color-text-secondary));
+.out {
+  background: hsl(var(--sl-color-background-secondary) / 0.8);
 }
 
 .dayHd {
   display: flex;
   align-items: center;
   min-height: 1.625rem;
-  margin-bottom: 2px;
+  padding: 4px 6px 2px;
 }
 
 .dayNumber {
@@ -189,9 +282,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Today: a true circle whose centre is the number's centre (a fixed square, the digits placed
-   by the grid, line-height 1 so the font's leading cannot push them down), in primary. White on
-   primary is 5.2:1 in light; in dark the inverse text is near-black on green-400. */
+/* Today: a fixed square, digits placed by the grid and line-height 1, so the circle's centre is
+   the number's centre. Primary with text-inverse: 5.2:1 light; near-black on green-400 dark. */
 .today .dayNumber {
   display: inline-grid;
   place-items: center;
@@ -201,6 +293,23 @@
   background: hsl(var(--sl-color-primary));
   color: hsl(var(--sl-color-text-inverse));
   line-height: 1;
+}
+
+.dayBody {
+  min-width: 0;
+  padding: 2px 5px 0;
+}
+
+.weekNote {
+  grid-column: 1 / -1;
+  margin: 3px 6px 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.weekNote::before {
+  content: "— ";
 }
 
 .entries {
@@ -230,362 +339,110 @@
   color: hsl(var(--sl-color-text-primary));
 }
 
-/* ── Entry: shared reset ── */
+/* ── The entry ── */
 
-/* A past entry's colour: the pale tint, mixed halfway back into the surface. The dark theme's
-   tints are deep and saturated, and unmixed they shouted louder than the weeks still to come. */
 .entry {
-  --pc-faded: color-mix(in hsl, hsl(var(--pc-subtle)) 45%, hsl(var(--sl-color-surface)));
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 5px;
+  row-gap: 1px;
+  align-items: center;
   width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
+  padding: 3px 5px;
+  border: 1px solid hsl(var(--st-edge));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--st-bg));
   font: inherit;
-  color: inherit;
+  color: hsl(var(--sl-color-text-primary));
   text-align: left;
   cursor: pointer;
 }
 
-.detail {
-  grid-column: 1 / -1;
-  margin-top: 2px;
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-body);
-  white-space: normal;
+.entry[data-status="unknown"],
+.entry[data-kind="cancelled"] {
+  border-style: dashed;
 }
 
-.q {
-  margin-left: 3px;
+.entry[data-past],
+.entry[data-kind="cancelled"] {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.entry:hover {
+  box-shadow: inset 0 0 0 1px hsl(var(--st-edge));
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+/* The usual fundur on its usual evening: one quiet line, no time (the rhythm legend has it). */
+.entry[data-kind="routine"] {
+  padding-block: 1px;
+}
+
+.entry[data-kind="routine"] .title {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: var(--sl-font-weight-medium);
+}
+
+/* Anything that breaks the rhythm is loud: heavier title and a second line saying why. */
+.entry:is([data-kind="exception"], [data-kind="span"]) .title {
   font-weight: var(--sl-font-weight-heading);
+}
+
+.meta {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 5px;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--st-ink));
 }
 
 .num {
   font-variant-numeric: tabular-nums;
 }
 
-/* Titles that may take two lines, never three. */
-.rbTitle,
-.tkTitle,
-.rdTitle,
-.icOuting .icText {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-}
-
-/* ═══ A · Fáni ═══
-   The flokkur's flag: a solid swallowtail in its colour, time then title in bold. A troop-wide
-   event is a square banner in the inverse colour. Undecided flags are only tacked on (dashed
-   stitching). Past flags are lowered to the pale tint. */
-
-.ribbon {
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 5px;
-  align-items: baseline;
-  padding: 3px 12px 3px 6px;
-  border: 1.5px dashed transparent;
-  background: hsl(var(--pc));
-  color: hsl(var(--pc-fg));
-  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%);
-}
-
-.ribbon:is([data-status="draft"], [data-status="tentative"], [data-status="unknown"]) {
-  border-color: hsl(var(--pc-fg) / 0.6);
-}
-
-.ribbon[data-troop] {
-  padding-right: 6px;
-  clip-path: none;
-  border-radius: 2px;
-}
-
-.ribbon[data-past] {
-  border-color: transparent;
-  background: var(--pc-faded);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.ribbon:hover {
-  box-shadow: inset 0 0 0 100vmax hsl(var(--pc-fg) / 0.08);
-}
-
-/* The clip-path would cut an outside ring, so the ring sits inside, in the flag's own ink. */
-.root .ribbon:focus-visible,
-.closeCell .ribbon:focus-visible {
-  outline: 2px solid hsl(var(--pc-fg));
-  outline-offset: -4px;
-}
-
-.root .ribbon[data-past]:focus-visible,
-.closeCell .ribbon[data-past]:focus-visible {
-  outline-color: hsl(var(--sl-color-text-primary));
-}
-
-.rbTime {
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-emphasis);
-  font-variant-numeric: tabular-nums;
-}
-
-.rbTitle {
-  font-size: var(--sl-text-xs);
+.note {
   font-weight: var(--sl-font-weight-heading);
 }
 
-/* ═══ B · Dagbók ═══
-   No card: one line per entry, the way a leader writes a diary. A disc with the flokkur's
-   initial, the time, the title. Ink for what is decided, pencil (italic, lighter) for what is
-   not; "?" where the time would be when nothing is decided. A troop-wide line is bold, with a
-   disc made of every flokkur's colour. Past lines go grey and their disc hollow. */
-
-.agenda {
-  grid-template-columns: auto auto minmax(0, 1fr);
-  column-gap: 4px;
-  align-items: center;
-  padding: 1px 2px;
-  border-radius: var(--sl-radius-xs);
-  font-size: var(--sl-text-xs);
-  white-space: nowrap;
-}
-
-.agenda:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.agDot {
-  display: inline-grid;
-  place-items: center;
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 50%;
-  background: hsl(var(--pc));
-  color: hsl(var(--pc-fg));
-  font-size: var(--sl-primitive-font-size-2xs);
-  font-weight: var(--sl-font-weight-heading);
-  line-height: 1;
-}
-
-.agenda[data-troop] .agDot,
-.mk_agenda[data-troop] {
-  background: conic-gradient(
-    hsl(var(--sl-color-patrol-rekkar)) 0 25%,
-    hsl(var(--sl-color-patrol-drekar)) 0 50%,
-    hsl(var(--sl-color-patrol-falkar)) 0 75%,
-    hsl(var(--sl-color-patrol-drott)) 0
-  );
-}
-
-.agTime {
-  min-width: 2.1rem;
-  font-weight: var(--sl-font-weight-emphasis);
-  font-variant-numeric: tabular-nums;
-}
-
-.agTitle {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: var(--sl-font-weight-medium);
-}
-
-.agenda[data-troop] .agTitle {
+.over {
+  margin-left: auto;
+  color: hsl(var(--sl-color-error-text));
   font-weight: var(--sl-font-weight-heading);
 }
 
-.agenda:is([data-status="draft"], [data-status="tentative"], [data-status="unknown"])
-  :is(.agTime, .agTitle) {
-  font-style: italic;
+.detail {
+  flex-basis: 100%;
   font-weight: var(--sl-font-weight-body);
-  color: hsl(var(--sl-color-text-secondary));
 }
 
-.agenda[data-past] :is(.agTime, .agTitle) {
-  font-style: normal;
-  color: hsl(var(--sl-color-text-tertiary));
-}
-
-.agenda[data-past] .agDot {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px hsl(var(--pc));
-  color: hsl(var(--sl-color-text-tertiary));
-}
-
-.agenda[data-past][data-troop] .agDot {
-  box-shadow: inset 0 0 0 1.5px hsl(var(--sl-color-border-strong));
-}
-
-.agenda .detail {
-  grid-column: 3 / -1;
-}
-
-/* ═══ C · Miði ═══
-   A ticket: the stub carries the time in the flokkur's colour, a perforation, then the title on
-   paper. Decided tickets have a solid edge; the rest have the dashed edge of an unstamped
-   ticket, the same dashed "stamp" language as Alert, and the stub says what is missing. */
-
-.ticket {
-  grid-template-columns: 2.75rem minmax(0, 1fr);
-  align-items: stretch;
-  border-radius: var(--sl-radius-sm);
-}
-
-.tkStub {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  padding: 3px 2px;
-  border-right: 2px dashed hsl(var(--sl-color-surface));
-  border-radius: var(--sl-radius-sm) 0 0 var(--sl-radius-sm);
-  background: hsl(var(--pc));
-  color: hsl(var(--pc-fg));
-}
-
-.tkTime {
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-heading);
-  font-variant-numeric: tabular-nums;
-}
-
-.tkWord {
-  font-size: var(--sl-primitive-font-size-2xs);
-  font-weight: var(--sl-font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.tkBody {
-  display: grid;
-  align-content: center;
-  min-width: 0;
-  padding: 3px 6px;
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-left: 0;
-  border-radius: 0 var(--sl-radius-sm) var(--sl-radius-sm) 0;
-  background: hsl(var(--sl-color-surface));
-}
-
-.ticket:not([data-status="confirmed"]):not([data-past]) .tkBody {
-  border-style: dashed;
-}
-
-.tkTitle {
-  font-size: var(--sl-text-xs);
-  font-weight: var(--sl-font-weight-emphasis);
-}
-
-.ticket[data-past] .tkStub {
-  background: hsl(var(--sl-color-background-tertiary));
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.ticket[data-past] .tkBody {
-  border-color: hsl(var(--sl-color-border));
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.ticket:hover .tkBody {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-/* ═══ D · Staða ═══
-   Readiness first: the entry's tint is its status, from the spec's mapping (staðfest → success,
-   drög → info, óvíst → warning, óákveðið → neutral, dashed, "?"), plus a glyph so colour is
-   never alone. The flokkur shrinks to an initial. The month reads as a planning heatmap; past
-   entries drop their tint, because the colour marks where work is left. */
-
-.readiness {
-  --rd-bg: var(--sl-color-background-secondary);
-  --rd-ink: var(--sl-color-text-secondary);
-  --rd-edge: var(--sl-color-border-strong);
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 4px;
-  row-gap: 1px;
-  align-items: start;
-  padding: 3px 5px;
-  border: 1px solid hsl(var(--rd-edge));
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--rd-bg));
-}
-
-.readiness[data-status="confirmed"],
-.mk_readiness[data-status="confirmed"] {
-  --rd-bg: var(--sl-color-success-subtle);
-  --rd-ink: var(--sl-color-success-text);
-  --rd-edge: var(--sl-color-success);
-  --rd-mark: var(--sl-color-success);
-}
-
-.readiness[data-status="draft"],
-.mk_readiness[data-status="draft"] {
-  --rd-bg: var(--sl-color-info-subtle);
-  --rd-ink: var(--sl-color-info-text);
-  --rd-edge: var(--sl-color-info);
-  --rd-mark: var(--sl-color-info);
-}
-
-.readiness[data-status="tentative"],
-.mk_readiness[data-status="tentative"] {
-  --rd-bg: var(--sl-color-warning-subtle);
-  --rd-ink: var(--sl-color-warning-text);
-  --rd-edge: var(--sl-color-warning);
-  --rd-mark: var(--sl-color-warning);
-}
-
-.readiness[data-status="unknown"] {
-  border-style: dashed;
-}
-
-.readiness[data-past] {
-  --rd-bg: var(--sl-color-surface);
-  --rd-ink: var(--sl-color-text-secondary);
-  --rd-edge: var(--sl-color-border);
-  border-style: solid;
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.readiness:hover {
-  box-shadow: inset 0 0 0 1px hsl(var(--rd-edge));
-}
-
-.rdGlyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 0.8rem;
-  height: 1rem;
-  color: hsl(var(--rd-ink));
-  font-weight: var(--sl-font-weight-heading);
-}
-
-.rdTitle {
-  font-size: var(--sl-text-xs);
-  font-weight: var(--sl-font-weight-emphasis);
-}
-
-.readiness[data-past] .rdTitle {
-  grid-column: 1 / -1;
-  font-weight: var(--sl-font-weight-medium);
-}
-
-.rdMeta {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--rd-ink));
-}
-
-.rdChip {
+.chip {
   display: inline-grid;
   place-items: center;
+  flex: none;
   min-width: 0.95rem;
   height: 0.95rem;
   border-radius: 3px;
@@ -596,213 +453,291 @@
   line-height: 1;
 }
 
-.rdOver {
-  margin-left: auto;
-  color: hsl(var(--sl-color-error-text));
-  font-weight: var(--sl-font-weight-heading);
-}
+/* ── Span bars ── */
 
-/* ═══ E · Tákn ═══
-   Shape carries type: a flag for a flokksfundur, a tent for an útilega, a mountain for a
-   dagsferð, a clipboard for the foringjar's skipulagsfundur, people for a sveitarfundur. The
-   tile is the flokkur's colour (inverse for the whole sveit). Big outings take a full row.
-   Status is the tile's fill: solid once planned (staðfest or drög), outlined when óvíst,
-   dashed with "?" when óákveðið. Past tiles fade to the flokkur's pale tint. */
-
-.icons {
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 5px;
+.span {
+  display: flex;
   align-items: center;
-  padding: 1px 2px;
-  border-radius: var(--sl-radius-xs);
+  gap: 5px;
+  width: auto;
+  align-self: start;
+  margin: 1px 4px 2px;
+  border-width: 1.5px;
+  border-radius: var(--sl-radius-md);
 }
 
-.icons:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.icTile {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 1.5px solid hsl(var(--pc));
-  border-radius: 4px;
-  background: hsl(var(--pc));
-  color: hsl(var(--pc-fg));
-}
-
-.icons[data-status="tentative"] .icTile {
-  background: hsl(var(--pc-subtle));
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.icons[data-status="unknown"] .icTile {
-  border: 1.5px dashed hsl(var(--sl-color-border-strong));
-  background: hsl(var(--sl-color-background-secondary));
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.icons[data-past] .icTile {
-  border-color: transparent;
-  border-style: solid;
-  background: var(--pc-faded);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.icTile .q {
-  position: absolute;
-  top: -6px;
-  right: -7px;
-  margin: 0;
-  padding: 0 2px;
-  border-radius: var(--sl-radius-pill);
-  background: hsl(var(--sl-color-surface));
-  box-shadow: 0 0 0 1px hsl(var(--sl-color-border-strong));
-  color: hsl(var(--sl-color-text-primary));
-  font-size: var(--sl-primitive-font-size-2xs);
-  line-height: 1.2;
-}
-
-.icText {
+.span .title {
+  display: block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: var(--sl-text-xs);
-  color: hsl(var(--sl-color-text-secondary));
 }
 
-.icTime {
+/* Running on from last week's row, or on into next week's: the cut edge is flat and meets
+   the grid's edge, so the bar reads as one bar broken by the row. */
+.span.fromBefore {
+  margin-left: 0;
+  border-left-style: dashed;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.span.intoNext {
+  margin-right: 0;
+  border-right-style: dashed;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.spanText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.spanRange {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--sl-text-overline);
   font-weight: var(--sl-font-weight-emphasis);
   font-variant-numeric: tabular-nums;
-  color: hsl(var(--sl-color-text-primary));
+  color: hsl(var(--st-ink));
 }
 
-.icons[data-past] .icTime {
+.typeBadge {
+  display: inline-grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+}
+
+/* ── The marks ── */
+
+.mark {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: hsl(var(--st-ink));
+  font-weight: var(--sl-font-weight-heading);
+  line-height: 1;
+}
+
+.size_sm {
+  width: 0.875rem;
+  height: 0.875rem;
+  font-size: var(--sl-primitive-font-size-2xs);
+}
+
+.size_md {
+  width: 1.125rem;
+  height: 1.125rem;
+  font-size: var(--sl-text-overline);
+}
+
+.size_lg {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: var(--sl-text-body);
+}
+
+.markCancelled {
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.icOuting {
-  padding: 3px 4px;
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-color-background-tertiary));
+/* D2 · Merki: a round sewn-on badge. A solid outer edge and a dashed inner ring for the
+   stitching; an empty, dashed badge for "?" (nothing sewn on yet). A small swallowtail flag
+   tab in the flokkur's colour hangs off its shoulder. */
+.mark_merki {
+  border: 1.5px solid hsl(var(--st-ink));
+  border-radius: 50%;
+  background: hsl(var(--st-bg));
+  outline: 1px dashed hsl(var(--st-ink));
+  outline-offset: -4px;
+  margin-right: 0.35rem;
 }
 
-.icOuting:hover {
-  background: hsl(var(--sl-color-background-tertiary));
-  box-shadow: inset 0 0 0 1px hsl(var(--sl-color-border-strong));
+.mark_merki.size_md {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
-.icOuting .icTile {
-  width: 1.75rem;
-  height: 1.75rem;
+.mark_merki.size_lg {
+  width: 2.25rem;
+  height: 2.25rem;
+  outline-offset: -5px;
 }
 
-.icOuting .icTile svg {
+.mark_merki.size_sm {
+  width: 1rem;
+  height: 1rem;
+  outline: 0;
+  margin-right: 0;
+}
+
+.mark_merki[data-status="unknown"] {
+  border-style: dashed;
+  outline: 0;
+}
+
+.flagTab {
+  position: absolute;
+  top: -3px;
+  right: -0.55rem;
+  display: grid;
+  place-items: center start;
+  width: 0.85rem;
+  height: 0.7rem;
+  padding-left: 1px;
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-fg));
+  font-size: var(--sl-primitive-font-size-2xs);
+  line-height: 1;
+  clip-path: polygon(0 0, 100% 0, 72% 50%, 100% 100%, 0 100%);
+}
+
+.size_sm .flagTab {
+  display: none;
+}
+
+.size_lg .flagTab {
   width: 1.1rem;
-  height: 1.1rem;
+  height: 0.9rem;
+  right: -0.75rem;
 }
 
-.icOuting .icText {
-  white-space: normal;
-  color: hsl(var(--sl-color-text-primary));
+/* D3 · Varðeldur: the icon grows with the plan. Sticks, a spark, a flame, a fire on logs.
+   A lit fire flickers three times when it appears; never under reduced motion. */
+.mark_vardeldur[data-status="confirmed"] svg {
+  transform-origin: 50% 90%;
+  animation: flicker 0.9s ease-in-out 3;
 }
 
-.icOuting .icTitle {
-  font-weight: var(--sl-font-weight-heading);
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  35% {
+    transform: scale(1.08, 0.94) rotate(-3deg);
+  }
+  70% {
+    transform: scale(0.96, 1.06) rotate(2deg);
+  }
 }
 
-/* ── Compact markers (phone): each look shrunk to what a 50px cell holds ── */
+/* D4 · Stimplar: a passport stamp with the fundur's theme. Stamped (staðfest) is rotated with
+   a dashed rubber edge; drög is the stamp lined up but not pressed; óvíst a dotted outline;
+   "?" an empty dotted box waiting for its stamp. */
+.mark_stimplar {
+  border: 1.5px dashed hsl(var(--st-ink));
+  border-radius: 4px;
+  background: hsl(var(--st-bg));
+}
 
-.markers {
+.mark_stimplar.size_md {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-block: -1px;
+}
+
+.mark_stimplar.size_lg {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-width: 2px;
+}
+
+.mark_stimplar.size_sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.mark_stimplar[data-status="confirmed"] {
+  transform: rotate(-8deg);
+  animation: thunk 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+.mark_stimplar:is([data-status="tentative"], [data-status="unknown"]) {
+  border-style: dotted;
+}
+
+.mark_stimplar[data-status="unknown"] {
+  background: none;
+}
+
+@keyframes thunk {
+  from {
+    transform: scale(1.5) rotate(-18deg);
+  }
+  to {
+    transform: scale(1) rotate(-8deg);
+  }
+}
+
+/* ── Phone marks ── */
+
+.marks {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   gap: 2px;
+  min-height: 1rem;
   max-width: 100%;
-  min-height: 0.75rem;
 }
 
-.marker {
-  display: inline-block;
-  flex: none;
+.markTile {
+  display: inline-grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1px solid hsl(var(--st-edge));
+  border-radius: 3px;
+  background: hsl(var(--st-bg));
 }
 
-.markerMore {
+.markTile[data-status="unknown"],
+.markTile[data-kind="cancelled"] {
+  border-style: dashed;
+}
+
+.markMore {
   font-size: var(--sl-primitive-font-size-2xs);
   font-weight: var(--sl-font-weight-heading);
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.mk_ribbon {
-  width: 0.875rem;
-  height: 0.5rem;
-  background: hsl(var(--pc));
-  clip-path: polygon(0 0, 100% 0, 70% 50%, 100% 100%, 0 100%);
-}
-
-.mk_agenda {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: hsl(var(--pc));
-}
-
-.mk_ticket {
-  width: 0.875rem;
-  height: 0.5rem;
-  border-radius: 1px;
-  background: linear-gradient(
-    to right,
-    hsl(var(--pc)) 0 40%,
-    hsl(var(--sl-color-surface)) 40% 52%,
-    hsl(var(--pc)) 52%
-  );
-}
-
-.mk_readiness {
-  --rd-mark: var(--sl-color-background-secondary);
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 2px;
-  background: hsl(var(--rd-mark));
-}
-
-.mk_readiness[data-status="unknown"] {
-  box-shadow: inset 0 0 0 1.5px hsl(var(--sl-color-border-strong));
-}
-
-.mk_icons {
-  display: inline-grid;
-  place-items: center;
-  width: 1rem;
-  height: 1rem;
+.spanMark {
+  display: none;
+  align-self: center;
+  height: 6px;
+  margin: 2px 3px;
   border-radius: 3px;
-  background: hsl(var(--pc));
-  color: hsl(var(--pc-fg));
+  background: hsl(var(--st-solid));
 }
 
-/* Past markers go grey: a mid-tone, so they still show on a white or a dark cell. */
-.mk_ribbon[data-past],
-.mk_ticket[data-past],
-.mk_icons[data-past] {
-  background: hsl(var(--sl-color-border-strong));
-  color: hsl(var(--sl-color-surface));
+.spanMark[data-status="unknown"] {
+  background: none;
+  border: 1.5px dashed hsl(var(--st-solid));
 }
 
-.mk_agenda[data-past] {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px hsl(var(--pc));
+.spanMark.fromBefore {
+  margin-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
-.mk_readiness[data-past] {
-  background: hsl(var(--sl-color-border-strong));
-  box-shadow: none;
+.spanMark.intoNext {
+  margin-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-/* ── Phone: day buttons with markers, and the chosen day listed under the grid ── */
+/* ── Phone ── */
 
 .compactDay,
 .dayPanel {
@@ -830,13 +765,14 @@
 }
 
 @container plancal (max-width: 40rem) {
-  .wide {
+  .dayHd,
+  .dayBody,
+  .span {
     display: none;
   }
 
-  .day {
-    height: auto;
-    padding: 0;
+  .week {
+    min-height: 0;
   }
 
   .dayHead {
@@ -869,9 +805,8 @@
     box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
   }
 
-  .today .compactDay .dayNumber {
-    width: 1.5rem;
-    height: 1.5rem;
+  .spanMark {
+    display: block;
   }
 
   .nav {
@@ -886,40 +821,26 @@
 
   .panelList .entry {
     min-height: 3rem;
-    align-content: center;
+    padding: 6px 8px;
   }
 
-  .panelList .ribbon,
-  .panelList .readiness {
-    padding-block: 6px;
-  }
-
-  .panelList :is(.agenda, .icons) {
+  .panelList .title,
+  .panelList .entry[data-kind="routine"] .title {
+    display: block;
     white-space: normal;
-    padding-block: 4px;
-  }
-
-  .panelList .agenda .agTitle {
-    white-space: normal;
-  }
-
-  .panelList .icText {
-    white-space: normal;
-  }
-
-  .panelList .rbTitle,
-  .panelList .tkTitle,
-  .panelList .rdTitle {
     font-size: var(--sl-text-body-sm);
   }
 }
 
-/* ── One day, close up: a single cell at the grid's desktop width ── */
+/* ── One day, close up ── */
 
 .closeCell {
+  display: grid;
+  align-content: start;
+  gap: 3px;
   width: 9.5rem;
   min-height: 6.5rem;
-  padding: 5px 6px;
+  padding: 0 6px 6px;
   border: 1px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-sm);
   background: hsl(var(--sl-color-surface));
@@ -929,7 +850,16 @@
   color: hsl(var(--sl-color-text-primary));
 }
 
+.closeCell .dayHd {
+  padding-inline: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .mark_vardeldur[data-status="confirmed"] svg,
+  .mark_stimplar[data-status="confirmed"] {
+    animation: none;
+  }
+
   .entry,
   .more,
   .nav {

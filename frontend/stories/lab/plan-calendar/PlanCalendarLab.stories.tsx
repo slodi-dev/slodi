@@ -2,30 +2,44 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import type { CSSProperties } from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
 import PlanCalendar from "@/components/plan/PlanCalendar";
-import PlanCalendarLab, { DayCellLab, LOOK_LABEL, type DayEntryLook } from "./PlanCalendarLab";
-import { BUSY_MONTH, LAB_TODAY, QUIET_MONTH, labGrid, placeEntries } from "./planCalendarLabData";
+import PlanCalendarLab, {
+  DayCellLab,
+  LOOKS,
+  LOOK_LABEL,
+  StatusKey,
+  type StatusLook,
+} from "./PlanCalendarLab";
+import {
+  BUSY_MONTH,
+  LAB_TODAY,
+  QUIET_MONTH,
+  coversDay,
+  currentGrid,
+  labGrid,
+  placeEntries,
+  type LabEntry,
+} from "./planCalendarLabData";
 
 /**
- * Variations on the Dagatal's day entries (PlanEntryChip as the calendar draws it). The grid is
- * fine; the entries are the generic card: white, rounded, a thin coloured left stripe, small grey
- * meta text, a bar at the bottom. Each look here gives a sveitarforingi a different story at a
- * glance. Rationale for every look, with the information ranking: the **Rationale** page beside
- * these stories (PlanCalendarLab.mdx). See Lab → About the lab.
+ * The Staða family: the Dagatal's day entries as a planning-status map, the direction the user
+ * picked from the first round (A Fáni, B Dagbók, C Miði and E Tákn were removed on 2026-10-19).
+ * Four variations differ in the mark each entry wears for its status: D1 the plain glyph, D2 a
+ * sewn-on badge, D3 a campfire that grows, D4 a passport stamp.
  *
- * Fixed fixtures (October and December 2026, today = mánudagur 19. október), so the hard cases
- * stay on the same days: 1, 2, 4 and 5 entries in a day, long titles, troop-wide events, past days.
+ * Every variation draws the month as a **rhythm plus exceptions**: the usual weekly fundur per
+ * flokkur is one quiet line (its time is in the "Fundir vikunnar" legend), anything that breaks
+ * the rhythm is a full block, a fundur that falls out says so, and a multi-day event is one bar
+ * across its days, continuing onto the next week row. Rationale: the **Rationale** page beside
+ * these stories. See Lab → About the lab.
  */
 const meta = {
   title: "Lab/PlanCalendar",
   component: PlanCalendarLab,
   tags: ["skip-visual"],
   parameters: { layout: "padded" },
-  args: { look: "ribbon", month: BUSY_MONTH, today: LAB_TODAY, onSelect: fn() },
+  args: { look: "stada", month: BUSY_MONTH, today: LAB_TODAY, onSelect: fn() },
   argTypes: {
-    look: {
-      control: "inline-radio",
-      options: ["ribbon", "agenda", "ticket", "readiness", "icons"],
-    },
+    look: { control: "inline-radio", options: LOOKS },
     data: { control: false },
     month: { control: false },
     today: { control: false },
@@ -35,34 +49,21 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** The short rationale shown on the Comparison story; the full one is on the Rationale page. */
-const LOOKS: { look: DayEntryLook; story: string; reads: string }[] = [
-  {
-    look: "ribbon",
-    story: "Who meets when: every flokkur's evening is a flag in its own colour.",
-    reads: "Flokkur (colour) → title → time. Dashed stitching = not decided yet; pale = over.",
-  },
-  {
-    look: "agenda",
-    story: "What the week holds, read like a diary: time, then what.",
-    reads: "Time → title → flokkur (disc). Ink = decided, pencil (italic) = not yet.",
-  },
-  {
-    look: "ticket",
-    story: "Each evening is a ticket: when it starts, what it is, and whether it is stamped.",
-    reads: "Time (stub) → title → missing step on the stub (drög / óvíst / ?).",
-  },
-  {
-    look: "readiness",
-    story: "Where the planning work is: the month as a heatmap of what is still undecided.",
-    reads: "Status (tint + glyph) → title → flokkur initial and time; over budget in red.",
-  },
-  {
-    look: "icons",
-    story: "What kind of month it is: the útilega, the dagsferð and the fundir by shape.",
-    reads: "Type (icon) → flokkur (tile colour) → time and title.",
-  },
-];
+/** The short rationale on the Comparison story; the full one is on the Rationale page. */
+const STORY: Record<StatusLook, string> = {
+  stada:
+    "Where the planning work is: green is sorted, blue drafted, amber unsure, dashed grey a '?'. " +
+    "A check, pencil, hourglass or '?' says the same without colour.",
+  merki:
+    "Every fundur earns a sewn-on badge as it is planned: a stitched check, a pencil, a question " +
+    "mark, or an empty dashed badge. The flokkur is the little flag on its shoulder.",
+  vardeldur:
+    "The fire grows with the plan: unlit sticks, a spark, a flame, a full campfire. The month " +
+    "shows where the fires are already lit. Útilegur and mót wear a tent badge.",
+  stimplar:
+    "A passport of fundir: a ready fundur is stamped (rotated, with its theme's icon), drafts are " +
+    "lined up but not pressed, and undecided ones are empty dotted boxes with '?'.",
+};
 
 const section: CSSProperties = {
   paddingBottom: "var(--sl-spacing-xl)",
@@ -80,7 +81,7 @@ const idea: CSSProperties = {
   color: "hsl(var(--sl-color-text-secondary))",
 };
 
-/** The current calendar, then every look, on the same busy October. */
+/** The current calendar, then every variation, on the same October. */
 export const Comparison: Story = {
   render: () => (
     <div>
@@ -89,21 +90,19 @@ export const Comparison: Story = {
           Current
         </h2>
         <p style={idea}>
-          PlanEntryChip in the Dagatal: a white card with the flokkur as a 3px left stripe, the
-          title, grey time and venue, and the liðir bar. Every entry looks alike, so the month reads
-          as a wall of cards.
+          PlanEntryChip in the Dagatal. Every fundur is the same white card, so the weekly rhythm is
+          a wall of cards. A cancelled fundur can only be deleted, and the útilega and the mót
+          appear on their first day only.
         </p>
-        <PlanCalendar data={labGrid()} today={LAB_TODAY} />
+        <PlanCalendar data={currentGrid()} today={LAB_TODAY} />
       </section>
-      {LOOKS.map((l) => (
-        <section key={l.look} style={section} aria-labelledby={`pc-${l.look}`}>
-          <h2 id={`pc-${l.look}`} style={heading}>
-            {LOOK_LABEL[l.look]}
+      {LOOKS.map((look) => (
+        <section key={look} style={section} aria-labelledby={`pc-${look}`}>
+          <h2 id={`pc-${look}`} style={heading}>
+            {LOOK_LABEL[look]}
           </h2>
-          <p style={idea}>
-            <strong>Story:</strong> {l.story} <strong>Reads:</strong> {l.reads}
-          </p>
-          <PlanCalendarLab look={l.look} />
+          <p style={idea}>{STORY[look]}</p>
+          <PlanCalendarLab look={look} />
         </section>
       ))}
     </div>
@@ -113,90 +112,142 @@ export const Comparison: Story = {
 const DESKTOP = { viewport: { value: "desktop", isRotated: false } };
 const PHONE = { viewport: { value: "phone", isRotated: false } };
 
-/** The 21st has one Ernir entry; the 28th has five and folds. Desktop width, both checked. */
-const busy = (look: DayEntryLook): Story => ({
+/**
+ * Desktop October: the routine fundur, the moved one, the one that falls out, the span that
+ * crosses a week row (one button, not two), and the fold on mið 28.
+ */
+const busy = (look: StatusLook): Story => ({
   args: { look },
   globals: DESKTOP,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const ernir = canvas.getByRole("button", {
-      name: "Flokksfundur Arna: Hnútar og bönd, 21. október kl. 19:30, Skátaheimilið, drög",
+    const routine = canvas.getByRole("button", {
+      name: /^Flokksfundur Arna: .+, 20\. október kl\. 19:30, Skátaheimilið, staðfest, 15 mínútur umfram$/,
     });
-    await userEvent.click(ernir);
+    await userEvent.click(routine);
     await expect(args.onSelect).toHaveBeenCalled();
 
-    const more = canvas.getByRole("button", { name: /^\+\d fleiri 28\. október$/ });
-    await expect(more).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      canvas.getByRole("button", {
+        name: /^Flokksfundur Uglna: .+, 15\. október kl\. 19:30, .*fært frá 14\. október/,
+      })
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("button", {
+        name: "Flokksfundur Bjarna fellur niður, 22. október: vetrarfrí",
+      })
+    ).toBeVisible();
+    await expect(
+      canvas.getAllByRole("button", {
+        name: /^Vetrarmót skátafélaganna, lau 24\. okt\.–mán 26\. okt\./,
+      })
+    ).toHaveLength(1);
+    await expect(
+      canvas.getByRole("button", {
+        name: "Haustútilega á Úlfljótsvatni, fös 30. okt.–sun 1. nóv., öll sveitin, Úlfljótsvatn, drög",
+      })
+    ).toBeVisible();
+
+    const more = canvas.getByRole("button", { name: "+2 fleiri 28. október" });
     await userEvent.click(more);
     await expect(more).toHaveAttribute("aria-expanded", "true");
     await expect(
       canvas.getByRole("button", {
-        name: /^Skipulagsfundur, öll sveitin: Skipulagsfundur foringja, 28\. október kl\. 20:30/,
+        name: /^Skipulagsfundur, öll sveitin: .+, 28\. október kl\. 21:00/,
       })
     ).toBeVisible();
   },
 });
 
-const quiet = (look: DayEntryLook): Story => ({
+const quiet = (look: StatusLook): Story => ({
   args: { look, month: QUIET_MONTH },
   globals: DESKTOP,
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByText("4 viðburðir í mánuðinum")).toBeVisible();
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(/^\d+ viðburð(ur|ir) í mánuðinum/)).toBeVisible();
+    await expect(canvas.getAllByText("Jólafrí: engir fundir fram yfir áramót")[0]).toBeVisible();
   },
 });
 
-/** Phone: days become buttons; picking the 28th lists its five entries under the grid. */
-const phone = (look: DayEntryLook): Story => ({
+/** Phone: the útilega's Saturday lists it as "Dagur 2 af 3". */
+const phone = (look: StatusLook): Story => ({
   args: { look },
   globals: PHONE,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const day = canvas.getByRole("button", { name: "28. október, 5 viðburðir" });
+    const day = canvas.getByRole("button", { name: "31. október, 1 viðburður" });
     await userEvent.click(day);
     await expect(day).toHaveAttribute("aria-pressed", "true");
-    await expect(canvas.getByRole("heading", { name: "Miðvikudagur 28. október" })).toBeVisible();
-    await expect(canvas.getAllByRole("button", { name: /, 28\. október kl\./ })).toHaveLength(5);
+    await expect(canvas.getByRole("heading", { name: "Laugardagur 31. október" })).toBeVisible();
+    await expect(canvas.getByText(/^Dagur 2 af 3 · Öll sveitin/)).toBeVisible();
   },
 });
 
-const dark = (look: DayEntryLook): Story => ({
-  args: { look },
-  globals: { theme: "dark" },
-});
+const dark = (look: StatusLook): Story => ({ args: { look }, globals: { theme: "dark" } });
 
-export const RibbonBusy: Story = { name: "A · Fáni: busy month", ...busy("ribbon") };
-export const RibbonQuiet: Story = { name: "A · Fáni: quiet month", ...quiet("ribbon") };
-export const RibbonPhone: Story = { name: "A · Fáni: phone", ...phone("ribbon") };
-export const RibbonDark: Story = { name: "A · Fáni: dark", ...dark("ribbon") };
+export const StadaBusy: Story = { name: "D1 · Staða: busy month", ...busy("stada") };
+export const StadaQuiet: Story = { name: "D1 · Staða: quiet month", ...quiet("stada") };
+export const StadaPhone: Story = { name: "D1 · Staða: phone", ...phone("stada") };
+export const StadaDark: Story = { name: "D1 · Staða: dark", ...dark("stada") };
 
-export const AgendaBusy: Story = { name: "B · Dagbók: busy month", ...busy("agenda") };
-export const AgendaQuiet: Story = { name: "B · Dagbók: quiet month", ...quiet("agenda") };
-export const AgendaPhone: Story = { name: "B · Dagbók: phone", ...phone("agenda") };
-export const AgendaDark: Story = { name: "B · Dagbók: dark", ...dark("agenda") };
+export const MerkiBusy: Story = { name: "D2 · Merki: busy month", ...busy("merki") };
+export const MerkiQuiet: Story = { name: "D2 · Merki: quiet month", ...quiet("merki") };
+export const MerkiPhone: Story = { name: "D2 · Merki: phone", ...phone("merki") };
+export const MerkiDark: Story = { name: "D2 · Merki: dark", ...dark("merki") };
 
-export const TicketBusy: Story = { name: "C · Miði: busy month", ...busy("ticket") };
-export const TicketQuiet: Story = { name: "C · Miði: quiet month", ...quiet("ticket") };
-export const TicketPhone: Story = { name: "C · Miði: phone", ...phone("ticket") };
-export const TicketDark: Story = { name: "C · Miði: dark", ...dark("ticket") };
+export const VardeldurBusy: Story = { name: "D3 · Varðeldur: busy month", ...busy("vardeldur") };
+export const VardeldurQuiet: Story = { name: "D3 · Varðeldur: quiet month", ...quiet("vardeldur") };
+export const VardeldurPhone: Story = { name: "D3 · Varðeldur: phone", ...phone("vardeldur") };
+export const VardeldurDark: Story = { name: "D3 · Varðeldur: dark", ...dark("vardeldur") };
 
-export const ReadinessBusy: Story = { name: "D · Staða: busy month", ...busy("readiness") };
-export const ReadinessQuiet: Story = { name: "D · Staða: quiet month", ...quiet("readiness") };
-export const ReadinessPhone: Story = { name: "D · Staða: phone", ...phone("readiness") };
-export const ReadinessDark: Story = { name: "D · Staða: dark", ...dark("readiness") };
+export const StimplarBusy: Story = { name: "D4 · Stimplar: busy month", ...busy("stimplar") };
+export const StimplarQuiet: Story = { name: "D4 · Stimplar: quiet month", ...quiet("stimplar") };
+export const StimplarPhone: Story = { name: "D4 · Stimplar: phone", ...phone("stimplar") };
+export const StimplarDark: Story = { name: "D4 · Stimplar: dark", ...dark("stimplar") };
 
-export const IconsBusy: Story = { name: "E · Tákn: busy month", ...busy("icons") };
-export const IconsQuiet: Story = { name: "E · Tákn: quiet month", ...quiet("icons") };
-export const IconsPhone: Story = { name: "E · Tákn: phone", ...phone("icons") };
-export const IconsDark: Story = { name: "E · Tákn: dark", ...dark("icons") };
+/* ── The key ── */
+
+/** Every mark of every variation and what it means. */
+export const Key: Story = {
+  name: "Key: every mark",
+  render: () => (
+    <div style={{ display: "grid", gap: "var(--sl-spacing-lg)" }}>
+      {LOOKS.map((look) => (
+        <section key={look} aria-labelledby={`key-${look}`}>
+          <h2 id={`key-${look}`} style={heading}>
+            {LOOK_LABEL[look]}
+          </h2>
+          <StatusKey look={look} />
+        </section>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getAllByText("Fellur niður")).toHaveLength(LOOKS.length);
+  },
+};
 
 /* ── One day, close up ── */
 
-const CLOSE_DAYS: { label: string; day: Date }[] = [
-  { label: "1 entry", day: new Date(2026, 9, 21) },
-  { label: "2 entries", day: new Date(2026, 9, 27) },
-  { label: "5 entries", day: new Date(2026, 9, 28) },
-  { label: "Past, 2 entries", day: new Date(2026, 9, 6) },
-  { label: "Today, long title", day: new Date(2026, 9, 19) },
+const day = (d: number) => new Date(2026, 9, d);
+
+/** A stress case the fixture's rhythm never makes: mið 28. with a fifth entry squeezed in. */
+function fiveOn28(entries: LabEntry[]): LabEntry[] {
+  const on28 = entries.filter((e) => coversDay(e, day(28)));
+  const extra = entries.find((e) => e.kind === "routine" && coversDay(e, day(27)));
+  return extra
+    ? [...on28, { ...extra, id: `${extra.id}-copy`, day: day(28), endDay: day(28) }]
+    : on28;
+}
+
+const onDay = (d: Date) => (all: LabEntry[]) => all.filter((e) => coversDay(e, d));
+
+const CLOSE_DAYS: { label: string; date: Date; pick: (all: LabEntry[]) => LabEntry[] }[] = [
+  { label: "1 routine fundur", date: day(21), pick: onDay(day(21)) },
+  { label: "2: routine + troop (today)", date: day(19), pick: onDay(day(19)) },
+  { label: "Moved fundur", date: day(15), pick: onDay(day(15)) },
+  { label: "Falls out + span", date: day(26), pick: onDay(day(26)) },
+  { label: "5 entries", date: day(28), pick: fiveOn28 },
 ];
 
 const closeGrid: CSSProperties = {
@@ -211,7 +262,7 @@ const cellLabel: CSSProperties = {
   color: "hsl(var(--sl-color-text-secondary))",
 };
 
-/** Every look's single cell at desktop width, with 1, 2 and 5 entries, a past day and today. */
+/** Every variation's single cell at desktop width, side by side. */
 export const OneDayCloseUp: Story = {
   name: "One day, close up",
   globals: DESKTOP,
@@ -219,19 +270,19 @@ export const OneDayCloseUp: Story = {
     const entries = placeEntries(labGrid(), LAB_TODAY);
     return (
       <div style={{ display: "grid", gap: "var(--sl-spacing-lg)" }}>
-        {LOOKS.map(({ look }) => (
+        {LOOKS.map((look) => (
           <section key={look} aria-labelledby={`close-${look}`}>
             <h2 id={`close-${look}`} style={heading}>
               {LOOK_LABEL[look]}
             </h2>
             <div style={closeGrid}>
-              {CLOSE_DAYS.map(({ label, day }) => (
+              {CLOSE_DAYS.map(({ label, date, pick }) => (
                 <div key={label}>
                   <p style={cellLabel}>{label}</p>
                   <DayCellLab
                     look={look}
-                    day={day}
-                    entries={entries.filter((e) => e.day.getTime() === day.getTime())}
+                    day={date}
+                    entries={pick(entries)}
                     onSelect={args.onSelect}
                   />
                 </div>
@@ -243,13 +294,11 @@ export const OneDayCloseUp: Story = {
     );
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    // Every look folds the five-entry day.
     await expect(
-      canvas.getAllByRole("button", { name: /^\+\d fleiri 28\. október$/ })
-    ).toHaveLength(5);
+      within(canvasElement).getAllByRole("button", { name: /^\+\d fleiri 28\. október$/ })
+    ).toHaveLength(LOOKS.length);
   },
 };
 
-/** Any look, with controls. */
+/** Any variation, with controls. */
 export const Playground: Story = {};
