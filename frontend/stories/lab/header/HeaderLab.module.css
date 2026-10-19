@@ -350,7 +350,6 @@
   --hdr-muted: hsl(var(--sl-color-text-inverse));
   --hdr-hover: hsl(var(--sl-color-text-inverse) / 0.14);
   --hdr-line: hsl(var(--sl-color-text-inverse) / 0.6);
-  border-bottom: 4px solid hsl(var(--sl-color-primary-active));
 }
 .band .link[aria-current="page"] {
   box-shadow: inset 0 -3px 0 var(--hdr-fg);
@@ -382,6 +381,57 @@
     border-left: 1px solid var(--hdr-line);
     font-size: var(--sl-text-caption);
   }
+}
+
+/* ── Logo variations (A2, B2): the Slóði mark in front of the wordmark ── */
+.logo {
+  display: block;
+  flex: none;
+  width: auto;
+  height: var(--sl-primitive-space-8);
+}
+@media (min-width: 768px) {
+  .wordmarkLogo .logo {
+    height: var(--sl-primitive-space-9);
+  }
+}
+/* A2 renders both marks; the theme shows one. Dark is `class="dark"` on <html> (ThemeProvider)
+   or a `data-theme="dark"` wrapper, the same pair the token file matches. */
+.logoForDark {
+  display: none;
+}
+:global(:root.dark) .logoForLight,
+:global([data-theme="dark"]) .logoForLight {
+  display: none;
+}
+:global(:root.dark) .logoForDark,
+:global([data-theme="dark"]) .logoForDark {
+  display: block;
+}
+@media (max-width: 767px) {
+  .bandLogo .logo {
+    height: var(--sl-primitive-space-7);
+  }
+}
+/* B2 keeps a deep green band in dark mode. There --sl-color-primary turns mint (green-400) and
+   the white mark on it is about 2.2:1; on green-700 white is about 8:1. */
+:global(:root.dark) .bandLogo,
+:global([data-theme="dark"]) .bandLogo {
+  --hdr-bg: hsl(var(--sl-primitive-green-700));
+  --hdr-fg: hsl(var(--sl-primitive-neutral-0));
+  --hdr-muted: hsl(var(--sl-primitive-neutral-0));
+  --hdr-hover: hsl(var(--sl-primitive-neutral-0) / 0.14);
+  --hdr-line: hsl(var(--sl-primitive-neutral-0) / 0.6);
+}
+.bandLogo .drawerTop {
+  background: var(--hdr-bg);
+  color: var(--hdr-fg);
+}
+.bandLogo .closeButton {
+  border-color: var(--hdr-line);
+}
+.bandLogo .closeButton:hover {
+  background: var(--hdr-hover);
 }
 
 /* ── C · Trail: a signpost wordmark with two peaks, a dashed trail over contour lines ── */

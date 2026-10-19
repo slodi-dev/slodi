@@ -6,9 +6,28 @@ import { useCallback, useId, useRef, useState } from "react";
 import { useUser } from "@auth0/nextjs-auth0";
 import { ArrowRight, ExternalLink, Menu, X } from "lucide-react";
 import { useDrawerFocus } from "@/hooks/useDrawerFocus";
+import greenLogo from "@/app/icon.svg";
 import styles from "./HeaderLab.module.css";
 
-export type HeaderLook = "wordmark" | "band" | "trail" | "overlay" | "split";
+export type HeaderLook =
+  | "wordmark"
+  | "wordmarkLogo"
+  | "band"
+  | "bandLogo"
+  | "trail"
+  | "overlay"
+  | "split";
+
+/** The logo looks are variations: they keep every rule of the look they extend. */
+const BASE_LOOK: Partial<Record<HeaderLook, HeaderLook>> = {
+  wordmarkLogo: "wordmark",
+  bandLogo: "band",
+};
+
+/** White mark from `public/`. The green one is `app/icon.svg`: `public/logo/slodi-simple-vector.svg` is black. */
+const WHITE_LOGO_URL = "/logo/slodi-simple-vector-white.svg";
+/** Storybook's Next image plugin hands an image import over as `{ src }`; a plain bundler, as a string. */
+const GREEN_LOGO_URL = typeof greenLogo === "string" ? greenLogo : greenLogo.src;
 
 export interface HeaderLabProps {
   /** Which lab variation to render. */
@@ -67,6 +86,37 @@ function PeaksMark() {
 }
 
 /**
+ * The Slóði mark next to the wordmark. `alt=""` because the "Slóði" text beside it already names
+ * the link. On the light bar both files are rendered and the theme hides one (CSS); on the band
+ * the white mark works in both themes, because the band stays deep green.
+ */
+/* eslint-disable @next/next/no-img-element -- a small static SVG: next/image does not optimise SVG. */
+function BrandLogo({ look }: { look: HeaderLook }) {
+  if (look === "bandLogo") {
+    return <img className={styles.logo} src={WHITE_LOGO_URL} alt="" width={35} height={32} />;
+  }
+  return (
+    <>
+      <img
+        className={`${styles.logo} ${styles.logoForLight}`}
+        src={GREEN_LOGO_URL}
+        alt=""
+        width={35}
+        height={32}
+      />
+      <img
+        className={`${styles.logo} ${styles.logoForDark}`}
+        src={WHITE_LOGO_URL}
+        alt=""
+        width={35}
+        height={32}
+      />
+    </>
+  );
+}
+/* eslint-enable @next/next/no-img-element */
+
+/**
  * Lab copy of `components/Header` with a `look` prop. Same links and the same auth switch;
  * the drawer keeps the real one's keyboard contract (inert when closed, focus held while open).
  */
@@ -80,6 +130,8 @@ export default function HeaderLab({
   const isSignedIn = signedIn ?? Boolean(user);
   const pathname = usePathname();
   const account = accountLink(isSignedIn, look);
+  const baseLook = BASE_LOOK[look] ?? look;
+  const variantClass = baseLook === look ? "" : ` ${styles[look]}`;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
@@ -110,7 +162,7 @@ export default function HeaderLab({
   );
 
   return (
-    <header className={`${styles.header} ${styles[look]}`}>
+    <header className={`${styles.header} ${styles[baseLook]}${variantClass}`}>
       {skipTo ? (
         <a className={styles.skipLink} href={`#${skipTo}`}>
           Fara beint í efni
@@ -121,8 +173,9 @@ export default function HeaderLab({
       <div className={styles.inner}>
         <Link href="/" className={styles.brand}>
           {look === "trail" ? <PeaksMark /> : null}
+          {baseLook === look ? null : <BrandLogo look={look} />}
           <span className={styles.brandName}>Slóði</span>
-          {look === "band" ? <span className={styles.tagline}>Dagskrárvefur skáta</span> : null}
+          {baseLook === "band" ? <span className={styles.tagline}>Dagskrárvefur skáta</span> : null}
         </Link>
 
         <nav className={styles.nav} aria-label={navLabel}>
