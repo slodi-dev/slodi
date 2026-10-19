@@ -49,13 +49,20 @@ once a variation is picked it is **promoted** into the real component and its la
 
 ## In the Lab
 
+- **PlanGrid**: next, a variation that matches the calendar's Stimplar so the two views are one
+  family (waits for the calendar's stamp kit).
+- **SplitGrid**: the current form stays; variations are styles only (clean, stamped, patrol
+  flags, paper), with the honest merge.
+
 - **BlockPalette → C · Card grid, iterating.** The coloured side stripe goes (identity comes
   from the picture/icon tile). The collections area (Allt, Sveitin mín, Félagið, Færnimerki)
   becomes user-owned categories too: favourite **albums** next to the built-in sources. Needs
   the real favourites backend (sc-620), extended to albums.
 
-- **RangeInput → C · Values on the handles, being refined.** The values on the handles can be
-  typed into; next, variations on how the number is entered.
+- **RangeInput → C2 · Tap to edit, promoting.** Tapping a handle's value opens a small popover
+  (a bottom sheet on phones) with a field, −/+ and "Í lagi". Must be solid on mobile: no page
+  scroll while dragging, keyboard never covers the field, no iOS zoom, 48px steppers with sane
+  hold-to-repeat.
 - **Header → A, A2, B, B2.** A2 and B2 add the logo (green mark in light, white in dark; B2's band
   stays deep green in dark so the white logo reads). Logo as big as the wordmark; B's tagline is
   "Meira en bara dagskrárvefur". The green gradient behind the headers is gone. Problems in the
