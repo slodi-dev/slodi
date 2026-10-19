@@ -1,0 +1,713 @@
+/* Lab variations of the devlog list (app/dev). Tokens only, so every look works in light, dark
+   and the patrol themes. Every card is one link: the title link is stretched over the card with
+   ::after, and the focus ring is drawn on that overlay. */
+
+.devlog {
+  --corner: var(--sl-radius-card);
+  display: grid;
+  gap: var(--sl-spacing-lg);
+  margin: 0 auto;
+  font-family: var(--sl-font-family-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* ─── Page header ─────────────────────────────────────────── */
+
+.header {
+  display: grid;
+  gap: var(--sl-spacing-sm);
+  padding-bottom: var(--sl-spacing-lg);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.eyebrow {
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-primary-text));
+}
+.pageTitle {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-2);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+}
+.lead {
+  margin: 0;
+  max-width: 40rem;
+  font-size: var(--sl-text-body-lg);
+  line-height: var(--sl-line-height-relaxed);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.pageMeta {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ─── Tag filter ──────────────────────────────────────────── */
+
+.filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-sm);
+}
+.chip {
+  min-height: var(--sl-size-button-md);
+  padding: 0 var(--sl-spacing-md);
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-pill);
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    border-color var(--sl-transition-fast);
+}
+.chip:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  border-color: hsl(var(--sl-color-border-hover));
+}
+.chip[aria-pressed="true"] {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-subtle));
+  border-color: hsl(var(--sl-color-primary-border));
+}
+.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* ─── Shared card pieces ──────────────────────────────────── */
+
+.card {
+  position: relative;
+}
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: var(--sl-z-card-link);
+  border-radius: var(--corner);
+}
+.link:focus-visible {
+  outline: none;
+}
+.link:focus-visible::after {
+  box-shadow: var(--sl-shadow-focus);
+}
+.card:hover .link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-heading);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.summary {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-relaxed);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  margin: 0;
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  margin: 0;
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-primary-text));
+}
+.new {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--sl-color-primary-text));
+  background: hsl(var(--sl-color-primary-subtle));
+  border: 1px solid hsl(var(--sl-color-primary-border));
+  border-radius: var(--sl-radius-pill);
+}
+
+/* Tags in a card are labels, not buttons: small, square and quiet, so they don't read as the
+   filter chips above the list. */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tag {
+  padding: 0 var(--sl-spacing-xs);
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-xs);
+  white-space: nowrap;
+}
+
+/* ── A · Slóði: a dashed trail with month headings ──────────────────────── */
+
+.slodi {
+  --date-col: 4.5rem;
+  --line-x: calc(var(--date-col) + var(--sl-spacing-lg) / 2);
+  max-width: 46rem;
+}
+.timeline {
+  display: grid;
+  gap: var(--sl-spacing-xl);
+}
+.month {
+  display: grid;
+  gap: var(--sl-spacing-md);
+}
+.monthLabel {
+  position: sticky;
+  top: 0;
+  z-index: var(--sl-z-sticky);
+  margin: 0;
+  padding: var(--sl-spacing-xs) 0;
+  padding-left: calc(var(--date-col) + var(--sl-spacing-lg) + var(--sl-spacing-md));
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-secondary));
+  background: hsl(var(--sl-color-background));
+}
+.trail {
+  position: relative;
+  display: grid;
+  gap: var(--sl-spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.trail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--line-x) - 1px);
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    hsl(var(--sl-color-border-strong)) 0 6px,
+    transparent 6px 12px
+  );
+}
+.stopCard {
+  display: grid;
+  grid-template-columns: var(--date-col) 1fr;
+  column-gap: var(--sl-spacing-lg);
+  align-items: start;
+}
+/* The trail marker: hollow, filled for a new post. */
+.stopCard::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--sl-spacing-md) + 0.3em);
+  left: calc(var(--line-x) - 0.4rem);
+  width: 0.8rem;
+  height: 0.8rem;
+  background: hsl(var(--sl-color-background));
+  border: 2px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-pill);
+}
+.stopCard:has(.new)::before {
+  background: hsl(var(--sl-color-primary));
+}
+.stopDate {
+  padding-top: var(--sl-spacing-md);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: hsl(var(--sl-color-text-secondary));
+}
+.stopBody {
+  display: grid;
+  gap: var(--sl-spacing-sm);
+  margin-left: var(--sl-spacing-md);
+  padding: var(--sl-spacing-md) var(--sl-spacing-lg);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  transition:
+    border-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
+}
+.stopCard:hover .stopBody {
+  border-color: hsl(var(--sl-color-border-hover));
+  box-shadow: var(--sl-shadow-card);
+}
+.trailEnd {
+  margin: 0;
+  padding-left: calc(var(--date-col) + var(--sl-spacing-lg) + var(--sl-spacing-md));
+  font-size: var(--sl-text-body-sm);
+  font-style: italic;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* ── B · Breytingaskrá: dense rows under year headings ─────────────────── */
+
+.breytingaskra {
+  --corner: var(--sl-radius-sm);
+  max-width: 60rem;
+}
+.changelog {
+  display: grid;
+  gap: var(--sl-spacing-lg);
+}
+.yearLabel {
+  margin: 0 0 var(--sl-spacing-sm);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid hsl(var(--sl-color-border));
+}
+.rows > li {
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+}
+.row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) minmax(0, 14rem);
+  gap: var(--sl-spacing-md);
+  align-items: baseline;
+  padding: var(--sl-spacing-sm);
+  border-radius: var(--corner);
+  transition: background-color var(--sl-transition-fast);
+}
+.row:hover {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.rowDate {
+  font-size: var(--sl-text-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.rowMain {
+  display: grid;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+}
+.rowTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  margin: 0;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-emphasis);
+  line-height: var(--sl-line-height-heading);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.rowSummary {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.row .tags {
+  justify-content: flex-end;
+}
+
+/* ── C · Forsíða: one large lead, older posts in a grid ─────────────────── */
+
+.forsida {
+  max-width: 72rem;
+}
+.featured {
+  display: grid;
+  gap: var(--sl-spacing-xl);
+}
+.leadCard {
+  display: grid;
+  gap: var(--sl-spacing-md);
+  padding: var(--sl-spacing-xl);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-top: 4px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-card);
+  box-shadow: var(--sl-shadow-card);
+  transition: box-shadow var(--sl-card-transition);
+}
+.leadCard:hover {
+  box-shadow: var(--sl-shadow-card-hover);
+}
+.leadTitle {
+  margin: 0;
+  max-width: 32ch;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-3);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.leadSummary {
+  margin: 0;
+  max-width: 60ch;
+  font-size: var(--sl-text-body-lg);
+  line-height: var(--sl-line-height-relaxed);
+  color: hsl(var(--sl-color-text-secondary));
+}
+.sectionLabel {
+  margin: 0 0 var(--sl-spacing-md);
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-semibold);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: var(--sl-spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.grid > li {
+  display: grid;
+}
+.gridCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-lg);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  transition: border-color var(--sl-transition-fast);
+}
+.gridCard:hover {
+  border-color: hsl(var(--sl-color-border-hover));
+}
+.gridCard .summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.gridCard .tags {
+  margin-top: auto;
+  padding-top: var(--sl-spacing-sm);
+}
+
+/* ── D · Tímarit: covers, the newest one wide ──────────────────────────── */
+
+.timarit {
+  max-width: 72rem;
+}
+.magazine {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--sl-spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.magazine > li {
+  display: grid;
+}
+.issue {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-card);
+  transition: box-shadow var(--sl-card-transition);
+}
+.issue:hover {
+  box-shadow: var(--sl-shadow-card-hover);
+}
+/* No overflow: hidden on the card, or it would clip the focus ring; the cover rounds itself. */
+.cover {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--sl-radius-card) var(--sl-radius-card) 0 0;
+}
+.coverImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.coverIcon {
+  width: 3rem;
+  height: 3rem;
+  color: hsl(var(--tint) / var(--sl-primitive-opacity-60));
+}
+.tintPrimary,
+.tintAccent,
+.tintInfo,
+.tintWarning {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      hsl(var(--tint) / var(--sl-primitive-opacity-10)) 0 2px,
+      transparent 2px 14px
+    ),
+    hsl(var(--tint-bg));
+}
+.tintPrimary {
+  --tint: var(--sl-color-primary);
+  --tint-bg: var(--sl-color-primary-subtle);
+}
+.tintAccent {
+  --tint: var(--sl-color-accent);
+  --tint-bg: var(--sl-color-accent-subtle);
+}
+.tintInfo {
+  --tint: var(--sl-color-info);
+  --tint-bg: var(--sl-color-info-subtle);
+}
+.tintWarning {
+  --tint: var(--sl-color-warning);
+  --tint-bg: var(--sl-color-warning-subtle);
+}
+.issueBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-md) var(--sl-spacing-lg) var(--sl-spacing-lg);
+}
+.issueBody .byline {
+  margin-top: auto;
+  padding-top: var(--sl-spacing-sm);
+}
+@media (min-width: 48rem) {
+  .magazine > li:first-child {
+    grid-column: 1 / -1;
+  }
+  .magazine > li:first-child .issue {
+    grid-template-columns: 3fr 2fr;
+    grid-template-rows: none;
+  }
+  .magazine > li:first-child .cover {
+    aspect-ratio: auto;
+    min-height: 16rem;
+    border-radius: var(--sl-radius-card) 0 0 var(--sl-radius-card);
+  }
+  .magazine > li:first-child .issueBody {
+    justify-content: center;
+    padding: var(--sl-spacing-xl);
+  }
+  .magazine > li:first-child .title {
+    font-size: var(--sl-text-heading-4);
+  }
+}
+
+/* ─── Empty, load more, skeleton ──────────────────────────── */
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-xl) var(--sl-spacing-lg);
+  text-align: center;
+  border: 2px dashed hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+}
+.emptyIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.emptyTitle {
+  margin: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-semibold);
+}
+.emptyText {
+  margin: 0;
+  max-width: 36ch;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.more {
+  display: grid;
+  justify-items: center;
+  gap: var(--sl-spacing-sm);
+}
+.moreCount {
+  margin: 0;
+  font-size: var(--sl-text-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-tertiary));
+}
+.moreError {
+  justify-self: stretch;
+}
+
+.bone {
+  display: block;
+  height: 0.75rem;
+  background: hsl(var(--sl-color-surface-secondary));
+  border-radius: var(--sl-radius-xs);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.tall {
+  height: 1.25rem;
+}
+.short {
+  width: 30%;
+}
+.medium {
+  width: 65%;
+}
+.full {
+  width: 100%;
+}
+.stopDate > .bone {
+  margin-left: auto;
+}
+.coverBone {
+  background: hsl(var(--sl-color-surface-secondary));
+}
+.month > .bone {
+  margin-left: calc(var(--date-col) + var(--sl-spacing-lg) + var(--sl-spacing-md));
+  width: 8rem;
+}
+.changelog .bone.tall:first-child {
+  width: 3rem;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ─── Phone ───────────────────────────────────────────────── */
+
+@media (max-width: 40rem) {
+  .pageTitle {
+    font-size: var(--sl-text-heading-3);
+  }
+  .chip {
+    min-height: var(--sl-primitive-height-lg);
+  }
+  .moreButton {
+    min-height: var(--sl-primitive-height-lg);
+  }
+
+  /* Timeline: the date moves above the title, the trail hugs the left edge. */
+  .slodi {
+    --line-x: 0.5rem;
+  }
+  .monthLabel,
+  .month > .bone,
+  .trailEnd {
+    padding-left: var(--sl-spacing-lg);
+    margin-left: 0;
+  }
+  .stopCard {
+    grid-template-columns: 1fr;
+    padding-left: var(--sl-spacing-lg);
+  }
+  .stopCard::before {
+    top: calc(var(--sl-spacing-sm) + 0.2em);
+  }
+  .stopDate > .bone {
+    margin-left: 0;
+  }
+  .stopDate {
+    padding: var(--sl-spacing-sm) 0 var(--sl-spacing-xs);
+    text-align: left;
+  }
+  .stopBody {
+    margin-left: 0;
+    padding: var(--sl-spacing-md);
+  }
+
+  /* Changelog: date and title stacked, summary allowed two lines. */
+  .row {
+    grid-template-columns: 1fr;
+    gap: var(--sl-spacing-xs);
+    padding: var(--sl-spacing-sm) 0;
+  }
+  .rowSummary {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .row .tags {
+    justify-content: flex-start;
+  }
+
+  .leadCard {
+    padding: var(--sl-spacing-lg);
+  }
+  .leadTitle {
+    font-size: var(--sl-text-heading-5);
+  }
+  .leadSummary {
+    font-size: var(--sl-text-body);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+  }
+  .chip,
+  .stopBody,
+  .row,
+  .leadCard,
+  .gridCard,
+  .issue {
+    transition: none;
+  }
+}
