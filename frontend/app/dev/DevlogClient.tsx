@@ -17,11 +17,12 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(initialItems.length);
   const [done, setDone] = useState(initialItems.length >= total);
+  const [failed, setFailed] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (done || loading) return;
+    if (done || loading || failed) return;
     const el = sentinelRef.current;
     if (!el) return;
 
@@ -30,46 +31,39 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
         const first = entries[0];
         if (!first?.isIntersecting || loading || done) return;
 
-        setLoading(true);
-        try {
-          const res = await fetch(`/api/devlogs?offset=${offset}&limit=${pageSize}`, {
-            cache: "no-store",
-          });
-          if (!res.ok) throw new Error("Failed to load");
-          const data = (await res.json()) as { total: number; items: DevlogMeta[] };
-          setItems((prev) => [...prev, ...data.items]);
-          const nextOffset = offset + data.items.length;
-          setOffset(nextOffset);
-          if (nextOffset >= data.total || data.items.length === 0) setDone(true);
-        } catch (e) {
-          console.error("Error loading more devlogs:", e);
-          // Fail softly; manual button remains available
-        } finally {
-          setLoading(false);
-        }
+        await fetchMore();
       },
       { rootMargin: "200px" }
     );
 
     io.observe(el);
     return () => io.disconnect();
-  }, [offset, pageSize, done, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchMore reads the same state
+  }, [offset, pageSize, done, loading, failed]);
 
-  const loadMore = async () => {
-    if (loading || done) return;
+  async function fetchMore() {
     setLoading(true);
+    setFailed(false);
     try {
       const res = await fetch(`/api/devlogs?offset=${offset}&limit=${pageSize}`, {
         cache: "no-store",
       });
+      if (!res.ok) throw new Error(`devlogs ${res.status}`);
       const data = (await res.json()) as { total: number; items: DevlogMeta[] };
       setItems((prev) => [...prev, ...data.items]);
       const nextOffset = offset + data.items.length;
       setOffset(nextOffset);
       if (nextOffset >= data.total || data.items.length === 0) setDone(true);
+    } catch {
+      // The observer stops retrying; the reader gets the error and a retry button.
+      setFailed(true);
     } finally {
       setLoading(false);
     }
+  }
+
+  const loadMore = () => {
+    if (!loading && !done) void fetchMore();
   };
 
   return (
@@ -112,9 +106,7 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
                   href={`/dev/${post.slug}`}
                   className={styles.stretchedLink}
                   aria-label={`Lesa: ${post.title}`}
-                >
-                  <span className="sr-only">Lesa nánar</span>
-                </Link>
+                />
               </article>
             </li>
           ))}
@@ -127,10 +119,16 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
 
       {loading && items.length > 0 && <p className={styles.loadingLine}>Hleð…</p>}
 
+      {failed && (
+        <p role="alert" className={styles.loadingLine}>
+          Ekki tókst að sækja fleiri færslur.
+        </p>
+      )}
+
       {!done && items.length > 0 && (
         <div className={styles.actions}>
           <button type="button" onClick={loadMore} disabled={loading} className={styles.button}>
-            {loading ? "Hleð…" : "Hlaða inn meira"}
+            {loading ? "Sæki fleiri færslur…" : failed ? "Reyna aftur" : "Hlaða inn meira"}
           </button>
         </div>
       )}

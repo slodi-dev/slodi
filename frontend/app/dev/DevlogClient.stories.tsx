@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, within } from "storybook/test";
 import type { DevlogMeta } from "@/lib/devlogs";
 import DevlogClient from "./DevlogClient";
 
@@ -68,6 +69,19 @@ export const HasMore: Story = { args: { total: posts.length + more.length } };
 export const LoadingMore: Story = {
   args: { total: 20 },
   parameters: { mockApi: [{ match: DEVLOGS, body: {}, delay: Infinity }] },
+};
+
+/** Loading the next page fails: the reader is told, and the button becomes "Reyna aftur". */
+export const LoadMoreFails: Story = {
+  args: { total: 20 },
+  parameters: { mockApi: [{ match: DEVLOGS, status: 500, body: { detail: "Villa" } }] },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      "Ekki tókst að sækja fleiri færslur."
+    );
+    await expect(canvas.getByRole("button", { name: "Reyna aftur" })).toBeEnabled();
+  },
 };
 
 /** No posts yet and nothing more to load. */
