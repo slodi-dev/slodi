@@ -84,65 +84,356 @@
 
 /* ===== RANGE INPUT ===== */
 
+/* A two-handled slider with the values riding on the handles (Lab/RangeInput C2, 2026-10-19).
+   Every control has a 48px hit area (UX rule 8); --thumb is the visible handle. */
 .rangeInputWrapper {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-gap-sm, 0.5rem);
-}
-
-.rangeInputRow {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-sm, 0.5rem);
-}
-
-.rangeInputField {
-  flex: 1;
-  min-width: 0;
-  padding: var(--sl-input-padding-y, 0.75rem) var(--sl-input-padding-x, 1rem);
-  font-size: var(--sl-input-font-size, 1rem);
+  --hit: 3rem;
+  display: grid;
+  gap: var(--sl-spacing-sm);
   font-family: var(--sl-font-family-body);
-  line-height: 1;
-  background-color: hsl(var(--sl-input-background, 0 0% 100%));
-  border: 1px solid hsl(var(--sl-input-border, 0 0% 85%));
-  border-radius: var(--sl-input-radius, 0.5rem);
-  color: hsl(var(--sl-input-text, 0 0% 10%));
-  transition: var(--sl-input-transition, 150ms cubic-bezier(0, 0, 0.2, 1));
-  /* Remove browser spinner arrows */
-  appearance: textfield;
+  color: hsl(var(--sl-color-text-primary));
 }
 
-.rangeInputField::-webkit-inner-spin-button,
-.rangeInputField::-webkit-outer-spin-button {
-  display: none;
+/* The values sit in their own row, so a tap on one never starts a drag. */
+.rangeInputValues {
+  position: relative;
+  height: var(--hit);
+  margin-bottom: calc(-1 * var(--sl-spacing-md));
 }
 
-.rangeInputField::placeholder {
-  color: hsl(var(--sl-input-placeholder, 0 0% 40%));
+.rangeInputValue {
+  position: absolute;
+  bottom: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+  padding: 0 var(--sl-spacing-xs);
+  border: 0;
+  border-radius: var(--sl-radius-xs);
+  background: hsl(var(--sl-color-surface-inverse));
+  color: hsl(var(--sl-color-text-inverse));
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-semibold);
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translateX(-50%);
+  touch-action: manipulation;
 }
-
-.rangeInputField:hover {
-  border-color: hsl(var(--sl-input-border-hover, 0 0% 70%));
+/* A full-size hit area that grows upwards, away from the handle. */
+.rangeInputValue::before {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: max(100%, var(--hit));
+  height: var(--hit);
+  transform: translateX(-50%);
+  content: "";
 }
-
-.rangeInputField:focus-visible {
+.rangeInputValue:focus-visible,
+.rangeInputValue[aria-expanded="true"] {
   outline: none;
-  border-color: hsl(var(--sl-input-border-focus, 142 50% 32%));
-  box-shadow: var(--sl-input-shadow-focus, 0 0 0 3px hsl(142 50% 32% / 0.3));
+  box-shadow: var(--sl-shadow-focus);
+}
+/* Fully to either side of the handle when the handles are close, so equal values never overlap. */
+.rangeInputLeanLeft {
+  transform: translateX(calc(-100% - 1px));
+}
+.rangeInputLeanRight {
+  transform: translateX(1px);
+}
+.rangeInputUnit {
+  font-size: var(--sl-text-xs);
 }
 
-.rangeInputSeparator {
-  color: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
-  font-size: var(--sl-text-body, 1rem);
-  flex-shrink: 0;
+/* Pointers are handled here. A swipe on the bare track still scrolls the page vertically;
+   one that starts on a handle never scrolls (.rangeInputGrab). */
+.rangeInputStrip {
+  position: relative;
+  height: var(--hit);
+  touch-action: pan-y;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rangeInputTrack {
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 0.375rem;
+  transform: translateY(-50%);
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-border));
+}
+.rangeInputFill {
+  position: absolute;
+  /* --lo and --hi are 0–1; the ends follow the handle centres. */
+  inset: 0 calc(100% - var(--thumb) / 2 - (100% - var(--thumb)) * var(--hi)) 0
+    calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--lo));
+  border-radius: inherit;
+  background: hsl(var(--sl-color-primary));
+}
+
+/* The native inputs draw the handles and take the keyboard; pointers go to the strip. */
+.rangeInputSlider {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  appearance: none;
+  pointer-events: none;
+}
+.rangeInputSlider::-webkit-slider-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border: 2px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card);
+  appearance: none;
+}
+.rangeInputSlider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: var(--thumb);
+  border: 2px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface));
+}
+.rangeInputSlider::-moz-range-track {
+  background: none;
+}
+.rangeInputSlider:focus-visible {
+  outline: none;
+}
+.rangeInputSlider:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--sl-shadow-focus);
+}
+.rangeInputSlider:focus-visible::-moz-range-thumb {
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* The 48px grab area around each handle. */
+.rangeInputGrab {
+  position: absolute;
+  top: 0;
+  width: var(--hit);
+  height: var(--hit);
+  transform: translateX(-50%);
+  cursor: grab;
+  touch-action: none;
+}
+
+.rangeInputScale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(-1 * var(--sl-spacing-sm));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-xs);
 }
 
 .rangeInputHint {
-  font-size: var(--sl-text-caption, 0.875rem);
-  color: hsl(var(--sl-color-text-tertiary, 0 0% 40%));
-  line-height: var(--sl-line-height-body, 1.5);
   margin: 0;
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-caption);
+  line-height: var(--sl-line-height-body);
+}
+
+.rangeInputStatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── The editor: a popover under the value, or a bottom sheet on phones ── */
+.rangeInputPopover,
+.rangeInputSheet {
+  --hit: 3rem;
+  position: fixed;
+  z-index: var(--sl-z-popover);
+  display: grid;
+  gap: var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md) var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-dropdown);
+  color: hsl(var(--sl-color-text-primary));
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-body);
+}
+.rangeInputPopover {
+  top: 0;
+  left: 0;
+  width: max-content;
+  border-radius: var(--sl-radius-card);
+  animation: rangeInputPopIn var(--sl-transition-fast);
+}
+.rangeInputSheet {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  /* Clear of the iPhone home indicator (UX rule 8). */
+  padding-bottom: calc(var(--sl-spacing-md) + env(safe-area-inset-bottom));
+  border-width: 1px 0 0;
+  border-radius: var(--sl-radius-modal) var(--sl-radius-modal) 0 0;
+  box-shadow: var(--sl-shadow-modal);
+  animation: rangeInputSheetIn var(--sl-transition-base);
+}
+.rangeInputBackdrop {
+  position: fixed;
+  z-index: var(--sl-z-popover);
+  inset: 0;
+  background: hsl(var(--sl-color-overlay-light));
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+@keyframes rangeInputPopIn {
+  from {
+    opacity: 0;
+    translate: 0 calc(-1 * var(--sl-spacing-xs));
+  }
+}
+@keyframes rangeInputSheetIn {
+  from {
+    translate: 0 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rangeInputPopover,
+  .rangeInputSheet {
+    animation: none;
+  }
+}
+
+.rangeInputEditorHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-right: calc(-1 * var(--sl-spacing-sm));
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+}
+.rangeInputEditorRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-xs);
+}
+
+.rangeInputField {
+  box-sizing: border-box;
+  width: 5rem;
+  height: var(--hit);
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-family: inherit;
+  /* 16px, so iOS doesn't zoom when the field takes focus (UX rule 8). */
+  font-size: var(--sl-text-body);
+  text-align: center;
+}
+.rangeInputField:focus {
+  outline: none;
+  border-color: hsl(var(--sl-color-border-focus));
+  box-shadow: var(--sl-shadow-focus);
+}
+.rangeInputField::selection {
+  background: hsl(var(--sl-color-primary-muted));
+  color: hsl(var(--sl-color-text-primary));
+}
+.rangeInputField::placeholder {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* − and + and ✕: round to look at, 48px to hit. */
+.rangeInputStepper,
+.rangeInputClose {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  font-family: inherit;
+  font-size: var(--sl-text-body-lg);
+  font-weight: var(--sl-font-weight-semibold);
+  cursor: pointer;
+  isolation: isolate;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.rangeInputStepper::before,
+.rangeInputClose::before {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: 2.25rem;
+  height: 2.25rem;
+  transform: translate(-50%, -50%);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-surface));
+  content: "";
+}
+.rangeInputClose {
+  font-size: var(--sl-text-body-sm);
+}
+.rangeInputClose::before {
+  border-color: transparent;
+}
+.rangeInputStepper:hover::before,
+.rangeInputClose:hover::before {
+  background: hsl(var(--sl-color-surface-hover));
+}
+.rangeInputStepper:active::before {
+  background: hsl(var(--sl-color-surface-active));
+}
+.rangeInputStepper:focus-visible,
+.rangeInputClose:focus-visible {
+  outline: none;
+}
+.rangeInputStepper:focus-visible::before,
+.rangeInputClose:focus-visible::before {
+  box-shadow: var(--sl-shadow-focus);
+}
+
+.rangeInputOk {
+  min-height: var(--hit);
+  padding: 0 var(--sl-spacing-md);
+  border: 0;
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  font-family: inherit;
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-semibold);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.rangeInputOk:hover {
+  background: hsl(var(--sl-color-primary-hover));
+}
+.rangeInputOk:focus-visible {
+  outline: none;
+  box-shadow: var(--sl-shadow-focus);
 }
 
 /* ===== ACTIVE CHIP ===== */

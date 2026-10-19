@@ -73,8 +73,8 @@ export default function PrepTimeFilter({
         onMaxChange={handleMaxChange}
         step={5}
         min={0}
-        minPlaceholder="Frá"
-        maxPlaceholder="Til"
+        max={120}
+        unit="mín"
         minLabel="Lágmark: mínútur"
         maxLabel="Hámark: mínútur"
         hint={hint}

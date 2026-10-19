@@ -70,8 +70,7 @@ export default function ParticipantFilter({
         onMaxChange={handleMaxChange}
         step={1}
         min={1}
-        minPlaceholder="Frá"
-        maxPlaceholder="Til"
+        max={60}
         minLabel="Lágmark: þátttakendur"
         maxLabel="Hámark: þátttakendur"
       />
