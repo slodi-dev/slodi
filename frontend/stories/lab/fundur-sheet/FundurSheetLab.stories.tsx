@@ -5,18 +5,18 @@ import { Bench, FUNDUR, LiveRowLab, REORDER, SheetLabDemo, benchData } from "./l
 import { LOOKS, type FundurSheetLook } from "./sheetModel";
 
 /**
- * FundurSheet and LidurRow variations. The current sheet is accurate but reads
- * evenly: a 24px uppercase title, then everything else at 12px in grey, so the
- * running order, the fit and what's undecided all have the same weight. These
- * four directions each answer one of the leader's questions first. Why, and
- * when each fits: Lab → FundurSheet → About.
+ * FundurSheet + LidurRow style variations. The form is the current sheet's: the header, the
+ * three beinagrind bands with "Skipta á flokka", the rows with their handle, clock, duration
+ * and ↑ ↓ ✎ ✕, the editor under its row, the footer. Every button, key and drag goes through
+ * the real bench reducer. F0 is the current sheet with its problems fixed; F1–F4 are styles
+ * on top of F0. What was wrong and why each style: Lab → FundurSheet → About.
  */
 
 const meta = {
-  title: "Lab/FundurSheet/Directions",
+  title: "Lab/FundurSheet/Styles",
   component: SheetLabDemo,
   tags: ["skip-visual"],
-  args: { look: "dagskra", fixture: "normal" },
+  args: { look: "lagad", fixture: "normal" },
   argTypes: {
     look: { control: "inline-radio", options: LOOKS.map((l) => l.look) },
     fixture: {
@@ -41,7 +41,7 @@ const idea = {
 } as const;
 const stack = { display: "grid", gap: "var(--sl-spacing-xl)" } as const;
 
-/** The current sheet first, then each direction, all on this week's 100 / 90 mín fundur. */
+/** The current sheet first, then each style, all on this week's 100 / 90 mín fundur. */
 export const Comparison: Story = {
   name: "Comparison",
   render: () => (
@@ -64,11 +64,11 @@ export const Comparison: Story = {
   ),
 };
 
-/* ── One set of stories per direction ── */
+/* ── One set of stories per style ── */
 
 const phone = { viewport: { value: "phone", isRotated: false } };
 
-/** Clock text of one row, as the look draws it. */
+/** Clock text of one row. */
 function clockOf(root: HTMLElement, lidurId: string): string {
   const row = root.querySelector<HTMLElement>(`[data-lidur-row="${lidurId}"]`);
   return row?.querySelector("[data-clock]")?.textContent ?? "";
@@ -81,18 +81,44 @@ function storiesFor(look: FundurSheetLook, name: string) {
       name: `${name}: over time`,
       args: { look, fixture: "overTime" },
       play: async ({ canvasElement }) => {
-        await expect(
-          within(canvasElement).getAllByText("100 / 90 mín · 10 yfir").length
-        ).toBeGreaterThan(0);
+        const canvas = within(canvasElement);
+        // Said twice now: in the header and in the footer.
+        await expect(canvas.getByText("10 mín yfir")).toBeInTheDocument();
+        await expect(canvas.getByText("100 / 90 mín · 10 yfir")).toBeInTheDocument();
       },
     } satisfies Story,
-    undecided: { name: `${name}: undecided`, args: { look, fixture: "undecided" } } satisfies Story,
-    split: { name: `${name}: split section`, args: { look, fixture: "split" } } satisfies Story,
+    undecided: {
+      name: `${name}: undecided`,
+      args: { look, fixture: "undecided" },
+      play: async ({ canvasElement }) => {
+        await expect(within(canvasElement).getByText("2 liðir enn óákveðnir")).toBeInTheDocument();
+      },
+    } satisfies Story,
+    split: {
+      name: `${name}: split and merge`,
+      args: { look, fixture: "normal" },
+      play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        const kjarni = () =>
+          canvas.getAllByRole("button", { name: /Skipta á flokka|Sameina í eitt/ })[1];
+        await step("split", async () => {
+          await userEvent.click(kjarni());
+          await expect(kjarni()).toHaveAttribute("aria-pressed", "true");
+          await expect(canvas.getByText(/Lengsti flokkur ræður/)).toBeInTheDocument();
+        });
+        await step("merge", async () => {
+          await userEvent.click(kjarni());
+          await expect(kjarni()).toHaveTextContent("Skipta á flokka");
+          await expect(canvas.getByText("Áttavitinn: undirstöður")).toBeInTheDocument();
+        });
+      },
+    } satisfies Story,
     undated: {
       name: `${name}: undated`,
       args: { look, fixture: "undated" },
       play: async ({ canvasElement }) => {
-        // No clock, so the rows count from the start instead.
+        await expect(within(canvasElement).getByText("Ódagsett")).toBeInTheDocument();
+        // No clock, so the rows count from the start instead of all saying "—".
         await expect(clockOf(canvasElement, REORDER.overtaken)).toBe("+0:10");
       },
     } satisfies Story,
@@ -107,9 +133,27 @@ function storiesFor(look: FundurSheetLook, name: string) {
       args: { look, fixture: "overTime" },
       globals: { theme: "dark" },
     } satisfies Story,
+    /** ✎ opens the real LidurEditor under its row, and closes it again. */
+    editor: {
+      name: `${name}: editor`,
+      args: { look, fixture: "normal" },
+      play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        const edit = canvas.getByRole("button", { name: "Breyta Kortalestur í hverfinu" });
+        await userEvent.click(edit);
+        const close = await canvas.findByRole("button", {
+          name: "Loka ritli fyrir Kortalestur í hverfinu",
+        });
+        await expect(close).toHaveAttribute("aria-expanded", "true");
+        await userEvent.click(close);
+        await expect(
+          canvas.getByRole("button", { name: "Breyta Kortalestur í hverfinu" })
+        ).toHaveAttribute("aria-expanded", "false");
+      },
+    } satisfies Story,
     /**
-     * ▲ moves Kortalestur above Áttavitinn and both start times follow; then the
-     * keyboard path (Space, ↓, Space) puts it back, announced at each step.
+     * ↑ moves Kortalestur above Áttavitinn and both start times follow; then the keyboard path
+     * (Space, ↓, Space) puts it back, announced at each step.
      */
     reorder: {
       name: `${name}: reorder`,
@@ -119,7 +163,7 @@ function storiesFor(look: FundurSheetLook, name: string) {
         await expect(clockOf(canvasElement, REORDER.overtaken)).toBe("19:40");
         await expect(clockOf(canvasElement, REORDER.moved)).toBe("20:10");
 
-        await step("▲ moves it up and the times follow", async () => {
+        await step("↑ moves it up and the times follow", async () => {
           await userEvent.click(
             canvas.getByRole("button", { name: "Færa Kortalestur í hverfinu upp" })
           );
@@ -148,60 +192,65 @@ function storiesFor(look: FundurSheetLook, name: string) {
   };
 }
 
-const a = storiesFor("dagskra", "A · Dagskrá");
-export const Dagskra: Story = a.normal;
-export const DagskraOverTime: Story = a.overTime;
-export const DagskraUndecided: Story = a.undecided;
-export const DagskraSplit: Story = a.split;
-export const DagskraUndated: Story = a.undated;
-export const DagskraPast: Story = a.past;
-export const DagskraPhone: Story = a.phone;
-export const DagskraDark: Story = a.dark;
-export const DagskraReorder: Story = a.reorder;
+const f0 = storiesFor("lagad", "F0 · Current, fixed up");
+export const Lagad: Story = f0.normal;
+export const LagadOverTime: Story = f0.overTime;
+export const LagadUndecided: Story = f0.undecided;
+export const LagadSplit: Story = f0.split;
+export const LagadUndated: Story = f0.undated;
+export const LagadPast: Story = f0.past;
+export const LagadPhone: Story = f0.phone;
+export const LagadDark: Story = f0.dark;
+export const LagadEditor: Story = f0.editor;
+export const LagadReorder: Story = f0.reorder;
 
-const b = storiesFor("timalina", "B · Tímalína");
-export const Timalina: Story = b.normal;
-export const TimalinaOverTime: Story = b.overTime;
-export const TimalinaUndecided: Story = b.undecided;
-export const TimalinaSplit: Story = b.split;
-export const TimalinaUndated: Story = b.undated;
-export const TimalinaPast: Story = b.past;
-export const TimalinaPhone: Story = b.phone;
-export const TimalinaDark: Story = b.dark;
-export const TimalinaReorder: Story = b.reorder;
+const f1 = storiesFor("hreint", "F1 · Quiet");
+export const Hreint: Story = f1.normal;
+export const HreintOverTime: Story = f1.overTime;
+export const HreintUndecided: Story = f1.undecided;
+export const HreintSplit: Story = f1.split;
+export const HreintUndated: Story = f1.undated;
+export const HreintPast: Story = f1.past;
+export const HreintPhone: Story = f1.phone;
+export const HreintDark: Story = f1.dark;
+export const HreintEditor: Story = f1.editor;
+export const HreintReorder: Story = f1.reorder;
 
-const c = storiesFor("gatlisti", "C · Gátlisti");
-export const Gatlisti: Story = c.normal;
-export const GatlistiOverTime: Story = c.overTime;
-export const GatlistiUndecided: Story = {
-  ...c.undecided,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText("2 óákveðnir")).toBeInTheDocument();
-    // A to-do jumps to its row.
-    await userEvent.click(canvas.getByRole("button", { name: "Óákveðið Leikur" }));
-    await waitFor(() =>
-      expect(canvasElement.querySelector('[data-lidur-row="mock-lidur-5-2"]')).toHaveFocus()
-    );
-  },
-};
-export const GatlistiSplit: Story = c.split;
-export const GatlistiUndated: Story = c.undated;
-export const GatlistiPast: Story = c.past;
-export const GatlistiPhone: Story = c.phone;
-export const GatlistiDark: Story = c.dark;
-export const GatlistiReorder: Story = c.reorder;
+const f2 = storiesFor("stimplar", "F2 · Stamped");
+export const Stimplar: Story = f2.normal;
+export const StimplarOverTime: Story = f2.overTime;
+export const StimplarUndecided: Story = f2.undecided;
+export const StimplarSplit: Story = f2.split;
+export const StimplarUndated: Story = f2.undated;
+export const StimplarPast: Story = f2.past;
+export const StimplarPhone: Story = f2.phone;
+export const StimplarDark: Story = f2.dark;
+export const StimplarEditor: Story = f2.editor;
+export const StimplarReorder: Story = f2.reorder;
 
-const d = storiesFor("thett", "D · Þétt tafla");
-export const Thett: Story = d.normal;
-export const ThettOverTime: Story = d.overTime;
-export const ThettUndecided: Story = d.undecided;
-export const ThettSplit: Story = d.split;
-export const ThettUndated: Story = d.undated;
-export const ThettPast: Story = d.past;
-export const ThettPhone: Story = d.phone;
-export const ThettDark: Story = d.dark;
-export const ThettReorder: Story = d.reorder;
+const f3 = storiesFor("blad", "F3 · Run sheet");
+export const Blad: Story = f3.normal;
+export const BladOverTime: Story = f3.overTime;
+export const BladUndecided: Story = f3.undecided;
+export const BladSplit: Story = f3.split;
+export const BladUndated: Story = f3.undated;
+export const BladPast: Story = f3.past;
+export const BladPhone: Story = f3.phone;
+export const BladDark: Story = f3.dark;
+export const BladEditor: Story = f3.editor;
+export const BladReorder: Story = f3.reorder;
+
+const f4 = storiesFor("flokkur", "F4 · Patrol colour");
+export const Flokkur: Story = f4.normal;
+export const FlokkurOverTime: Story = f4.overTime;
+export const FlokkurUndecided: Story = f4.undecided;
+export const FlokkurSplit: Story = f4.split;
+export const FlokkurUndated: Story = f4.undated;
+export const FlokkurPast: Story = f4.past;
+export const FlokkurPhone: Story = f4.phone;
+export const FlokkurDark: Story = f4.dark;
+export const FlokkurEditor: Story = f4.editor;
+export const FlokkurReorder: Story = f4.reorder;
 
 /* ── LidurRow close-up ── */
 
@@ -217,10 +266,10 @@ const CASES: { label: string; fundurId: string; lidurId: string; selected?: bool
 const caption = {
   margin: "var(--sl-spacing-sm) 0 var(--sl-spacing-xs)",
   color: "hsl(var(--sl-color-text-secondary))",
-  fontSize: "var(--sl-text-overline)",
+  fontSize: "var(--sl-text-caption)",
 } as const;
 
-/** Every direction's row in each status, with endurmat, selected and a long title. */
+/** Every style's row in each status, with endurmat, selected and a long title. */
 export const RowCloseUp: Story = {
   name: "LidurRow close-up",
   render: () => (
@@ -246,7 +295,7 @@ export const RowCloseUp: Story = {
   ),
 };
 
-/** Any direction on any fixture. Changing a control remounts it with fresh bench state. */
+/** Any style on any fixture. Changing a control remounts it with fresh bench state. */
 export const Playground: Story = {
   name: "Playground",
   render: (args) => <SheetLabDemo key={`${args.look}:${args.fixture}`} {...args} />,

@@ -198,8 +198,8 @@ export function LiveRowLab({
 function RowFrame({ look, children }: { look: FundurSheetLook; children: ReactNode }) {
   return (
     <div className={styles.sheet} data-look={look}>
-      <div className={styles.inner}>
-        <div role="list">{children}</div>
+      <div role="list" className={styles.rows}>
+        {children}
       </div>
     </div>
   );

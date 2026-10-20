@@ -1,56 +1,13 @@
-/*
- * FundurSheet and LidurRow lab: four looks. Every value resolves through --sl-*,
- * so each look follows light, dark and the patrol themes without overrides.
- *
- * Layout follows the sheet's own width (container queries), so a sheet in the
- * Comparison story and a sheet on a phone behave the same way. Actions are never
- * hover-revealed: they're always drawn, at --fs-target, which is 32px on a wide
- * sheet with a mouse and 48px (--sl-size-button-lg) on a narrow sheet or a touch
- * screen (UX rule 8).
- */
+/* Lab styles for FundurSheet + LidurRow. The form is the current sheet's; these are styles.
 
-.sheet {
-  container: fs / inline-size;
-  max-width: 46rem;
-  width: 100%;
-  margin: 0 auto;
-  background: hsl(var(--sl-color-surface));
-  border: 1px solid hsl(var(--sl-color-border));
-  color: hsl(var(--sl-color-text-primary));
-  font-family: var(--sl-font-family-body);
-  line-height: var(--sl-line-height-normal);
-  overflow: hidden;
-}
+   The first half is F0 · Current, fixed up: the current sheet with its problems fixed (see
+   FundurSheetLab.mdx), and the base every other look starts from. Each look below it only
+   overrides. Every colour is a token. F4's patrol colour comes in as --pc / --pc-on / --pc-tint
+   from the sheet's inline style; the vivid colour is only ever a background behind its own
+   foreground, or a bar, and the tint only sits under primary text.
 
-.inner {
-  --fs-target: var(--sl-size-button-sm);
-  --fs-pad: var(--sl-spacing-inset-md);
-}
-
-@container fs (max-width: 36rem) {
-  .inner {
-    --fs-target: var(--sl-size-button-lg);
-    --fs-pad: var(--sl-spacing-inset-sm);
-  }
-}
-
-@media (pointer: coarse) {
-  .inner {
-    --fs-target: var(--sl-size-button-lg);
-  }
-}
-
-.sheet[data-active="true"] {
-  border-color: hsl(var(--sl-color-border-strong));
-}
-
-/* A fundur that has happened is context, not work: recessed by surface and a
-   dashed edge, never by opacity (which took the text below AA). */
-.sheet[data-past="true"] {
-  background: hsl(var(--sl-color-background-secondary));
-  border-style: dashed;
-  box-shadow: none;
-}
+   Layout follows the sheet's own width (a container query), so a narrow sheet on a desktop
+   and a phone behave the same way. */
 
 .srOnly {
   position: absolute;
@@ -63,188 +20,217 @@
   white-space: nowrap;
 }
 
-/* ── Header pieces ─────────────────────────────────────────────────────── */
-
-.head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-gap-sm);
-  padding: var(--fs-pad);
-  border-bottom: 1px solid hsl(var(--sl-color-border));
+.num {
+  font-variant-numeric: tabular-nums;
 }
 
-.kicker {
+/* ══ F0 · the shared base ═════════════════════════════════════════════════════ */
+
+.sheet {
+  /* Hit area: 36px with a mouse, 48px (--sl-size-button-lg) on touch or a narrow sheet. */
+  --target: 2.25rem;
+  --gutter: var(--sl-spacing-md);
+  --clock-w: 4.75rem;
+  --grip-w: 1.75rem;
+  --rule: hsl(var(--sl-color-border));
+  /* Half a step: the scale has no 2px. */
+  --half: calc(var(--sl-spacing-xs) / 2);
+  container-type: inline-size;
+  display: block;
+  max-width: 700px;
+  width: 100%;
+  margin: 0 auto var(--sl-spacing-lg);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-lg);
+  overflow: hidden;
+  color: hsl(var(--sl-color-text-primary));
+  font-family: var(--sl-font-family-body);
+  transition: border-color var(--sl-transition-fast);
+}
+
+@media (pointer: coarse) {
+  .sheet {
+    --target: var(--sl-size-button-lg);
+  }
+}
+
+/* The active sheet is marked by its edge, not by lifting it off the page. */
+.sheet[data-active="true"] {
+  border-color: hsl(var(--sl-color-border-strong));
+}
+
+/* A past fundur is context: a recessed surface and a dashed edge, every word still AA. */
+.sheet[data-past="true"] {
+  background: hsl(var(--sl-color-background-secondary));
+  border-style: dashed;
+}
+
+/* One focus ring for everything that takes focus. */
+.sheet :is(button, [tabindex]):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* ── Header ── */
+
+.sheetHd {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  padding: var(--sl-spacing-md) var(--gutter);
+  border-bottom: 1px solid var(--rule);
+}
+
+.sheetKick {
+  display: flex;
   align-items: center;
-  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
-  margin: 0;
-  font-size: var(--sl-text-body-sm);
+  gap: var(--sl-spacing-sm);
+  flex-wrap: wrap;
+  font-size: var(--sl-text-caption);
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.kicker:empty {
-  display: none;
-}
-
-.pastTag {
-  padding: 0 var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
+/* Outlined, not a filled green pill: it is context, not the loudest thing on the sheet. */
+.cyc {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-primary));
   border-radius: var(--sl-radius-chip);
+  color: hsl(var(--sl-color-primary));
   font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--sl-color-text-primary));
 }
 
-.troop {
-  font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--sl-color-primary-text));
+.venue {
+  color: hsl(var(--sl-color-text-secondary));
 }
 
-.heading {
+.troopWide {
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-primary));
+}
+
+.patrolName {
+  font-weight: var(--sl-font-weight-heading);
+}
+
+/* Sentence case: an uppercase 24px title outshouted every liður on the sheet. */
+.sheetT {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-sm);
+  flex-wrap: wrap;
   margin: 0;
   font-family: var(--sl-font-family-heading);
   font-size: var(--sl-text-heading-5);
   font-weight: var(--sl-font-weight-heading);
-  line-height: var(--sl-line-height-tight);
-  overflow-wrap: anywhere;
+  line-height: 1.15;
 }
 
-.titleLine {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
-}
-
-.date {
+.sheetDate {
   font-size: var(--sl-text-body);
-  font-weight: var(--sl-font-weight-medium);
-  font-variant-numeric: tabular-nums;
-}
-
-.when {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
-  margin: 0;
-}
-
-.range {
-  font-size: var(--sl-text-heading-4);
-  font-weight: var(--sl-font-weight-heading);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--sl-line-height-tight);
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-md);
-  margin: 0;
-  font-size: var(--sl-text-body-sm);
-}
-
-.warnText {
   font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--sl-color-warning-text));
+  color: hsl(var(--sl-color-text-secondary));
 }
 
-/* "100 / 90 mín · 10 yfir": the one number every look must show. */
-.fit {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-chip);
+.sheetWhen {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-sm);
+  flex-wrap: wrap;
   font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-heading);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  color: hsl(var(--sl-color-text-secondary));
 }
 
-.fit[data-over="true"] {
-  border-color: hsl(var(--sl-color-warning));
+.sheetWhen b {
+  font-size: var(--sl-text-body);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* The fit, said in the header too: before, "10 yfir" was only in the footer. */
+.fit {
+  padding: 1px var(--sl-spacing-sm);
+  border-radius: var(--sl-radius-chip);
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.fit[data-tone="over"] {
   background: hsl(var(--sl-color-warning-subtle));
   color: hsl(var(--sl-color-warning-text));
 }
 
-.foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sl-spacing-gap-sm);
-  padding: var(--sl-spacing-inset-sm) var(--fs-pad);
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-emphasis);
-}
-
-/* ── Bands ─────────────────────────────────────────────────────────────── */
-
-.bandHd {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
-  padding: var(--sl-spacing-inset-xs) var(--fs-pad);
-  border-bottom: 1px solid hsl(var(--sl-color-border));
-  background: hsl(var(--sl-color-background-secondary));
-}
-
-.bandLabel {
-  margin: 0;
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-heading);
-  letter-spacing: var(--sl-primitive-letter-spacing-widest);
-  text-transform: uppercase;
-}
-
-.bandClock,
-.bandMin {
-  font-size: var(--sl-text-body-sm);
-  font-variant-numeric: tabular-nums;
+.fit[data-tone="spare"] {
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.bandClock {
-  font-weight: var(--sl-font-weight-heading);
-  color: hsl(var(--sl-color-text-primary));
+.fit[data-tone="fits"] {
+  color: hsl(var(--sl-color-success-text));
 }
 
-.splitBtn {
+/* ── Bands ── */
+
+.band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  min-height: var(--target);
+  padding: var(--half) var(--sl-spacing-xs) var(--half) var(--gutter);
+  background: hsl(var(--sl-color-background-secondary));
+  border-bottom: 1px solid var(--rule);
+}
+
+.bandL,
+.bandN,
+.bandsplit {
+  white-space: nowrap;
+}
+
+.bandL {
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* The band's minutes next to its name, in readable grey, not tertiary at the far edge. */
+.bandN {
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* A quiet text button with an icon: three outlined pills down the sheet were noise. */
+.bandsplit {
   display: inline-flex;
   align-items: center;
-  gap: var(--sl-spacing-xs);
-  min-height: var(--fs-target);
+  gap: var(--half);
+  min-height: var(--target);
   margin-left: auto;
   padding: 0 var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-button);
-  background: hsl(var(--sl-color-surface));
-  color: hsl(var(--sl-color-text-primary));
+  border: 0;
+  border-radius: var(--sl-radius-md);
+  background: none;
   font: inherit;
-  font-size: var(--sl-text-body-sm);
+  font-size: var(--sl-text-caption);
   font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
   cursor: pointer;
 }
 
-.splitBtn svg {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
+.bandsplit:hover {
+  background: hsl(var(--sl-color-surface-hover));
+  color: hsl(var(--sl-color-text-primary));
 }
 
-.splitBtn[aria-pressed="true"] {
-  border-color: hsl(var(--sl-color-primary-border));
-  background: hsl(var(--sl-color-primary-subtle));
-  color: hsl(var(--sl-color-primary-text));
+.bandsplit[aria-pressed="true"] {
+  color: hsl(var(--sl-color-primary));
 }
 
 .blank {
   margin: 0;
-  padding: var(--sl-spacing-inset-sm) var(--fs-pad);
-  border-bottom: 1px dashed hsl(var(--sl-color-border-strong));
+  padding: var(--sl-spacing-sm) var(--gutter);
+  border-bottom: 1px dashed var(--rule);
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-secondary));
 }
@@ -258,16 +244,16 @@
   box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
 }
 
-/* ── Rows: shared ──────────────────────────────────────────────────────── */
+/* ── Rows ── */
 
+/* No rules between handle, clock and body: one hairline under the row is enough. */
 .row {
   display: grid;
-  align-items: center;
-  column-gap: var(--sl-spacing-gap-sm);
+  grid-template-columns: var(--grip-w) var(--clock-w) minmax(0, 1fr) auto;
+  grid-template-areas: "grip clock main acts";
   position: relative;
-  padding: var(--sl-spacing-inset-xs) var(--fs-pad) var(--sl-spacing-inset-xs) 0;
-  border-bottom: 1px solid hsl(var(--sl-color-border));
   background: hsl(var(--sl-color-surface));
+  border-bottom: 1px solid var(--rule);
   transition: background-color var(--sl-transition-fast);
 }
 
@@ -275,710 +261,698 @@
   background: transparent;
 }
 
-@media (hover: hover) {
-  .row:hover {
-    background: hsl(var(--sl-color-surface-hover));
-  }
+.row:hover {
+  background: hsl(var(--sl-color-surface-hover));
 }
 
-/* Selected: a tinted row with a full outline, not a coloured stripe. */
 .row[aria-current="true"] {
   background: hsl(var(--sl-color-primary-subtle));
-  box-shadow: inset 0 0 0 1px hsl(var(--sl-color-primary-border));
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary));
 }
 
-/* Grabbed changes what the arrows do, so it looks lifted and different. */
 .row[data-grabbed="true"] {
   background: hsl(var(--sl-color-info-subtle));
-  box-shadow:
-    inset 0 0 0 2px hsl(var(--sl-color-info)),
-    var(--sl-shadow-card);
+  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-info));
 }
 
 .row[data-dragging="true"] {
   opacity: 0.4;
 }
 
-.row:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: -2px;
-}
-
 .grip {
   grid-area: grip;
-  align-self: stretch;
   display: flex;
-  align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  color: hsl(var(--sl-color-text-secondary));
+  padding-top: var(--sl-spacing-sm);
+  color: hsl(var(--sl-color-text-tertiary));
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
 
-.grip svg {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
+.row:hover .grip {
+  color: hsl(var(--sl-color-text-secondary));
 }
 
 .grip:active {
   cursor: grabbing;
 }
 
-@media (pointer: coarse) {
-  .grip {
-    width: 2.75rem;
-  }
-}
-
-.main {
-  grid-area: main;
+.rowClock {
+  grid-area: clock;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: var(--sl-spacing-xs);
-  min-width: 0;
-  min-height: var(--fs-target);
+  align-items: flex-start;
+  gap: 2px;
   padding: var(--sl-spacing-xs) 0;
-  border: 0;
+}
+
+.rowAt {
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-heading);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* It's a button: it looks like one on hover and has a real hit area. */
+.rowDur {
+  min-height: 1.5rem;
+  margin-left: calc(-1 * var(--half));
+  padding: 0 var(--half);
+  border: 1px solid transparent;
   border-radius: var(--sl-radius-sm);
   background: none;
-  color: inherit;
   font: inherit;
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.rowDur:hover {
+  border-color: hsl(var(--sl-color-border));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.rowMain {
+  grid-area: main;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-sm);
+  min-width: 0;
+  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.title {
-  font-weight: var(--sl-font-weight-semibold);
-  line-height: var(--sl-line-height-tight);
-  overflow-wrap: anywhere;
-}
-
-.sub {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
-  font-size: var(--sl-text-body-sm);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.clock {
-  grid-area: clock;
-  font-weight: var(--sl-font-weight-heading);
-  font-variant-numeric: tabular-nums;
-}
-
-.dur {
-  grid-area: dur;
-  font-size: var(--sl-text-body-sm);
-  font-variant-numeric: tabular-nums;
-  color: hsl(var(--sl-color-text-secondary));
-  white-space: nowrap;
-}
-
-.acts {
-  grid-area: acts;
-  display: flex;
-  justify-content: flex-end;
-  gap: 2px;
-}
-
-.act {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: var(--fs-target);
-  height: var(--fs-target);
-  padding: 0;
-  border: 0;
-  border-radius: var(--sl-radius-md);
-  background: none;
-  color: hsl(var(--sl-color-text-secondary));
-  cursor: pointer;
-  transition: background-color var(--sl-transition-fast);
-}
-
-.act svg {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-}
-
-@media (hover: hover) {
-  .act:hover:not(:disabled) {
-    background: hsl(var(--sl-color-background-tertiary));
-    color: hsl(var(--sl-color-text-primary));
-  }
-}
-
-.act:disabled {
-  opacity: var(--sl-opacity-disabled);
-  cursor: not-allowed;
-}
-
-.sheet :is(button, select):focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: var(--sl-shadow-focus);
-}
-
-/* Status: a glyph and a word, coloured by the semantic -text tier. */
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sl-spacing-xs);
-  padding: 0 var(--sl-spacing-sm);
-  border: 1px solid currentColor;
-  border-radius: var(--sl-radius-chip);
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-emphasis);
-  line-height: var(--sl-line-height-normal);
-  white-space: nowrap;
-}
-
-.glyph {
-  font-weight: var(--sl-primitive-font-weight-bold);
-}
-
-[data-status="confirmed"].tag,
-[data-status="confirmed"].statusPick,
-[data-status="confirmed"].legendItem {
-  color: hsl(var(--sl-color-success-text));
-}
-[data-status="draft"].tag,
-[data-status="draft"].statusPick,
-[data-status="draft"].legendItem {
-  color: hsl(var(--sl-color-info-text));
-}
-[data-status="tentative"].tag,
-[data-status="tentative"].statusPick,
-[data-status="tentative"].legendItem {
-  color: hsl(var(--sl-color-warning-text));
-}
-/* ADR-002 §3: undecided is a state, not an error: dashed and "?", never red. */
-[data-status="unknown"].tag,
-[data-status="unknown"].statusPick,
-[data-status="unknown"].legendItem {
-  color: hsl(var(--sl-color-text-primary));
-}
-[data-status="unknown"].tag,
-[data-status="unknown"].statusPick .statusSelect {
-  border-style: dashed;
-}
-
-.statusPick {
-  grid-area: status;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-}
-
-.statusPick .glyph {
-  position: absolute;
-  left: var(--sl-spacing-sm);
-  pointer-events: none;
-}
-
-.statusSelect {
-  min-height: var(--fs-target);
-  width: 100%;
-  padding: 0 var(--sl-spacing-xs) 0 1.625rem;
-  border: 1px solid currentColor;
-  border-radius: var(--sl-radius-input);
-  background: hsl(var(--sl-color-surface));
-  color: inherit;
-  font: inherit;
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-emphasis);
-  cursor: pointer;
-}
-
-/* iOS zooms into any field under 16px. */
-@container fs (max-width: 36rem) {
-  .statusSelect {
-    font-size: var(--sl-text-body);
-  }
-}
-
-.statusSelect option {
-  color: hsl(var(--sl-color-text-primary));
-  background: hsl(var(--sl-color-surface));
-}
-
-.endurmat {
-  grid-area: note;
-  margin: 0 0 var(--sl-spacing-xs);
-  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-color-warning-subtle));
-  font-size: var(--sl-text-body-sm);
-  overflow-wrap: anywhere;
-}
-
-.endurmat b {
-  font-weight: var(--sl-font-weight-semibold);
-  color: hsl(var(--sl-color-warning-text));
-}
-
-.endurmatFlag {
-  display: inline-flex;
-  padding: 0 var(--sl-spacing-sm);
-  border-radius: var(--sl-radius-chip);
-  background: hsl(var(--sl-color-warning-subtle));
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--sl-color-warning-text));
-  white-space: nowrap;
-}
-
-/* ── A · Dagskrá: a printed running order ──────────────────────────────── */
-
-.sheet[data-look="dagskra"] {
-  border-color: hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-sm);
-}
-
-.sheet[data-look="dagskra"] .head {
-  border-bottom: 3px solid hsl(var(--sl-color-text-primary));
-}
-
-.sheet[data-look="dagskra"] .heading {
-  font-size: var(--sl-text-heading-3);
-}
-
-.sheet[data-look="dagskra"] .bandHd {
-  padding-top: var(--sl-spacing-inset-sm);
-  background: none;
-  border-bottom-color: hsl(var(--sl-color-border-strong));
-}
-
-.sheet[data-look="dagskra"] .foot {
-  border-top: 3px solid hsl(var(--sl-color-text-primary));
-}
-
-.row[data-look="dagskra"] {
-  grid-template-columns: auto 5.25rem minmax(0, 1fr) auto;
-  grid-template-areas:
-    "grip clock main acts"
-    "grip clock note note";
-  padding-block: var(--sl-spacing-inset-sm);
-}
-
-.clockCol {
-  grid-area: clock;
-  align-self: start;
+.rowBody {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 2px;
+  gap: var(--half);
 }
 
-.row[data-look="dagskra"] .clock {
-  font-size: var(--sl-text-heading-4);
-  line-height: var(--sl-line-height-tight);
-}
-
-.row[data-look="dagskra"] .title {
-  font-size: var(--sl-text-heading-5);
-}
-
-@container fs (max-width: 36rem) {
-  .row[data-look="dagskra"] {
-    grid-template-columns: auto 4.25rem minmax(0, 1fr);
-    grid-template-areas:
-      "grip clock main"
-      "grip clock note"
-      "grip acts acts";
-  }
-
-  .row[data-look="dagskra"] .clock {
-    font-size: var(--sl-text-heading-5);
-  }
-
-  .row[data-look="dagskra"] .title {
-    font-size: var(--sl-text-heading-6);
-  }
-
-  .sheet[data-look="dagskra"] .heading {
-    font-size: var(--sl-text-heading-4);
-  }
-}
-
-/* ── B · Tímalína: bars as long as their minutes ───────────────────────── */
-
-.sheet[data-look="timalina"] {
-  border-radius: var(--sl-radius-card);
-  box-shadow: var(--sl-shadow-card);
-}
-
-.evening {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-xs);
-  padding-top: var(--sl-spacing-md);
-}
-
-.eveningBar {
-  position: relative;
-  height: 1.75rem;
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-color-background-tertiary));
-}
-
-.eveningScale {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--sl-text-overline);
-  font-variant-numeric: tabular-nums;
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-/* Above the bar, right-aligned to the line, so it never collides with the end. */
-.eveningLimitLabel {
-  position: absolute;
-  bottom: 100%;
-  margin-bottom: var(--sl-spacing-sm);
-  transform: translateX(-100%);
-  padding-right: var(--sl-spacing-xs);
-  font-size: var(--sl-text-overline);
+.rowTitle {
+  font-size: var(--sl-text-body);
   font-weight: var(--sl-font-weight-emphasis);
-  font-variant-numeric: tabular-nums;
-  color: hsl(var(--sl-color-text-primary));
-  white-space: nowrap;
+  line-height: 1.25;
 }
 
-.seg,
-.bar {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-right: 2px solid hsl(var(--sl-color-surface));
-  background: hsl(var(--sl-color-primary) / 0.75);
-}
-
-.seg {
-  border-radius: 0;
-}
-
-.bar {
-  border-radius: var(--sl-radius-pill);
-}
-
-:is(.seg, .bar)[data-status="draft"] {
-  background: hsl(var(--sl-color-info) / 0.6);
-}
-:is(.seg, .bar)[data-status="tentative"] {
-  background: hsl(var(--sl-color-warning) / 0.55);
-}
-:is(.seg, .bar)[data-status="unknown"] {
-  background: hsl(var(--sl-color-surface));
-  border: 2px dashed hsl(var(--sl-color-text-secondary));
-}
-.seg[data-split="true"] {
-  background: repeating-linear-gradient(
-    90deg,
-    hsl(var(--sl-color-primary) / 0.75) 0 6px,
-    hsl(var(--sl-color-primary) / 0.35) 6px 12px
-  );
-}
-
-/* Past the planned end: hatched warning, so an overrun is a shape. */
-.segOver,
-.barOver {
-  background: repeating-linear-gradient(
-    -45deg,
-    hsl(var(--sl-color-warning)) 0 4px,
-    hsl(var(--sl-color-warning) / 0.45) 4px 8px
-  );
-  border: 0;
-}
-
-.eveningLimit,
-.limit {
-  position: absolute;
-  width: 2px;
-  margin-left: -1px;
-  background: hsl(var(--sl-color-text-primary));
-}
-
-.eveningLimit {
-  top: -0.375rem;
-  bottom: -0.375rem;
-}
-
-.sheet[data-look="timalina"] .eveningBar {
-  margin-top: var(--sl-spacing-lg);
-}
-
-.row[data-look="timalina"] {
-  grid-template-columns: auto 3.5rem minmax(0, 1fr) auto auto;
-  grid-template-areas:
-    "grip clock main dur acts"
-    "grip track track track track";
-  row-gap: var(--sl-spacing-xs);
-}
-
-.row[data-look="timalina"] .clock {
-  font-size: var(--sl-text-body-lg);
-}
-
-.row[data-look="timalina"] .title {
-  font-size: var(--sl-text-body-lg);
-}
-
-.track {
-  grid-area: track;
-  position: relative;
-  height: 0.625rem;
-  margin-bottom: var(--sl-spacing-xs);
-  border-radius: var(--sl-radius-pill);
-  background: hsl(var(--sl-color-background-tertiary));
-}
-
-.limit {
-  top: -0.25rem;
-  bottom: -0.25rem;
-}
-
-@container fs (max-width: 36rem) {
-  .row[data-look="timalina"] {
-    grid-template-columns: auto 3.25rem minmax(0, 1fr) auto;
-    grid-template-areas:
-      "grip clock main dur"
-      "grip track track track"
-      "grip acts acts acts";
-  }
-}
-
-/* ── C · Gátlisti: what's left to do ───────────────────────────────────── */
-
-.sheet[data-look="gatlisti"] {
-  border-radius: var(--sl-radius-card);
-  box-shadow: var(--sl-shadow-card);
-}
-
-.sheet[data-look="gatlisti"] .head {
-  background: hsl(var(--sl-color-background-secondary));
-}
-
-.readiness {
-  margin: 0;
-  font-size: var(--sl-text-heading-4);
-  font-weight: var(--sl-font-weight-heading);
-  line-height: var(--sl-line-height-tight);
-  font-variant-numeric: tabular-nums;
-}
-
-.readiness[data-done="true"] {
-  font-size: var(--sl-text-heading-6);
-  color: hsl(var(--sl-color-success-text));
-}
-
-.meter {
-  display: flex;
-  height: 0.5rem;
-  overflow: hidden;
-  border-radius: var(--sl-radius-pill);
-  background: hsl(var(--sl-color-background-tertiary));
-}
-
-.meterPart {
-  height: 100%;
-  border-right: 2px solid hsl(var(--sl-color-background-secondary));
-}
-
-.meterPart[data-status="confirmed"] {
-  background: hsl(var(--sl-color-success));
-}
-.meterPart[data-status="draft"] {
-  background: hsl(var(--sl-color-info));
-}
-.meterPart[data-status="tentative"] {
-  background: hsl(var(--sl-color-warning));
-}
-.meterPart[data-status="unknown"] {
-  background: hsl(var(--sl-color-text-secondary) / 0.35);
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-xs) var(--sl-spacing-md);
-  margin: 0;
-  font-size: var(--sl-text-body-sm);
-}
-
-.legendItem b {
-  font-variant-numeric: tabular-nums;
-}
-
-.todo {
-  padding: var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--sl-color-surface));
-}
-
-.todoHead {
-  margin: 0 0 var(--sl-spacing-xs);
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-heading);
-  letter-spacing: var(--sl-primitive-letter-spacing-widest);
-  text-transform: uppercase;
-}
-
-.todoList {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.todoItem {
+.rowSub {
   display: flex;
   align-items: center;
   gap: var(--sl-spacing-sm);
-  width: 100%;
-  min-height: var(--fs-target);
-  padding: 0 var(--sl-spacing-xs);
-  border: 0;
-  border-radius: var(--sl-radius-sm);
-  background: none;
-  color: hsl(var(--sl-color-text-primary));
-  font: inherit;
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-medium);
-  text-align: left;
-  cursor: pointer;
-}
-
-@media (hover: hover) {
-  .todoItem:hover {
-    background: hsl(var(--sl-color-surface-hover));
-  }
-}
-
-.row[data-look="gatlisti"] {
-  grid-template-columns: auto 8rem minmax(0, 1fr) auto;
-  grid-template-areas:
-    "grip status main acts"
-    "grip . note note";
-}
-
-.row[data-look="gatlisti"] .statusPick {
-  width: 100%;
-}
-
-.row[data-look="gatlisti"] .title {
-  font-size: var(--sl-text-body-lg);
-}
-
-.row[data-look="gatlisti"] .clock {
-  color: hsl(var(--sl-color-text-primary));
-}
-
-@container fs (max-width: 36rem) {
-  .row[data-look="gatlisti"] {
-    grid-template-columns: auto 7.5rem minmax(0, 1fr);
-    grid-template-areas:
-      "grip status main"
-      "grip note note"
-      "grip acts acts";
-  }
-}
-
-/* ── D · Þétt tafla: a dense editor ────────────────────────────────────── */
-
-.sheet[data-look="thett"] {
-  border-radius: var(--sl-radius-md);
-  font-size: var(--sl-text-body-sm);
-}
-
-.headDense {
-  gap: var(--sl-spacing-xs);
-  padding-block: var(--sl-spacing-inset-sm);
-}
-
-.headDense .heading {
-  font-size: var(--sl-text-heading-6);
-}
-
-.headDense .fit {
-  margin-left: auto;
-}
-
-.colHead,
-.row[data-look="thett"] {
-  grid-template-columns: auto 3rem 6.5rem minmax(0, 1fr) 7.5rem auto;
-  grid-template-areas: "grip clock step main status acts";
-}
-
-.colHead {
-  display: grid;
-  column-gap: var(--sl-spacing-gap-sm);
-  padding: var(--sl-spacing-xs) var(--fs-pad) var(--sl-spacing-xs) 0;
-  border-bottom: 1px solid hsl(var(--sl-color-border-strong));
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-heading);
-  letter-spacing: var(--sl-primitive-letter-spacing-wider);
-  text-transform: uppercase;
+  flex-wrap: wrap;
+  font-size: var(--sl-text-caption);
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.colHead > span:first-child {
-  width: 1.5rem;
+/* Status: tinted for what still needs the leader, plain for what's done. */
+.st {
+  padding: 0 calc(var(--sl-spacing-xs) * 1.5);
+  border: 1px solid currentColor;
+  border-radius: var(--sl-radius-chip);
+  font-weight: var(--sl-font-weight-emphasis);
 }
 
-.row[data-look="thett"] {
-  padding-block: 2px;
+.st_confirmed {
+  border-color: transparent;
+  padding-left: 0;
+  color: hsl(var(--sl-color-success-text));
 }
 
-.row[data-look="thett"] .main {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
+.st_draft {
+  color: hsl(var(--sl-color-info-text));
 }
 
-.stepper {
-  grid-area: step;
+.st_tentative {
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+}
+
+/* Undecided is a state, not an error: dashed, never red. */
+.st_unknown {
+  border-style: dashed;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.kind,
+.theme {
+  white-space: nowrap;
+}
+
+.theme::before,
+.kind::before {
+  content: "·";
+  margin-right: var(--sl-spacing-sm);
+  color: hsl(var(--sl-color-text-tertiary));
+}
+
+/* Shown, not tucked into a tooltip: it's the note last week's leader left for this week. */
+.endurmat {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.endurmat b {
+  color: hsl(var(--sl-color-warning-text));
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.rowActs {
+  grid-area: acts;
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--half) var(--sl-spacing-xs) 0 0;
+}
+
+.ib {
   display: inline-flex;
   align-items: center;
-  justify-self: start;
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-button);
+  justify-content: center;
+  width: var(--target);
+  height: var(--target);
+  border: 0;
+  border-radius: var(--sl-radius-md);
+  background: none;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.stepValue {
-  min-width: 1.75rem;
-  font-weight: var(--sl-font-weight-semibold);
+.ib:hover:not(:disabled) {
+  background: hsl(var(--sl-color-background-tertiary));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.ib:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Footer ── */
+
+.sheetFt {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  flex-wrap: wrap;
+  padding: var(--sl-spacing-sm) var(--gutter);
+  background: hsl(var(--sl-color-background-secondary));
+  font-size: var(--sl-text-body-sm);
+}
+
+/* Sentence case, and warning-coloured while something is undecided. */
+.left {
+  font-weight: var(--sl-font-weight-emphasis);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.left[data-open="true"] {
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.tot {
+  margin-left: auto;
+  font-weight: var(--sl-font-weight-heading);
   font-variant-numeric: tabular-nums;
-  text-align: center;
 }
 
-@container fs (max-width: 36rem) {
-  .colHead {
-    display: none;
+.over {
+  color: hsl(var(--sl-color-warning-text));
+}
+
+/* ── Narrow sheet (phone): the clock above the name, the buttons on their own line ── */
+
+@container (max-width: 34rem) {
+  .sheet,
+  .row {
+    --target: var(--sl-size-button-lg);
   }
 
-  .row[data-look="thett"] {
-    grid-template-columns: auto 3rem auto minmax(0, 1fr);
+  .sheet {
+    --gutter: var(--sl-spacing-sm);
+  }
+
+  .sheetT {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* The buttons share the clock's line, so a row is two lines, not three. */
+  .row {
+    grid-template-columns: 2.25rem minmax(0, 1fr) auto;
     grid-template-areas:
-      "grip clock main main"
-      "grip step step status"
-      "grip acts acts acts";
-    row-gap: var(--sl-spacing-xs);
+      "grip clock acts"
+      "grip main main";
+  }
+
+  .rowClock {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--sl-spacing-sm);
+    padding: 0 var(--sl-spacing-sm);
+  }
+
+  .rowMain {
+    padding-bottom: var(--sl-spacing-sm);
+  }
+
+  .rowMain {
+    padding-top: 0;
+  }
+
+  .rowActs {
+    padding: 0 var(--half) 0 0;
+  }
+
+  .grip {
+    padding-top: var(--sl-spacing-sm);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .row,
-  .act {
-    transition-duration: 1ms;
+  .sheet,
+  .row {
+    transition: none;
+  }
+}
+
+/* Printing any look: the sheet without its controls. */
+@media print {
+  .grip,
+  .rowActs,
+  .bandsplit {
+    display: none;
+  }
+
+  .row {
+    grid-template-columns: var(--clock-w) minmax(0, 1fr);
+    grid-template-areas: "clock main";
+    break-inside: avoid;
+  }
+
+  .sheet {
+    border-color: hsl(var(--sl-color-border-strong));
+  }
+}
+
+/* ══ F1 · Quiet ═══════════════════════════════════════════════════════════════
+   No card and no boxes. A strong rule on top, hairlines between rows, a big clock. The band
+   names are small headings on the rule, the status is a dot and a word. */
+
+.sheet[data-look="hreint"] {
+  border: 0;
+  border-top: 2px solid hsl(var(--sl-color-text-primary));
+  border-radius: 0;
+  background: transparent;
+  --rule: hsl(var(--sl-color-border) / 0.7);
+}
+
+.sheet[data-look="hreint"][data-past="true"] {
+  border-top-style: dashed;
+  border-top-color: hsl(var(--sl-color-border-strong));
+}
+
+.sheet[data-look="hreint"] .sheetHd {
+  padding: var(--sl-spacing-md) 0 var(--sl-spacing-sm);
+  border-bottom: 0;
+}
+
+.sheet[data-look="hreint"] .cyc {
+  padding: 0;
+  border: 0;
+}
+
+.sheet[data-look="hreint"] .band {
+  padding-left: 0;
+  background: none;
+  border-bottom: 0;
+  margin-top: var(--sl-spacing-sm);
+}
+
+.sheet[data-look="hreint"] .bandL {
+  letter-spacing: 0.08em;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.sheet[data-look="hreint"] .row {
+  background: transparent;
+  border-top: 1px solid var(--rule);
+  border-bottom: 0;
+}
+
+.sheet[data-look="hreint"] .rows > .row:last-child,
+.sheet[data-look="hreint"] .rows > :last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.sheet[data-look="hreint"] .row:hover,
+.sheet[data-look="hreint"] .row[aria-current="true"] {
+  background: hsl(var(--sl-color-surface-hover));
+}
+
+.sheet[data-look="hreint"] .row[aria-current="true"] {
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-text-primary));
+}
+
+.sheet[data-look="hreint"] .rowAt {
+  font-size: var(--sl-text-heading-6);
+}
+
+.sheet[data-look="hreint"] .rowTitle {
+  font-size: var(--sl-text-body-lg, var(--sl-text-body));
+}
+
+.sheet[data-look="hreint"] .st {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--half);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.sheet[data-look="hreint"] .st::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sheet[data-look="hreint"] .st_unknown::before {
+  background: none;
+  border: 1.5px dashed currentColor;
+}
+
+.sheet[data-look="hreint"] .st_draft::before {
+  background: none;
+  border: 1.5px solid currentColor;
+}
+
+.sheet[data-look="hreint"] .grip {
+  opacity: 0;
+}
+
+.sheet[data-look="hreint"] .row:hover .grip,
+.sheet[data-look="hreint"] .row:focus-within .grip {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .sheet[data-look="hreint"] .grip {
+    opacity: 1;
+  }
+}
+
+.sheet[data-look="hreint"] .sheetFt {
+  padding-left: 0;
+  padding-right: 0;
+  background: none;
+}
+
+/* ══ F2 · Stamped ═════════════════════════════════════════════════════════════
+   The calendar's stamp family: a stamp per liður (inked when staðfest, an empty dotted box
+   when óákveðið), band names as inked labels, and the header like a page in a passport. */
+
+.sheet[data-look="stimplar"] {
+  border: 2px solid hsl(var(--sl-color-text-primary) / 0.85);
+  border-radius: var(--sl-radius-md);
+  box-shadow:
+    inset 0 0 0 3px hsl(var(--sl-color-surface)),
+    inset 0 0 0 4px hsl(var(--sl-color-border));
+}
+
+.sheet[data-look="stimplar"][data-past="true"] {
+  border-color: hsl(var(--sl-color-border-strong));
+  border-style: dashed;
+}
+
+.sheet[data-look="stimplar"] .sheetHd {
+  border-bottom: 2px solid hsl(var(--sl-color-text-primary) / 0.85);
+}
+
+.sheet[data-look="stimplar"] .sheetT {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: var(--sl-text-heading-6);
+}
+
+.sheet[data-look="stimplar"] .sheetDate {
+  padding: 0 var(--sl-spacing-xs);
+  border: 1.5px solid currentColor;
+  border-radius: var(--sl-radius-sm);
+  font-size: var(--sl-text-body-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transform: rotate(-2deg);
+}
+
+.sheet[data-look="stimplar"] .band {
+  background: none;
+  border-bottom: 1px dashed var(--rule);
+}
+
+/* The band name is an ink label: a double rule round the word, a slight tilt. */
+.sheet[data-look="stimplar"] .bandL {
+  padding: 1px var(--sl-spacing-xs);
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+  color: hsl(var(--sl-color-text-primary));
+  transform: rotate(-1.5deg);
+}
+
+.sheet[data-look="stimplar"] .row {
+  border-bottom: 1px dashed var(--rule);
+}
+
+.rowStamp {
+  display: inline-flex;
+  flex: none;
+  padding-top: 1px;
+}
+
+.sheet[data-look="stimplar"] .rowMain {
+  gap: var(--sl-spacing-sm);
+}
+
+/* The status word is the stamp's ink: no pill around it, the stamp is the shape. */
+.sheet[data-look="stimplar"] .st {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sheet[data-look="stimplar"] .sheetFt {
+  background: none;
+  border-top: 2px solid hsl(var(--sl-color-text-primary) / 0.85);
+}
+
+/* ══ F3 · Run sheet ═══════════════════════════════════════════════════════════
+   The paper a foringi holds: ruled like a notebook, a margin rule, typewriter times, and a
+   tick box per liður to tick off during the fundur. Prints on one page. */
+
+.sheet[data-look="blad"] {
+  --clock-w: 4.25rem;
+  --rule: hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-sm);
+  background:
+    linear-gradient(
+      to right,
+      transparent calc(var(--grip-w) + var(--clock-w) - 1px),
+      hsl(var(--sl-color-error) / 0.45) calc(var(--grip-w) + var(--clock-w) - 1px),
+      hsl(var(--sl-color-error) / 0.45) calc(var(--grip-w) + var(--clock-w)),
+      transparent calc(var(--grip-w) + var(--clock-w))
+    ),
+    hsl(var(--sl-color-surface));
+}
+
+.sheet[data-look="blad"] .sheetHd {
+  background: hsl(var(--sl-color-surface));
+  border-bottom: 2px solid hsl(var(--sl-color-text-primary));
+}
+
+.sheet[data-look="blad"] .sheetT {
+  font-family: var(--sl-font-family-code);
+  font-size: var(--sl-text-heading-6);
+  font-weight: var(--sl-font-weight-heading);
+}
+
+.sheet[data-look="blad"] .sheetWhen b,
+.sheet[data-look="blad"] .rowAt,
+.sheet[data-look="blad"] .rowDur,
+.sheet[data-look="blad"] .tot,
+.sheet[data-look="blad"] .bandN {
+  font-family: var(--sl-font-family-code);
+}
+
+.sheet[data-look="blad"] .cyc {
+  border-radius: var(--sl-radius-sm);
+  border-color: hsl(var(--sl-color-text-primary));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.sheet[data-look="blad"] .band {
+  background: hsl(var(--sl-color-surface));
+  border-top: 1px solid hsl(var(--sl-color-text-primary));
+  border-bottom: 1px solid hsl(var(--sl-color-text-primary));
+}
+
+.sheet[data-look="blad"] .bandL {
+  letter-spacing: 0.16em;
+}
+
+.sheet[data-look="blad"] .row,
+.sheet[data-look="blad"][data-past="true"] .row {
+  background: transparent;
+}
+
+.sheet[data-look="blad"] .row:hover {
+  background: hsl(var(--sl-color-surface-hover) / 0.6);
+}
+
+.sheet[data-look="blad"] .rowAt {
+  font-weight: var(--sl-font-weight-emphasis);
+}
+
+.tick {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 2px;
+  border: 1.5px solid hsl(var(--sl-color-text-primary));
+  border-radius: 2px;
+}
+
+.sheet[data-look="blad"] .st {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-style: italic;
+}
+
+.sheet[data-look="blad"] .sheetFt {
+  background: hsl(var(--sl-color-surface));
+  border-top: 2px solid hsl(var(--sl-color-text-primary));
+}
+
+@container (max-width: 34rem) {
+  .sheet[data-look="blad"] {
+    background: hsl(var(--sl-color-surface));
+  }
+}
+
+@media print {
+  .sheet[data-look="blad"] {
+    background: none;
+    border: 0;
+  }
+}
+
+/* ══ F4 · Patrol colour ═══════════════════════════════════════════════════════
+   The flokkur's colour on the header, and its tint under the clock column, so whose evening
+   it is shows before anything is read. A troop-wide fundur wears the sveit's green. */
+
+.sheet[data-look="flokkur"] {
+  border-color: hsl(var(--pc));
+  border-width: 2px;
+}
+
+.sheet[data-look="flokkur"] .sheetHd {
+  background: hsl(var(--pc));
+  color: hsl(var(--pc-on));
+  border-bottom: 0;
+}
+
+.sheet[data-look="flokkur"] .sheetKick,
+.sheet[data-look="flokkur"] .venue,
+.sheet[data-look="flokkur"] .sheetDate,
+.sheet[data-look="flokkur"] .sheetWhen,
+.sheet[data-look="flokkur"] .sheetWhen b {
+  color: hsl(var(--pc-on));
+}
+
+.sheet[data-look="flokkur"] .patrolName {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sheet[data-look="flokkur"] .cyc {
+  border-color: hsl(var(--pc-on));
+  color: hsl(var(--pc-on));
+}
+
+/* On the patrol colour every chip sits on the surface, so its own colour keeps AA. */
+.sheet[data-look="flokkur"] .fit {
+  background: hsl(var(--sl-color-surface));
+}
+
+.sheet[data-look="flokkur"] .fit[data-tone="over"] {
+  background: hsl(var(--sl-color-surface));
+}
+
+.sheet[data-look="flokkur"] .band {
+  background: hsl(var(--pc-tint));
+}
+
+/* The tint is a mid tone in dark mode, so secondary grey on it falls under AA: on the tint,
+   everything is primary text. */
+.sheet[data-look="flokkur"] .band :is(.bandN, .bandsplit),
+.sheet[data-look="flokkur"] .rowClock .rowDur {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.sheet[data-look="flokkur"] .rowClock {
+  margin: 0;
+  padding-left: var(--sl-spacing-xs);
+  background: hsl(var(--pc-tint));
+}
+
+.sheet[data-look="flokkur"] .row {
+  grid-template-columns: var(--grip-w) calc(var(--clock-w) + var(--sl-spacing-xs)) minmax(
+      0,
+      1fr
+    ) auto;
+}
+
+.sheet[data-look="flokkur"] .row[aria-current="true"] {
+  box-shadow: inset 4px 0 0 hsl(var(--pc));
+}
+
+/* The footer carries warning colours ("10 yfir"), so it stays on the surface. */
+.sheet[data-look="flokkur"] .sheetFt {
+  background: hsl(var(--sl-color-surface));
+  border-top: 2px solid hsl(var(--pc));
+}
+
+@container (max-width: 34rem) {
+  .sheet[data-look="flokkur"] .row {
+    grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+  }
+
+  .sheet[data-look="flokkur"] .rowClock {
+    background: none;
+    padding-left: var(--sl-spacing-sm);
+  }
+
+  .sheet[data-look="flokkur"] .grip {
+    background: hsl(var(--pc-tint));
   }
 }

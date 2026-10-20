@@ -1,55 +1,40 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Columns3, Rows3 } from "lucide-react";
+import { BANDS, BAND_OF, type BandId, type Fundur, type Patrol } from "@/services/plan.service";
+import type { BenchIntent } from "@/components/plan/bench/benchState";
 import {
-  BANDS,
-  BAND_OF,
-  STATUS_LABEL,
-  type BandId,
-  type Fundur,
-  type Patrol,
-} from "@/services/plan.service";
-import {
-  bandOffset,
+  bandMinutes,
   clockAt,
+  fundurMinutes,
   startTimes,
-  type BenchIntent,
 } from "@/components/plan/bench/benchState";
 import LidurEditor from "@/components/plan/bench/LidurEditor";
 import SplitGrid from "@/components/plan/bench/SplitGrid";
 import { dragId } from "@/components/plan/bench/dnd";
-import { countIs } from "@/lib/format";
-import LidurRowLab, { StatusTag } from "./LidurRowLab";
-import {
-  STATUS_ORDER,
-  bandMinutes,
-  cycleLabel,
-  dateLabel,
-  fitLabel,
-  offsetLabel,
-  sheetFacts,
-  startOffsets,
-  undecidedSentence,
-  undecidedShort,
-  type FundurSheetLook,
-  type SheetFacts,
-} from "./sheetModel";
+import { countIs, pluralIs } from "@/lib/format";
+import { cn } from "@/lib/util";
+import LidurRowLab from "./LidurRowLab";
+import { fitWord, offsetLabel, patrolOf, startOffsets, type FundurSheetLook } from "./sheetModel";
 import styles from "./FundurSheetLab.module.css";
 
 /**
- * FundurSheet, four ways: lab copies with a `look` prop. Nothing in the app
- * uses this file; see Lab → FundurSheet → About for why each look exists.
+ * The current FundurSheet (components/plan/bench/FundurSheet.tsx) with a `look`.
  *
- * Same props as the real FundurSheet plus `look`, so the chosen look can be
- * promoted without touching PlanBench. The bands, the split grid, the inline
- * editor, the drag contexts and every intent are the bench's own.
+ * The form is the current one: header, the three beinagrind bands with "Skipta
+ * á flokka" on each, the rows, the open editor under its row, the real
+ * SplitGrid for a split band, and the footer. Every intent is the same. The
+ * fixes every look shares are in the MDX ("What's wrong with the current
+ * sheet"); the looks differ only in CSS, plus F2's stamps and F3's tick boxes.
  */
 
-export interface FundurSheetLabProps {
+interface Props {
   look: FundurSheetLook;
+  /** Appended to the sheet's name, when several sheets of one fundur share a page. */
+  labelSuffix?: string;
   fundur: Fundur;
   patrols: Patrol[];
   otherFundir: Fundur[];
@@ -62,299 +47,16 @@ export interface FundurSheetLabProps {
   dispatch: (intent: BenchIntent) => void;
   registerRow: (id: string, node: HTMLDivElement | null) => void;
   focusSibling: (id: string, delta: -1 | 1) => void;
-  /** Lab only: told apart from other sheets of the same fundur (axe landmark-unique). */
-  labelSuffix?: string;
 }
 
-export default function FundurSheetLab(props: FundurSheetLabProps) {
-  const { look, fundur, isActive, isPast, dispatch, labelSuffix = "" } = props;
-  const facts = sheetFacts(fundur);
-  const date = dateLabel(fundur);
-
-  return (
-    <section
-      className={styles.sheet}
-      data-look={look}
-      data-active={isActive}
-      data-past={isPast}
-      aria-label={`${fundur.title} · ${date}${labelSuffix}`}
-      onFocus={() => dispatch({ t: "activate", fundurId: fundur.event_id })}
-    >
-      <div className={styles.inner}>
-        {look === "dagskra" && <DagskraHeader fundur={fundur} facts={facts} isPast={isPast} />}
-        {look === "timalina" && <TimalinaHeader fundur={fundur} facts={facts} isPast={isPast} />}
-        {look === "gatlisti" && (
-          <GatlistiHeader fundur={fundur} facts={facts} isPast={isPast} dispatch={dispatch} />
-        )}
-        {look === "thett" && <ThettHeader fundur={fundur} facts={facts} isPast={isPast} />}
-
-        {look === "thett" && (
-          // A visual column head. Each control names itself, so it's hidden from
-          // the tree rather than pretending to be a table header.
-          <div className={styles.colHead} aria-hidden="true">
-            <span />
-            <span>Kl.</span>
-            <span>Mín</span>
-            <span>Liður</span>
-            <span>Staða</span>
-            <span />
-          </div>
-        )}
-
-        {BANDS.map((band) => (
-          <Band key={band.id} {...props} band={band.id} label={band.label} />
-        ))}
-
-        {look === "dagskra" && (
-          <footer className={styles.foot}>
-            <span>{facts.endsAt ? `Lok kl. ${facts.endsAt}` : "Ódagsett"}</span>
-            <FitBadge facts={facts} />
-          </footer>
-        )}
-        {look === "thett" && (
-          <footer className={styles.foot}>
-            <span>{undecidedSentence(facts.undecided)}</span>
-            <FitBadge facts={facts} />
-          </footer>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/* ── Headers, one per look ─────────────────────────────────────────────── */
-
-type HeaderProps = { fundur: Fundur; facts: SheetFacts; isPast: boolean };
-
-/** The kicker every look carries: cycle, venue, scope, and "Liðinn" on a past fundur. */
-function Kicker({ fundur, isPast }: { fundur: Fundur; isPast: boolean }) {
-  const cycle = cycleLabel(fundur);
-  return (
-    <p className={styles.kicker}>
-      {isPast && <span className={styles.pastTag}>Liðinn fundur</span>}
-      {cycle && <span>{cycle}</span>}
-      {fundur.venue && <span>{fundur.venue}</span>}
-      {fundur.scope === "troop-wide" && <span className={styles.troop}>Öll sveitin</span>}
-    </p>
-  );
-}
-
-function FitBadge({ facts }: { facts: SheetFacts }) {
-  return (
-    <span className={styles.fit} data-over={facts.over || undefined}>
-      {fitLabel(facts)}
-    </span>
-  );
-}
-
-function timeRange(facts: SheetFacts): string {
-  return facts.startsAt ? `${facts.startsAt}–${facts.endsAt}` : "Ódagsett";
-}
-
-function DagskraHeader({ fundur, facts, isPast }: HeaderProps) {
-  return (
-    <header className={styles.head}>
-      <Kicker fundur={fundur} isPast={isPast} />
-      <h2 className={styles.heading}>{fundur.title}</h2>
-      <p className={styles.when}>
-        <span className={styles.date}>{dateLabel(fundur)}</span>
-        <span className={styles.range}>{timeRange(facts)}</span>
-      </p>
-      <p className={styles.meta}>
-        <FitBadge facts={facts} />
-        <span>{countIs(facts.allItems.length, "liður", "liðir")}</span>
-        {facts.undecided > 0 && (
-          <span className={styles.warnText}>{undecidedSentence(facts.undecided)}</span>
-        )}
-      </p>
-    </header>
-  );
-}
-
-function TimalinaHeader({ fundur, facts, isPast }: HeaderProps) {
-  const offsets = startOffsets(fundur);
-  // One segment per liður, and one per split band: its lanes run side by side,
-  // so the evening's shape has a single block there as long as the longest lane.
-  const segments = BANDS.flatMap((band) => {
-    if (fundur.split?.[band.id]) {
-      return [
-        {
-          id: band.id,
-          start: bandOffset(fundur, band.id),
-          minutes: bandMinutes(fundur, band.id),
-          status: "draft" as const,
-          split: true,
-        },
-      ];
-    }
-    return fundur.items
-      .map((item, i) => ({ item, start: offsets[i] }))
-      .filter(({ item }) => BAND_OF[item.kind] === band.id)
-      .map(({ item, start }) => ({
-        id: item.id,
-        start,
-        minutes: item.minutes,
-        status: item.status,
-        split: false,
-      }));
-  });
-  const at = (minutes: number) => `${(minutes / facts.scale) * 100}%`;
-
-  return (
-    <header className={styles.head}>
-      <Kicker fundur={fundur} isPast={isPast} />
-      <div className={styles.titleLine}>
-        <h2 className={styles.heading}>{fundur.title}</h2>
-        <span className={styles.date}>{dateLabel(fundur)}</span>
-      </div>
-      <div className={styles.evening}>
-        <div className={styles.eveningBar} aria-hidden="true">
-          {segments.flatMap((seg) => {
-            // The part of a liður past the planned end is drawn on its own, in
-            // the warning colour, so the overrun is a shape and not a number.
-            const end = seg.start + seg.minutes;
-            const inTime = Math.max(0, Math.min(end, facts.planned) - seg.start);
-            const overStart = Math.max(seg.start, facts.planned);
-            return [
-              inTime > 0 && (
-                <span
-                  key={seg.id}
-                  className={styles.seg}
-                  data-status={seg.status}
-                  data-split={seg.split || undefined}
-                  style={{ left: at(seg.start), width: at(inTime) }}
-                />
-              ),
-              end > facts.planned && (
-                <span
-                  key={`${seg.id}-over`}
-                  className={`${styles.seg} ${styles.segOver}`}
-                  style={{ left: at(overStart), width: at(end - overStart) }}
-                />
-              ),
-            ];
-          })}
-          <span className={styles.eveningLimit} style={{ left: at(facts.planned) }} />
-          <span className={styles.eveningLimitLabel} style={{ left: at(facts.planned) }}>
-            Áætluð lok {facts.plannedEndsAt ?? offsetLabel(facts.planned)}
-          </span>
-        </div>
-        <div className={styles.eveningScale} aria-hidden="true">
-          <span>{facts.startsAt ?? offsetLabel(0)}</span>
-          <span>{facts.endsAt ?? offsetLabel(facts.total)}</span>
-        </div>
-        <p className={styles.meta}>
-          <FitBadge facts={facts} />
-          <span>{timeRange(facts)}</span>
-          <span>{countIs(facts.allItems.length, "liður", "liðir")}</span>
-        </p>
-      </div>
-    </header>
-  );
-}
-
-function GatlistiHeader({
-  fundur,
-  facts,
-  isPast,
-  dispatch,
-}: HeaderProps & { dispatch: (intent: BenchIntent) => void }) {
-  const left: string[] = [];
-  if (facts.undecided > 0) left.push(undecidedShort(facts.undecided));
-  if (facts.delta > 0) left.push(`${facts.delta} mín yfir`);
-  const emptyLabels = BANDS.filter((band) => facts.emptyBands.includes(band.id)).map(
-    (band) => band.label
-  );
-  if (emptyLabels.length) left.push(`${emptyLabels.join(", ")} tómt`);
-
-  const todo = fundur.items
-    .filter((item) => item.status !== "confirmed")
-    .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
-  const total = facts.allItems.length || 1;
-
-  const goTo = (id: string) => {
-    dispatch({ t: "select", id });
-    document.querySelector<HTMLElement>(`[data-lidur-row="${id}"]`)?.focus();
-  };
-
-  return (
-    <header className={styles.head}>
-      <Kicker fundur={fundur} isPast={isPast} />
-      <div className={styles.titleLine}>
-        <h2 className={styles.heading}>{fundur.title}</h2>
-        <span className={styles.date}>
-          {dateLabel(fundur)} · {timeRange(facts)}
-        </span>
-      </div>
-
-      <p className={styles.readiness} data-done={left.length === 0 || undefined}>
-        {left.length ? left.join(" · ") : "Tilbúið: allt ákveðið og passar í tímann"}
-      </p>
-
-      <div className={styles.meter} aria-hidden="true">
-        {[...STATUS_ORDER]
-          .reverse()
-          .map((status) =>
-            facts.byStatus[status] ? (
-              <span
-                key={status}
-                className={styles.meterPart}
-                data-status={status}
-                style={{ width: `${(facts.byStatus[status] / total) * 100}%` }}
-              />
-            ) : null
-          )}
-      </div>
-      <p className={styles.legend}>
-        {[...STATUS_ORDER].reverse().map((status) => (
-          <span key={status} className={styles.legendItem} data-status={status}>
-            {STATUS_LABEL[status]} <b>{facts.byStatus[status]}</b>
-          </span>
-        ))}
-        <FitBadge facts={facts} />
-      </p>
-
-      {todo.length > 0 && (
-        <div className={styles.todo}>
-          <h3 className={styles.todoHead}>Eftir að ákveða</h3>
-          <ul className={styles.todoList}>
-            {todo.map((item) => (
-              <li key={item.id}>
-                <button type="button" className={styles.todoItem} onClick={() => goTo(item.id)}>
-                  <StatusTag status={item.status} />
-                  <span>{item.name}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </header>
-  );
-}
-
-function ThettHeader({ fundur, facts, isPast }: HeaderProps) {
-  return (
-    <header className={`${styles.head} ${styles.headDense}`}>
-      <div className={styles.titleLine}>
-        <h2 className={styles.heading}>{fundur.title}</h2>
-        <span className={styles.date}>
-          {dateLabel(fundur)} · {timeRange(facts)}
-        </span>
-        <FitBadge facts={facts} />
-      </div>
-      <Kicker fundur={fundur} isPast={isPast} />
-    </header>
-  );
-}
-
-/* ── Bands ─────────────────────────────────────────────────────────────── */
-
-function Band({
+export default function FundurSheetLab({
   look,
+  labelSuffix = "",
   fundur,
   patrols,
   otherFundir,
+  isActive,
+  isPast,
   selected,
   grabbed,
   editing,
@@ -362,101 +64,203 @@ function Band({
   dispatch,
   registerRow,
   focusSibling,
-  band,
-  label,
-}: FundurSheetLabProps & { band: BandId; label: string }) {
-  const lanes = fundur.split?.[band];
-  const items = fundur.items.filter((item) => BAND_OF[item.kind] === band);
-  const minutes = bandMinutes(fundur, band);
+}: Props) {
   const starts = startTimes(fundur);
-  const offset = bandOffset(fundur, band);
-  const bandClock = clockAt(fundur, offset) ?? offsetLabel(offset);
+  const offsets = startOffsets(fundur);
+  const total = fundurMinutes(fundur);
+  const over = total > fundur.planned_minutes;
+
+  const allItems = [
+    ...fundur.items,
+    ...Object.values(fundur.split ?? {}).flatMap((lanes) =>
+      (lanes ?? []).flatMap((lane) => lane.items)
+    ),
+  ];
+
+  const clock = fundur.starts_at ? /T(\d{2}):(\d{2})/.exec(fundur.starts_at) : null;
+  const endsAt = clockAt(fundur, total);
+  const plannedEnd = clockAt(fundur, fundur.planned_minutes);
+  const undecided = allItems.filter((item) => item.status === "unknown").length;
+  const drafts = allItems.filter((item) => item.status === "draft").length;
+  const fit = fitWord(fundur);
+
+  // F4: the flokkur's colour, or the sveit's for a troop-wide fundur.
+  const patrol = patrolOf(fundur, patrols);
+  const accent = patrol?.accent;
+  const patrolStyle = (
+    accent
+      ? {
+          "--pc": `var(--sl-color-patrol-${accent})`,
+          "--pc-on": `var(--sl-color-patrol-${accent}-foreground)`,
+          "--pc-tint": `var(--sl-color-patrol-${accent}-subtle)`,
+        }
+      : {
+          "--pc": "var(--sl-color-primary)",
+          "--pc-on": "var(--sl-color-text-inverse)",
+          "--pc-tint": "var(--sl-color-primary-subtle)",
+        }
+  ) as CSSProperties;
 
   return (
-    <div className={styles.band} data-band={band}>
-      <div className={styles.bandHd}>
-        {look === "dagskra" && <span className={styles.bandClock}>{bandClock}</span>}
-        <h3 className={styles.bandLabel}>{label}</h3>
-        <span className={styles.bandMin}>
-          {minutes ? `${minutes} mín${lanes ? " samhliða" : ""}` : "—"}
-        </span>
-        <button
-          type="button"
-          className={styles.splitBtn}
-          aria-pressed={Boolean(lanes)}
-          title={
-            lanes
-              ? "Hver flokkur hefur sinn eigin tíma. Smelltu til að sameina í eina röð."
-              : "Hver flokkur fær sinn eigin tíma í rist, með tímaás og einni súlu á flokk."
-          }
-          onClick={() =>
-            dispatch({ t: lanes ? "mergeBand" : "splitBand", fundurId: fundur.event_id, band })
-          }
-        >
-          {lanes ? <Rows3 aria-hidden="true" /> : <Columns3 aria-hidden="true" />}
-          {lanes ? "Sameina í eitt" : "Skipta á flokka"}
-        </button>
-      </div>
+    <section
+      className={styles.sheet}
+      data-look={look}
+      data-active={isActive}
+      data-past={isPast}
+      style={patrolStyle}
+      aria-label={`${fundur.title} · ${fundur.date_label}${labelSuffix}`}
+      onFocus={() => dispatch({ t: "activate", fundurId: fundur.event_id })}
+    >
+      <header className={styles.sheetHd}>
+        <div className={styles.sheetKick}>
+          {look === "flokkur" && (
+            <span className={styles.patrolName}>{patrol ? patrol.name : "Öll sveitin"}</span>
+          )}
+          {fundur.theme && (
+            <span className={styles.cyc}>
+              {fundur.theme}
+              {fundur.of_weeks ? ` · vika ${fundur.week_index}/${fundur.of_weeks}` : ""}
+            </span>
+          )}
+          {fundur.venue && <span className={styles.venue}>{fundur.venue}</span>}
+          {fundur.scope === "troop-wide" && look !== "flokkur" && (
+            <span className={styles.troopWide}>Öll sveitin</span>
+          )}
+        </div>
+        <h2 className={styles.sheetT}>
+          {fundur.title}
+          <span className={styles.sheetDate}>
+            <span className={styles.srOnly}> · </span>
+            {fundur.date_label}
+          </span>
+        </h2>
+        <div className={styles.sheetWhen}>
+          <b className={styles.num}>{clock ? `${clock[1]}:${clock[2]}–${endsAt}` : "Ódagsett"}</b>
+          <span className={styles.num}>
+            áætlað {fundur.planned_minutes} mín
+            {clock && over ? ` (til ${plannedEnd})` : ""} ·{" "}
+            {countIs(allItems.length, "liður", "liðir")}
+          </span>
+          <span className={styles.fit} data-tone={fit.tone}>
+            {fit.text}
+          </span>
+        </div>
+      </header>
 
-      {lanes ? (
-        <SplitGrid
-          fundur={fundur}
-          band={band}
-          patrols={patrols}
-          selected={laneSelected}
-          dispatch={dispatch}
-        />
-      ) : items.length === 0 ? (
-        <BandRows fundurId={fundur.event_id} band={band} itemIds={[]}>
-          <p className={styles.blank}>Ekkert skráð hér enn.</p>
-        </BandRows>
-      ) : (
-        <BandRows
-          fundurId={fundur.event_id}
-          band={band}
-          itemIds={items.map((item) => dragId.row(item.id))}
-        >
-          {items.map((lidur, positionInBand) => {
-            const index = fundur.items.findIndex((item) => item.id === lidur.id);
-            return (
-              <Fragment key={lidur.id}>
-                <LidurRowLab
-                  look={look}
-                  fundur={fundur}
-                  lidur={lidur}
-                  index={index}
-                  canMoveUp={positionInBand > 0}
-                  canMoveDown={positionInBand < items.length - 1}
-                  isEditing={editing === lidur.id}
-                  startsAt={starts[index]}
-                  isSelected={selected === lidur.id}
-                  isGrabbed={grabbed === lidur.id}
-                  dispatch={dispatch}
-                  registerRow={registerRow}
-                  focusSibling={focusSibling}
-                />
-                {editing === lidur.id && (
-                  <LidurEditor
-                    fundur={fundur}
-                    otherFundir={otherFundir}
-                    lidur={lidur}
-                    position={index + 1}
-                    total={fundur.items.length}
-                    startsAt={starts[index]}
-                    dispatch={dispatch}
-                    onClose={() => dispatch({ t: "edit", id: null })}
-                  />
+      {BANDS.map((band) => {
+        const lanes = fundur.split?.[band.id];
+        const items = fundur.items.filter((item) => BAND_OF[item.kind] === band.id);
+        const minutes = bandMinutes(fundur, band.id);
+
+        return (
+          <div key={band.id} className={styles.bandWrap}>
+            <div className={styles.band}>
+              <span className={styles.bandL}>{band.label}</span>
+              <span className={cn(styles.bandN, styles.num)}>
+                {minutes ? `${minutes} mín${lanes ? " samhliða" : ""}` : "—"}
+              </span>
+              <button
+                type="button"
+                className={styles.bandsplit}
+                aria-pressed={Boolean(lanes)}
+                title={
+                  lanes
+                    ? "Hver flokkur hefur sinn eigin tíma. Smelltu til að sameina í eina röð."
+                    : "Hver flokkur fær sinn eigin tíma í rist, með tímaás og einni súlu á flokk."
+                }
+                onClick={() =>
+                  dispatch({
+                    t: lanes ? "mergeBand" : "splitBand",
+                    fundurId: fundur.event_id,
+                    band: band.id,
+                  })
+                }
+              >
+                {lanes ? (
+                  <Rows3 size={14} strokeWidth={2} aria-hidden />
+                ) : (
+                  <Columns3 size={14} strokeWidth={2} aria-hidden />
                 )}
-              </Fragment>
-            );
-          })}
-        </BandRows>
-      )}
-    </div>
+                {lanes ? "Sameina í eitt" : "Skipta á flokka"}
+              </button>
+            </div>
+
+            {lanes ? (
+              <SplitGrid
+                fundur={fundur}
+                band={band.id}
+                patrols={patrols}
+                selected={laneSelected}
+                dispatch={dispatch}
+              />
+            ) : items.length === 0 ? (
+              <BandRows fundurId={fundur.event_id} band={band.id} itemIds={[]}>
+                <p className={styles.blank}>Ekkert skráð hér enn.</p>
+              </BandRows>
+            ) : (
+              <BandRows
+                fundurId={fundur.event_id}
+                band={band.id}
+                itemIds={items.map((item) => dragId.row(item.id))}
+              >
+                {items.map((lidur, positionInBand) => {
+                  const index = fundur.items.findIndex((item) => item.id === lidur.id);
+                  return (
+                    <Fragment key={lidur.id}>
+                      <LidurRowLab
+                        look={look}
+                        fundur={fundur}
+                        lidur={lidur}
+                        index={index}
+                        canMoveUp={positionInBand > 0}
+                        canMoveDown={positionInBand < items.length - 1}
+                        isEditing={editing === lidur.id}
+                        startsAt={starts[index] ?? offsetLabel(offsets[index])}
+                        isSelected={selected === lidur.id}
+                        isGrabbed={grabbed === lidur.id}
+                        dispatch={dispatch}
+                        registerRow={registerRow}
+                        focusSibling={focusSibling}
+                      />
+                      {editing === lidur.id && (
+                        <LidurEditor
+                          fundur={fundur}
+                          otherFundir={otherFundir}
+                          lidur={lidur}
+                          position={index + 1}
+                          total={fundur.items.length}
+                          startsAt={starts[index]}
+                          dispatch={dispatch}
+                          onClose={() => dispatch({ t: "edit", id: null })}
+                        />
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </BandRows>
+            )}
+          </div>
+        );
+      })}
+
+      <footer className={styles.sheetFt}>
+        <span className={styles.left} data-open={undecided > 0}>
+          {undecided > 0
+            ? `${countIs(undecided, "liður", "liðir")} enn ${pluralIs(undecided, "óákveðinn", "óákveðnir")}`
+            : "Allir liðir ákveðnir"}
+          {/* "Allir liðir ákveðnir" next to two Drög read as "done"; say what's still a draft. */}
+          {drafts > 0 && ` · ${drafts} í drögum`}
+        </span>
+        <span className={cn(styles.tot, over && styles.over)}>
+          {total} / {fundur.planned_minutes} mín
+          {over ? ` · ${total - fundur.planned_minutes} yfir` : ""}
+        </span>
+      </footer>
+    </section>
   );
 }
 
-/** One band's sortable rows and its drop target: FundurSheet's BandRows, unchanged. */
+/** One band's rows: a sortable list, and a drop target for the bank (as in FundurSheet). */
 function BandRows({
   fundurId,
   band,
@@ -474,6 +278,7 @@ function BandRows({
     data: { kind: "band", fundurId, band },
     disabled: !isEmpty,
   });
+
   return (
     <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
       <div

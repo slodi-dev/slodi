@@ -1,124 +1,54 @@
 /**
- * What every FundurSheet direction reads off a fundur, computed once.
+ * What the FundurSheet styles share: the list of looks, and the few facts the
+ * fixed-up sheet shows that the current one doesn't compute (the fit in the
+ * header, the offset clock on an undated fundur, the fundur's flokkur).
  *
- * The four looks disagree about layout and agree about facts: how long the
- * evening runs, whether it fits, what is still undecided. Deriving those here,
- * from the bench's own `benchState` helpers, keeps the header of one look from
- * saying "4 liðir" while another says "2" (the split-lane bug FundurSheet's
- * comment describes).
+ * Every look is the current sheet's form: the same header, the same three
+ * bands, the same rows, buttons and keys. Only the style differs.
  */
-import {
-  BANDS,
-  BAND_OF,
-  type BandId,
-  type Fundur,
-  type Lidur,
-  type PlanStatus,
-} from "@/services/plan.service";
-import {
-  bandMinutes,
-  bandOffset,
-  clockAt,
-  fundurMinutes,
-} from "@/components/plan/bench/benchState";
-import { countIs, formatIcelandicDayMonth, pluralIs } from "@/lib/format";
+import { BANDS, BAND_OF, type Fundur, type Patrol } from "@/services/plan.service";
+import { bandOffset, fundurMinutes } from "@/components/plan/bench/benchState";
 
-export type FundurSheetLook = "dagskra" | "timalina" | "gatlisti" | "thett";
+export type FundurSheetLook = "lagad" | "hreint" | "stimplar" | "blad" | "flokkur";
 
 export const LOOKS: { look: FundurSheetLook; name: string; story: string }[] = [
   {
-    look: "dagskra",
-    name: "A · Dagskrá",
+    look: "lagad",
+    name: "F0 · Current, fixed up",
     story:
-      "A printed running order: a big clock column and big titles, everything else quiet. For reading at the meeting.",
+      "The current sheet with its problems fixed and nothing else changed: the baseline every other style is measured against.",
   },
   {
-    look: "timalina",
-    name: "B · Tímalína",
+    look: "hreint",
+    name: "F1 · Quiet",
     story:
-      "Each liður is a bar as long as its minutes, against a line at the planned length, so you see the shape of the evening and where it overruns.",
+      "No card, no boxes: hairline rules, a big clock and the liður's name. Status and buttons step back until you need them.",
   },
   {
-    look: "gatlisti",
-    name: "C · Gátlisti",
+    look: "stimplar",
+    name: "F2 · Stamped",
     story:
-      "Each row leads with its status, and the header lists what's left to do: “2 óákveðnir · 10 mín yfir”.",
+      "The calendar's stamps on every liður, so the sheet, the Dagatal and the grid read as one family: inked when it's ready, an empty dotted box when it isn't.",
   },
   {
-    look: "thett",
-    name: "D · Þétt tafla",
+    look: "blad",
+    name: "F3 · Run sheet",
     story:
-      "A dense table with the duration and status editable in the row, for fast changes on a laptop.",
+      "The paper a foringi holds at the fundur: ruled lines, typewriter times, a tick box per liður, and it prints on one page.",
+  },
+  {
+    look: "flokkur",
+    name: "F4 · Patrol colour",
+    story:
+      "The fundur wears its flokkur's colour: a coloured header and the clock column tinted, so you know whose evening it is at a glance.",
   },
 ];
 
-/** Status order, from "needs you" to "done", for legends and meters. */
-export const STATUS_ORDER: PlanStatus[] = ["unknown", "tentative", "draft", "confirmed"];
-
-export interface SheetFacts {
-  /** Every liður, split lanes included. */
-  allItems: Lidur[];
-  total: number;
-  planned: number;
-  /** Positive when over the plan, negative when there is time to spare. */
-  delta: number;
-  over: boolean;
-  /** `HH:MM` the fundur starts, or null when undated. */
-  startsAt: string | null;
-  endsAt: string | null;
-  /** The planned end, which is where the over-time line sits. */
-  plannedEndsAt: string | null;
-  undecided: number;
-  byStatus: Record<PlanStatus, number>;
-  /** Bands with nothing in them yet: the beinagrind's blanks. */
-  emptyBands: BandId[];
-  /** Minutes the timeline scales to: the longer of the plan and the liðir. */
-  scale: number;
-}
-
-export function sheetFacts(fundur: Fundur): SheetFacts {
-  const allItems = [
-    ...fundur.items,
-    ...Object.values(fundur.split ?? {}).flatMap((lanes) =>
-      (lanes ?? []).flatMap((lane) => lane.items)
-    ),
-  ];
-  const total = fundurMinutes(fundur);
-  const byStatus: Record<PlanStatus, number> = {
-    unknown: 0,
-    tentative: 0,
-    draft: 0,
-    confirmed: 0,
-  };
-  for (const item of allItems) byStatus[item.status] += 1;
-
-  const emptyBands = BANDS.filter(
-    (band) =>
-      !fundur.split?.[band.id] && !fundur.items.some((item) => BAND_OF[item.kind] === band.id)
-  ).map((band) => band.id);
-
-  return {
-    allItems,
-    total,
-    planned: fundur.planned_minutes,
-    delta: total - fundur.planned_minutes,
-    over: total > fundur.planned_minutes,
-    startsAt: clockAt(fundur, 0),
-    endsAt: clockAt(fundur, total),
-    plannedEndsAt: clockAt(fundur, fundur.planned_minutes),
-    undecided: byStatus.unknown,
-    byStatus,
-    emptyBands,
-    scale: Math.max(total, fundur.planned_minutes, 1),
-  };
-}
-
 /**
- * Minutes past the fundur's start at which each of its liðir begins.
+ * Minutes past the fundur's start at which each liður begins.
  *
- * The numeric twin of `startTimes`, and it works on an undated fundur too:
- * a scratchpad has no clock, but "40 minutes in" is still true and still worth
- * showing.
+ * An undated fundur has no clock, and the current sheet then shows "—" on every
+ * row. "+0:40" is still true and still worth reading.
  */
 export function startOffsets(fundur: Fundur): number[] {
   const offsets = new Map<string, number>();
@@ -138,37 +68,46 @@ export function offsetLabel(minutes: number): string {
   return `+${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
-/** "100 / 90 mín · 10 yfir", or "80 / 90 mín · 10 laus". The bench's own wording. */
-export function fitLabel(facts: SheetFacts): string {
-  const base = `${facts.total} / ${facts.planned} mín`;
-  if (facts.delta > 0) return `${base} · ${facts.delta} yfir`;
-  if (facts.delta < 0) return `${base} · ${-facts.delta} laus`;
-  return base;
+/** "10 mín yfir", "10 mín laus" or "Passar": the fit, said once, in the header. */
+export function fitWord(fundur: Fundur): { text: string; tone: "over" | "spare" | "fits" } {
+  const delta = fundurMinutes(fundur) - fundur.planned_minutes;
+  if (delta > 0) return { text: `${delta} mín yfir`, tone: "over" };
+  if (delta < 0) return { text: `${-delta} mín laus`, tone: "spare" };
+  return { text: "Passar", tone: "fits" };
 }
 
-/** "1 liður enn óákveðinn" / "Allir liðir ákveðnir": the adjective agrees too. */
-export function undecidedSentence(n: number): string {
-  return n > 0
-    ? `${countIs(n, "liður", "liðir")} enn ${pluralIs(n, "óákveðinn", "óákveðnir")}`
-    : "Allir liðir ákveðnir";
+/**
+ * The flokkur whose fundur this is, for F4.
+ *
+ * Lab only. A fundur has no `patrol_id` today, so this reads it off the title
+ * ("Flokksfundur Arna"), which only works for the fixtures. Troop-wide fundir
+ * have no flokkur and take the sveit's colour. The real sheet needs the
+ * fundur's flokkur from the API (see the MDX).
+ */
+const GENITIVE: Record<string, string> = {
+  Refa: "Refir",
+  Arna: "Ernir",
+  Ugla: "Uglur",
+  Bjarna: "Birnir",
+};
+
+export function patrolOf(fundur: Fundur, patrols: Patrol[]): Patrol | null {
+  if (fundur.scope === "troop-wide") return null;
+  const word = Object.keys(GENITIVE).find((g) => fundur.title.split(/\s+/).includes(g));
+  return patrols.find((p) => p.name === (word ? GENITIVE[word] : "")) ?? null;
 }
 
-/** "2 óákveðnir": the short form for the checklist's headline. */
-export function undecidedShort(n: number): string {
-  return countIs(n, "óákveðinn", "óákveðnir");
-}
+/** Row height: tall enough to see the time a liður takes. */
+const MIN_ROW_PX = 48;
+const MAX_ROW_PX = 156;
+const PX_PER_MINUTE = 2.4;
 
-/** The fundur's date through lib/format; the label is the fallback for an undated week. */
-export function dateLabel(fundur: Fundur): string {
-  return formatIcelandicDayMonth(fundur.starts_at) || fundur.date_label;
+/**
+ * The current sheet uses 1.5px a minute with a 52px floor, so 10, 15, 30 and 35
+ * minutes all draw 52–53px tall and the "a row is as tall as its time" idea
+ * never shows. 2.4px a minute with a 48px floor makes 10 → 48, 30 → 72,
+ * 45 → 108: a long block is visibly long.
+ */
+export function rowHeight(minutes: number): number {
+  return Math.min(MAX_ROW_PX, Math.max(MIN_ROW_PX, Math.round(minutes * PX_PER_MINUTE)));
 }
-
-/** "Útilíf · vika 6/20": the cycle line, when there is one. */
-export function cycleLabel(fundur: Fundur): string | null {
-  if (!fundur.theme) return null;
-  return fundur.of_weeks
-    ? `${fundur.theme} · vika ${fundur.week_index}/${fundur.of_weeks}`
-    : fundur.theme;
-}
-
-export { bandMinutes };

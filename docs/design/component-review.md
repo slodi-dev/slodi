@@ -79,6 +79,12 @@ once a variation is picked it is **promoted** into the real component and its la
   so the grid and calendar are one family (see "Grid next to calendar").
 - **SplitGrid**: the current form stays; variations are styles only (clean, stamped, patrol
   flags, paper), with the honest merge.
+- **FundurSheet + LidurRow**: the current form, functions and interactions stay; variations are
+  styles only. F0 is the current sheet with its 13 problems fixed (kind stripe, fit only in the
+  footer, shouting title, rows not as tall as their time, spreadsheet rules, look-alike statuses,
+  three "Skipta á flokka" pills, 28px glyph buttons, endurmat in a tooltip, misleading footer,
+  "—" on undated rows, phone wrapping, generic card); F1 quiet, F2 stamped (the calendar's
+  stamps), F3 run sheet (prints), F4 patrol colour (needs the fundur's flokkur from the API).
 
 - **Header → A, A2, B, B2.** A2 and B2 add the logo (green mark in light, white in dark; B2's band
   stays deep green in dark so the white logo reads). Logo as big as the wordmark; B's tagline is
