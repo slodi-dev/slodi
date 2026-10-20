@@ -184,8 +184,8 @@ export const AddFromBank: Story = {
   render: () => <WithBankLayout data={benchData()} />,
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);
-    const block = (name: string) =>
-      within(canvas.getByText(name, { selector: "[class*='itemT']" }).closest("li") as HTMLElement);
+    const rail = within(canvasElement.querySelector<HTMLElement>("[data-rail]") as HTMLElement);
+    const block = (name: string) => within(rail.getByText(name).closest("li") as HTMLElement);
 
     await step("adds to the active sheet and says so", async () => {
       await userEvent.click(

@@ -1,22 +1,20 @@
 import { Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./BlockPalette.stories";
 
-<Meta title="Lab/BlockPalette/About" />
+<Meta of={Stories} name="Rationale" />
 
-# BlockPalette lab
+# BlockPalette: C · Card grid with C2 · Covers
 
 The BlockPalette is the dagskrárbankinn rail on the left of the Vinnubekkur, where a leader picks
-blocks for a fundur. The shell is fixed: collections top left, blocks below them, the plan in the
-main body, all in PlanShell's 296px column.
+blocks for a fundur: collections at the top, blocks below them, the plan in the main body, all in
+PlanShell's 296px column. Picked in the Lab (C · Card grid on 2026-10-19, C2 · Covers for the
+collections on 2026-10-20) and promoted from `Lab/BlockPalette`. The leader's own collections are
+**folders (möppur)**; in the product they are called _möppur_, never "albúm".
 
-**State, 2026-10-20:** C · Card grid was picked (2026-10-19). A Icons, B Minimal list and D By
-section have been removed. For the collections area (top left), which holds the leader's own
-**folders (möppur)**, **C2 · Covers** was picked; C1 Folder list, C3 Chips and C4 Tabs have been
-removed. In the product they are called _möppur_, never "albúm".
-
-Stories: **Lab → BlockPalette → Directions**. _Comparison_ shows the current rail beside C2. C2
-has a default (in the shell, beside the bench), many folders, empty folder, create folder (with a
-duplicate name, rename, and delete with Afturkalla), phone and dark. _Setja í möppu_ tests the
-card's picker, _Icon mapping_ is the icon reference, and _Playground_ has controls.
+Code: `BlockPalette.tsx` (the rail, the cards and "Setja í möppu…"), `PaletteFolders.tsx` (the
+sources, the covers, the popover and the name field), `blockIcons.ts` (every icon and why),
+`hooks/useFolders.ts` (the möppur, in memory until sc-620) and the fixtures in
+`lib/mock/library.mock.ts` and `lib/mock/folders.mock.ts`.
 
 ## Why C · Card grid
 
@@ -93,7 +91,7 @@ or delete it.
   list. Escape closes them, and focus goes back to the button that opened them.
 - **Selection** is a toggle button with `aria-pressed`, as in the current rail.
 
-## C2 · Covers: folders you can see into
+## The covers: folders you can see into
 
 **The story.** The sources are a compact row of four tabs with icons. The folders are covers: a
 2 × 2 mosaic of the first four blocks inside, or the folder's icon while it's empty. Three
@@ -111,7 +109,9 @@ mosaic is only as good as the pictures in it.
 
 ## The data it needs
 
-Nothing here exists in the API yet. Favourites are hidden behind `FAVOURITES_ENABLED` (off), and
+Nothing here exists in the API yet: the bank and the möppur are both fixtures, shown in mock
+mode only. `useFolders` keeps the möppur in memory, and its `TODO(sc-620)` is where the API plugs
+in. Favourites are hidden behind `FAVOURITES_ENABLED` (off), and
 **sc-620** ("Build real favourites: backend table + endpoints, 'Mappan mín' in the sidebar") is
 where they get a backend. The proposal: folders **are** the favourites model, generalised.
 "Uppáhalds" is one folder every user gets by default, and sc-620's _Mappan mín_ is the list of a
@@ -136,9 +136,9 @@ user's folders. One model then serves the sidebar and the rail.
 **`folder_item`**
 
 - `folder_id`: fk, on delete cascade.
-- `content_id`: fk to `content` (Program, Event, Task), so a bank item of any kind can be put in an
+- `content_id`: fk to `content` (Program, Event, Task), so a bank item of any kind can be put in a
   folder, not just a block.
-- `position`: integer, the order inside the folder (C2's mosaic shows the first four).
+- `position`: integer, the order inside the folder (the covers' mosaic shows the first four).
 - `added_by`, `added_at`.
 - Primary key `(folder_id, content_id)`: a block is in a folder at most once.
 
@@ -146,7 +146,7 @@ user's folders. One model then serves the sidebar and the rail.
 
 - `GET /folders?workspace_id=…`: the caller's own folders plus those shared in the workspace,
   ordered by `position`, each with `item_count` and up to four `cover_items` (id, theme, kind,
-  image) for C2.
+  image) for the covers.
 - `POST /folders` with `{ name, icon?, workspace_id? }`: create. `workspace_id` makes it shared.
   A duplicate name returns 409.
 - `PATCH /folders/{id}` with `{ name?, icon?, position? }`: rename or reorder. Reordering one

@@ -14,18 +14,29 @@ export type LibraryBlock = {
   kind: SlotKind;
   minutes: number;
   theme: string;
-  folder: string;
+  /** Where it comes from: one of LIBRARY_SOURCES (not a mappa; see folders.mock.ts). */
+  source: Exclude<LibrarySourceId, "allt">;
   /** How many times the sveit has run it — "hefur verið notað" in the rail. */
   timesUsed: number;
   needs?: string[];
+  /** The last endurmat the sveit wrote about it, if there is one (B3). */
+  endurmat?: string;
+  /** A picture, when the item has one. Most will not. */
+  image?: string;
 };
 
-export const LIBRARY_FOLDERS = [
-  { id: "allt", label: "Allt", hint: "Allur bankinn" },
-  { id: "sveitin", label: "Sveitin mín", hint: "Það sem við höfum búið til" },
-  { id: "felagid", label: "Félagið", hint: "Deilt innan félagsins" },
-  { id: "merki", label: "Færnimerki", hint: "Merkjadagskrá" },
-];
+/**
+ * The built-in sources: where a block comes from. Fixed and not editable, unlike the leader's
+ * own möppur (folders.mock.ts). "allt" is the whole bank.
+ */
+export const LIBRARY_SOURCES = [
+  { id: "allt", label: "Allt" },
+  { id: "felagid", label: "Félagið" },
+  { id: "merki", label: "Færnimerki" },
+  { id: "sveitin", label: "Sveitin mín" },
+] as const;
+
+export type LibrarySourceId = (typeof LIBRARY_SOURCES)[number]["id"];
 
 export const LIBRARY_KINDS: { id: SlotKind | "allt"; label: string }[] = [
   { id: "allt", label: "Allt" },
@@ -42,7 +53,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "leikur",
     minutes: 20,
     theme: "Hreyfing",
-    folder: "sveitin",
+    source: "sveitin",
     timesUsed: 12,
   },
   {
@@ -51,7 +62,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "leikur",
     minutes: 15,
     theme: "Hreyfing",
-    folder: "sveitin",
+    source: "sveitin",
     timesUsed: 9,
   },
   {
@@ -60,9 +71,11 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "leikur",
     minutes: 35,
     theme: "Ratleikni",
-    folder: "felagid",
+    source: "felagid",
     timesUsed: 4,
     needs: ["Kort af hverfinu"],
+    image: "/mock/bank/ratleikur.svg",
+    endurmat: "Of langt fyrir yngsta flokkinn — styttum leiðina í vor.",
   },
   {
     id: "lb-4",
@@ -70,9 +83,10 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "dagskra",
     minutes: 35,
     theme: "Útilíf",
-    folder: "sveitin",
+    source: "sveitin",
     timesUsed: 7,
     needs: ["Reipi og bönd"],
+    image: "/mock/bank/hnutar.svg",
   },
   {
     id: "lb-5",
@@ -80,7 +94,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "dagskra",
     minutes: 30,
     theme: "Ratleikni",
-    folder: "merki",
+    source: "merki",
     timesUsed: 3,
     needs: ["Áttavitar"],
   },
@@ -90,9 +104,11 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "dagskra",
     minutes: 45,
     theme: "Útilíf",
-    folder: "merki",
+    source: "merki",
     timesUsed: 5,
     needs: ["Prímus og eldsneyti"],
+    image: "/mock/bank/eldamennska.svg",
+    endurmat: "Vantaði annan prímus; tveir hópar biðu of lengi.",
   },
   {
     id: "lb-7",
@@ -100,7 +116,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "dagskra",
     minutes: 40,
     theme: "Umhyggja",
-    folder: "merki",
+    source: "merki",
     timesUsed: 2,
     needs: ["Sjúkrakassi"],
   },
@@ -110,7 +126,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "dagskra",
     minutes: 50,
     theme: "Útilíf",
-    folder: "felagid",
+    source: "felagid",
     timesUsed: 1,
   },
   {
@@ -119,7 +135,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "setning",
     minutes: 10,
     theme: "Hefðir",
-    folder: "sveitin",
+    source: "sveitin",
     timesUsed: 31,
   },
   {
@@ -128,7 +144,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "dagskra",
     minutes: 25,
     theme: "Hefðir",
-    folder: "sveitin",
+    source: "sveitin",
     timesUsed: 14,
   },
   {
@@ -137,7 +153,7 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "slit",
     minutes: 10,
     theme: "Hefðir",
-    folder: "sveitin",
+    source: "sveitin",
     timesUsed: 28,
   },
   {
@@ -146,7 +162,17 @@ export const LIBRARY: LibraryBlock[] = [
     kind: "endurmat",
     minutes: 15,
     theme: "Endurmat",
-    folder: "sveitin",
+    source: "sveitin",
     timesUsed: 6,
+  },
+  {
+    id: "lb-13",
+    name: "Pönnukökur yfir opnum eldi",
+    kind: "dagskra",
+    minutes: 40,
+    theme: "Matur",
+    source: "felagid",
+    timesUsed: 1,
+    needs: ["Panna", "Deig"],
   },
 ];

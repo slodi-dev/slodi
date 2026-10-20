@@ -11,33 +11,26 @@ import {
 } from "react";
 import { Plus, Users } from "lucide-react";
 import { countIs } from "@/lib/format";
-import {
-  FOLDER_ICONS,
-  SOURCES,
-  themeIcon,
-  type LabFolder,
-  type LabBlock,
-  type LabSource,
-} from "./blockPaletteLabData";
-import { FOLDER_NAME_MAX, type FoldersApi, type Selection } from "./useFolders";
-import styles from "./BlockPaletteLab.module.css";
+import { FOLDER_NAME_MAX, type BankSelection, type FoldersApi } from "@/hooks/useFolders";
+import type { LibraryFolder } from "@/lib/mock/folders.mock";
+import type { LibraryBlock, LibrarySourceId } from "@/lib/mock/library.mock";
+import { FOLDER_ICONS, SOURCES, themeIcon } from "./blockIcons";
+import styles from "./palette.module.css";
 
-export interface CollectionsProps {
-  api: FoldersApi;
-  blocks: LabBlock[];
-  /** Lab only: makes landmark names unique when several rails share a page. */
-  named: (label: string) => string;
-}
+/**
+ * The top of the bank rail: the built-in sources as tabs and the leader's möppur as covers
+ * (C2 · Covers), plus the popover and the name field the rail's folder actions share.
+ */
 
 const blocksWord = (n: number) => countIs(n, "blokk", "blokkir");
 
 /** How many blocks a source holds, before search and type. */
-export function sourceCount(source: LabSource["id"], blocks: LabBlock[]): number {
-  return source === "allt" ? blocks.length : blocks.filter((b) => b.folder === source).length;
+export function sourceCount(source: LibrarySourceId, blocks: LibraryBlock[]): number {
+  return source === "allt" ? blocks.length : blocks.filter((b) => b.source === source).length;
 }
 
 /** Whether a collection is the selected one. */
-function isSelected(selection: Selection, type: Selection["type"], id: string): boolean {
+function isSelected(selection: BankSelection, type: BankSelection["type"], id: string): boolean {
   return selection.type === type && selection.id === id;
 }
 
@@ -287,12 +280,12 @@ export function CreateFolder({
 
 /* ── Rows ──────────────────────────────────────────────────────────────────── */
 
-export function FolderGlyph({ folder }: { folder: LabFolder }) {
+export function FolderGlyph({ folder }: { folder: LibraryFolder }) {
   const Icon = FOLDER_ICONS[folder.icon];
   return <Icon className={styles.collectionIcon} aria-hidden="true" />;
 }
 
-function SharedMark({ folder }: { folder: LabFolder }) {
+function SharedMark({ folder }: { folder: LibraryFolder }) {
   if (!folder.shared) return null;
   return (
     <>
@@ -302,13 +295,13 @@ function SharedMark({ folder }: { folder: LabFolder }) {
   );
 }
 
-/* ── C2 · Folder covers ─────────────────────────────────────────────────────── */
+/* ── The covers ────────────────────────────────────────────────────────────── */
 
 /** Up to four of the folder's blocks as a 2 × 2 mosaic; the folder's icon while it's empty. */
-function Cover({ folder, blocks }: { folder: LabFolder; blocks: LabBlock[] }) {
+function Cover({ folder, blocks }: { folder: LibraryFolder; blocks: LibraryBlock[] }) {
   const inside = folder.blockIds
     .map((id) => blocks.find((b) => b.id === id))
-    .filter((b): b is LabBlock => Boolean(b))
+    .filter((b): b is LibraryBlock => Boolean(b))
     .slice(0, 4);
   if (inside.length === 0) {
     return (
@@ -326,7 +319,7 @@ function Cover({ folder, blocks }: { folder: LabFolder; blocks: LabBlock[] }) {
         return (
           <span key={i} className={styles.mosaicTile} data-kind={block.kind}>
             {block.image ? (
-              // eslint-disable-next-line @next/next/no-img-element -- a lab fixture SVG.
+              // eslint-disable-next-line @next/next/no-img-element -- bank pictures are small SVGs; next/image does not optimise SVG.
               <img src={block.image} alt="" />
             ) : (
               <Icon />
@@ -338,14 +331,14 @@ function Cover({ folder, blocks }: { folder: LabFolder; blocks: LabBlock[] }) {
   );
 }
 
-export function FolderCovers({ api, blocks, named }: CollectionsProps) {
+export function FolderCovers({ api, blocks }: { api: FoldersApi; blocks: LibraryBlock[] }) {
   const [renaming, setRenaming] = useState(false);
   const selected =
     api.selection.type === "folder"
       ? api.folders.find((a) => a.id === api.selection.id)
       : undefined;
   return (
-    <nav className={styles.coverNav} aria-label={named("Söfn")}>
+    <nav className={styles.coverNav} aria-label="Söfn">
       <div className={styles.sourceTabs} role="group" aria-label="Bankinn">
         {SOURCES.map((source) => {
           const Icon = source.icon;
@@ -364,10 +357,10 @@ export function FolderCovers({ api, blocks, named }: CollectionsProps) {
           );
         })}
       </div>
-      <h3 className={styles.groupHead}>
+      <h2 className={styles.groupHead}>
         Möppur{" "}
         <span className={styles.groupCount}>{countIs(api.folders.length, "mappa", "möppur")}</span>
-      </h3>
+      </h2>
       <ul className={styles.covers} aria-label="Möppur">
         {api.folders.map((folder) => (
           <li key={folder.id}>

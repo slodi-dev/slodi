@@ -6,6 +6,7 @@ const config: StorybookConfig = {
     // Design-system docs first, so they head the sidebar.
     "../stories/**/*.mdx",
     "../stories/**/*.stories.@(ts|tsx)",
+    "../components/**/*.mdx",
     "../components/**/*.stories.@(ts|tsx)",
     "../app/**/*.stories.@(ts|tsx)",
   ],

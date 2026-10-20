@@ -1,10 +1,16 @@
+"use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { LabFolder, LabSource } from "./blockPaletteLabData";
+import { useMockMode } from "@/lib/mock/mock-mode";
+import { LIBRARY_FOLDERS, type LibraryFolder } from "@/lib/mock/folders.mock";
+import type { LibrarySourceId } from "@/lib/mock/library.mock";
 
-/** What the cards below show: one built-in source, or one folder. */
-export type Selection = { type: "source"; id: LabSource["id"] } | { type: "folder"; id: string };
+/** What the rail's cards show: one built-in source, or one mappa. */
+export type BankSelection =
+  | { type: "source"; id: LibrarySourceId }
+  | { type: "folder"; id: string };
 
-/** Mirrors the length limit the folder API would enforce (see the About page). */
+/** The length limit the folder API is proposed to enforce (sc-620). */
 export const FOLDER_NAME_MAX = 60;
 
 /** How long "Afturkalla" stays after a delete: rule 5 asks for at least 8 seconds. */
@@ -17,13 +23,16 @@ export interface FolderMessage {
   seq: number;
 }
 
+/** No möppur: what a real leader sees until sc-620 gives them a backend. */
+const NO_FOLDERS: LibraryFolder[] = [];
+
 /**
  * Why a name can't be used, or null. Names are compared trimmed and case-insensitively, so
- * "Rigningardagar" and "rigningardagar " are the same folder.
+ * "Rigningardagar" and "rigningardagar " are the same mappa.
  */
 export function folderNameError(
   name: string,
-  folders: LabFolder[],
+  folders: LibraryFolder[],
   exceptId?: string
 ): string | null {
   const trimmed = name.trim();
@@ -39,16 +48,47 @@ export function folderNameError(
 
 let nextFolderId = 1;
 
+export interface UseFoldersOptions {
+  /** Start from these möppur instead of the fixtures (stories). */
+  initial?: LibraryFolder[];
+  /** What is selected on load. */
+  initialSelection?: BankSelection;
+}
+
 /**
- * The folders and the current selection, in memory. The real thing would sit on the folder API
- * proposed on the About page; every action here maps onto one call there.
+ * The leader's möppur and the rail's current selection.
+ *
+ * In memory only. In mock mode it starts from the fixtures (lib/mock/folders.mock.ts), gated the
+ * same way as useBlockLibrary, so a real leader never sees made-up möppur; with mock mode off it
+ * starts empty, and anything made is gone on reload.
  */
-export function useFolders(initial: LabFolder[], initialSelection: Selection) {
-  const [folders, setFolders] = useState(initial);
-  const [selection, setSelection] = useState<Selection>(initialSelection);
+export function useFolders({
+  initial,
+  initialSelection = { type: "source", id: "allt" },
+}: UseFoldersOptions = {}) {
+  const { mode, settled } = useMockMode();
+  // TODO(sc-620): replace the seed and every setFolders below with the folder API — a query
+  // for GET /folders, and one mutation per action (create, rename, remove/restore, toggleBlock).
+  const seed = initial ?? (settled && mode !== "off" ? LIBRARY_FOLDERS : NO_FOLDERS);
+
+  const [folders, setFolders] = useState(seed);
+  const [selection, setSelection] = useState<BankSelection>(initialSelection);
   const [message, setMessage] = useState<FolderMessage | null>(null);
-  const deleted = useRef<{ folder: LabFolder; index: number } | null>(null);
+  const deleted = useRef<{ folder: LibraryFolder; index: number } | null>(null);
   const seq = useRef(0);
+
+  // Mock mode settles after the first render. Take the new seed until the leader has changed
+  // something, never after.
+  const [seededFrom, setSeededFrom] = useState(seed);
+  const touched = useRef(false);
+  if (seed !== seededFrom && !touched.current) {
+    setSeededFrom(seed);
+    setFolders(seed);
+  }
+  const change = (update: (prev: LibraryFolder[]) => LibraryFolder[]) => {
+    touched.current = true;
+    setFolders(update);
+  };
 
   const say = useCallback((text: string, canUndo = false) => {
     seq.current += 1;
@@ -65,21 +105,21 @@ export function useFolders(initial: LabFolder[], initialSelection: Selection) {
     return () => clearTimeout(timer);
   }, [message]);
 
-  /** Create a folder. Returns the error to show, or null and the new folder's id. */
+  /** Create a mappa. Returns the error to show, or null and the new mappa's id. */
   const create = (
     name: string,
     options: { select?: boolean; withBlock?: string } = {}
   ): { error: string | null; id?: string } => {
     const error = folderNameError(name, folders);
     if (error) return { error };
-    const folder: LabFolder = {
-      id: `al-new-${nextFolderId++}`,
+    const folder: LibraryFolder = {
+      id: `mappa-new-${nextFolderId++}`,
       name: name.trim(),
       icon: "BookMarked",
       shared: false,
       blockIds: options.withBlock ? [options.withBlock] : [],
     };
-    setFolders((prev) => [...prev, folder]);
+    change((prev) => [...prev, folder]);
     if (options.select ?? true) setSelection({ type: "folder", id: folder.id });
     say(`Mappa búin til: ${folder.name}.`);
     return { error: null, id: folder.id };
@@ -88,17 +128,17 @@ export function useFolders(initial: LabFolder[], initialSelection: Selection) {
   const rename = (id: string, name: string): string | null => {
     const error = folderNameError(name, folders, id);
     if (error) return error;
-    setFolders((prev) => prev.map((a) => (a.id === id ? { ...a, name: name.trim() } : a)));
+    change((prev) => prev.map((f) => (f.id === id ? { ...f, name: name.trim() } : f)));
     say(`Mappan heitir nú ${name.trim()}.`);
     return null;
   };
 
   /** Reversible, so no confirmation: it goes at once and "Afturkalla" brings it back (rule 5). */
   const remove = (id: string) => {
-    const index = folders.findIndex((a) => a.id === id);
+    const index = folders.findIndex((f) => f.id === id);
     if (index < 0) return;
     deleted.current = { folder: folders[index], index };
-    setFolders((prev) => prev.filter((a) => a.id !== id));
+    change((prev) => prev.filter((f) => f.id !== id));
     if (selection.type === "folder" && selection.id === id) {
       setSelection({ type: "source", id: "allt" });
     }
@@ -109,21 +149,21 @@ export function useFolders(initial: LabFolder[], initialSelection: Selection) {
     const last = deleted.current;
     if (!last) return;
     deleted.current = null;
-    setFolders((prev) => [...prev.slice(0, last.index), last.folder, ...prev.slice(last.index)]);
+    change((prev) => [...prev.slice(0, last.index), last.folder, ...prev.slice(last.index)]);
     say(`Mappan ${last.folder.name} er komin aftur.`);
   };
 
   const toggleBlock = (folderId: string, blockId: string, blockName: string) => {
-    const folder = folders.find((a) => a.id === folderId);
+    const folder = folders.find((f) => f.id === folderId);
     if (!folder) return;
     const isIn = folder.blockIds.includes(blockId);
-    setFolders((prev) =>
-      prev.map((a) =>
-        a.id !== folderId
-          ? a
+    change((prev) =>
+      prev.map((f) =>
+        f.id !== folderId
+          ? f
           : {
-              ...a,
-              blockIds: isIn ? a.blockIds.filter((b) => b !== blockId) : [...a.blockIds, blockId],
+              ...f,
+              blockIds: isIn ? f.blockIds.filter((b) => b !== blockId) : [...f.blockIds, blockId],
             }
       )
     );

@@ -1,0 +1,25 @@
+/* BlockPalette stories: the rail beside the bench, as PlanShell lays them out. */
+
+.shell {
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr);
+  height: 46rem;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-card);
+  overflow: hidden;
+}
+
+.shellBench {
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--sl-spacing-inset-sm);
+  background: hsl(var(--sl-color-background-secondary));
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 40rem auto;
+    height: auto;
+  }
+}
