@@ -3,7 +3,6 @@ import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Bench, LiveSplit } from "@/stories/vinnubekkur/benchHarness";
 import { CREST_SHEET } from "./crestMarks";
 import { HEADER_LOOKS } from "./headerLooks";
-import { PHONE_LOOKS, type PhoneLook } from "./phoneLooks";
 import SplitGridLab, { type SplitGridLabProps } from "./SplitGridLab";
 import { FIXTURES, LAB_FUNDUR, type FixtureName } from "./splitGridLabData";
 
@@ -33,6 +32,9 @@ const wide = { maxWidth: "72rem" } as const;
 const meta = {
   title: "Lab/SplitGrid",
   tags: ["skip-visual"],
+  // The grid is the desktop K2: every story is desktop-wide, also in the phone test projects,
+  // unless it says phone. A phone-narrow band is the run sheet (the Phone stories).
+  globals: { viewport: { value: "desktop", isRotated: false } },
   args: { fixture: "uneven" },
   argTypes: {
     fixture: { control: "select", options: Object.keys(FIXTURES) },
@@ -124,7 +126,7 @@ const k2 = {
     ),
   } satisfies Story,
   phone: {
-    name: "Phone, a card open",
+    name: "Phone · a card open",
     args: {
       fixture: "uneven",
       defaultOpen: { patrolId: "mock-refir", name: "Áttaviti og kort" },
@@ -438,11 +440,14 @@ export const Drag: Story = {
   },
 };
 
-/** On a phone: a swipe scrolls, a finger held still on a card picks it up. */
+/**
+ * On a touch screen wide enough for the grid (a tablet): a swipe scrolls, a finger held still on
+ * a card picks it up. A phone gets the run sheet, where nothing is dragged.
+ */
 export const DragTouch: Story = {
-  name: "Drag by touch (phone)",
+  name: "Drag by touch (tablet)",
   args: { fixture: "uneven" },
-  globals: phone,
+  globals: { viewport: { value: "tablet", isRotated: false } },
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);
     window.scrollTo(0, 0);
@@ -478,7 +483,7 @@ export const Uneven: Story = k2.uneven;
 export const Open: Story = k2.open;
 export const Six: Story = k2.six;
 export const Edge: Story = k2.edge;
-export const Phone: Story = k2.phone;
+export const PhoneCardOpen: Story = k2.phone;
 export const Dark: Story = k2.dark;
 export const Edit: Story = k2.edit;
 export const RemoveAndMove: Story = k2.removeAndMove;
@@ -593,10 +598,17 @@ export const HeadersLongNames: Story = {
   },
 };
 
-export const HeadersLongNamesPhone: Story = {
-  name: "Headers · long names, phone",
-  render: () => <LongNameSheet />,
-  globals: phone,
+/**
+ * The narrowest the grid gets: a 640px pane (a narrow bench pane, or a tablet's split screen).
+ * Narrower than 620px a band is the run sheet, with the names in its legend.
+ */
+export const HeadersLongNamesNarrow: Story = {
+  name: "Headers · long names, narrow (640px)",
+  render: () => (
+    <div style={{ width: 640 }}>
+      <LongNameSheet />
+    </div>
+  ),
 };
 
 /** The animal marks drawn for the crests, at the sizes they are used (28, 36 and 44px). */
@@ -632,17 +644,17 @@ function PhoneFrame({
   width,
   label,
   fixture,
-  look,
 }: {
   width: 390 | 360;
-  label: string;
+  label?: string;
   fixture: FixtureName;
-  look?: PhoneLook;
 }) {
   return (
     <figure style={{ margin: 0, width, maxWidth: "100%", flex: "none" }}>
-      <figcaption style={{ ...idea, margin: "0 0 var(--sl-spacing-xs)" }}>{label}</figcaption>
-      <SplitGridLab data={FIXTURES[fixture]()} phone={look} />
+      {label && (
+        <figcaption style={{ ...idea, margin: "0 0 var(--sl-spacing-xs)" }}>{label}</figcaption>
+      )}
+      <SplitGridLab data={FIXTURES[fixture]()} />
     </figure>
   );
 }
@@ -655,56 +667,62 @@ const row = {
 } as const;
 
 /**
- * Today's phone (the desktop grid scrolled sideways) first, then the first M3 and its styles
- * M3a–d, each at 390px with four flokkar on liðir of different lengths (Refir 30 + 15 + 15,
- * Ernir 20 × 3, Uglur one of 60, Birnir 10 + 40 and a wait). The diagnosis is in the MDX,
- * section 9.
+ * The run sheet at 390 with four flokkar on liðir of different lengths: Refir 30 + 15 + 15,
+ * Ernir 20 × 3, Uglur one of 60, Birnir 10 + 40 and a wait. Design: the MDX, section 9.
  */
-export const PhoneComparison: Story = {
-  name: "Phone · Comparison",
+export const Phone: Story = {
+  name: "Phone",
+  globals: phone,
+  render: () => <SplitGridLab data={FIXTURES.mixed()} />,
+};
+
+/** Six flokkar, lengths from 5 to 60 min, on the narrowest phone we plan for. */
+export const PhoneSix: Story = {
+  name: "Phone · 6 flokkar (360)",
+  globals: phone,
+  render: () => <PhoneFrame width={360} fixture="mixedSix" />,
+};
+
+/** Long, funny flokkur names, four at 390 and six at 360. */
+export const PhoneLongNames: Story = {
+  name: "Phone · long names",
   render: () => (
     <div style={row}>
-      <section>
-        <h2 style={heading}>Current phone</h2>
-        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="mixed" />
-      </section>
-      {PHONE_LOOKS.map(({ look, name }) => (
-        <section key={look}>
-          <h2 style={heading}>{name}</h2>
-          <PhoneFrame width={390} label="390 · 4 flokkar" fixture="mixed" look={look} />
-        </section>
-      ))}
+      <PhoneFrame width={390} label="390 · 4 flokkar" fixture="longNames" />
+      <PhoneFrame width={360} label="360 · 6 flokkar" fixture="longNamesSix" />
     </div>
   ),
 };
 
-/** One look at 390 and 360, with four and six flokkar and with long names. */
-function PhoneSheetOf({ look }: { look: PhoneLook }) {
-  const { name, idea: text } = PHONE_LOOKS.find((entry) => entry.look === look)!;
-  return (
-    <div style={{ display: "grid", gap: "var(--sl-spacing-md)" }}>
-      <div>
-        <h2 style={heading}>{name}</h2>
-        <p style={{ ...idea, maxWidth: "48rem" }}>{text}</p>
-      </div>
-      <div style={row}>
-        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="mixed" look={look} />
-        <PhoneFrame width={360} label="360 · 6 flokkar" fixture="mixedSix" look={look} />
-        <PhoneFrame width={390} label="390 · long names, 4" fixture="longNames" look={look} />
-        <PhoneFrame width={360} label="360 · long names, 6" fixture="longNamesSix" look={look} />
-      </div>
+export const PhoneDark: Story = {
+  name: "Phone · dark",
+  render: () => (
+    <div style={row}>
+      <PhoneFrame width={390} label="390 · 4 flokkar" fixture="mixed" />
+      <PhoneFrame width={360} label="360 · 6 flokkar" fixture="mixedSix" />
     </div>
-  );
-}
+  ),
+  globals: dark,
+};
 
-const nameOf = (look: PhoneLook) => PHONE_LOOKS.find((entry) => entry.look === look)!.name;
-
-/** The look untouched, in four frames. No play test, so it shows the layout as it opens. */
-const phoneStory = (look: PhoneLook, extra: Partial<Story> = {}): Story => ({
-  name: `Phone · ${nameOf(look)}`,
-  render: () => <PhoneSheetOf look={look} />,
-  ...extra,
-});
+/** Today's SplitGrid on a phone next to the run sheet, both at 390. */
+export const PhoneComparison: Story = {
+  name: "Phone · Comparison",
+  render: () => (
+    <div style={row}>
+      <section style={{ width: 390, flex: "none" }}>
+        <h2 style={heading}>Current</h2>
+        <Bench data={FIXTURES.mixed()}>
+          <LiveSplit fundurId={LAB_FUNDUR} band="kjarni" />
+        </Bench>
+      </section>
+      <section>
+        <h2 style={heading}>M3b · Ruled log</h2>
+        <PhoneFrame width={390} fixture="mixed" />
+      </section>
+    </div>
+  ),
+};
 
 /** The first band on the page. */
 function firstBand(canvasElement: HTMLElement): HTMLElement {
@@ -732,34 +750,30 @@ async function closeSheet(canvas: ReturnType<typeof within>) {
   await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
 }
 
-/** Everything a look shows at one time: its time row, and on M3d the lines under it. */
+/** Everything the sheet shows at one time, read text included. */
 function textAt(band: HTMLElement, time: string): string {
-  return [...band.querySelectorAll(`[data-time="${time}"]`)]
-    .map((element) => element.textContent)
-    .join(" ");
+  return band.querySelector(`[data-time="${time}"]`)?.textContent ?? "";
 }
 
 /**
- * The look's interactions in one 390px frame, on liðir of different lengths: the timeline is
- * in time order; at 20:00 it says who is still busy (Refir on their 30-min Hnútar, Uglur on
- * their 60-min Ratleikur); a tap opens the card's sheet; Fyrr and Síðar move it in time; Færa
- * til moves it to another flokkur, and Afturkalla puts it back; a removed liður comes back with
+ * The run sheet's interactions at 390, on liðir of different lengths: the timeline is in time
+ * order; at 20:00 it says who is still busy (Refir on their 30-min Hnútar, Uglur on their
+ * 60-min Ratleikur); a tap opens the card's sheet; Fyrr and Síðar move it in time; Færa til
+ * moves it to another flokkur, and Afturkalla puts it back; a removed liður comes back with
  * Afturkalla; "+ Bæta við" fills a wait.
  */
-const phoneInteractions = (look: PhoneLook): Story => ({
-  name: `Phone · ${nameOf(look).split(" · ")[0]} · interactions`,
+export const PhoneInteractions: Story = {
+  name: "Phone · interactions",
   globals: phone,
-  render: () => <SplitGridLab data={FIXTURES.mixed()} phone={look} />,
+  render: () => <SplitGridLab data={FIXTURES.mixed()} />,
   play: async ({ canvasElement, step }) => {
     const band = firstBand(canvasElement);
     const canvas = within(band);
     window.scrollTo(0, 0);
 
     await step("one timeline, in time order, from 19:40 to Lok", async () => {
-      const timelines = canvas.getAllByRole("list", { name: /^Tímalína/ });
-      // M3c with more than four flokkar has two timelines; this fixture has four, so one.
-      await expect(timelines).toHaveLength(1);
-      const clocks = [...timelines[0].querySelectorAll("[data-clock]")].map((el) =>
+      const timeline = canvas.getByRole("list", { name: "Tímalína" });
+      const clocks = [...timeline.querySelectorAll("[data-clock]")].map((el) =>
         el.textContent?.trim()
       );
       await expect(clocks).toEqual([
@@ -772,26 +786,25 @@ const phoneInteractions = (look: PhoneLook): Story => ({
         "20:30",
         "20:40",
       ]);
-      await expect(timelines[0]).toHaveTextContent(/20:40.*Lok/);
-      if (look === "m3a") {
-        // The rail folds every stop but the first: open them all.
-        await userEvent.click(canvas.getByRole("button", { name: "Opna allt" }));
-      }
+      await expect(timeline).toHaveTextContent(/20:40.*Lok/);
       await expect(card(canvas, "Refir", "Áttaviti og kort")).toHaveAccessibleName(
         /kl\. 20:10.*til 20:25$/
       );
     });
 
-    if (look !== "m3") {
-      await step("at 20:00 it says who is still busy, and until when", async () => {
-        const now = textAt(band, "20:00");
-        await expect(now).toMatch(/Uglur.*Ratleikur um hverfið.*til 20:40/);
-        await expect(now).toMatch(/Refir.*Hnútar og bönd.*til 20:10/);
-        await expect(card(canvas, "Uglur", "Ratleikur um hverfið")).toHaveAccessibleName(
-          /60 mín.*til 20:40$/
-        );
-      });
-    }
+    await step("every line names its flokkur, not only its colour", async () => {
+      const line = card(canvas, "Ernir", "Eldfæri og prímus");
+      await expect(line).toHaveTextContent(/Eldfæri og prímus.*Ernir.*20 mín.*til 20:00/);
+    });
+
+    await step("at 20:00 it says who is still busy, and until when", async () => {
+      const now = textAt(band, "20:00");
+      await expect(now).toMatch(/Uglur: Ratleikur um hverfið til 20:40/);
+      await expect(now).toMatch(/Refir: Hnútar og bönd til 20:10/);
+      await expect(card(canvas, "Uglur", "Ratleikur um hverfið")).toHaveAccessibleName(
+        /60 mín.*til 20:40$/
+      );
+    });
 
     await step("a tap opens the card as a sheet; Lokið goes back to the card", async () => {
       await sheetRoundTrip(band, /^Refir kl\. 20:10: Áttaviti og kort/);
@@ -854,38 +867,7 @@ const phoneInteractions = (look: PhoneLook): Story => ({
       await expect(card(canvas, "Birnir", "Nýtt verkefni")).toBeInTheDocument();
     });
   },
-});
-
-export const PhoneM3: Story = phoneStory("m3");
-export const PhoneM3Dark: Story = phoneStory("m3", { name: "Phone · M3 · dark", globals: dark });
-export const PhoneM3Interactions: Story = phoneInteractions("m3");
-
-export const PhoneM3a: Story = phoneStory("m3a");
-export const PhoneM3aDark: Story = phoneStory("m3a", { name: "Phone · M3a · dark", globals: dark });
-export const PhoneM3aInteractions: Story = {
-  ...phoneInteractions("m3a"),
-  play: async (context) => {
-    const canvas = within(firstBand(context.canvasElement));
-    await context.step("the rail starts with every stop folded but the first", async () => {
-      const heads = canvas.getAllByRole("button", { expanded: false });
-      await expect(heads.length).toBeGreaterThan(0);
-      await expect(canvas.getAllByRole("button", { expanded: true })).toHaveLength(1);
-    });
-    await phoneInteractions("m3a").play!(context);
-  },
 };
-
-export const PhoneM3b: Story = phoneStory("m3b");
-export const PhoneM3bDark: Story = phoneStory("m3b", { name: "Phone · M3b · dark", globals: dark });
-export const PhoneM3bInteractions: Story = phoneInteractions("m3b");
-
-export const PhoneM3c: Story = phoneStory("m3c");
-export const PhoneM3cDark: Story = phoneStory("m3c", { name: "Phone · M3c · dark", globals: dark });
-export const PhoneM3cInteractions: Story = phoneInteractions("m3c");
-
-export const PhoneM3d: Story = phoneStory("m3d");
-export const PhoneM3dDark: Story = phoneStory("m3d", { name: "Phone · M3d · dark", globals: dark });
-export const PhoneM3dInteractions: Story = phoneInteractions("m3d");
 
 /* ── Merge ── */
 

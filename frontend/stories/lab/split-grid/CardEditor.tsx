@@ -337,9 +337,12 @@ export function CardEditor({
         <GearField ctx={ctx} />
         <SwapField ctx={ctx} />
       </div>
-      <MoveRow ctx={ctx} />
-      <div className={styles.editorFoot}>
-        <RemoveButton ctx={ctx} />
+      {/* The moves and remove together: on a phone's sheet they stay at its foot, under the thumb. */}
+      <div className={styles.editorActions}>
+        <MoveRow ctx={ctx} />
+        <div className={styles.editorFoot}>
+          <RemoveButton ctx={ctx} />
+        </div>
       </div>
     </div>
   );

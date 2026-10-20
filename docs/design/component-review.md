@@ -78,45 +78,26 @@ once a variation is picked it is **promoted** into the real component and its la
 
 ## Picked, to promote
 
-Nothing waiting.
+- **SplitGrid → K2 · Flip it over with the H6 head on desktop, M3b · Ruled log on a phone**
+  (approved 2026-10-20, ready to promote). Each liður is the BlockPalette card it came from
+  (`components/plan/bench/BlockCard.tsx`); pressing it turns it over, and the back is the editor:
+  length, status, who leads, adaptation, búnaður, another block, Færa til and remove (both with
+  Afturkalla), and back to the sveit's version. Cards drag along their flokkur's timeline and to
+  a chosen place in another flokkur, with the result shown live and a long press on touch. The
+  column head is H6: a ringed animal crest on a cord down the column, over the flokkur's colour
+  at 10%. On a phone (the band 620px or less) it is a run sheet: times in a mono margin, one
+  ruled line per start ("Eldfæri og prímus", "Ernir · 20 mín til 20:15"), one cord per flokkur
+  in a gutter (bead, solid while a liður lasts, dashed while it waits) under a key that stays at
+  the top, "Áfram til" for who is still busy, and the card's back as a bottom sheet whose moves
+  stay under the thumb. Tried and dropped: K1, K3, K4; heads H1–H5; phone M1, M2, M4 and
+  M3a, M3c, M3d. _On promotion:_ the real `BenchProvider` needs the lab's separate mouse and
+  touch sensors and `touch-action: manipulation`. _Needs backend:_ block link, leader, note,
+  gear and the sveit's version on a lane liður (sc-646).
 
 ## In the Lab
 
 - **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the real calendar's stamp kit
   so the grid and calendar are one family (see "Grid next to calendar").
-- **SplitGrid → K2 · Flip it over with the H6 head: desktop approved; phone in the Lab
-  (M3a–d)** (2026-10-20). On a phone the desktop grid gets squished (one and a half flokkar in
-  view, cut cards, the open card's back covering everything, the pinned axis scrolling away), so
-  a phone layout takes over at 620px or less. Of four tried (one flokkur at a time, compare two,
-  stacked by time, list per flokkur), **M3 · Stacked by time** was picked for its function: one
-  timeline of what each flokkur starts when, waits with "+ Bæta við", the card's back as a
-  bottom sheet with Fyrr / Síðar and Færa til. Now in four styles: **M3a · Rail** (stops that
-  fold, the shortest), **M3b · Ruled log** (a run sheet, shared lines), **M3c · Cards in rows**
-  (small bank cards in fixed flokkur places) and **M3d · Threads** (a cord per flokkur that
-  splits off the sveit and joins it at Lok). Lengths that don't line up (a 30-min liður beside
-  one of 20 and one of 60) are now shown in every style: each liður's "til 20:10", and at every
-  time who is still busy (M3a's slim progress lines, M3b's per-flokkur tracks, M3c's cards as
-  tall as their liðir, M3d's thick cord runs). A move with "Færa til" from the card's back now
-  gets Afturkalla. Also fixed: a touch drag
-  stopped following the finger once the card was redrawn in another flokkur. Desktop: The flip card, the clock length, dragging along the timeline and between
-  flokkar, and long-name handling are approved, and the column head is **H6: H5b's lanyard on
-  H5d's tinted lane** (a ringed animal crest on a 2px cord down the column's edge, over the
-  flokkur's colour at 10%), with animal crests drawn for Slóði. Each liður is the
-  BlockPalette card it came from (picture tile, length and kind line shared through
-  `components/plan/bench/BlockCard.tsx`); pressing it turns it over, and the back is the editor:
-  length, status, who leads, adaptation, búnaður, another block, remove with Afturkalla, and back
-  to the sveit's version. K1, K3 and K4 are removed. Polish so far: the back is lifted over a
-  grid that no longer moves (columns kept their width, the axis stays true), no ruled lines
-  through the editor, no 3D transform left on it after the turn, the length is a clock icon and
-  "15 mín" instead of a chip over the picture (also on the bank card), and short cards no longer
-  cut their text. Cards drag up and down their flokkur's timeline and to a chosen place in
-  another flokkur, with the result shown live ("hefst 19:55", totals, "ræður lengd"), Escape or
-  letting go outside to cancel, Afturkalla after a drop, and a long press on phones so a swipe
-  still scrolls. The first round of heads (H1 Pennant, H2 Crest, H3 Stamped, H4 Colour band) is
-  replaced by H5; every head handles long names (two lines, hyphenated or broken, then "…", full
-  name in the heading and tooltip). Time grid and the honest merge are unchanged.
-  _Needs backend:_ block
-  link, leader, note, gear and the sveit's version on a lane liður (sc-646).
 - **FundurSheet + LidurRow**: the current form, functions and interactions stay; variations are
   styles only. F0 is the current sheet with its 13 problems fixed (kind stripe, fit only in the
   footer, shouting title, rows not as tall as their time, spreadsheet rules, look-alike statuses,

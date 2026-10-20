@@ -40,9 +40,8 @@ import {
   type DropSpot,
 } from "./cardDrag";
 import { CardEditor, type CardActions, type EditorContext } from "./CardEditor";
-import { LaneHeader, type HeaderLook } from "./laneHeaders";
-import { PhoneArea, type PhoneParts } from "./phoneLayouts";
-import { PHONE_MAX_WIDTH, type PhoneLook } from "./phoneLooks";
+import { Crest, LaneHeader, type HeaderLook } from "./laneHeaders";
+import { PHONE_MAX_WIDTH, PhoneArea, type PhoneParts } from "./phoneLayouts";
 import {
   SWAP_BLOCKS,
   blockOf,
@@ -90,12 +89,6 @@ export interface SplitGridLabProps {
   defaultOpen?: { patrolId: string; name: string };
   /** How each column's flokkur is shown at its top (laneHeaders.tsx). */
   header?: HeaderLook;
-  /**
-   * The layout once the band is phone-narrow (phoneLayouts.tsx). Without it a narrow band is
-   * the desktop grid scrolled sideways, as K2 has it today; wider than a phone it is always the
-   * desktop grid.
-   */
-  phone?: PhoneLook;
 }
 
 /* ── Root ──────────────────────────────────────────────────────────────────── */
@@ -121,8 +114,6 @@ type Ctx = {
   drag: CardDrag | null;
   spot: DropSpot | null;
   header: HeaderLook;
-  /** The phone layout in use, once the band is phone-narrow. */
-  phone: PhoneLook | null;
 };
 
 type ItemProps = {
@@ -142,7 +133,6 @@ function SplitBand({
   defaultMergeOpen = false,
   defaultOpen,
   header = "h6",
-  phone,
 }: Omit<SplitGridLabProps, "data">) {
   const { state, dispatch } = useLabBench();
   const fundur = state.data.fundir.find((f) => f.event_id === fundurId);
@@ -167,7 +157,6 @@ function SplitBand({
   const rootRef = useRef<HTMLDivElement>(null);
   const workAreaRef = useRef<HTMLDivElement>(null);
   const narrow = useNarrow(rootRef, PHONE_MAX_WIDTH);
-  const phoneLook = phone && narrow ? phone : null;
   const mergeButtonRef = useRef<HTMLButtonElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
@@ -532,7 +521,6 @@ function SplitBand({
     drag,
     spot,
     header,
-    phone: phoneLook,
   };
   const dragged = drag ? findSelected(model, drag.id) : null;
 
@@ -542,7 +530,7 @@ function SplitBand({
       className={`${styles.root} ${blockCardStyles.kindScope}`}
       data-split-band
       data-header={header}
-      data-phone={phoneLook ?? undefined}
+      data-phone={narrow || undefined}
       lang="is"
     >
       <div className={styles.head}>
@@ -586,9 +574,9 @@ function SplitBand({
         />
       )}
 
-      {phoneLook ? (
+      {narrow ? (
         <>
-          <PhoneArea look={phoneLook} model={model} parts={phoneParts(ctx)} />
+          <PhoneArea model={model} parts={phoneParts(ctx)} />
           <PhoneSheet ctx={ctx} />
         </>
       ) : (
@@ -626,7 +614,7 @@ function SplitBand({
 
       <div className={styles.foot}>
         <p id={hintId} className={styles.hint}>
-          {phoneLook ? (
+          {narrow ? (
             PHONE_HINT
           ) : (
             <>
@@ -714,6 +702,17 @@ function PhoneSheet({ ctx }: { ctx: Ctx }) {
       }}
     >
       <span className={styles.sheetGrip} aria-hidden="true" />
+      <p className={styles.sheetHead}>
+        <Crest name={picked.lane.name} size="1.75rem" />
+        <span className={styles.sheetWho} title={picked.lane.name}>
+          {picked.lane.name}
+        </span>
+        <span className={styles.sheetWhen}>
+          {picked.li.clock
+            ? `kl. ${picked.li.clock}–${picked.li.clockEnd} · ${picked.li.item.minutes} mín`
+            : `${picked.li.index + 1}. liður · ${picked.li.item.minutes} mín`}
+        </span>
+      </p>
       <CardBack ctx={ctx} lane={picked.lane} li={picked.li} />
     </dialog>
   );

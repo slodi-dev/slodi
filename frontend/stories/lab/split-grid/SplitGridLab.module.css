@@ -1155,6 +1155,11 @@
   justify-content: flex-start;
 }
 
+/* On the grid's back the actions are just the editor's last rows. */
+.editorActions {
+  display: contents;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -1438,6 +1443,55 @@ textarea.input {
   margin: 0 auto var(--sl-spacing-xs);
   border-radius: var(--sl-radius-chip);
   background: hsl(var(--sl-color-border-strong));
+}
+
+/* Whose card and when, above the editor: the line it came from, so the leader keeps their place. */
+.sheetHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+  margin: 0 0 var(--sl-spacing-xs);
+  padding-bottom: var(--sl-spacing-xs);
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  font-size: var(--sl-text-body-sm);
+}
+
+.sheetWho {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.sheetWhen {
+  flex: none;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* In the sheet the moves and remove stay at its foot while the fields scroll, within a thumb's
+   reach. Pulled down over the sheet's own bottom padding, so nothing shows through below them. */
+.sheet .editorActions {
+  position: sticky;
+  bottom: calc(-1 * max(var(--sl-spacing-md), env(safe-area-inset-bottom)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  margin: 0 calc(-1 * var(--sl-spacing-md))
+    calc(-1 * max(var(--sl-spacing-md), env(safe-area-inset-bottom)));
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md)
+    max(var(--sl-spacing-md), env(safe-area-inset-bottom));
+  border-top: 1px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-surface));
+}
+
+/* The head already says whose; the back's own line for it would repeat it. */
+.sheet .backWho {
+  display: none;
 }
 
 /* Inside the sheet the back is the sheet itself: no second frame or shadow. */
