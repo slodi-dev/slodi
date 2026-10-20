@@ -1,6 +1,7 @@
 /**
- * The head of a flokkur's column: the current pill, or H5, the flokkur's crest with a rule in its
- * colour running from the crest down the column (H5a–d, see the MDX). Every look carries the same
+ * The head of a flokkur's column: H6, the flokkur's ringed crest hanging from a cord in its colour
+ * that runs down the column's edge, over a faint wash of the colour (see the MDX), or the old pill
+ * for reference. Both looks carry the same
  * things: the name as a real heading (`h4`, under the band's `h3`), the column's total and whether
  * it sets the band's length or waits. Only the look changes; the rule itself is drawn by the
  * column (`.lane`, `data-header` on the root), so it lines up with the crest from below.
@@ -63,12 +64,7 @@ export function LaneHeader({
     );
   }
   return (
-    <div
-      className={styles.laneHead}
-      data-look={look}
-      data-longest={(lane.longest && !model.balanced) || undefined}
-      style={laneStyle}
-    >
+    <div className={styles.laneHead} data-look={look} style={laneStyle}>
       <span className={styles.cord} aria-hidden="true" />
       <Crest name={lane.name} />
       <div className={styles.crestText}>

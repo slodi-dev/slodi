@@ -484,7 +484,7 @@ export const RemoveAndMove: Story = k2.removeAndMove;
 
 /* ── Column heads ── */
 
-/** Every head look on the same band, the current pill first. */
+/** Both head looks on the same band, the old pill first. */
 function HeaderSheet({ fixture }: { fixture: FixtureName }) {
   return (
     <div style={{ ...wide, display: "grid", gap: "var(--sl-spacing-xl)" }}>
@@ -500,9 +500,9 @@ function HeaderSheet({ fixture }: { fixture: FixtureName }) {
 }
 
 /**
- * The flokkur at the top of its column: the current pill, then H5a–d, the flokkur's crest on a
- * rule in its colour down the column. Every look keeps the heading, the total and "ræður lengd" /
- * "N mín bið".
+ * The flokkur at the top of its column: the old pill for reference, then H6, the flokkur's ringed
+ * crest on a lanyard down a tinted lane (the K2 default). Both keep the heading, the total and
+ * "ræður lengd" / "N mín bið".
  */
 export const Headers: Story = {
   name: "Headers",
@@ -516,15 +516,14 @@ export const Headers: Story = {
     await expect(canvasElement.querySelectorAll('[data-lane-total="mock-refir"]')).toHaveLength(
       HEADER_LOOKS.length
     );
-    // H5c's rule is as long as the column's minutes: each column carries its total as --used.
-    const band = canvasElement.querySelector<HTMLElement>('[data-header="h5-time"]');
+    // H6: every column carries the cord down its edge and the wash behind it.
+    const band = canvasElement.querySelector<HTMLElement>('[data-header="h6"]');
     await expect(band).not.toBeNull();
-    const heads = band!.querySelectorAll<HTMLElement>("[data-lane-total]");
-    const columns = band!.querySelectorAll<HTMLElement>("[data-lane-col]");
-    await expect(columns).toHaveLength(heads.length);
-    columns.forEach((column, i) => {
-      expect(`${column.style.getPropertyValue("--used")} mín`).toBe(heads[i].textContent);
-    });
+    for (const column of band!.querySelectorAll<HTMLElement>("[data-lane-col]")) {
+      await expect(getComputedStyle(column, "::before").width).toBe("2px");
+      // The wash resolves where the column's colour is set (an empty value paints nothing).
+      await expect(getComputedStyle(column).getPropertyValue("--lane-wash").trim()).not.toBe("");
+    }
   },
 };
 

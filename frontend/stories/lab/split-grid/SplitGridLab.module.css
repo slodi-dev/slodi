@@ -178,9 +178,9 @@
   font-weight: var(--sl-font-weight-semibold);
 }
 
-/* A lane that is a drop target right now (also over H5d's tint). */
+/* A lane that is a drop target right now (also over H6's wash). */
 .root [data-over],
-.root[data-header="h5-tint"] .lane[data-over] {
+.root[data-header="h6"] .lane[data-over] {
   box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
   background: hsl(var(--sl-color-primary-subtle));
 }
@@ -660,80 +660,65 @@
   color: hsl(var(--lane-on));
 }
 
-/* ── H5: the crest (H2) on a rule in the flokkur's colour down its column (H4) ──
+/* ── H6: the lanyard on a tinted lane ──
 
-   One geometry for the head and the column below it, so the rule leaves the crest and carries on
-   into the column without a step:
+   The flokkur's ringed crest hangs from a cord in its colour. The cord drops from the bottom of
+   the ring, turns at the head's foot and runs down the column's left edge to the bottom of the
+   grid; behind the head and the whole column is a faint wash of the same colour. One geometry
+   for the head and the column, so the cord runs on without a step:
      --crest   the badge's diameter
-     --rule    the rule's width
-     --rule-x  the rule's left edge, from the column's left edge
-   The head draws the rule from the crest down to its own bottom edge (.cord, an element rather
-   than ::before so the narrow-column query below can reshape it); the column draws it on from
-   its top (.lane::before). Cards and the drop outline paint over it. */
+     --rule    the cord's width
+     --turn    how far above the head's foot the cord turns
+   The head draws the cord down to its foot (.cord and ::after); the column carries it on from
+   its top (.lane::before). Cards, the wait and the drop outline sit to the right of it. */
 
-.root[data-header^="h5"] {
-  --crest: 2.25rem;
-  --crest-gap: 6px;
-  --rule: 3px;
-  --rule-x: 0px;
-}
-
-.root[data-header="h5-thread"] {
-  --rule: 2px;
-}
-
-.root[data-header="h5-tint"] {
+.root[data-header="h6"] {
   --crest: 2.75rem;
+  --crest-gap: 8px;
+  --rule: 2px;
+  --turn: 8px;
 }
 
-.laneHead[data-look^="h5"] {
+/* The wash: the patrol's own colour at 10% over the page. The same faint lane in both themes
+   (the dark -subtle step, -900, is a saturated block, not a wash), and secondary text and
+   "+ N mín bið" keep AA on it. Declared where --lane is set (each head and column), not on the
+   root, where it isn't. */
+.root[data-header="h6"] .lane,
+.laneHead[data-look="h6"] {
+  --lane-wash: hsl(var(--lane) / 0.1);
+}
+
+.laneHead[data-look="h6"] {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: var(--sl-spacing-compact) var(--sl-spacing-sm);
-  padding: var(--sl-spacing-sm) var(--sl-spacing-xs) var(--sl-spacing-sm) var(--crest-gap);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-xs) calc(var(--sl-spacing-sm) + var(--turn))
+    var(--crest-gap);
+  background: var(--lane-wash);
 }
 
-/* The rule in the head, from the crest's middle down to the head's foot. */
+/* The cord: from the bottom of the ring straight down, then a rounded turn to the left edge. */
 .cord {
   position: absolute;
-  left: var(--rule-x);
-  top: calc(var(--sl-spacing-sm) + var(--crest) / 2);
-  bottom: -1px;
-  width: var(--rule);
-  background: hsl(var(--lane));
-}
-
-/* H5b, the lanyard: a cord drops from the bottom of the ring, turns at the head's foot and
-   joins the edge rule, so the badge visibly hangs from the column. */
-.laneHead[data-look="h5-thread"] {
-  padding-bottom: var(--sl-spacing-md);
-}
-
-.laneHead[data-look="h5-thread"] .cord {
+  left: 0;
   top: calc(var(--sl-spacing-sm) + var(--crest));
-  bottom: 6px;
+  bottom: var(--turn);
   width: calc(var(--crest-gap) + var(--crest) / 2 + var(--rule) / 2);
-  background: none;
   border-right: var(--rule) solid hsl(var(--lane));
   border-bottom: var(--rule) solid hsl(var(--lane));
-  border-bottom-right-radius: 8px;
+  border-bottom-right-radius: 10px;
 }
 
-.laneHead[data-look="h5-thread"]::after {
+/* ...and down the edge from the turn to the head's foot, where the column takes over. */
+.laneHead[data-look="h6"]::after {
   content: "";
   position: absolute;
   left: 0;
   bottom: -1px;
   width: var(--rule);
-  height: calc(6px + var(--rule) + 1px);
+  height: calc(var(--turn) + var(--rule) + 1px);
   background: hsl(var(--lane));
-}
-
-/* The column that sets the band's length gets the thicker rule (H5c). */
-.laneHead[data-look="h5-time"][data-longest] .cord,
-.root[data-header="h5-time"] .lane[data-longest]::before {
-  width: calc(var(--rule) + 2px);
 }
 
 .crestText {
@@ -744,6 +729,8 @@
   gap: var(--sl-spacing-compact);
 }
 
+/* The ring: the colour around a centre of paper, the animal in body ink, so the badge stands off
+   the wash behind it. */
 .crest {
   position: relative;
   flex: none;
@@ -752,24 +739,14 @@
   width: var(--crest);
   height: var(--crest);
   border-radius: 50%;
-  background: hsl(var(--lane));
-  color: hsl(var(--lane-on));
-  /* A ring of paper, then the colour again: a badge, not a dot. */
-  box-shadow:
-    0 0 0 2px hsl(var(--sl-color-surface)),
-    0 0 0 3.5px hsl(var(--lane));
-}
-
-/* H5b's crest is a ring: the colour around a pale centre, the animal in body ink. */
-.laneHead[data-look="h5-thread"] .crest {
-  background: hsl(var(--lane-subtle));
+  background: hsl(var(--sl-color-surface));
   color: hsl(var(--sl-color-text-primary));
   box-shadow: inset 0 0 0 3px hsl(var(--lane));
 }
 
 .crest svg {
-  width: 62%;
-  height: 62%;
+  width: 58%;
+  height: 58%;
 }
 
 .crestInitials {
@@ -779,36 +756,31 @@
   letter-spacing: 0.02em;
 }
 
-.laneHead[data-look^="h5"] .laneName {
+.laneHead[data-look="h6"] .laneName {
+  /* Centred on the crest for a one-line name; a second line grows downwards. */
+  padding-top: 0.3rem;
   font-family: var(--sl-font-family-heading);
   font-weight: var(--sl-font-weight-heading);
+  font-size: var(--sl-text-body-lg);
   line-height: var(--sl-line-height-heading);
 }
 
-.laneHead[data-look="h5-tint"] .laneName {
-  font-size: var(--sl-text-body-lg);
-}
-
-/* H5c: the total is a tag in the colour, hung on the rule's line. */
-.laneHead[data-look="h5-time"] .num {
-  padding: 0 var(--sl-spacing-xs);
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--lane));
-  color: hsl(var(--lane-on));
-  font-weight: var(--sl-font-weight-semibold);
-}
-
-/* The column's half of the rule, down its left edge; the cards and the wait sit to its right,
-   so it always shows. (A thread centred behind the cards was tried: it only showed as stitches
-   in the 4px between cards, which read as noise.) */
-.root[data-header^="h5"] .lane {
+/* The column's half of the cord, down its left edge, over the wash and the 15-minute lines. */
+.root[data-header="h6"] .lane {
   position: relative;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(var(--ppm) * 15 - 1px),
+      hsl(var(--sl-color-border-subtle)) calc(var(--ppm) * 15 - 1px) calc(var(--ppm) * 15)
+    ),
+    var(--lane-wash);
 }
 
-.root[data-header^="h5"] .lane::before {
+.root[data-header="h6"] .lane::before {
   content: "";
   position: absolute;
-  left: var(--rule-x);
+  left: 0;
   top: 0;
   bottom: 0;
   width: var(--rule);
@@ -816,51 +788,28 @@
   pointer-events: none;
 }
 
-.root[data-header^="h5"] .slot {
+.root[data-header="h6"] .slot {
   padding-left: calc(var(--rule) + 5px);
 }
 
-.root[data-header^="h5"] .gap {
+.root[data-header="h6"] .gap {
   margin-left: calc(var(--rule) + 5px);
 }
 
-/* H5c: the rule is as long as the flokkur's minutes; the wait after them is a dashed tail. */
-.root[data-header="h5-time"] .lane::before {
-  bottom: auto;
-  height: calc(var(--ppm) * var(--used));
-}
-
-.root[data-header="h5-time"] .lane::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: calc(var(--ppm) * var(--used));
-  bottom: 0;
-  width: var(--rule);
-  background: repeating-linear-gradient(to bottom, hsl(var(--lane)) 0 6px, transparent 6px 11px);
-  pointer-events: none;
-}
-
-/* H5d: a faint wash of the colour behind the whole column, under the 15-minute lines. */
-.root[data-header="h5-tint"] .lane {
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 calc(var(--ppm) * 15 - 1px),
-      hsl(var(--sl-color-border-subtle)) calc(var(--ppm) * 15 - 1px) calc(var(--ppm) * 15)
-    ),
-    hsl(var(--lane-subtle) / 0.6);
-}
-
-/* A column too narrow for the crest and the name side by side puts the name under it. The
-   lanyard would then run through the name, so there the cord hangs from the edge instead, like
-   the pole, and the ring moves over to meet it. */
+/* A column too narrow for the crest and the name side by side puts the name under the crest.
+   The turning cord would then run through the name, so there it hangs straight from the left
+   edge, and the ring moves over to meet it. */
 @container (max-width: 9rem) {
-  .laneHead[data-look^="h5"] .crestText {
+  .laneHead[data-look="h6"] .crestText {
     flex-basis: 100%;
   }
 
-  .laneHead[data-look="h5-thread"] .cord {
+  .laneHead[data-look="h6"] .laneName {
+    padding-top: 0;
+    font-size: var(--sl-text-body);
+  }
+
+  .laneHead[data-look="h6"] .cord {
     top: calc(var(--sl-spacing-sm) + var(--crest) / 2);
     bottom: -1px;
     width: var(--rule);
@@ -869,7 +818,11 @@
     background: hsl(var(--lane));
   }
 
-  .laneHead[data-look="h5-thread"] .crest {
+  .laneHead[data-look="h6"]::after {
+    display: none;
+  }
+
+  .laneHead[data-look="h6"] .crest {
     margin-left: calc(var(--rule) - var(--crest-gap));
   }
 }

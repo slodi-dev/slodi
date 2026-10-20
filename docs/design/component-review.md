@@ -84,10 +84,11 @@ Nothing waiting.
 
 - **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the real calendar's stamp kit
   so the grid and calendar are one family (see "Grid next to calendar").
-- **SplitGrid → K2 · Flip it over approved apart from the column head** (2026-10-20). The flip
-  card, the clock length, dragging along the timeline and between flokkar, and long-name handling
-  are approved; the head is in progress as **H5, H2's crest + H4's rule** (H5a Pole, H5b Lanyard,
-  H5c Time rule, H5d Tinted lane), with animal crests drawn for Slóði. Each liður is the
+- **SplitGrid → K2 · Flip it over with the H6 head, approved and ready to promote**
+  (2026-10-20). The flip card, the clock length, dragging along the timeline and between
+  flokkar, and long-name handling are approved, and the column head is **H6: H5b's lanyard on
+  H5d's tinted lane** (a ringed animal crest on a 2px cord down the column's edge, over the
+  flokkur's colour at 10%), with animal crests drawn for Slóði. Each liður is the
   BlockPalette card it came from (picture tile, length and kind line shared through
   `components/plan/bench/BlockCard.tsx`); pressing it turns it over, and the back is the editor:
   length, status, who leads, adaptation, búnaður, another block, remove with Afturkalla, and back

@@ -131,7 +131,7 @@ function SplitBand({
   band = "kjarni",
   defaultMergeOpen = false,
   defaultOpen,
-  header = "pill",
+  header = "h6",
 }: Omit<SplitGridLabProps, "data">) {
   const { state, dispatch } = useLabBench();
   const fundur = state.data.fundir.find((f) => f.event_id === fundurId);
