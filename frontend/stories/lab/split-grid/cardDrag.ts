@@ -26,26 +26,14 @@ export type DropSpot = { lane: number; index: number };
 /** How far above or below a column the pointer can be and still aim at it, in px. */
 const REACH = 40;
 
-/** The index of "at the end of that flokkur" (the reducer clamps it to the lane's length). */
-export const AT_END = 9999;
-
 /**
  * The spot under the pointer, or null when it is outside every column (letting go there puts
- * the card back). Columns carry `data-lane-col`, card slots `data-slot-id`. A phone layout's
- * crest or row for a flokkur (`data-lane-col` with `data-drop-end`) takes the card at the end
- * of that flokkur, and only right on it, so it never steals a drop meant for the column below.
+ * the card back). Columns carry `data-lane-col`, card slots `data-slot-id`.
  */
 export function spotAt(root: HTMLElement, x: number, y: number, dragId: string): DropSpot | null {
   for (const column of root.querySelectorAll<HTMLElement>("[data-lane-col]")) {
     const box = column.getBoundingClientRect();
-    const reach = column.dataset.dropEnd ? 0 : REACH;
-    if (x < box.left || x > box.right || y < box.top - reach || y > box.bottom + reach) continue;
-    if (column.dataset.dropEnd) {
-      // A crest scrolled half out of its row only counts where it can be seen.
-      const clip = column.parentElement?.getBoundingClientRect();
-      if (clip && (x < clip.left || x > clip.right || y < clip.top || y > clip.bottom)) continue;
-      return { lane: Number(column.dataset.laneCol), index: AT_END };
-    }
+    if (x < box.left || x > box.right || y < box.top - REACH || y > box.bottom + REACH) continue;
     const above = [...column.querySelectorAll<HTMLElement>("[data-slot-id]")].filter((slot) => {
       if (slot.dataset.slotId === dragId) return false;
       const r = slot.getBoundingClientRect();

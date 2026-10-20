@@ -1,38 +1,36 @@
 /**
- * The split band on a phone: four layouts (M1–M4) for a band that is 620px wide or less. The
- * desktop K2 grid squeezed onto a phone shows one and a half flokkar, cuts the second column's
- * cards mid-word and hides which flokkar are off screen; see the MDX.
+ * The split band on a phone, stacked by time: one timeline down the page, at each time what
+ * every flokkur starts then. The desktop K2 grid squeezed onto a phone shows one and a half
+ * flokkar and cuts the second column's cards mid-word (see the MDX, section 9); a timeline reads
+ * top to bottom with one thumb and needs no sideways scrolling at all.
  *
- * Every layout keeps K2's card language (the bank card, its clock line and status stamp, its
- * back as the editor, opened here as a sheet from the bottom: SplitGridLab's PhoneSheet) and
- * H6's identity (the ringed crest, the flokkur's colour as a cord and a faint wash). Split,
- * merge, Afturkalla and every edit are the band's own, unchanged; a layout only decides what is
- * on screen and how a card moves.
+ * Five looks of the same function (phoneLooks.ts): `m3`, the first version, and its styles
+ * M3a–d. Every look has the same parts:
+ * - a legend of the flokkar (crest, name, total, "ræður lengd" or the wait);
+ * - at each start time, every flokkur's liður that starts then; a tap opens its card's back as
+ *   a sheet from the bottom (SplitGridLab's PhoneSheet), with length, Fyrr / Síðar and Færa til;
+ * - where a flokkur is done before the band, its wait, with "+ Bæta við";
+ * - "Lok" at the band's end.
+ * Split, merge, Afturkalla and every edit are the band's own; a look only decides how the
+ * timeline is drawn. Nothing on a phone is dragged: the rows are times, not places.
  *
- * Moving between flokkar on a phone:
- * - M1, M2: hold a card (200ms), then drag it up or down its column, across to the other column
- *   in view (M2), or onto another flokkur's crest in the row on top, which puts it at the end
- *   of that flokkur. The sheet's "Færa til" does the same in one tap.
- * - M3: no dragging (the rows are times, not places); the sheet's Fyrr, Síðar and Færa til.
- * - M4: hold and drag inside an open flokkur, or onto another flokkur's row.
+ * Every look keeps H6's identity: the ringed crest and the flokkur's colour as a cord or edge,
+ * with its 10% wash under primary text, never coloured text on the page.
  */
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
-import { BlockMinutes } from "@/components/plan/bench/BlockCard";
+import { useId, useState, type CSSProperties } from "react";
+import { ChevronDown, Plus } from "lucide-react";
+import { BlockMarker, BlockMinutes } from "@/components/plan/bench/BlockCard";
 import { Stamp } from "@/components/plan/calendar/Stamp";
+import { countIs } from "@/lib/format";
 import type { PatrolAccent } from "@/services/plan.service";
-import { AT_END, type CardDrag, type DropSpot } from "./cardDrag";
+import type { CardLidur } from "./cardModel";
 import { Crest } from "./laneHeaders";
 import { at, type LaneItem, type LaneModel, type SplitModel } from "./labBench";
 import type { PhoneLook } from "./phoneLooks";
 import styles from "./phoneLayouts.module.css";
 
-/** What the band hands a phone layout: its own grid pieces and the card's behaviour. */
+/** What the band hands a phone layout: the card's behaviour and the lane colours. */
 export type PhoneParts = {
-  /** The time axis and these flokkar's columns, as the desktop grid draws them. */
-  columns: (lanes: LaneModel[], style?: CSSProperties) => ReactNode;
-  /** One flokkur's column on its own, on the same minute scale. */
-  lane: (lane: LaneModel) => ReactNode;
   /** A card's button props: its name, open on press, ↑ ↓ ← → (SplitGridLab's itemProps). */
   itemProps: (lane: LaneModel, li: LaneItem) => Record<string, unknown>;
   laneVars: (accent: PatrolAccent) => CSSProperties;
@@ -42,21 +40,42 @@ export type PhoneParts = {
   changed: (li: LaneItem) => boolean;
 };
 
-type AreaProps = {
-  model: SplitModel;
-  drag: CardDrag | null;
-  spot: DropSpot | null;
-  parts: PhoneParts;
-};
+type AreaProps = { model: SplitModel; parts: PhoneParts };
 
 export function PhoneArea({ look, ...props }: AreaProps & { look: PhoneLook }) {
-  if (look === "m1") return <OneAtATime {...props} />;
-  if (look === "m2") return <CompareTwo {...props} />;
-  if (look === "m3") return <ByTime {...props} />;
-  return <PerFlokkur {...props} />;
+  if (look === "m3a") return <Rail {...props} />;
+  if (look === "m3b") return <RuledLog {...props} />;
+  if (look === "m3c") return <CardRows {...props} />;
+  if (look === "m3d") return <Threads {...props} />;
+  return <FirstVersion {...props} />;
 }
 
 /* ── Shared ── */
+
+type Start = { kind: "start"; lane: LaneModel; li: LaneItem };
+type Wait = { kind: "wait"; lane: LaneModel; minutes: number };
+type Row = Start | Wait;
+type TimeGroup = { minute: number; rows: Row[] };
+
+/**
+ * The band as a timeline: every minute at which something starts (a liður, or a flokkur's
+ * wait), in time order, and what starts then, in flokkur order.
+ */
+function timeGroups(model: SplitModel): TimeGroup[] {
+  const byMinute = new Map<number, Row[]>();
+  const put = (minute: number, row: Row) =>
+    byMinute.set(minute, [...(byMinute.get(minute) ?? []), row]);
+  for (const lane of model.lanes) {
+    for (const li of lane.items) put(li.start, { kind: "start", lane, li });
+    if (lane.idle > 0) put(lane.used, { kind: "wait", lane, minutes: lane.idle });
+  }
+  return [...byMinute.keys()]
+    .sort((a, b) => a - b)
+    .map((minute) => ({
+      minute,
+      rows: byMinute.get(minute)!.sort((a, b) => a.lane.laneIndex - b.lane.laneIndex),
+    }));
+}
 
 /** "70 mín · ræður lengd" or "45 mín · 30 mín bið". */
 function LaneNums({ lane, model }: { lane: LaneModel; model: SplitModel }) {
@@ -81,202 +100,88 @@ function LaneNums({ lane, model }: { lane: LaneModel; model: SplitModel }) {
   );
 }
 
-/** Whether a drag is aimed at the end of this flokkur (its crest or row). */
-function aimedAtEnd(lane: LaneModel, drag: CardDrag | null, spot: DropSpot | null) {
-  return !!drag && spot?.lane === lane.laneIndex && spot.index === AT_END;
-}
-
-/**
- * The row of crests, one per flokkur, with its total and wait. Each one is a button (show it in
- * M1, pick it for M2) and a drop target: a card let go on it goes to the end of that flokkur.
- */
-function CrestRow({
-  model,
-  shown,
-  onPick,
-  drag,
-  spot,
-  parts,
-  label,
-}: AreaProps & {
-  shown: number[];
-  onPick: (laneIndex: number) => void;
-  label: string;
-}) {
+/** The flokkar, each with its crest, name, total and wait. `grid` lines them up two across. */
+function Legend({ model, parts, grid = false }: AreaProps & { grid?: boolean }) {
   return (
-    <div className={styles.crestRow} role="group" aria-label={label}>
-      {model.lanes.map((lane) => {
-        const on = shown.includes(lane.laneIndex);
-        return (
-          <button
-            key={lane.patrolId}
-            type="button"
-            className={styles.crestTab}
-            style={parts.laneVars(lane.accent)}
-            aria-pressed={on}
-            data-lane-col={lane.laneIndex}
-            data-drop-end
-            data-over={aimedAtEnd(lane, drag, spot) || undefined}
-            title={lane.name}
-            onClick={() => onPick(lane.laneIndex)}
-          >
-            <Crest name={lane.name} size="2.25rem" />
-            <span className={styles.crestTabText}>
-              <span className={styles.oneLine}>{lane.name}</span>
-              <LaneNums lane={lane} model={model} />
+    <ul className={grid ? styles.legendGrid : styles.legend} aria-label="Flokkarnir">
+      {model.lanes.map((lane) => (
+        <li key={lane.patrolId} className={styles.legendItem} style={parts.laneVars(lane.accent)}>
+          <Crest name={lane.name} size="1.75rem" />
+          <span className={styles.legendText}>
+            <span className={styles.oneLine} title={lane.name}>
+              {lane.name}
             </span>
-          </button>
-        );
-      })}
-    </div>
+            <LaneNums lane={lane} model={model} />
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-/* ── M1 · One flokkur at a time ── */
-
-/** The pinned time axis's width: the grid's first cell ("kl."), so a column can sit beside it. */
-function axisWidth(scroller: HTMLElement): number {
-  return (scroller.firstElementChild?.firstElementChild as HTMLElement | null)?.offsetWidth ?? 0;
+/** The wait's accessible name: what it is, then what the button does. */
+function waitLabel(row: Wait): string {
+  return row.lane.items.length === 0
+    ? `Ekkert skráð. Bæta verkefni við (${row.lane.name})`
+    : `${row.minutes} mín bið. Bæta verkefni við (${row.lane.name})`;
 }
 
-/**
- * One flokkur's column at nearly full width, the next one peeking in at the edge, the time axis
- * pinned on the left. The crests on top say which flokkar there are and which is in view; a
- * swipe or a tap on a crest changes flokkur.
- */
-function OneAtATime(props: AreaProps) {
-  const { model, parts } = props;
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(0);
-  // While a card is dragged the crests hold still, so the one under the finger stays there.
-  const dragging = useRef(false);
-  dragging.current = props.drag !== null;
-
-  // The crest follows the swipe: the column whose left edge is nearest the axis is in view.
-  useEffect(() => {
-    const scroller = ref.current?.querySelector<HTMLElement>("[data-scroller]");
-    if (!scroller) return;
-    const update = () => {
-      const columns = [...scroller.querySelectorAll<HTMLElement>("[data-lane-col]")];
-      const axis = axisWidth(scroller);
-      let best = 0;
-      let bestDistance = Infinity;
-      for (const column of columns) {
-        const distance = Math.abs(column.offsetLeft - axis - scroller.scrollLeft);
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          best = Number(column.dataset.laneCol);
-        }
-      }
-      setInView(best);
-      // Keep its crest in sight in the row on top (sideways only: the page doesn't move).
-      const row = ref.current?.querySelector<HTMLElement>("[role='group']");
-      const tab = row?.querySelector<HTMLElement>(`[data-lane-col="${best}"]`);
-      if (row && tab && !dragging.current) {
-        if (tab.offsetLeft < row.scrollLeft) row.scrollLeft = tab.offsetLeft;
-        else if (tab.offsetLeft + tab.offsetWidth > row.scrollLeft + row.clientWidth) {
-          row.scrollLeft = tab.offsetLeft + tab.offsetWidth - row.clientWidth;
-        }
-      }
-    };
-    update();
-    scroller.addEventListener("scroll", update, { passive: true });
-    return () => scroller.removeEventListener("scroll", update);
-  }, [model.lanes.length]);
-
-  const show = (laneIndex: number) => {
-    const scroller = ref.current?.querySelector<HTMLElement>("[data-scroller]");
-    const column = scroller?.querySelector<HTMLElement>(`[data-lane-col="${laneIndex}"]`);
-    if (!scroller || !column) return;
-    const axis = axisWidth(scroller);
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    scroller.scrollTo({ left: column.offsetLeft - axis, behavior: still ? "auto" : "smooth" });
-    setInView(laneIndex);
-  };
-
-  return (
-    <div ref={ref} className={styles.area} data-look="m1">
-      <CrestRow {...props} shown={[inView]} onPick={show} label="Flokkar, einn í einu" />
-      {parts.columns(model.lanes, {
-        // Nearly the band's width, so the next column peeks in by 2.25rem; the same room after
-        // the last one, so it too can be scrolled up against the axis.
-        ["--col-min" as string]: "calc(100cqw - var(--axis) - 2.25rem)",
-        ["--tail" as string]: "2.25rem",
-      })}
-    </div>
-  );
+function waitText(row: Wait): string {
+  return row.lane.items.length === 0 ? "Ekkert skráð" : `${row.minutes} mín bið`;
 }
 
-/* ── M2 · Compare two ── */
-
-/**
- * Two flokkar side by side on the time axis: enough to compare and to drag across. The row of
- * crests picks the two (a third replaces the one picked longest ago) and keeps every other
- * flokkur's total and wait in view.
- */
-function CompareTwo(props: AreaProps) {
-  const { model, parts } = props;
-  const [pair, setPair] = useState<[number, number]>([0, Math.min(1, model.lanes.length - 1)]);
-  const shown = model.lanes.filter((lane) => pair.includes(lane.laneIndex));
-  const pick = (laneIndex: number) => {
-    if (pair.includes(laneIndex)) return;
-    setPair([pair[1], laneIndex]);
-  };
-  return (
-    <div className={styles.area} data-look="m2">
-      <p className={styles.caption}>Veldu tvo flokka til að bera saman</p>
-      <CrestRow {...props} shown={pair} onPick={pick} label="Flokkar sem eru bornir saman" />
-      {parts.columns(shown, {
-        ["--col-min" as string]: "calc((100cqw - var(--axis)) / 2 - 1px)",
-      })}
-    </div>
-  );
+function StatusStamp({ li }: { li: LaneItem }) {
+  return <Stamp entry={{ id: li.item.id, status: li.item.status, type: "flokks" }} size="sm" />;
 }
 
-/* ── M3 · Stacked by time ── */
+function ChangedDot({ parts, li }: { parts: PhoneParts; li: LaneItem }) {
+  return parts.changed(li) ? (
+    <span className={styles.changedDot} title="Breytt fyrir þennan flokk" aria-hidden="true" />
+  ) : null;
+}
 
-type Row =
-  | { kind: "start"; lane: LaneModel; li: LaneItem }
-  | { kind: "wait"; lane: LaneModel; minutes: number };
+/** "Lok · allir koma saman" at the band's end. */
+function endText(model: SplitModel): string {
+  return model.lanes.length > 1 ? "Lok · allir koma saman" : "Lok";
+}
+
+/* ── M3 · the first version ── */
 
 /**
- * One timeline down the page. At each time a liður starts, a row with what every flokkur starts
- * then, as a short card line with its crest; where a flokkur is done before the band, a row
- * says how long it waits (and adds to it). Tap a line to open its card.
+ * At each time a row with what every flokkur starts then, as a short card line with its crest
+ * and the flokkur's name; a flokkur done before the band gets a wait line.
  */
-function ByTime({ model, parts }: AreaProps) {
-  const rows = new Map<number, Row[]>();
-  const put = (minute: number, row: Row) => rows.set(minute, [...(rows.get(minute) ?? []), row]);
-  for (const lane of model.lanes) {
-    for (const li of lane.items) put(li.start, { kind: "start", lane, li });
-    if (lane.idle > 0) put(lane.used, { kind: "wait", lane, minutes: lane.idle });
-  }
-  const minutes = [...rows.keys()].sort((a, b) => a - b);
-
+function FirstVersion({ model, parts }: AreaProps) {
   return (
     <div className={styles.area} data-look="m3">
-      <ul className={styles.legend} aria-label="Flokkarnir">
-        {model.lanes.map((lane) => (
-          <li key={lane.patrolId} className={styles.legendItem} style={parts.laneVars(lane.accent)}>
-            <Crest name={lane.name} size="1.75rem" />
-            <span className={styles.legendText}>
-              <span className={styles.oneLine} title={lane.name}>
-                {lane.name}
-              </span>
-              <LaneNums lane={lane} model={model} />
-            </span>
-          </li>
-        ))}
-      </ul>
+      <Legend model={model} parts={parts} />
       <ol className={styles.timeline} aria-label="Tímalína">
-        {minutes.map((minute) => (
+        {timeGroups(model).map(({ minute, rows }) => (
           <li key={minute} className={styles.timeRow}>
             <span className={styles.time}>{at(model, minute)}</span>
             <ul className={styles.timeItems}>
-              {rows.get(minute)!.map((row) =>
+              {rows.map((row) =>
                 row.kind === "start" ? (
                   <li key={row.li.item.id}>
-                    <TimeLine row={row} parts={parts} />
+                    <button
+                      type="button"
+                      className={styles.line}
+                      style={parts.laneVars(row.lane.accent)}
+                      data-status={row.li.item.status}
+                      data-on={parts.selected === row.li.item.id || undefined}
+                      {...parts.itemProps(row.lane, row.li)}
+                    >
+                      <Crest name={row.lane.name} size="1.75rem" />
+                      <span className={styles.lineText}>
+                        <span className={styles.lineTitle}>{row.li.item.name}</span>
+                        <span className={styles.lineMeta}>
+                          <BlockMinutes minutes={row.li.item.minutes} hidden />
+                          <span className={styles.oneLine}>{row.lane.name}</span>
+                        </span>
+                      </span>
+                      <StatusStamp li={row.li} />
+                      <ChangedDot parts={parts} li={row.li} />
+                    </button>
                   </li>
                 ) : (
                   <li key={`wait-${row.lane.patrolId}`}>
@@ -284,21 +189,13 @@ function ByTime({ model, parts }: AreaProps) {
                       type="button"
                       className={styles.waitLine}
                       style={parts.laneVars(row.lane.accent)}
-                      aria-label={
-                        row.lane.items.length === 0
-                          ? `Ekkert skráð. Bæta verkefni við (${row.lane.name})`
-                          : `${row.minutes} mín bið. Bæta verkefni við (${row.lane.name})`
-                      }
+                      aria-label={waitLabel(row)}
                       onClick={() => parts.addTo(row.lane)}
                     >
                       <Crest name={row.lane.name} size="1.75rem" />
                       <span className={styles.lineText}>
                         <span className={styles.oneLine}>{row.lane.name}</span>
-                        <span className={styles.lineMeta}>
-                          {row.lane.items.length === 0
-                            ? "Ekkert skráð · + Bæta við"
-                            : `${row.minutes} mín bið · + Bæta við`}
-                        </span>
+                        <span className={styles.lineMeta}>{waitText(row)} · + Bæta við</span>
                       </span>
                     </button>
                   </li>
@@ -309,109 +206,506 @@ function ByTime({ model, parts }: AreaProps) {
         ))}
         <li className={styles.timeRow} data-end>
           <span className={styles.time}>{at(model, model.duration)}</span>
-          <span className={styles.endNote}>Lok · allir koma saman</span>
+          <span className={styles.endNote}>{endText(model)}</span>
         </li>
       </ol>
     </div>
   );
 }
 
-/** One liður on the timeline: the flokkur's crest, the name, its length and status stamp. */
-function TimeLine({ row, parts }: { row: Extract<Row, { kind: "start" }>; parts: PhoneParts }) {
-  const { lane, li } = row;
+/* ── M3a · Rail ── */
+
+/**
+ * A time rail down the left with a stop at every start time. A stop folds to one line, its
+ * flokkar's crests and what starts there; open the stops you are working on. The first stop is
+ * open to begin with, and so is the stop of the card in the sheet, so a Fyrr or Síðar that
+ * carries a card to another time never hides it.
+ */
+function Rail({ model, parts }: AreaProps) {
+  const groups = timeGroups(model);
+  const baseId = useId();
+  const [open, setOpen] = useState<Set<number>>(() => new Set(groups[0] ? [groups[0].minute] : []));
+  const allOpen = groups.every((group) => open.has(group.minute));
+  const holdsSelected = (group: TimeGroup) =>
+    group.rows.some((row) => row.kind === "start" && row.li.item.id === parts.selected);
+  const toggle = (minute: number) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(minute)) next.delete(minute);
+      else next.add(minute);
+      return next;
+    });
+
+  return (
+    <div className={styles.area} data-look="m3a">
+      <Legend model={model} parts={parts} grid />
+      <div className={styles.railBar}>
+        <span className={styles.railCount}>
+          {countIs(groups.length, "tímasetning", "tímasetningar")}
+        </span>
+        <button
+          type="button"
+          className={styles.quietButton}
+          onClick={() => setOpen(allOpen ? new Set() : new Set(groups.map((g) => g.minute)))}
+        >
+          {allOpen ? "Fella allt saman" : "Opna allt"}
+        </button>
+      </div>
+      <ol className={styles.rail} aria-label="Tímalína">
+        {groups.map((group) => {
+          const isOpen = open.has(group.minute) || holdsSelected(group);
+          const panelId = `${baseId}-${group.minute}`;
+          const starts = group.rows.filter((row): row is Start => row.kind === "start");
+          const waits = group.rows.length - starts.length;
+          return (
+            <li key={group.minute} className={styles.stop} data-open={isOpen || undefined}>
+              <span className={styles.stopTime}>{at(model, group.minute)}</span>
+              <button
+                type="button"
+                className={styles.stopHead}
+                aria-expanded={isOpen}
+                aria-controls={panelId}
+                onClick={() => toggle(group.minute)}
+              >
+                <span className={styles.stopCrests} aria-hidden="true">
+                  {group.rows.map((row) => (
+                    <span key={row.lane.patrolId} style={parts.laneVars(row.lane.accent)}>
+                      <Crest name={row.lane.name} size="1.375rem" />
+                    </span>
+                  ))}
+                </span>
+                <span className={styles.stopSummary}>
+                  <span className={styles.oneLine}>
+                    {starts.length > 0
+                      ? starts.map((row) => row.li.item.name).join(" · ")
+                      : group.rows.map((row) => row.lane.name).join(" · ")}
+                  </span>
+                  <span className={styles.stopCount}>
+                    {[
+                      starts.length > 0 ? countIs(starts.length, "liður", "liðir") : null,
+                      waits > 0 ? countIs(waits, "flokkur bíður", "flokkar bíða") : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </span>
+                <ChevronDown className={styles.chevron} aria-hidden="true" />
+              </button>
+              {isOpen && (
+                <ul id={panelId} className={styles.stopItems}>
+                  {group.rows.map((row) =>
+                    row.kind === "start" ? (
+                      <li key={row.li.item.id}>
+                        <button
+                          type="button"
+                          className={styles.line}
+                          style={parts.laneVars(row.lane.accent)}
+                          data-status={row.li.item.status}
+                          data-on={parts.selected === row.li.item.id || undefined}
+                          {...parts.itemProps(row.lane, row.li)}
+                        >
+                          <Crest name={row.lane.name} size="1.75rem" />
+                          <span className={styles.lineText}>
+                            <span className={styles.lineTitle}>{row.li.item.name}</span>
+                            <span className={styles.lineMeta}>
+                              <BlockMinutes minutes={row.li.item.minutes} hidden />
+                              <span className={styles.oneLine}>{row.lane.name}</span>
+                            </span>
+                          </span>
+                          <StatusStamp li={row.li} />
+                          <ChangedDot parts={parts} li={row.li} />
+                        </button>
+                      </li>
+                    ) : (
+                      <li key={`wait-${row.lane.patrolId}`}>
+                        <button
+                          type="button"
+                          className={styles.waitLine}
+                          style={parts.laneVars(row.lane.accent)}
+                          aria-label={waitLabel(row)}
+                          onClick={() => parts.addTo(row.lane)}
+                        >
+                          <Crest name={row.lane.name} size="1.75rem" />
+                          <span className={styles.lineText}>
+                            <span className={styles.oneLine}>{row.lane.name}</span>
+                            <span className={styles.lineMeta}>{waitText(row)}</span>
+                          </span>
+                          <span className={styles.addMark}>
+                            <Plus aria-hidden="true" /> Bæta við
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  )}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+        <li className={styles.stop} data-end>
+          <span className={styles.stopTime}>{at(model, model.duration)}</span>
+          <span className={styles.stopEnd}>{endText(model)}</span>
+        </li>
+      </ol>
+    </div>
+  );
+}
+
+/* ── M3b · Ruled log ── */
+
+/**
+ * A run sheet. Times in a mono margin, written once per time; one ruled 48px line per start
+ * with the crest, the name, the length and the stamp; the flokkur's colour as a narrow edge.
+ * Flokkar that start the same liður at the same time (right after "Skipta á flokka", or a
+ * station two flokkar share) share one line, with one crest button each.
+ */
+function RuledLog({ model, parts }: AreaProps) {
+  return (
+    <div className={styles.area} data-look="m3b">
+      <Legend model={model} parts={parts} grid />
+      <ol className={styles.log} aria-label="Tímalína">
+        {timeGroups(model).map(({ minute, rows }) => (
+          <li key={minute} className={styles.logGroup}>
+            <span className={styles.logTime}>{at(model, minute)}</span>
+            <ul className={styles.logLines}>
+              {shared(rows).map((entry) =>
+                entry.kind === "wait" ? (
+                  <li key={`wait-${entry.lane.patrolId}`}>
+                    <button
+                      type="button"
+                      className={styles.logWait}
+                      style={parts.laneVars(entry.lane.accent)}
+                      aria-label={waitLabel(entry)}
+                      onClick={() => parts.addTo(entry.lane)}
+                    >
+                      <Crest name={entry.lane.name} size="1.375rem" />
+                      <span className={styles.logTitle}>
+                        <span className={styles.oneLine}>{entry.lane.name}</span>
+                      </span>
+                      <span className={styles.logMeta}>{waitText(entry)}</span>
+                      <Plus className={styles.logPlus} aria-hidden="true" />
+                    </button>
+                  </li>
+                ) : entry.starts.length === 1 ? (
+                  <li key={entry.starts[0].li.item.id}>
+                    <LogLine start={entry.starts[0]} parts={parts} />
+                  </li>
+                ) : (
+                  <li key={entry.starts[0].li.item.id} className={styles.logShared}>
+                    <span className={styles.logTitle}>
+                      <span className={styles.oneLine}>{entry.starts[0].li.item.name}</span>
+                    </span>
+                    <span className={styles.logMeta}>
+                      <BlockMinutes minutes={entry.starts[0].li.item.minutes} hidden />
+                    </span>
+                    <span className={styles.logSharedCrests}>
+                      {entry.starts.map((start) => (
+                        <button
+                          key={start.li.item.id}
+                          type="button"
+                          className={styles.logCrest}
+                          style={parts.laneVars(start.lane.accent)}
+                          data-on={parts.selected === start.li.item.id || undefined}
+                          {...parts.itemProps(start.lane, start.li)}
+                        >
+                          <Crest name={start.lane.name} size="1.75rem" />
+                          <ChangedDot parts={parts} li={start.li} />
+                        </button>
+                      ))}
+                    </span>
+                  </li>
+                )
+              )}
+            </ul>
+          </li>
+        ))}
+        <li className={styles.logGroup} data-end>
+          <span className={styles.logTime}>{at(model, model.duration)}</span>
+          <span className={styles.logEnd}>{endText(model)}</span>
+        </li>
+      </ol>
+    </div>
+  );
+}
+
+type LogEntry = Wait | { kind: "shared"; starts: Start[] };
+
+/** The same liður (name, length, status) starting at the same time for several flokkar. */
+function shared(rows: Row[]): LogEntry[] {
+  const entries: LogEntry[] = [];
+  const keyOf = (start: Start) =>
+    `${start.li.item.name}|${start.li.item.minutes}|${start.li.item.status}`;
+  for (const row of rows) {
+    if (row.kind === "wait") {
+      entries.push(row);
+      continue;
+    }
+    const same = entries.find(
+      (entry): entry is { kind: "shared"; starts: Start[] } =>
+        entry.kind === "shared" && keyOf(entry.starts[0]) === keyOf(row)
+    );
+    if (same) same.starts.push(row);
+    else entries.push({ kind: "shared", starts: [row] });
+  }
+  return entries;
+}
+
+function LogLine({ start, parts }: { start: Start; parts: PhoneParts }) {
+  const { lane, li } = start;
   return (
     <button
       type="button"
-      className={styles.line}
+      className={styles.logLine}
       style={parts.laneVars(lane.accent)}
       data-status={li.item.status}
       data-on={parts.selected === li.item.id || undefined}
       {...parts.itemProps(lane, li)}
     >
-      <Crest name={lane.name} size="1.75rem" />
-      <span className={styles.lineText}>
-        <span className={styles.lineTitle}>{li.item.name}</span>
-        <span className={styles.lineMeta}>
-          <BlockMinutes minutes={li.item.minutes} hidden />
-          <span className={styles.oneLine}>{lane.name}</span>
-        </span>
+      <Crest name={lane.name} size="1.375rem" />
+      <span className={styles.logTitle}>
+        <span className={styles.oneLine}>{li.item.name}</span>
       </span>
-      <Stamp entry={{ id: li.item.id, status: li.item.status, type: "flokks" }} size="sm" />
-      {parts.changed(li) && (
-        <span className={styles.changedDot} title="Breytt fyrir þennan flokk" aria-hidden="true" />
-      )}
+      <span className={styles.logMeta}>
+        <BlockMinutes minutes={li.item.minutes} hidden />
+      </span>
+      <StatusStamp li={li} />
+      <ChangedDot parts={parts} li={li} />
     </button>
   );
 }
 
-/* ── M4 · List per flokkur ── */
+/* ── M3c · Cards in rows ── */
+
+/** Two across, or three when the flokkar come in threes or there are five or more. */
+function columnsFor(count: number): 2 | 3 {
+  return count === 3 || count >= 5 ? 3 : 2;
+}
 
 /**
- * One row per flokkur: its crest, name, total, and a bar for its length against the band's (the
- * longest fills it; the others end in a dashed wait). Open a row to see its column of cards.
- * Several can be open; the first is open to begin with.
+ * At each time a row of small bank cards, in the same flokkur order every time, so a flokkur
+ * keeps its place all the way down. A flokkur still busy with an earlier liður keeps its place
+ * as a faint "heldur áfram"; one that is done and waiting gets a wait card; after that its
+ * place is left empty. The time stays pinned while its row scrolls by.
  */
-function PerFlokkur(props: AreaProps) {
-  const { model, drag, spot, parts } = props;
-  const [open, setOpen] = useState<Set<string>>(
-    () => new Set(model.lanes[0] ? [model.lanes[0].patrolId] : [])
+function CardRows({ model, parts }: AreaProps) {
+  const groups = timeGroups(model);
+  const columns = columnsFor(model.lanes.length);
+  return (
+    <div
+      className={styles.area}
+      data-look="m3c"
+      style={{ ["--cards" as string]: columns } as CSSProperties}
+    >
+      <Legend model={model} parts={parts} grid />
+      <ol className={styles.cardTimeline} aria-label="Tímalína">
+        {groups.map(({ minute, rows }) => (
+          <li key={minute} className={styles.cardGroup}>
+            <h4 className={styles.cardTime}>{at(model, minute)}</h4>
+            <ul className={styles.cardRow}>
+              {model.lanes.map((lane) => {
+                const row = rows.find((entry) => entry.lane.laneIndex === lane.laneIndex);
+                if (row?.kind === "start") {
+                  return (
+                    <li key={lane.patrolId}>
+                      <MiniCard start={row} parts={parts} />
+                    </li>
+                  );
+                }
+                if (row?.kind === "wait") {
+                  return (
+                    <li key={lane.patrolId}>
+                      <button
+                        type="button"
+                        className={styles.miniWait}
+                        style={parts.laneVars(lane.accent)}
+                        aria-label={waitLabel(row)}
+                        onClick={() => parts.addTo(lane)}
+                      >
+                        <span className={styles.miniHead}>
+                          <Crest name={lane.name} size="1.375rem" />
+                          <span className={styles.miniFlokkur}>{lane.name}</span>
+                        </span>
+                        <span className={styles.miniTitle}>{waitText(row)}</span>
+                        <span className={styles.addMark}>
+                          <Plus aria-hidden="true" /> Bæta við
+                        </span>
+                      </button>
+                    </li>
+                  );
+                }
+                const busy = lane.items.find(
+                  (li) => li.start < minute && li.start + li.item.minutes > minute
+                );
+                return (
+                  <li
+                    key={lane.patrolId}
+                    className={styles.miniGap}
+                    style={parts.laneVars(lane.accent)}
+                    aria-hidden="true"
+                    data-busy={busy ? true : undefined}
+                  >
+                    {busy && (
+                      <span className={styles.miniGapText}>
+                        <span className={styles.oneLine}>{lane.name}</span>
+                        <span className={styles.oneLine}>heldur áfram</span>
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        ))}
+        <li className={styles.cardGroup} data-end>
+          <h4 className={styles.cardTime}>{at(model, model.duration)}</h4>
+          <p className={styles.cardEnd}>{endText(model)}</p>
+        </li>
+      </ol>
+    </div>
   );
-  const baseId = useId();
-  const toggle = (patrolId: string) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(patrolId)) next.delete(patrolId);
-      else next.add(patrolId);
-      return next;
-    });
-  const span = Math.max(model.duration, 1);
+}
+
+/** The bank card, small: crest and flokkur on top, the picture and name, the clock and stamp. */
+function MiniCard({ start, parts }: { start: Start; parts: PhoneParts }) {
+  const { lane, li } = start;
+  const card = li.item as CardLidur;
+  return (
+    <button
+      type="button"
+      className={styles.mini}
+      style={parts.laneVars(lane.accent)}
+      data-status={li.item.status}
+      data-on={parts.selected === li.item.id || undefined}
+      {...parts.itemProps(lane, li)}
+    >
+      <span className={styles.miniHead}>
+        <Crest name={lane.name} size="1.375rem" />
+        <span className={styles.miniFlokkur}>{lane.name}</span>
+      </span>
+      <span className={styles.miniBody}>
+        <span className={styles.miniPic}>
+          <BlockMarker kind={li.item.kind} theme={card.theme} small />
+        </span>
+        <span className={styles.miniTitle}>{li.item.name}</span>
+      </span>
+      <span className={styles.miniFoot}>
+        <BlockMinutes minutes={li.item.minutes} hidden />
+        <StatusStamp li={li} />
+      </span>
+      <ChangedDot parts={parts} li={li} />
+    </button>
+  );
+}
+
+/* ── M3d · Threads ── */
+
+/** A flokkur's cord at a minute: carrying a liður, waiting for the others, or done. */
+function cordAt(lane: LaneModel, minute: number, model: SplitModel): "busy" | "wait" | "none" {
+  if (minute < lane.used) return "busy";
+  if (minute < model.duration) return "wait";
+  return "none";
+}
+
+/**
+ * Every flokkur is a cord down the left, in flokkur order, like branches of a tree: they split
+ * off the sveit at the top and join it again at Lok. A liður is a bead on its own cord with its
+ * name beside it; while a flokkur waits for the others its cord is dashed. One line per start,
+ * in time order, so a screen reader hears a plain timeline; the cords are decoration.
+ */
+function Threads({ model, parts }: AreaProps) {
+  const lanes = model.lanes;
+  /**
+   * The cords beside one line. `fork` draws the split at the top (cords from the middle down,
+   * off one bar) or the join at Lok (cords from the top to the middle, into one bar).
+   */
+  const cords = (
+    minute: number,
+    bead: { lane: number; wait: boolean } | null,
+    fork?: "top" | "bottom"
+  ) => (
+    <span className={styles.cords} data-fork={fork} aria-hidden="true">
+      {lanes.map((lane) => (
+        <span
+          key={lane.patrolId}
+          className={styles.cord}
+          style={parts.laneVars(lane.accent)}
+          data-state={fork ? "busy" : cordAt(lane, minute, model)}
+        >
+          {bead?.lane === lane.laneIndex && (
+            <span className={styles.bead} data-wait={bead.wait || undefined} />
+          )}
+        </span>
+      ))}
+    </span>
+  );
 
   return (
-    <div className={styles.area} data-look="m4">
-      {model.lanes.map((lane) => {
-        const isOpen = open.has(lane.patrolId);
-        const panelId = `${baseId}-${lane.laneIndex}`;
-        return (
-          <section
-            key={lane.patrolId}
-            className={styles.flokkur}
-            style={parts.laneVars(lane.accent)}
-          >
-            <h4 className={styles.flokkurHead}>
-              <button
-                type="button"
-                className={styles.flokkurButton}
-                aria-expanded={isOpen}
-                aria-controls={panelId}
-                data-lane-col={lane.laneIndex}
-                data-drop-end
-                data-over={aimedAtEnd(lane, drag, spot) || undefined}
-                onClick={() => toggle(lane.patrolId)}
-              >
-                <Crest name={lane.name} size="2.25rem" />
-                <span className={styles.flokkurText}>
-                  <span className={styles.twoLines} title={lane.name}>
-                    {lane.name}
+    <div
+      className={styles.area}
+      data-look="m3d"
+      style={{ ["--threads" as string]: lanes.length } as CSSProperties}
+    >
+      <Legend model={model} parts={parts} grid />
+      <ol className={styles.threadList} aria-label="Tímalína">
+        <li className={styles.threadFork} aria-hidden="true">
+          <span className={styles.threadTime} />
+          {cords(0, null, "top")}
+          <span className={styles.threadNote}>Sveitin skiptist</span>
+        </li>
+        {timeGroups(model).map(({ minute, rows }) =>
+          rows.map((row, i) => (
+            <li
+              key={row.kind === "start" ? row.li.item.id : `wait-${row.lane.patrolId}`}
+              className={styles.thread}
+              data-first={i === 0 || undefined}
+            >
+              <span className={styles.threadTime}>{i === 0 ? at(model, minute) : ""}</span>
+              {cords(minute, { lane: row.lane.laneIndex, wait: row.kind === "wait" })}
+              {row.kind === "start" ? (
+                <button
+                  type="button"
+                  className={styles.threadItem}
+                  style={parts.laneVars(row.lane.accent)}
+                  data-status={row.li.item.status}
+                  data-on={parts.selected === row.li.item.id || undefined}
+                  {...parts.itemProps(row.lane, row.li)}
+                >
+                  <span className={styles.lineText}>
+                    <span className={styles.lineTitle}>{row.li.item.name}</span>
+                    <span className={styles.lineMeta}>
+                      <BlockMinutes minutes={row.li.item.minutes} hidden />
+                      <span className={styles.oneLine}>{row.lane.name}</span>
+                    </span>
                   </span>
-                  <LaneNums lane={lane} model={model} />
-                  <span className={styles.bar} aria-hidden="true">
-                    <span
-                      className={styles.barFill}
-                      style={{ width: `${(lane.used / span) * 100}%` }}
-                    />
+                  <StatusStamp li={row.li} />
+                  <ChangedDot parts={parts} li={row.li} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.threadWait}
+                  style={parts.laneVars(row.lane.accent)}
+                  aria-label={waitLabel(row)}
+                  onClick={() => parts.addTo(row.lane)}
+                >
+                  <span className={styles.lineText}>
+                    <span className={styles.oneLine}>{row.lane.name}</span>
+                    <span className={styles.lineMeta}>{waitText(row)}</span>
                   </span>
-                </span>
-                <ChevronDown className={styles.chevron} aria-hidden="true" />
-              </button>
-            </h4>
-            {isOpen && (
-              <div id={panelId} className={styles.flokkurPanel}>
-                {parts.lane(lane)}
-              </div>
-            )}
-          </section>
-        );
-      })}
+                  <span className={styles.addMark}>
+                    <Plus aria-hidden="true" /> Bæta við
+                  </span>
+                </button>
+              )}
+            </li>
+          ))
+        )}
+        <li className={styles.threadFork} data-end>
+          <span className={styles.threadTime}>{at(model, model.duration)}</span>
+          {cords(model.duration, null, "bottom")}
+          <span className={styles.threadNote}>{endText(model)}</span>
+        </li>
+      </ol>
     </div>
   );
 }

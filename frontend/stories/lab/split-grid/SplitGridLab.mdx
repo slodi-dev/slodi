@@ -333,13 +333,17 @@ sheet's total afterwards. To ship it, `mergeBand` needs a `keep: "all" | patrolI
 
 <Canvas of={Stories.MergeFlow} />
 
-## 9. On a phone: a rethink (M1–M4)
+## 9. On a phone: stacked by time (M3, M3a–d)
 
 Desktop K2 with H6 is approved. On a phone, the same grid is squeezed into 390px and scrolled
 sideways. The layouts below take over when the band itself is 620px wide or less. That is
 measured on the band, so a narrow bench pane counts as a phone too. Pass them with the `phone`
-prop (`"m1"` … `"m4"`); without it, a narrow band stays as it is today. Wider than a phone, it
-is always the desktop grid.
+prop (`"m3"`, `"m3a"` … `"m3d"`); without it, a narrow band stays as it is today. Wider than a
+phone, it is always the desktop grid.
+
+Of the four phone layouts tried first (one flokkur at a time, compare two, stacked by time,
+list per flokkur), **M3 · Stacked by time** was picked for its function. M1, M2 and M4 are gone.
+What follows is M3 as it was, then four styles of the same function.
 
 <Canvas of={Stories.PhoneComparison} />
 
@@ -357,8 +361,8 @@ Screenshots with 2, 4 and 6 flokkar, short and long names, an open card and a dr
    mín ræðu", "45 mín 30 mín bið").
 4. **The pinned time axis scrolled away.** Past the first screen of columns, the axis left with
    the grid, because the grid was only as wide as the scroller. Sticky stays inside its grid, so
-   at the last flokkur there was no time on the left at all. Fixed for the phone layouts by
-   sizing the grid to its columns.
+   at the last flokkur there was no time on the left at all. A timeline has no sideways grid,
+   so it can't happen there.
 5. **The open card covers everything.** Its back is the full width and about 900px tall, more
    than a screen, laid over the grid. You lose which column and which time you are editing.
    "Færa til" and Fyrr / Síðar wrap onto a second row.
@@ -375,130 +379,170 @@ Screenshots with 2, 4 and 6 flokkar, short and long names, an open card and a dr
    `useFollowPointer` now also listens on the touched element, which fixes it in every layout,
    desktop K2 on a touch screen included.
 
-### What every phone layout keeps
+### What every look keeps (the M3 function)
 
-- **K2's card language.** The bank card with its clock line, status stamp and "changed" dot.
-  Its back is the editor, opened here as a **sheet from the bottom** (`PhoneSheet`). It is a
-  native modal `<dialog>`: focus stays in it, the page behind is inert, and Escape, Lokið or a
-  tap on the dimmed page closes it, with focus back on the card. It is at most 85% of the screen
-  tall, clear of the home bar (safe area), with the flokkur's colour as its top edge. The bottom
-  half is where a thumb is.
-- **H6's identity.** The ringed crest, the flokkur's colour as a cord or left edge, and its 10%
-  wash.
+- **One timeline down the page.** At each time something starts, what every flokkur starts
+  then. Where a flokkur is done before the band, its wait, with "+ Bæta við", which adds a
+  liður that fits the wait. "Lok · allir koma saman" at the band's end.
+- **A legend of the flokkar** at the top: crest, name, total, and "ræður lengd" or the wait.
+- **K2's card, opened as a sheet from the bottom** (`PhoneSheet`). A tap on a liður opens its
+  card's back. Fyrr / Síðar move it in time, "Færa til" moves it to another flokkur, and remove
+  comes with Afturkalla. It is a native modal `<dialog>`: focus stays in it, the page behind is
+  inert, and Escape, Lokið or a tap on the dimmed page closes it, with focus back on the liður.
+  It is at most 85% of the screen tall and clear of the home bar.
+- **No dragging.** The rows are times, not places; a long press does nothing, so the page
+  scrolls freely under a thumb.
+- **H6's identity.** The ringed crest and the flokkur's colour as a cord or edge, with its 10%
+  wash under primary text, never coloured text on the page.
 - **Everything the band does.** Split and the honest merge, Afturkalla, every edit, ↑ ↓ ← → on
   a keyboard, and the announcements are the band's own and unchanged.
-- **48px targets** (`--sl-touch-target`) everywhere, and the hint at the foot is written for a
-  thumb.
+- **48px targets** (`--sl-touch-target`), and the hint at the foot is written for a thumb.
+- **Screen readers hear a timeline.** An ordered list "Tímalína" in time order. Every liður's
+  name says its flokkur, time, name, length and status ("Refir kl. 19:55: Áttaviti og kort, 15
+  mín, staðfest"), so the crests and cords are decoration.
 
-### M1 · One flokkur at a time
+### How long they get
 
-<Canvas of={Stories.PhoneM1} />
+The band's timeline area, in px, measured in the stories (legend included; the band's own head
+and foot left out). "Lines" are the tappable lines on screen.
 
-**The story it tells:** "this is Refir's evening", one flokkur at a time, like turning pages.
+| Look                     | 390 · 4 flokkar | 360 · 6 flokkar | 390 · long names, 4 | 360 · long names, 6 |
+| ------------------------ | --------------- | --------------- | ------------------- | ------------------- |
+| M3 · first version       | 1311 (20 lines) | 2172 (36 lines) | 1337                | 1967                |
+| M3a · Rail (as it opens) | 684             | 832             | 636                 | 784                 |
+| M3b · Ruled log          | 1015            | 1936            | 1113                | 1250                |
+| M3c · Cards in rows      | 1616            | 1605            | 1373                | 1367                |
+| M3d · Threads            | 1135            | 1940            | 1134                | 1665                |
 
-**Hierarchy:** a row of crests on top, each with its total and wait. The flokkur in view has its
-wash and a coloured edge. Under the crests is that flokkur's column at nearly full width, on the
-pinned time axis, with the next column peeking in by 2.25rem so it's clear there is more.
+The six-flokkar fixture is the hardest case there is: a 60-minute stöðvaleikur, every flokkur at
+a different station every 10 minutes, so 36 starts and nothing in common. Only folding (M3a) or
+putting several flokkar on one line (M3c) beats it by much; a plain line per start can only be
+made denser (M3b, M3d).
 
-**Why:** a card at full width shows everything: picture, two lines of title, leader, note. The
-row of crests answers "which flokkar, and who sets the length" at a glance, which the squeezed
-grid never did. It stays at the top of the band while the page scrolls.
-
-**Moving cards:** hold a card for 200ms, then drag it up or down its column. To move it to
-another flokkur, drop it on that flokkur's crest; it goes to the end. The sheet's "Færa til" does
-the same in one tap. The crests hold still during a drag, so the one under the finger stays put.
-
-**Trade-offs:** you can't see two flokkar side by side. Comparing means swiping back and forth,
-and each column still has its own head under the crests (repeated, but it keeps the axis level).
-Crests are at the top of the screen, the hardest place for a thumb to reach. They stay pinned
-there, and swiping the column does the same thing.
-
-**Structure:** the crests are a group ("Flokkar, einn í einu") of toggle buttons; `aria-pressed`
-marks the one in view.
-
-### M2 · Compare two
-
-<Canvas of={Stories.PhoneM2} />
-
-**The story it tells:** "how do these two flokkar line up?", which is the question a split
-raises ("Refir are done 25 minutes before Ernir").
-
-**Hierarchy:** "Veldu tvo flokka til að bera saman", the row of crests with the two picked ones
-marked, then the two columns side by side on the time axis. Every other flokkur's total and wait
-stays in view in the row.
-
-**Why:** two is the most that still gives each card about 140px. It is also the most common
-comparison: the longest flokkur and the one you are planning.
-
-**Moving cards:** hold and drag along a column, across to the other column at a chosen place, or
-onto a crest in the row (the end of that flokkur). Tapping a third crest replaces the one picked
-longest ago, so it is always two.
-
-**Trade-offs:** at 140px a 15-minute card's title is one line ("Hnútar og…"). The full name is
-in the card's tooltip, its accessible name and the sheet. Picking which two takes a tap the
-other layouts don't need.
-
-### M3 · Stacked by time
+### M3 · the first version
 
 <Canvas of={Stories.PhoneM3} />
 
-**The story it tells:** "what is happening at 19:55?", the run of the evening as a leader
-standing in the hall reads it.
+Kept for comparison: a row per time, a bordered card line per flokkur (crest, name, "15 mín",
+flokkur, stamp), and a tinted wait line. It reads well, but every line is a card with its own
+border and gap, 51px a start, and with six flokkar the page is 36 cards long.
 
-**Hierarchy:** a legend of crests with totals and wait at the top, then one timeline. Each time
-something starts is a row: the time on the left, then a line per flokkur starting then (crest,
-name, "15 mín", flokkur, stamp). Where a flokkur finishes early, a tinted line says how long it
-waits and adds to it ("30 mín bið · + Bæta við"). The last row is "Lok · allir koma saman".
+### M3a · Rail
 
-**Why:** it reads top to bottom with no sideways scrolling and nothing cut. Every flokkur's
-liður is on screen at its time, and the waits sit where they happen.
+<Canvas of={Stories.PhoneM3a} />
 
-**Moving cards:** no dragging, because the rows are times, not places. Tap a line for the
-sheet, where Fyrr / Síðar reorder and "Færa til" moves it to another flokkur.
+**The story it tells:** "the evening is a line of stops; open the one you're working on." A
+leader planning a split thinks one station change at a time.
 
-**Trade-offs:** time isn't drawn to scale. Two 15-minute rows look like one 15- and one
-30-minute row, so length is read from "15 mín". With six flokkar and short stations it gets long
-(36 lines for a 60-minute band). No drag at all.
+**Hierarchy:** the legend, then a rail down the left with the times beside it in mono and a node
+at every start time. Each stop folds to one 48px line: its flokkar's crests, overlapping like a
+hand of cards, then what starts there ("Hnútar og bönd · Áttaviti og kort · …") and the count
+("4 liðir · 1 flokkur bíður"). Open, its liðir hang off the rail as M3's card lines. An open stop's
+node is filled, a folded one is a ring. "Opna allt" opens every stop.
 
-**Structure:** an ordered list "Tímalína" of rows, each with a list of lines.
+**Why:** it's the only look that stays short however many flokkar there are: about 50px a stop
+folded, so six flokkar' 60 minutes is 832px with the first stop open. The folded line still says
+who is busy and with what, and the rail gives the evening a shape.
 
-### M4 · List per flokkur
+**Rules:** the first stop is open to begin with. The stop of the card in the sheet is always
+open, so a Fyrr or Síðar that carries it to another time never hides it.
 
-<Canvas of={Stories.PhoneM4} />
+**Trade-offs:** a folded stop hides the lengths and stamps, so "is everything confirmed?" needs
+"Opna allt". The crests overlap: with six, the initials of one ("FF") are partly covered by the
+next. One more tap than the other looks before a liður can be opened.
 
-**The story it tells:** "each flokkur's plan, one at a time, with how it measures up".
+**Structure:** the list "Tímalína"; each stop's head is a disclosure button (`aria-expanded`,
+`aria-controls`) and its liðir a list.
 
-**Hierarchy:** one row per flokkur: the crest, the name (two lines, then "…"), "70 mín · ræður
-lengd" or "45 mín · 30 mín bið", and a bar for its length against the band's. The longest fills
-the bar; the others end in a dashed wait. Open a row to see its column of cards, on the same
-minute scale as desktop. The first is open to begin with, and several can be open.
+### M3b · Ruled log
 
-**Why:** the closed rows are the whole split in about 60px a flokkur, with the bar making "who
-sets the length" visual. Opening one gives full-width cards, as in M1, without leaving the page.
+<Canvas of={Stories.PhoneM3b} />
 
-**Moving cards:** hold and drag inside an open flokkur. To move a card to another flokkur, drop
-it on that flokkur's row (closed or open): it goes to the end. The sheet's "Færa til" does it in
-one tap.
+**The story it tells:** "the run sheet a foringi holds at the fundur": times down a margin, a
+ruled line per thing that happens, nothing decorative.
 
-**Trade-offs:** comparing two flokkar' cards means opening both, one under the other. A long
-drag down the page to a row further down scrolls the page as you go, which is harder to aim
-than a crest on top.
+**Hierarchy:** a heavy rule under the legend, then the times in a mono margin, written once per
+time with a rule between times. Each start is one ruled line, exactly 48px: the crest (small),
+the name, "15 mín" at the right, the stamp. The flokkur's colour is a 4px left edge, solid for a
+liður and dashed for a wait ("30 mín bið +", on the flokkur's wash).
 
-**Structure:** each row is an `h4` with a disclosure button (`aria-expanded`, `aria-controls`).
+**Shared lines:** flokkar starting the same liður at the same time (the same name, length and
+status), as right after "Skipta á flokka" or at a station two flokkar share, get one line. The
+name is said once, then one 48px crest button per flokkur, each opening that flokkur's card. In
+the uneven fixture Ernir and Uglur both start Eldfæri og prímus at 19:55 and share a line.
+
+**Why:** the densest line per start (48px, no gaps), calm and easy to scan down the margin. It
+prints well and matches FundurSheet's F3 · Run sheet.
+
+**Trade-offs:** a shared line is tapped on a crest, not on the line, which is a second way of
+opening a card. A single line names the liður but not the flokkur on screen, only the crest
+(the legend and the accessible name say it). With six flokkar and nothing shared it is still 36
+lines.
+
+### M3c · Cards in rows
+
+<Canvas of={Stories.PhoneM3c} />
+
+**The story it tells:** "at 19:55, here is every flokkur": the bank cards, small, at their
+time.
+
+**Hierarchy:** at each time a heading (mono, pinned to the top of the screen while its row
+scrolls by) and a row of small bank cards, **always in flokkur order**, two across for two or
+four flokkar and three across for three, five or six. A card has the crest and flokkur on top
+(its colour as the top edge), the bank picture and name (two lines), and the clock and stamp at
+the foot. When three across leaves no room, the picture goes and the name gets the card.
+
+**Fixed places:** a flokkur keeps its place in every row, so you follow a flokkur down by place
+and colour. When nothing starts for it at a time, its place says so: "heldur áfram" (still busy
+with the last liður, faintly in its colour), its wait card ("30 mín bið + Bæta við"), or empty
+once it is done.
+
+**Why:** the closest to the desktop cards and the bank: the same picture, name and clock. With
+six flokkar, three across makes each time two rows, so it is 1605px against M3's 2172.
+
+**Trade-offs:** with four flokkar it is the tallest look (two rows of 100px cards per time). The
+empty places take room. At 360px three across, a card is about 100px, so a long name gets two
+short lines.
+
+**Structure:** each time is an `h4` (the band's title is the `h3`), then a list of cards.
+
+### M3d · Threads
+
+<Canvas of={Stories.PhoneM3d} />
+
+**The story it tells:** "the sveit splits, every flokkur goes its own way, and they all meet
+again at Lok."
+
+**Hierarchy:** the legend, then the times in a mono margin and a cord per flokkur, 12px apart,
+in flokkur order. At the top the cords leave one bar ("Sveitin skiptist"); at Lok they join it
+again. Each start is a line: a bead on its own flokkur's cord, the name, "15 mín" and the
+flokkur, the stamp. While a flokkur waits for the others, its cord is dashed and its wait line
+has a hollow bead ("15 mín bið + Bæta við").
+
+**Why:** the shape of the split is visible without reading: which cord carries each line, where
+the dashes start (who waits, and how long), and that it all comes back together. It is the most
+personal of the four and fits H6's cords.
+
+**Trade-offs:** the beads are colour first; the flokkur's name is on every line so it doesn't rely
+on colour alone. Six cords take 78px of a 360px screen. One line per start, so six flokkar are
+still 36 lines (1940px).
 
 ### Testing it
 
-Each layout has a story at 390 and 360 with four and six flokkar and long names, light and dark.
-The play tests cover:
+Each look has a plain story (390 and 360, four and six flokkar, long names), light and dark,
+with no play test, so it shows the look as it opens. Its "… · interactions" story runs the play
+test on one 390px frame of the uneven fixture:
 
-- **M1:** a crest shows its flokkur, the sheet opens and closes back to the card, a touch drag
-  moves a card up its column, a drop on a crest goes to that flokkur's end, and Afturkalla.
-- **M2:** picking a third flokkur, a touch drag across to a place in the other column, and
-  Afturkalla.
-- **M3:** one row per start time, the sheet's "Færa til", and remove with Afturkalla.
-- **M4:** opening a row, a touch drag inside it, and a drop on a closed row.
+- the timeline is in time order, from 19:40 to "20:55 Lok";
+- a tap opens the card as a sheet, and Lokið goes back to the liður;
+- Fyrr moves it to 19:40 and Síðar back to 19:55;
+- Færa til moves it to Ernir, and back to Refir from the sheet;
+- remove from the sheet, then Afturkalla;
+- "+ Bæta við" fills Ernir's 30-minute wait.
 
-They run on light desktop, light phone and dark phone.
+M3a's test also checks that only the first stop starts open; M3b's that Ernir's and Uglur's
+Eldfæri og prímus share a line. They run on light phone, dark phone and light desktop (the
+desktop stories unchanged), with a11y.
 
 ## 10. What's real and what's fixture
 

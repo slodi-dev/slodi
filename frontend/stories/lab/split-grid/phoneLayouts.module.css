@@ -1,4 +1,4 @@
-/* Lab/SplitGrid on a phone: M1–M4 (phoneLayouts.tsx). Tokens only. The flokkur's colour comes
+/* Lab/SplitGrid on a phone: M3 and its styles M3a–d (phoneLayouts.tsx). Tokens only. The flokkur's colour comes
    in as --lane / --lane-on (set inline per flokkur, as on desktop): the ring of its crest, its
    cord as a left edge, and a 10% wash under primary text, never coloured text on the page.
    Every target is at least --sl-touch-target (48px). The grid, its cards and the card's sheet
@@ -54,69 +54,7 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.caption {
-  margin: 0;
-  font-size: var(--sl-text-caption);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-/* ── The row of crests (M1, M2) ──
-
-   Sticky at the top of the band while the page scrolls, so the flokkar are always one tap
-   away. It scrolls sideways itself when the crests don't fit (six flokkar on 360px). */
-
-.crestRow {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  display: flex;
-  gap: var(--sl-spacing-xs);
-  margin: 0 calc(var(--sl-spacing-md) * -1);
-  padding: var(--sl-spacing-xs) var(--sl-spacing-md);
-  overflow-x: auto;
-  scrollbar-width: none;
-  background: hsl(var(--sl-color-surface));
-  border-bottom: 1px solid hsl(var(--sl-color-border));
-}
-
-.crestTab {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-xs);
-  min-height: var(--sl-touch-target);
-  max-width: 10.5rem;
-  padding: var(--sl-spacing-compact) var(--sl-spacing-sm) var(--sl-spacing-compact)
-    var(--sl-spacing-compact);
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-chip);
-  background: hsl(var(--sl-color-surface));
-  color: hsl(var(--sl-color-text-primary));
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-/* In view (M1) or picked (M2): the flokkur's wash, its colour as the edge. */
-.crestTab[aria-pressed="true"] {
-  border-color: hsl(var(--lane));
-  box-shadow: inset 0 0 0 1px hsl(var(--lane));
-  background: hsl(var(--lane) / 0.1);
-}
-
-.crestTabText {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: var(--sl-line-height-tight);
-  font-weight: var(--sl-font-weight-semibold);
-}
-
-.crestTabText .nums {
-  font-weight: var(--sl-font-weight-normal);
-}
-
-/* ── M3 · Stacked by time ── */
+/* ── M3 · the first version (and the legend and lines M3a reuses) ── */
 
 .legend {
   display: flex;
@@ -273,69 +211,45 @@
   border-bottom: 0;
 }
 
-/* ── M4 · List per flokkur ── */
-
-.flokkur {
-  border: 1px solid hsl(var(--sl-color-border));
-  border-left: 3px solid hsl(var(--lane));
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--lane) / 0.1);
-  overflow: hidden;
-}
-
-.flokkurHead {
+/* The legend two across, so its names line up (M3a–d). */
+.legendGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sl-spacing-xs) var(--sl-spacing-sm);
   margin: 0;
-  font: inherit;
+  padding: 0;
+  list-style: none;
 }
 
-.flokkurButton {
-  display: flex;
+.legendGrid .legendText {
+  max-width: none;
+}
+
+.addMark {
+  flex: none;
+  display: inline-flex;
   align-items: center;
-  gap: var(--sl-spacing-sm);
-  width: 100%;
-  min-height: calc(var(--sl-touch-target) + var(--sl-spacing-sm));
-  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
-  border: 0;
-  background: transparent;
+  gap: 0.2em;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.addMark svg {
+  width: 1em;
+  height: 1em;
+}
+
+.quietButton {
+  min-height: var(--sl-touch-target);
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
   color: hsl(var(--sl-color-text-primary));
   font: inherit;
-  text-align: left;
+  font-size: var(--sl-text-body-sm);
   cursor: pointer;
-}
-
-.flokkurText {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  min-width: 0;
-  font-family: var(--sl-font-family-heading);
-  font-weight: var(--sl-font-weight-heading);
-  font-size: var(--sl-text-body);
-  line-height: var(--sl-line-height-tight);
-}
-
-.flokkurText .nums {
-  font-family: var(--sl-font-family-body);
-  font-weight: var(--sl-font-weight-normal);
-}
-
-/* The flokkur's length against the band's: a filled bar in its colour, the rest of the band
-   (the wait) dashed. The longest fills it. */
-.bar {
-  position: relative;
-  display: block;
-  height: 6px;
-  margin-top: 0.125rem;
-  border: 1px dashed hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-chip);
-}
-
-.barFill {
-  position: absolute;
-  inset: -1px auto -1px -1px;
-  border-radius: var(--sl-radius-chip);
-  background: hsl(var(--lane));
 }
 
 .chevron {
@@ -345,13 +259,591 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.flokkurButton[aria-expanded="true"] .chevron {
+[aria-expanded="true"] > .chevron {
   transform: rotate(180deg);
 }
 
-.flokkurPanel {
-  padding: 0 var(--sl-spacing-xs) var(--sl-spacing-xs);
+/* ── M3a · Rail ──
+
+   Three columns: the time, the rail with a stop on it, and the stop's line or its liðir. The
+   rail runs through every stop, so it reads as one line down the page; an open stop's node is
+   filled, a folded one is a ring. */
+
+.railBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-sm);
+}
+
+.railCount {
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.rail {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.75rem 1.5rem minmax(0, 1fr);
+  align-items: start;
+}
+
+/* The rail: down the middle column, through the whole stop. */
+.stop::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(2.75rem + 0.75rem - 1px);
+  width: 2px;
+  background: hsl(var(--sl-color-border-strong));
+}
+
+.stop:first-child::before {
+  top: 1.5rem;
+}
+
+.stop[data-end]::before {
+  bottom: auto;
+  height: 1.5rem;
+}
+
+/* The stop's node, level with the stop's line. */
+.stop::after {
+  content: "";
+  position: absolute;
+  top: calc(1.5rem - 6px);
+  left: calc(2.75rem + 0.75rem - 6px);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   background: hsl(var(--sl-color-surface));
+  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-border-strong));
+}
+
+.stop[data-open]::after,
+.stop[data-end]::after {
+  background: hsl(var(--sl-color-text-primary));
+  box-shadow: 0 0 0 3px hsl(var(--sl-color-surface));
+}
+
+.stopTime {
+  grid-column: 1;
+  padding-top: 0.85rem;
+  font-family: var(--sl-font-family-code);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.stopHead,
+.stopItems,
+.stopEnd {
+  grid-column: 3;
+}
+
+.stopHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  width: 100%;
+  min-height: 3rem;
+  padding: var(--sl-spacing-xs) 0;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The stop's flokkar as a row of crests, overlapping a little like a hand of cards. */
+.stopCrests {
+  flex: none;
+  display: flex;
+}
+
+.stopCrests > * + * {
+  margin-left: -0.4rem;
+}
+
+.stopCrests > * > span {
+  box-shadow:
+    inset 0 0 0 2px hsl(var(--lane)),
+    0 0 0 2px hsl(var(--sl-color-surface));
+}
+
+.stopSummary {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: var(--sl-line-height-tight);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.stopCount {
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-normal);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.stop[data-open] .stopSummary .oneLine {
+  /* Open, the liðir below say it: the summary keeps only the count. */
+  display: none;
+}
+
+.stopItems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  margin: 0;
+  padding: 0 0 var(--sl-spacing-sm);
+  list-style: none;
+}
+
+.stopEnd {
+  padding-top: 0.95rem;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── M3b · Ruled log ──
+
+   A run sheet: the time in a mono margin once per time, then ruled lines with no gaps, the
+   flokkur's colour as a narrow left edge. Calm and dense: every line is exactly the touch
+   target. */
+
+.log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid hsl(var(--sl-color-text-primary));
+}
+
+.logGroup {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  border-bottom: 1px solid hsl(var(--sl-color-border-strong));
+}
+
+.logTime {
+  padding: 0.85rem var(--sl-spacing-xs) 0 0;
+  border-right: 1px solid hsl(var(--sl-color-border));
+  font-family: var(--sl-font-family-code);
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.logLines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.logLines > li + li {
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.logLine,
+.logWait {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  width: 100%;
+  min-height: var(--sl-touch-target);
+  padding: 0 var(--sl-spacing-xs) 0 var(--sl-spacing-sm);
+  border: 0;
+  border-left: 4px solid hsl(var(--lane));
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.logWait {
+  border-left-style: dashed;
+  background: hsl(var(--lane) / 0.1);
+}
+
+.logLine[data-on] {
+  background: hsl(var(--sl-color-primary) / 0.1);
+}
+
+.logTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.logMeta {
+  flex: none;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+.logPlus {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* Several flokkar on one line: the liður once, then one crest button per flokkur. */
+.logShared {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: var(--sl-touch-target);
+  padding-left: var(--sl-spacing-sm);
+  border-left: 4px solid hsl(var(--sl-color-border-strong));
+}
+
+.logSharedCrests {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: calc(var(--sl-touch-target) * 3);
+}
+
+.logCrest {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--sl-touch-target);
+  height: var(--sl-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.logCrest[data-on] {
+  background: hsl(var(--sl-color-primary) / 0.1);
+}
+
+.logEnd {
+  padding: 0.85rem var(--sl-spacing-sm) 0.85rem;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── M3c · Cards in rows ──
+
+   At each time a row of small bank cards in flokkur order (two or three across, --cards).
+   The time pins to the top of the screen while its row scrolls under it. */
+
+.cardTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardTime {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  padding: var(--sl-spacing-xs) 0;
+  background: hsl(var(--sl-color-surface));
+  border-bottom: 1px solid hsl(var(--sl-color-border));
+  font-family: var(--sl-font-family-code);
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardRow {
+  display: grid;
+  grid-template-columns: repeat(var(--cards), minmax(0, 1fr));
+  gap: var(--sl-spacing-xs);
+  margin: 0;
+  padding: var(--sl-spacing-xs) 0 0;
+  list-style: none;
+}
+
+.cardRow > li {
+  display: flex;
+  min-width: 0;
+}
+
+.mini,
+.miniWait {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  min-height: 6rem;
+  padding: var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-border));
+  /* The flokkur's cord as the card's top edge. */
+  border-top: 3px solid hsl(var(--lane));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mini[data-on] {
+  border-color: hsl(var(--sl-color-primary));
+  border-top-color: hsl(var(--lane));
+}
+
+.mini:is([data-status="tentative"], [data-status="unknown"]) {
+  border-style: dashed;
+  border-top-style: solid;
+}
+
+.miniWait {
+  border-style: dashed;
+  border-top-style: solid;
+  background: hsl(var(--lane) / 0.1);
+}
+
+.miniHead {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.miniFlokkur {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.miniBody {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+}
+
+.miniPic {
+  flex: none;
+}
+
+/* Three across on a phone leaves no room for the picture: the name gets the whole card. */
+@container (max-width: 8.5rem) {
+  .miniPic {
+    display: none;
+  }
+}
+
+.miniTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-width: 0;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+  font-size: var(--sl-text-body-sm);
+  font-weight: var(--sl-font-weight-semibold);
+  line-height: var(--sl-line-height-tight);
+}
+
+.miniFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-xs);
+  margin-top: auto;
+  font-size: var(--sl-text-caption);
+}
+
+/* A flokkur's place when nothing starts for it at this time. */
+.miniGap {
+  min-height: 6rem;
+  border: 1px dashed hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-md);
+}
+
+.miniGap[data-busy] {
+  border-style: solid;
+  border-color: hsl(var(--sl-color-border-subtle));
+  border-top: 3px solid hsl(var(--lane) / 0.45);
+  background: hsl(var(--lane) / 0.05);
+}
+
+.miniGapText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--sl-spacing-xs);
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.cardEnd {
+  margin: 0;
+  padding-top: var(--sl-spacing-xs);
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── M3d · Threads ──
+
+   Three columns: the time, the cords (one per flokkur, 12px apart) and the line. Lines sit
+   edge to edge, so the cords run unbroken down the page. */
+
+.threadList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.thread,
+.threadFork {
+  display: grid;
+  grid-template-columns: 2.75rem calc(var(--threads) * 12px + 6px) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.thread[data-first] > :not(.cords) {
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.threadTime {
+  padding-top: 0.85rem;
+  font-family: var(--sl-font-family-code);
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cords {
+  position: relative;
+  display: flex;
+  min-height: var(--sl-touch-target);
+}
+
+.cord {
+  position: relative;
+  flex: none;
+  width: 12px;
+}
+
+.cord::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  background: hsl(var(--lane));
+}
+
+/* Waiting for the others: the cord dashed. */
+.cord[data-state="wait"]::before {
+  background: repeating-linear-gradient(to bottom, hsl(var(--lane)) 0 4px, transparent 4px 8px);
+}
+
+.cord[data-state="none"]::before {
+  content: none;
+}
+
+/* The liður's bead, level with its name's first line. */
+.bead {
+  position: absolute;
+  top: calc(1.5rem - 6px);
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: hsl(var(--lane));
+  box-shadow: 0 0 0 2px hsl(var(--sl-color-surface));
+}
+
+.bead[data-wait] {
+  background: hsl(var(--sl-color-surface));
+  box-shadow:
+    inset 0 0 0 2px hsl(var(--lane)),
+    0 0 0 2px hsl(var(--sl-color-surface));
+}
+
+/* The split and the join: the cords start (or end) in the middle, on one bar across them. */
+.threadFork {
+  min-height: 2rem;
+}
+
+.threadFork .cords {
+  min-height: 2rem;
+}
+
+.cords[data-fork]::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 1px);
+  left: 5px;
+  width: calc((var(--threads) - 1) * 12px + 2px);
+  height: 2px;
+  background: hsl(var(--sl-color-text-primary));
+}
+
+.cords[data-fork="top"] .cord::before {
+  top: 50%;
+}
+
+.cords[data-fork="bottom"] .cord::before {
+  bottom: 50%;
+}
+
+.threadNote {
+  align-self: center;
+  padding-left: var(--sl-spacing-xs);
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.threadItem,
+.threadWait {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  width: 100%;
+  min-height: var(--sl-touch-target);
+  padding: var(--sl-spacing-xs) var(--sl-spacing-sm);
+  border: 0;
+  border-radius: var(--sl-radius-md);
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.threadItem[data-on] {
+  background: hsl(var(--sl-color-primary) / 0.1);
+}
+
+.threadWait {
+  background: hsl(var(--lane) / 0.1);
 }
 
 @media (prefers-reduced-motion: no-preference) {

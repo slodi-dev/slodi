@@ -85,12 +85,15 @@ Nothing waiting.
 - **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the real calendar's stamp kit
   so the grid and calendar are one family (see "Grid next to calendar").
 - **SplitGrid → K2 · Flip it over with the H6 head: desktop approved; phone in the Lab
-  (M1–M4)** (2026-10-20). On a phone the desktop grid gets squished (one and a half flokkar in
+  (M3a–d)** (2026-10-20). On a phone the desktop grid gets squished (one and a half flokkar in
   view, cut cards, the open card's back covering everything, the pinned axis scrolling away), so
-  four phone layouts take over at 620px or less: **M1 · One flokkur at a time** (crests on top,
-  one column, the next peeking), **M2 · Compare two**, **M3 · Stacked by time** (one timeline of
-  what each flokkur starts when) and **M4 · List per flokkur** (rows with a length bar, opened to
-  their cards). On a phone the card's back is a bottom sheet in all four. Also fixed: a touch drag
+  a phone layout takes over at 620px or less. Of four tried (one flokkur at a time, compare two,
+  stacked by time, list per flokkur), **M3 · Stacked by time** was picked for its function: one
+  timeline of what each flokkur starts when, waits with "+ Bæta við", the card's back as a
+  bottom sheet with Fyrr / Síðar and Færa til. Now in four styles: **M3a · Rail** (stops that
+  fold, the shortest), **M3b · Ruled log** (a run sheet, shared lines), **M3c · Cards in rows**
+  (small bank cards in fixed flokkur places) and **M3d · Threads** (a cord per flokkur that
+  splits off the sveit and joins it at Lok). Also fixed: a touch drag
   stopped following the finger once the card was redrawn in another flokkur. Desktop: The flip card, the clock length, dragging along the timeline and between
   flokkar, and long-name handling are approved, and the column head is **H6: H5b's lanyard on
   H5d's tinted lane** (a ringed animal crest on a 2px cord down the column's edge, over the

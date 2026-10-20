@@ -243,7 +243,7 @@ function SplitBand({
       say(`Sleppt utan flokkanna. ${moving.name} er á sínum stað.`);
       return;
     }
-    // A phone crest drops at the end of its flokkur (cardDrag AT_END): clamp it to read the move.
+    // In its own column a card can't land past its own last place.
     const laneLength = baseModel.lanes[to.lane]?.items.length ?? 0;
     const index = Math.min(to.index, to.lane === moving.fromLane ? laneLength - 1 : laneLength);
     if (to.lane === moving.fromLane && index === moving.fromIndex) {
@@ -577,13 +577,7 @@ function SplitBand({
 
       {phoneLook ? (
         <>
-          <PhoneArea
-            look={phoneLook}
-            model={model}
-            drag={drag}
-            spot={spot}
-            parts={phoneParts(ctx)}
-          />
+          <PhoneArea look={phoneLook} model={model} parts={phoneParts(ctx)} />
           <PhoneSheet ctx={ctx} />
         </>
       ) : (
@@ -622,7 +616,7 @@ function SplitBand({
       <div className={styles.foot}>
         <p id={hintId} className={styles.hint}>
           {phoneLook ? (
-            PHONE_HINT[phoneLook]
+            PHONE_HINT
           ) : (
             <>
               Smelltu á spjald til að breyta því · dragðu það upp, niður eða á annan flokk (í síma:
@@ -660,27 +654,13 @@ function useNarrow(ref: RefObject<HTMLElement | null>, max: number): boolean {
   return narrow;
 }
 
-/** What a card does on a phone, per layout; the keys still work with a keyboard. */
-const PHONE_HINT: Record<PhoneLook, string> = {
-  m1: "Ýttu á spjald til að breyta því · haltu fingri á því til að færa það upp eða niður, eða á merki annars flokks · strjúktu til hliðar til að skipta um flokk · ↑ ↓ ← → á lyklaborði",
-  m2: "Ýttu á spjald til að breyta því · haltu fingri á því til að færa það, líka yfir á hinn flokkinn eða á merki annars flokks · ↑ ↓ ← → á lyklaborði",
-  m3: "Ýttu á lið til að opna spjaldið hans: þar er lengd, röð (Fyrr, Síðar) og Færa til · ↑ ↓ ← → á lyklaborði",
-  m4: "Opnaðu flokk til að sjá spjöldin hans · ýttu á spjald til að breyta því · haltu fingri á því til að færa það upp eða niður, eða á línu annars flokks · ↑ ↓ ← → á lyklaborði",
-};
+/** What a card does on a phone; the keys still work with a keyboard. */
+const PHONE_HINT =
+  "Ýttu á lið til að opna spjaldið hans: þar er lengd, röð (Fyrr, Síðar) og Færa til · ↑ ↓ ← → á lyklaborði";
 
-/** The grid's own pieces, handed to the phone layouts so they draw the same cards and heads. */
+/** The card's behaviour, handed to the phone layouts so their lines open the same cards. */
 function phoneParts(ctx: Ctx): PhoneParts {
   return {
-    columns: (lanes, style) => <Columns ctx={ctx} lanes={lanes} wrapStyle={style} />,
-    // One flokkur's column on its own (M4), with the same minute scale as the grid.
-    lane: (lane) => (
-      <div
-        className={styles.columnsWrap}
-        style={{ ["--span" as string]: Math.max(ctx.model.duration, 15) }}
-      >
-        <LaneColumn ctx={ctx} lane={lane} />
-      </div>
-    ),
     itemProps: ctx.itemProps,
     laneVars,
     selected: ctx.selected,
@@ -1019,25 +999,16 @@ function samePlace(a: Place, b: Place) {
  * as tall as they are long (`--ppm` per minute), so the columns stay level with the axis and
  * with each other. On a phone the columns scroll sideways with snap and the axis stays pinned.
  */
-function Columns({
-  ctx,
-  lanes,
-  wrapStyle,
-}: {
-  ctx: Ctx;
-  /** The flokkar to show (M2 shows two); all of them by default. */
-  lanes?: LaneModel[];
-  wrapStyle?: CSSProperties;
-}) {
+function Columns({ ctx }: { ctx: Ctx }) {
   const { model } = ctx;
-  const shown = lanes ?? model.lanes;
+  const shown = model.lanes;
   const span = Math.max(model.duration, 15);
   const ticks: number[] = [];
   for (let m = 0; m <= span; m += 15) ticks.push(m);
 
   return (
-    <div className={styles.columnsWrap} style={wrapStyle}>
-      {!ctx.phone && model.lanes.length > 2 && (
+    <div className={styles.columnsWrap}>
+      {model.lanes.length > 2 && (
         <p className={styles.swipe}>
           Strjúktu til hliðar til að sjá alla {countIs(model.lanes.length, "flokk", "flokka")}.
         </p>
@@ -1045,17 +1016,7 @@ function Columns({
       <div className={styles.scroller} data-scroller>
         <div
           className={styles.grid}
-          style={{
-            ["--span" as string]: span,
-            ["--n" as string]: shown.length,
-            // A phone layout sizes the grid to its columns: as wide as the scroller only, the
-            // pinned axis would scroll away with the grid past the first screen (sticky stays
-            // inside its grid).
-            // `--tail` is room after the last column, so it can also sit against the axis.
-            ...(ctx.phone
-              ? { width: "calc(var(--axis) + var(--n) * var(--col-min) + var(--tail, 0px))" }
-              : {}),
-          }}
+          style={{ ["--span" as string]: span, ["--n" as string]: shown.length }}
         >
           <div className={styles.axisHead} aria-hidden="true">
             kl.
