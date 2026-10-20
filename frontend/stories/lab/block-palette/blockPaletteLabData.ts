@@ -173,42 +173,40 @@ export function themeIcon(theme: string): IconEntry {
   return THEME_ICON[theme] ?? FALLBACK_THEME_ICON;
 }
 
-/* ── Collections: built-in sources and the leader's own albums ─────────────── */
+/* ── Collections: built-in sources and the leader's own folders ─────────────── */
 
 /** A built-in source: where a block comes from. Fixed, and not editable. */
 export interface LabSource {
   id: "allt" | "felagid" | "merki" | "sveitin";
   label: string;
   icon: LucideIcon;
-  /** Which group it sits in when a variation splits "Bankinn" from "Mitt". */
-  group: "bankinn" | "mitt";
 }
 
 export const SOURCES: LabSource[] = [
-  { id: "allt", label: "Allt", icon: Library, group: "bankinn" },
-  { id: "felagid", label: "Félagið", icon: Building2, group: "bankinn" },
-  { id: "merki", label: "Færnimerki", icon: Award, group: "bankinn" },
-  { id: "sveitin", label: "Sveitin mín", icon: House, group: "mitt" },
+  { id: "allt", label: "Allt", icon: Library },
+  { id: "felagid", label: "Félagið", icon: Building2 },
+  { id: "merki", label: "Færnimerki", icon: Award },
+  { id: "sveitin", label: "Sveitin mín", icon: House },
 ];
 
-/** The icons an album can wear. Kept apart from the type and theme icons on purpose. */
-export const ALBUM_ICONS = { BookMarked, Star, CloudRain, Leaf, Snowflake, Flame } as const;
-export type AlbumIcon = keyof typeof ALBUM_ICONS;
+/** The icons a folder can wear. Kept apart from the type and theme icons on purpose. */
+export const FOLDER_ICONS = { BookMarked, Star, CloudRain, Leaf, Snowflake, Flame } as const;
+export type FolderIcon = keyof typeof FOLDER_ICONS;
 
 /**
- * An album: a named list of references to bank blocks, in the order the leader keeps them. It
- * holds no copies: editing a block in the bank changes it in every album.
+ * A folder: a named list of references to bank blocks, in the order the leader keeps them. It
+ * holds no copies: editing a block in the bank changes it in every folder.
  */
-export interface LabAlbum {
+export interface LabFolder {
   id: string;
   name: string;
-  icon: AlbumIcon;
+  icon: FolderIcon;
   /** Shared with the sveit (owned by the workspace), or the leader's own (owned by the user). */
   shared: boolean;
   blockIds: string[];
 }
 
-export const ALBUMS: LabAlbum[] = [
+export const FOLDERS: LabFolder[] = [
   {
     id: "al-1",
     name: "Uppáhalds leikir",
@@ -252,13 +250,13 @@ const MORE_NAMES = [
   "Prófað einu sinni, prófa aftur",
 ];
 
-/** Fourteen albums, some with long names, for the scrolling and wrapping states. */
-export const MANY_ALBUMS: LabAlbum[] = [
-  ...ALBUMS,
+/** Fourteen folders, some with long names, for the scrolling and wrapping states. */
+export const MANY_FOLDERS: LabFolder[] = [
+  ...FOLDERS,
   ...MORE_NAMES.map((name, i) => ({
     id: `al-more-${i}`,
     name,
-    icon: (["BookMarked", "Star", "Leaf", "Flame"] as AlbumIcon[])[i % 4],
+    icon: (["BookMarked", "Star", "Leaf", "Flame"] as FolderIcon[])[i % 4],
     shared: i % 3 === 0,
     blockIds: LAB_BLOCKS.slice(i % 5, (i % 5) + (i % 4)).map((block) => block.id),
   })),

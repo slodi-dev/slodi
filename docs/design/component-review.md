@@ -62,10 +62,12 @@ once a variation is picked it is **promoted** into the real component and its la
 - **SplitGrid**: the current form stays; variations are styles only (clean, stamped, patrol
   flags, paper), with the honest merge.
 
-- **BlockPalette → C · Card grid, iterating.** The coloured side stripe goes (identity comes
-  from the picture/icon tile). The collections area (Allt, Sveitin mín, Félagið, Færnimerki)
-  becomes user-owned categories too: favourite **albums** next to the built-in sources. Needs
-  the real favourites backend (sc-620), extended to albums.
+- **BlockPalette → C · Card grid, collections C2 · Covers.** The coloured side stripe goes
+  (identity comes from the picture/icon tile). The collections area keeps the built-in sources
+  (Allt, Félagið, Færnimerki, Sveitin mín) as tabs and adds the leader's own **möppur**
+  (folders) as covers: a 2 × 2 mosaic of the blocks inside. Picked 2026-10-20; the other layouts
+  (folder list, chips, tabs) are removed. The user-facing word is "mappa", never "albúm". Needs
+  the real favourites backend (sc-620), extended to folders.
 
 - **Header → A, A2, B, B2.** A2 and B2 add the logo (green mark in light, white in dark; B2's band
   stays deep green in dark so the white logo reads). Logo as big as the wordmark; B's tagline is

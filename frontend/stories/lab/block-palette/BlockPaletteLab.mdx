@@ -8,15 +8,15 @@ The BlockPalette is the dagskrárbankinn rail on the left of the Vinnubekkur, wh
 blocks for a fundur. The shell is fixed: collections top left, blocks below them, the plan in the
 main body, all in PlanShell's 296px column.
 
-**State, 2026-10-19:** C · Card grid was picked. A Icons, B Minimal list and D By section have
-been removed. This round compares four ways to lay out the collections area (top left) once it
-holds the leader's own **albums**, with C's cards below.
+**State, 2026-10-20:** C · Card grid was picked (2026-10-19). A Icons, B Minimal list and D By
+section have been removed. For the collections area (top left), which holds the leader's own
+**folders (möppur)**, **C2 · Covers** was picked; C1 Folder list, C3 Chips and C4 Tabs have been
+removed. In the product they are called _möppur_, never "albúm".
 
-Stories: **Lab → BlockPalette → Directions**. _Comparison_ shows the current rail first, then C1–C4.
-Each variation has a default (in the shell, beside the bench), many albums, empty album, create
-album (with a duplicate name, rename, and delete with Afturkalla), phone and dark. _Setja í albúm_
-tests the card's picker, _C4 · Tabs — reorder_ the keyboard reorder, _Icon mapping_ is the icon
-reference, and _Playground_ has controls.
+Stories: **Lab → BlockPalette → Directions**. _Comparison_ shows the current rail beside C2. C2
+has a default (in the shell, beside the bench), many folders, empty folder, create folder (with a
+duplicate name, rename, and delete with Afturkalla), phone and dark. _Setja í möppu_ tests the
+card's picker, _Icon mapping_ is the icon reference, and _Playground_ has controls.
 
 ## Why C · Card grid
 
@@ -24,7 +24,7 @@ reference, and _Playground_ has controls.
   a tint of its type) is big enough to read, so the leader scans by picture before reading.
 - **It's for browsing.** A leader opens the rail most often not knowing yet what they want. Cards
   show enough to judge without opening anything.
-- **It suits albums.** A grid of pictures already looks like an album, so a collection that's
+- **It suits folders.** A grid of pictures already looks like a folder, so a collection that's
   "ours" feels like a place, not a filter.
 
 ### What changed on the card
@@ -38,28 +38,28 @@ reference, and _Playground_ has controls.
   the end of an Icelandic title is often what tells two blocks apart.
 - **Badges with icons:** "Þegar á fundinum" (a tick) and "Endurmat fylgir" (a note). They sit on a
   neutral tint, never coloured.
-- **"Bæta við" plus a bookmark button** ("Setja í albúm…"). Both are 44px. The bookmark is filled
-  when the block is in an album, and its accessible name says how many ("í 2 albúmum").
+- **"Bæta við" plus a bookmark button** ("Setja í möppu…"). Both are 44px. The bookmark is filled
+  when the block is in a folder, and its accessible name says how many ("í 2 möppum").
 - **The picture is the drag handle**, marked with a grip. It's the biggest thing on the card,
   and "Bæta við" stays a plain click.
 - **The six type chips became one select** ("Allar tegundir"), beside the search. The chips took
   two rows the cards needed once the collections grew.
 
-## Albums
+## Folders
 
-An **album** is a named list of blocks the leader keeps for a reason of their own: "Uppáhalds
+A **folder** (_mappa_) is a named list of blocks the leader keeps for a reason of their own: "Uppáhalds
 leikir", "Rigningardagar", "Útilega haust", "Fyrir Drekaskáta". It holds **references, not
-copies**: editing a block in the bank changes it in every album, and a block can be in several.
+copies**: editing a block in the bank changes it in every folder, and a block can be in several.
 
-How albums differ from the built-in sources:
+How folders differ from the built-in sources:
 
 - **Sources say where a block comes from.** They are fixed and can't be edited. _Allt_ is the whole
   bank. _Félagið_ is what's shared in the félag. _Færnimerki_ is the badge programme. _Sveitin mín_
   is what the sveit made itself.
-- **Albums say what a block is for.** They are made, named, ordered and deleted by the leader. A
+- **Folders say what a block is for.** They are made, named, ordered and deleted by the leader. A
   Félagið block and a Sveitin mín block can sit side by side in "Rigningardagar".
-- **Sveitin mín stays a source.** It's authorship, not curation, so it sits with the albums under
-  "Mitt" (C1, C4) but can't be renamed or deleted.
+- **Sveitin mín stays a source.** It's authorship, not curation, so it's one of the source tabs
+  and can't be renamed or deleted.
 
 ### Personal or shared with the sveit
 
@@ -71,162 +71,110 @@ The proposal is two owners:
   to it. That's the natural home for "Rigningardagar" or "Útilega haust", which the whole team
   builds up. It's marked with a people icon and "deilt með sveitinni" for screen readers.
 
-A new album is personal. Sharing it is one deliberate step (a later "Deila með sveitinni"
-action), never a side effect. Who may edit a shared album follows the workspace role: an
-editor or above can add and remove blocks, and only the album's creator or an admin can rename
+A new folder is personal. Sharing it is one deliberate step (a later "Deila með sveitinni"
+action), never a side effect. Who may edit a shared folder follows the workspace role: an
+editor or above can add and remove blocks, and only the folder's creator or an admin can rename
 or delete it.
 
-## The four variations
+## Folder behaviour
 
-All four share the same album behaviour:
-
-- **Create:** "+ Nýtt albúm" opens an inline name field. Enter creates the album and selects it,
-  and Escape cancels. A duplicate name (trimmed, any case) is refused with "Þú átt þegar albúm sem
+- **Create:** "+ Ný mappa" opens an inline name field. Enter creates the folder and selects it,
+  and Escape cancels. A duplicate name (trimmed, any case) is refused with "Þú átt þegar möppu sem
   heitir „…“", announced, and the typed text is kept. The limit is 60 characters.
 - **Rename:** inline, with the same rules.
 - **Delete:** at once, with no dialog, and "Afturkalla" for 10 seconds (rule 5: reversible acts
   don't confirm).
-- **Add a block from its card:** the bookmark opens "Setja í albúm", with every album as a ticked
-  or unticked checkbox and "+ Nýtt albúm" (which creates the album with the block already in it).
-- **Empty album:** "„Jólafundur“ er tómt.", how to fill it, and "Sýna allan bankann".
-- **Counts** go through `countIs`: "3 blokkir", "1 blokk", "14 albúm".
+- **Add a block from its card:** the bookmark opens "Setja í möppu", with every folder as a ticked
+  or unticked checkbox and "+ Ný mappa" (which creates the folder with the block already in it).
+- **Empty folder:** "Mappan „Jólafundur“ er tóm.", how to fill it, and "Sýna allan bankann".
+- **Counts** go through `countIs`: "3 blokkir", "1 blokk", "14 möppur".
 - **Feedback:** every change is said once in the rail's live region (rule 4).
 - **Popovers** use the native `popover` attribute, so they're never clipped by the scrolling
   list. Escape closes them, and focus goes back to the button that opened them.
-- **Selection** is a toggle button with `aria-pressed`, as in the current rail. A listbox would
-  forbid the "…" button inside each row.
+- **Selection** is a toggle button with `aria-pressed`, as in the current rail.
 
-### C1 · Folder list: everything in view
+## C2 · Covers: folders you can see into
 
-**The story.** Two labelled groups, _Bankinn_ (Allt, Félagið, Færnimerki) and _Mitt_ (Sveitin
-mín, then the albums). One row per collection, with an icon, the name and "3 blokkir".
-
-**Hierarchy.** Group → collection name → count. The "…" (Endurnefna, Eyða albúmi) is quiet at the
-row's end. "+ Nýtt albúm" sits on the _Mitt_ heading.
-
-**Why.** It's closest to the current rail, which the user likes, and the counts answer "is there
-anything in it?" before a press. Only _Mitt_ scrolls, because the bank's three rows never grow
-and the albums do.
-
-**Trade-offs.** It's the tallest: at 44px a row, three to four albums show before _Mitt_ scrolls,
-and the area takes almost half the rail. Twelve albums means a lot of scrolling in a small box.
-
-### C2 · Album covers: albums as photo albums
-
-**The story.** The sources are a compact row of four tabs with icons. The albums are covers: a
-2 × 2 mosaic of the first four blocks inside, or the album's icon while it's empty. Three
+**The story.** The sources are a compact row of four tabs with icons. The folders are covers: a
+2 × 2 mosaic of the first four blocks inside, or the folder's icon while it's empty. Three
 across, with the name and count under each.
 
-**Hierarchy.** Cover picture → name → count. The selected album's actions (Endurnefna, Eyða
-albúmi) appear as words in a bar under the covers, because a cover is too small for a "…".
+**Hierarchy.** Cover picture → name → count. The selected folder's actions (Endurnefna, Eyða
+möppu) appear as words in a bar under the covers, because a cover is too small for a "…".
 
-**Why.** It makes the albums the thing you see. A mosaic tells "Útilega haust" (fire, tent) from
+**Why.** It makes the folders the thing you see. A mosaic tells "Útilega haust" (fire, tent) from
 "Rigningardagar" (flag, knots, heart) without reading, and it echoes the card grid below.
 
 **Trade-offs.** Names wrap at about 80px, so long names make tall covers. Six covers is the most
 that shows before scrolling. The actions are one step further away (select, then act), and the
 mosaic is only as good as the pictures in it.
 
-### C3 · Chips + "Öll albúm…": the most room for cards
-
-**The story.** One wrapping row of chips: the four sources, the first two albums in the leader's
-order, the selected album if it isn't one of them, and "Öll albúm… +N". The panel holds every album
-with rename, delete and create.
-
-**Hierarchy.** What you use most is one press away. The rest is two presses away, behind a count
-that says how many.
-
-**Why.** It's the smallest collections area (about three chip rows, against nearly half the rail
-in C1), so the most cards show.
-
-**Trade-offs.** Most albums are out of sight, so they're easy to forget. Chip names truncate
-(the full name is in the panel and in the count line). Which albums get a chip has to be
-predictable: here it's the first ones in the leader's own order, not "most used", which would
-shuffle under the leader's hand.
-
-### C4 · Tabs: Bankinn · Mitt
-
-**The story.** Two real tabs (`tablist`, arrow keys, Home and End). _Bankinn_ lists Allt, Félagið
-and Færnimerki. _Mitt_ lists Sveitin mín and the albums, in an order the leader sets by dragging
-the handle or pressing ↑ ↓ on it ("Rigningardagar fært í sæti 1 af 5").
-
-**Hierarchy.** Whose (tab) → which collection → count.
-
-**Why.** It splits "find something in the bank" from "go to my things", which are two different
-moods. Each panel is shorter than C1's two groups together, and the order of the albums is the
-leader's own.
-
-**Trade-offs.** It's one more press to switch between a source and an album. The selected
-collection can sit in the tab that isn't showing (the count line still names it). Reorder adds a
-handle to every row, and with it a third target per row.
-
 ## The data it needs
 
 Nothing here exists in the API yet. Favourites are hidden behind `FAVOURITES_ENABLED` (off), and
 **sc-620** ("Build real favourites: backend table + endpoints, 'Mappan mín' in the sidebar") is
-where they get a backend. The proposal: albums **are** the favourites model, generalised.
-"Uppáhalds" is one album every user gets by default, and sc-620's _Mappan mín_ is the list of a
-user's albums. One model then serves the sidebar and the rail.
+where they get a backend. The proposal: folders **are** the favourites model, generalised.
+"Uppáhalds" is one folder every user gets by default, and sc-620's _Mappan mín_ is the list of a
+user's folders. One model then serves the sidebar and the rail.
 
 ### Tables
 
-**`album`**
+**`folder`**
 
 - `id`: uuid
-- `owner_user_id`: uuid, nullable. Set for a personal album.
-- `owner_workspace_id`: uuid, nullable. Set for an album shared with the sveit. Exactly one of the
+- `owner_user_id`: uuid, nullable. Set for a personal folder.
+- `owner_workspace_id`: uuid, nullable. Set for a folder shared with the sveit. Exactly one of the
   two owners is set (a check constraint).
 - `name`: text, 1–60 characters. Unique per owner, case-insensitive (`lower(name)`), so the
   duplicate error can come from the server too.
 - `icon`: text, one of a fixed set (`bookmark`, `star`, `cloud-rain`, `leaf`, `snowflake`, `flame`).
 - `position`: integer, the order in the owner's list.
-- `is_default`: bool. The one "Uppáhalds" album per user, which can't be deleted.
+- `is_default`: bool. The one "Uppáhalds" folder per user, which can't be deleted.
 - `created_by`, `created_at`, `updated_at`, and `deleted_at` (soft delete, `SoftDeleteMixin`).
   Soft delete is what makes "Afturkalla" a restore rather than a re-create.
 
-**`album_item`**
+**`folder_item`**
 
-- `album_id`: fk, on delete cascade.
+- `folder_id`: fk, on delete cascade.
 - `content_id`: fk to `content` (Program, Event, Task), so a bank item of any kind can be put in an
-  album, not just a block.
-- `position`: integer, the order inside the album (C2's mosaic shows the first four).
+  folder, not just a block.
+- `position`: integer, the order inside the folder (C2's mosaic shows the first four).
 - `added_by`, `added_at`.
-- Primary key `(album_id, content_id)`: a block is in an album at most once.
+- Primary key `(folder_id, content_id)`: a block is in a folder at most once.
 
 ### Endpoints
 
-- `GET /albums?workspace_id=…`: the caller's own albums plus those shared in the workspace,
+- `GET /folders?workspace_id=…`: the caller's own folders plus those shared in the workspace,
   ordered by `position`, each with `item_count` and up to four `cover_items` (id, theme, kind,
   image) for C2.
-- `POST /albums` with `{ name, icon?, workspace_id? }`: create. `workspace_id` makes it shared.
+- `POST /folders` with `{ name, icon?, workspace_id? }`: create. `workspace_id` makes it shared.
   A duplicate name returns 409.
-- `PATCH /albums/{id}` with `{ name?, icon?, position? }`: rename or reorder. Reordering one
-  album shifts the others on the server.
-- `DELETE /albums/{id}`: soft delete. `POST /albums/{id}/restore` is "Afturkalla", within the
+- `PATCH /folders/{id}` with `{ name?, icon?, position? }`: rename or reorder. Reordering one
+  folder shifts the others on the server.
+- `DELETE /folders/{id}`: soft delete. `POST /folders/{id}/restore` is "Afturkalla", within the
   undo window.
-- `GET /albums/{id}/items`: the items, ordered.
-- `PUT /albums/{id}/items/{content_id}` / `DELETE …`: put a block in or take it out. Both are
+- `GET /folders/{id}/items`: the items, ordered.
+- `PUT /folders/{id}/items/{content_id}` / `DELETE …`: put a block in or take it out. Both are
   idempotent, which suits a checkbox.
-- `GET /content/{id}/albums`: which of the caller's albums an item is in. This is what the card's
-  picker ticks, and it could be folded into the bank list as `album_ids` to save a request per card.
+- `GET /content/{id}/folders`: which of the caller's folders an item is in. This is what the card's
+  picker ticks, and it could be folded into the bank list as `folder_ids` to save a request per card.
 
-**Permissions** follow `check_workspace_access`. A personal album is owner-only. A shared album
+**Permissions** follow `check_workspace_access`. A personal folder is owner-only. A shared folder
 can be read by any workspace member, its items changed by an editor or above, and renamed or
 deleted by its creator or a workspace admin.
 
-## Rules every variation follows
+## Rules the rail follows
 
 - "Bæta við" and dragging from the picture, both through the bench's own intents
   (`blockAsLidur`, `dragId.library`).
 - Search, type and the collections stay in the same place. The count line names the selected
   collection: "Uppáhalds leikir: 3 blokkir".
 - With no fundur selected, "Bæta við" is disabled, and the reason is visible text linked with
-  `aria-describedby` (rule 9). "Setja í albúm…" still works, because albums don't need a fundur.
+  `aria-describedby` (rule 9). "Setja í möppu…" still works, because folders don't need a fundur.
 - 44px targets everywhere, with a visible 2px focus ring. Inputs are 16px.
 - `--sl-*` tokens only. Filled controls use the `-text` tier, so they pass AA in light, dark and
   patrol.
-- Transitions collapse to 1ms under `prefers-reduced-motion`, and the reorder animation is
-  switched off.
+- Transitions collapse to 1ms under `prefers-reduced-motion`.
 
 ## Icons
 
@@ -235,10 +183,10 @@ Slit `Moon`, Endurmat `MessagesSquare`, Annað `Puzzle`. **Theme:** Útilíf `Te
 `Compass`, Hreyfing `Footprints`, Hefðir `Flag`, Umhyggja `Heart`, Matur `Flame`, Endurmat
 `MessagesSquare`, anything else `Shapes`.
 
-Sources and albums use their own icons (Library, Building2, Award, House for the sources; star,
-cloud, leaf, snowflake, flame and bookmark for albums), so a collection is never mistaken for a
-type or a theme. The one overlap is the flame, which is both the Matur theme and an album icon.
-It's acceptable because a theme icon only appears on a card and an album icon only in the
+Sources and folders use their own icons (Library, Building2, Award, House for the sources; star,
+cloud, leaf, snowflake, flame and bookmark for folders), so a collection is never mistaken for a
+type or a theme. The one overlap is the flame, which is both the Matur theme and a folder icon.
+It's acceptable because a theme icon only appears on a card and a folder icon only in the
 collections area.
 
 Colour is never the only carrier: WCAG 1.4.1, the patrol colours already mean age groups, and

@@ -91,73 +91,9 @@
   font-weight: var(--sl-font-weight-body);
 }
 
-.rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rows > li {
-  display: flex;
-  min-width: 0;
-}
-
-.scrollRows {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.albumRow {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.albumRow[data-dragging="true"] {
-  position: relative;
-  z-index: 1;
-  background: hsl(var(--sl-color-surface));
-  box-shadow: var(--sl-shadow-dropdown);
-}
-
-.collection {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-sm);
-  flex: 1;
-  min-width: 0;
-  min-height: var(--bp-target);
-  padding: 2px var(--sl-spacing-inset-sm);
-  border: 0;
-  border-left: 3px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: var(--sl-text-body-sm);
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-  transition: background var(--sl-transition-fast);
-}
-
-.collection:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.collection[aria-pressed="true"] {
-  border-left-color: hsl(var(--sl-color-primary-text));
-  background: hsl(var(--sl-color-primary-subtle));
-  font-weight: var(--sl-font-weight-emphasis);
-}
-
-.collection:focus-visible,
 .cover:focus-visible,
 .sourceTab:focus-visible,
-.tab:focus-visible,
-.handle:focus-visible,
-.iconButton:focus-visible,
-.menuItem:focus-visible,
-.newAlbum:focus-visible {
+.newFolder:focus-visible {
   outline: 2px solid hsl(var(--sl-color-border-focus));
   outline-offset: -2px;
 }
@@ -194,50 +130,12 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.iconButton,
-.handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: var(--bp-target);
-  height: var(--bp-target);
-  padding: 0;
-  border: 0;
-  border-radius: var(--sl-radius-button);
-  background: none;
-  color: hsl(var(--sl-color-text-secondary));
-  cursor: pointer;
-}
-
-.iconButton svg,
-.handle svg {
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-}
-
-.iconButton:hover,
-.handle:hover {
-  background: hsl(var(--sl-color-surface-hover));
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.handle {
-  width: 28px;
-  cursor: grab;
-  touch-action: none;
-}
-
-.handle:active {
-  cursor: grabbing;
-}
-
 .createRow {
   flex: none;
   padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm) var(--sl-spacing-gap-sm);
 }
 
-.newAlbum {
+.newFolder {
   display: inline-flex;
   align-items: center;
   gap: var(--sl-spacing-gap-xs);
@@ -253,12 +151,12 @@
   cursor: pointer;
 }
 
-.newAlbum svg {
+.newFolder svg {
   width: var(--sl-size-icon-sm);
   height: var(--sl-size-icon-sm);
 }
 
-.newAlbum:hover {
+.newFolder:hover {
   background: hsl(var(--sl-color-primary-subtle));
 }
 
@@ -270,10 +168,6 @@
   flex: 1;
   min-width: 0;
   padding: var(--sl-spacing-gap-xs) 0;
-}
-
-.albumRow .nameField {
-  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm);
 }
 
 .nameLabel {
@@ -355,45 +249,7 @@
   outline-offset: 2px;
 }
 
-/* ── C1 · Folder list ── */
-
-.folderList {
-  min-height: 0;
-}
-
-/* C1's "Mitt" heading carries "+ Nýtt albúm", so the albums get the space a row below took. */
-.groupHeadRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  padding-right: var(--sl-spacing-inset-sm);
-}
-
-.groupHeadRow .groupHead {
-  padding-bottom: 0;
-}
-
-.groupHeadRow .newAlbum {
-  min-height: 36px;
-  border-style: solid;
-  border-color: transparent;
-  /* The visible button is 36px; the padding makes the target 44px. */
-  margin: -4px 0;
-  padding: 4px var(--sl-spacing-gap-sm);
-  box-sizing: content-box;
-}
-
-.groupHeadRow .nameField {
-  flex: 1 1 100%;
-  padding-left: var(--sl-spacing-inset-sm);
-}
-
-.rail[data-look="mappa"] .collections {
-  max-height: 46%;
-}
-
-/* ── C2 · Album covers ── */
+/* ── C2 · Folder covers ── */
 
 .sourceTabs {
   display: grid;
@@ -533,7 +389,7 @@
   display: flex;
 }
 
-.coverNew .newAlbum {
+.coverNew .newFolder {
   flex-direction: column;
   justify-content: center;
   width: 100%;
@@ -551,7 +407,7 @@
   grid-column: 1 / -1;
 }
 
-.albumBar {
+.folderBar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -561,128 +417,12 @@
   border-top: 1px solid hsl(var(--sl-color-border-subtle));
 }
 
-.albumBarName {
+.folderBarName {
   flex: 1 1 100%;
   padding-top: var(--sl-spacing-gap-xs);
   font-size: var(--sl-text-overline);
   font-weight: var(--sl-font-weight-emphasis);
   overflow-wrap: break-word;
-}
-
-/* ── C3 · Chips + "Öll albúm…" ── */
-
-.collections > .chipNav {
-  flex-direction: row;
-  flex-wrap: wrap;
-  column-gap: var(--sl-spacing-gap-xs);
-  padding: 2px var(--sl-spacing-inset-sm);
-}
-
-/* The button is the 44px target; the face inside is what you see. */
-.collectionChip {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  max-width: 100%;
-  min-height: var(--bp-target);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.chipFace {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-xs);
-  max-width: 100%;
-  min-width: 0;
-  padding: var(--sl-spacing-gap-xs) var(--sl-spacing-gap-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-md);
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-medium);
-  transition: background var(--sl-transition-fast);
-}
-
-.chipFace svg {
-  flex: none;
-  width: var(--sl-size-icon-sm);
-  height: var(--sl-size-icon-sm);
-}
-
-.chipName {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.collectionChip:hover .chipFace {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.collectionChip[aria-pressed="true"] .chipFace {
-  border-color: hsl(var(--sl-color-primary-text));
-  background: hsl(var(--sl-color-primary-subtle));
-  font-weight: var(--sl-font-weight-emphasis);
-}
-
-.chipMore {
-  border-style: dashed;
-}
-
-.chipBadge {
-  font-size: var(--sl-text-overline);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.collectionChip:focus-visible {
-  outline: none;
-}
-
-.collectionChip:focus-visible .chipFace {
-  outline: 2px solid hsl(var(--sl-color-border-focus));
-  outline-offset: 2px;
-}
-
-/* ── C4 · Tabs ── */
-
-.tabList {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  flex: none;
-  border-bottom: 1px solid hsl(var(--sl-color-border));
-}
-
-.tab {
-  min-height: var(--bp-target);
-  border: 0;
-  border-bottom: 3px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-medium);
-  color: hsl(var(--sl-color-text-secondary));
-  cursor: pointer;
-}
-
-.tab[aria-selected="true"] {
-  border-bottom-color: hsl(var(--sl-color-primary-text));
-  color: hsl(var(--sl-color-text-primary));
-  font-weight: var(--sl-font-weight-emphasis);
-}
-
-.tabPanel {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.tabPanel[hidden] {
-  display: none;
 }
 
 /* ── Popovers (top layer) ── */
@@ -703,14 +443,6 @@
   font-family: var(--sl-font-family-body);
 }
 
-.popoverWide {
-  width: 17rem;
-}
-
-.popover .scrollRows {
-  max-height: 15rem;
-}
-
 .popoverHead {
   margin: 0;
   padding: var(--sl-spacing-gap-xs) var(--sl-spacing-inset-sm);
@@ -724,27 +456,6 @@
   padding: 0 var(--sl-spacing-inset-sm);
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-secondary));
-}
-
-.menu {
-  display: flex;
-  flex-direction: column;
-}
-
-.menuItem {
-  min-height: var(--bp-target);
-  padding: 0 var(--sl-spacing-inset-sm);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--sl-text-body-sm);
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-}
-
-.menuItem:hover {
-  background: hsl(var(--sl-color-surface-hover));
 }
 
 .pickerSet {
@@ -885,18 +596,6 @@
 .clear:focus-visible {
   outline: 2px solid hsl(var(--sl-color-border-focus));
   outline-offset: -2px;
-}
-
-.kindPill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px var(--sl-spacing-gap-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-chip);
-  font-size: var(--sl-text-body-sm);
-  font-weight: var(--sl-font-weight-medium);
-  color: hsl(var(--sl-color-text-secondary));
-  transition: background var(--sl-transition-fast);
 }
 
 .count {
@@ -1127,7 +826,7 @@
 }
 
 .add:focus-visible,
-.albumButton:focus-visible {
+.folderButton:focus-visible {
   outline: 2px solid hsl(var(--sl-color-border-focus));
   outline-offset: 2px;
 }
@@ -1139,7 +838,7 @@
   cursor: not-allowed;
 }
 
-.albumButton {
+.folderButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1154,16 +853,16 @@
   cursor: pointer;
 }
 
-.albumButton svg {
+.folderButton svg {
   width: var(--sl-size-icon-sm);
   height: var(--sl-size-icon-sm);
 }
 
-.albumButton[data-in-album="true"] {
+.folderButton[data-in-folder="true"] {
   color: hsl(var(--sl-color-primary-text));
 }
 
-.albumButton:hover {
+.folderButton:hover {
   background: hsl(var(--sl-color-surface-hover));
 }
 
@@ -1312,8 +1011,6 @@
 /* ── Reduced motion: durations collapse, the property stays ── */
 
 @media (prefers-reduced-motion: reduce) {
-  .collection,
-  .chipFace,
   .add,
   .card {
     transition-duration: 1ms;

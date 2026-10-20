@@ -17,7 +17,7 @@ import { LIBRARY_KINDS } from "@/lib/mock/library.mock";
 import { countIs } from "@/lib/format";
 import type { SlotKind } from "@/services/plan.service";
 import {
-  ALBUMS,
+  FOLDERS,
   FALLBACK_THEME_ICON,
   KIND_ICON,
   LAB_BLOCKS,
@@ -25,24 +25,20 @@ import {
   THEME_ICON,
   themeIcon,
   type IconEntry,
-  type LabAlbum,
+  type LabFolder,
   type LabBlock,
 } from "./blockPaletteLabData";
-import { AlbumGlyph, COLLECTIONS, CreateAlbum, Popover, type CollectionsLook } from "./Collections";
-import { useAlbums, type AlbumsApi, type Selection } from "./useAlbums";
+import { FolderCovers, FolderGlyph, CreateFolder, Popover } from "./Collections";
+import { useFolders, type FoldersApi, type Selection } from "./useFolders";
 import styles from "./BlockPaletteLab.module.css";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
-export type { CollectionsLook } from "./Collections";
-
 export interface BlockPaletteLabProps {
-  /** Which collections variation sits above C's card grid. */
-  look: CollectionsLook;
   /** The bank. Defaults to the mock bank plus the lab's extra fields. */
   blocks?: LabBlock[];
-  /** The leader's albums. */
-  albums?: LabAlbum[];
+  /** The leader's folders. */
+  folders?: LabFolder[];
   /** What is selected on load. */
   defaultSelection?: Selection;
   defaultQuery?: string;
@@ -67,9 +63,8 @@ const timesUsed = (n: number) => `notað ${countIs(n, "sinni", "sinnum")}`;
 /* ── The rail ──────────────────────────────────────────────────────────────── */
 
 export default function BlockPaletteLab({
-  look,
   blocks = LAB_BLOCKS,
-  albums: initialAlbums = ALBUMS,
+  folders: initialFolders = FOLDERS,
   defaultSelection = { type: "source", id: "allt" },
   defaultQuery = "",
   defaultKind = "allt",
@@ -84,7 +79,7 @@ export default function BlockPaletteLab({
     [activeFundur]
   );
 
-  const api = useAlbums(initialAlbums, defaultSelection);
+  const api = useFolders(initialFolders, defaultSelection);
   const [kind, setKind] = useState<SlotKind | "allt">(defaultKind);
   const [query, setQuery] = useState(defaultQuery);
   const hintId = useId();
@@ -92,21 +87,22 @@ export default function BlockPaletteLab({
   const kindId = useId();
 
   const { selection } = api;
-  const album =
-    selection.type === "album" ? api.albums.find((a) => a.id === selection.id) : undefined;
+  const folder =
+    selection.type === "folder" ? api.folders.find((a) => a.id === selection.id) : undefined;
   const collectionLabel =
-    album?.name ?? SOURCES.find((s) => s.id === selection.id)?.label ?? "Allt";
+    folder?.name ?? SOURCES.find((s) => s.id === selection.id)?.label ?? "Allt";
 
-  /** The selected collection's blocks, in its own order (an album keeps the leader's order). */
+  /** The selected collection's blocks, in its own order (a folder keeps the leader's order). */
   const inCollection = useMemo(() => {
-    if (album) {
-      return album.blockIds
+    if (folder) {
+      return folder.blockIds
         .map((id) => blocks.find((b) => b.id === id))
         .filter((b): b is LabBlock => Boolean(b));
     }
     if (selection.id === "allt") return blocks;
+    // `b.folder` is the mock bank's built-in source (Félagið, Færnimerki, Sveitin mín), not a mappa.
     return blocks.filter((b) => b.folder === selection.id);
-  }, [album, blocks, selection.id]);
+  }, [folder, blocks, selection.id]);
 
   const results = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("is");
@@ -135,19 +131,12 @@ export default function BlockPaletteLab({
         })
     : undefined;
 
-  const Collections = COLLECTIONS[look];
-
   return (
     // A labelled section, as in the real rail: it sits inside the app's <main>. `lang` lets the
     // browser hyphenate long Icelandic titles in a 130px card.
-    <section
-      className={styles.rail}
-      data-look={look}
-      aria-label={named("Dagskrá og möppur")}
-      lang="is"
-    >
+    <section className={styles.rail} data-rail aria-label={named("Dagskrá og möppur")} lang="is">
       <div className={styles.collections}>
-        <Collections api={api} blocks={blocks} named={named} />
+        <FolderCovers api={api} blocks={blocks} named={named} />
       </div>
 
       <div className={styles.head}>
@@ -218,13 +207,13 @@ export default function BlockPaletteLab({
           <p className={styles.empty}>
             Dagskrárbankinn er ekki tengdur enn. Þegar bakendinn svarar birtast blokkirnar hér.
           </p>
-        ) : album && album.blockIds.length === 0 ? (
+        ) : folder && folder.blockIds.length === 0 ? (
           <div className={styles.empty}>
-            <p className={styles.emptyTitle}>„{album.name}“ er tómt.</p>
+            <p className={styles.emptyTitle}>Mappan „{folder.name}“ er tóm.</p>
             <p>
-              Settu blokkir í það með bókamerkinu{" "}
+              Settu blokkir í hana með bókamerkinu{" "}
               <Bookmark className={styles.inlineIcon} aria-hidden="true" /> á spjaldi („Setja í
-              albúm…“).
+              möppu…“).
             </p>
             <button
               type="button"
@@ -260,7 +249,7 @@ export default function BlockPaletteLab({
         )}
       </div>
 
-      {/* Album changes and "Afturkalla" after a delete. Always mounted, so it is announced. */}
+      {/* Folder changes and "Afturkalla" after a delete. Always mounted, so it is announced. */}
       <div className={styles.toastArea} role="status">
         {api.message && (
           <p className={styles.toast} key={api.message.seq}>
@@ -288,7 +277,7 @@ export default function BlockPaletteLab({
 
 interface CardProps {
   block: LabBlock;
-  api: AlbumsApi;
+  api: FoldersApi;
   /** Absent while there is no fundur to add to. */
   onAdd?: () => void;
   /** The visible hint that says why "Bæta við" is disabled. */
@@ -365,28 +354,28 @@ function Card({ block, api, onAdd, disabledReasonId, isOnFundur }: CardProps) {
         >
           Bæta við
         </button>
-        <AlbumPicker block={block} api={api} />
+        <FolderPicker block={block} api={api} />
       </div>
     </li>
   );
 }
 
-/** "Setja í albúm…": every album as a checkbox, ticked where the block already is. */
-function AlbumPicker({ block, api }: { block: LabBlock; api: AlbumsApi }) {
-  const inAlbums = api.albums.filter((a) => a.blockIds.includes(block.id));
-  const Icon = inAlbums.length > 0 ? BookmarkCheck : Bookmark;
-  const where = inAlbums.length > 0 ? `, í ${countIs(inAlbums.length, "albúmi", "albúmum")}` : "";
+/** "Setja í möppu…": every folder as a checkbox, ticked where the block already is. */
+function FolderPicker({ block, api }: { block: LabBlock; api: FoldersApi }) {
+  const inFolders = api.folders.filter((a) => a.blockIds.includes(block.id));
+  const Icon = inFolders.length > 0 ? BookmarkCheck : Bookmark;
+  const where = inFolders.length > 0 ? `, í ${countIs(inFolders.length, "möppu", "möppum")}` : "";
   return (
     <Popover
-      label={`Setja ${block.name} í albúm`}
+      label={`Setja ${block.name} í möppu`}
       trigger={(props) => (
         <button
           {...props}
           type="button"
-          className={styles.albumButton}
-          data-in-album={inAlbums.length > 0 || undefined}
-          aria-label={`Setja í albúm…${where}`}
-          title="Setja í albúm…"
+          className={styles.folderButton}
+          data-in-folder={inFolders.length > 0 || undefined}
+          aria-label={`Setja í möppu…${where}`}
+          title="Setja í möppu…"
         >
           <Icon aria-hidden="true" />
         </button>
@@ -395,24 +384,24 @@ function AlbumPicker({ block, api }: { block: LabBlock; api: AlbumsApi }) {
       {() => (
         <>
           <fieldset className={styles.pickerSet}>
-            <legend className={styles.popoverHead}>Setja í albúm</legend>
-            {api.albums.length === 0 && <p className={styles.popoverNote}>Engin albúm enn.</p>}
+            <legend className={styles.popoverHead}>Setja í möppu</legend>
+            {api.folders.length === 0 && <p className={styles.popoverNote}>Engar möppur enn.</p>}
             <div className={styles.pickerList}>
-              {api.albums.map((album) => (
-                <label key={album.id} className={styles.pickerItem}>
+              {api.folders.map((folder) => (
+                <label key={folder.id} className={styles.pickerItem}>
                   <input
                     type="checkbox"
-                    checked={album.blockIds.includes(block.id)}
-                    onChange={() => api.toggleBlock(album.id, block.id, block.name)}
+                    checked={folder.blockIds.includes(block.id)}
+                    onChange={() => api.toggleBlock(folder.id, block.id, block.name)}
                   />
-                  <AlbumGlyph album={album} />
-                  <span className={styles.collectionName}>{album.name}</span>
+                  <FolderGlyph folder={folder} />
+                  <span className={styles.collectionName}>{folder.name}</span>
                 </label>
               ))}
             </div>
           </fieldset>
           <div className={styles.createRow}>
-            <CreateAlbum api={api} withBlock={block.id} select={false} />
+            <CreateFolder api={api} withBlock={block.id} select={false} />
           </div>
         </>
       )}
