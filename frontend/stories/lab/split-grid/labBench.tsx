@@ -5,7 +5,8 @@
  * what the app does: ← →, the "Færa til" buttons and a drop all dispatch `laneMoveAcross`, and
  * the reducer writes the announcement. The lab adds only what the merge proposal needs and the
  * reducer doesn't have yet: `labMerge` (keep everything, or one flokkur's plan) and
- * `labRestore` (Afturkalla).
+ * `labRestore` (Afturkalla, after a merge or a removed card). Card edits are the reducer's own
+ * `lanePatch`.
  *
  * The provider is a small copy of `BenchProvider` (same sensors, same collision rule, same
  * `dragId` vocabulary), because `BenchProvider` owns its reducer and the lab needs to extend it.
@@ -52,7 +53,7 @@ export type MergeKeep = "all" | string;
 export type LabIntent =
   | BenchIntent
   | { t: "labMerge"; fundurId: string; band: BandId; keep: MergeKeep }
-  | { t: "labRestore"; fundur: Fundur };
+  | { t: "labRestore"; fundur: Fundur; text?: string };
 
 /** Two liðir are "the same" when a leader would call them the same: name, kind and length. */
 const keyOf = (item: Lidur) => `${item.kind}|${item.name}|${item.minutes}`;
@@ -131,7 +132,7 @@ function labReducer(state: BenchState, intent: LabIntent): BenchState {
       },
       laneSelected: null,
       announcement: {
-        text: "Sameining afturkölluð. Flokkarnir hafa aftur hver sína dagskrá.",
+        text: intent.text ?? "Sameining afturkölluð. Flokkarnir hafa aftur hver sína dagskrá.",
         seq: state.announcement.seq + 1,
       },
     };
@@ -220,6 +221,8 @@ export function LabBench({ data, children }: { data: PlanBenchData; children: Re
       toLane: drop.laneIndex,
       id: drag.lidur.id,
     });
+    // A dropped card lands closed: in the lab, a selected card is an open editor.
+    dispatch({ t: "laneSelect", id: null });
   };
 
   const announcement = state.announcement;

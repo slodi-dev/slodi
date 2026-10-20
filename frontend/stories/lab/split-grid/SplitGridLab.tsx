@@ -1,15 +1,10 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import { Link2, MessageSquareText, Pencil, UserRound } from "lucide-react";
+import { BlockKindLine, BlockMarker, blockCardStyles } from "@/components/plan/bench/BlockCard";
 import { MIN_MINUTES } from "@/components/plan/bench/benchState";
 import { dragId } from "@/components/plan/bench/dnd";
+import { Stamp } from "@/components/plan/calendar/Stamp";
 import { countIs } from "@/lib/format";
 import {
   BANDS,
@@ -18,10 +13,30 @@ import {
   STATUS_LABEL,
   type BandId,
   type Fundur,
-  type Lidur,
   type PatrolAccent,
   type PlanBenchData,
 } from "@/services/plan.service";
+import {
+  CardEditor,
+  DiffBlock,
+  MinutesField,
+  StatusField,
+  type CardActions,
+  type EditorContext,
+} from "./CardEditor";
+import {
+  SWAP_BLOCKS,
+  blockOf,
+  differences,
+  resetPatch,
+  swapPatch,
+  troopKeyOf,
+  troopVersions,
+  versionPatch,
+  type CardLidur,
+  type CardPatch,
+  type TroopVersion,
+} from "./cardModel";
 import {
   LabBench,
   at,
@@ -41,27 +56,32 @@ import styles from "./SplitGridLab.module.css";
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 /**
- * Style variations of the current SplitGrid. The form stays: a time axis down the side, one
- * column per flokkur, liðir stacked in each column as tall as they are long, the free tail as
- * "N mín bið", the hint, the summary line and "Sameina í eitt". Only the look changes.
+ * The split band built from the bank's own cards, editable per flokkur. The form is the current
+ * SplitGrid's (time down the side, a column per flokkur, "Lengsti flokkur ræður", the merge
+ * proposal), and each liður is the BlockPalette card it came from. The four directions differ
+ * in how a card is edited:
  *
- * - `ren`: S1 · Clean. The patrol colour as a full header band; liðir as plain ruled rows.
- * - `stimplar`: S2 · Stamped. The Dagatal's D4 Stimplar language: ink-stamped column labels,
- *   and each liður's status as a small rubber stamp.
- * - `veifur`: S3 · Patrol flags. Each column under its flokkur's swallowtail pennant, with the
- *   lane total as a tally.
- * - `blad`: S4 · Paper. A printed sheet: ruled lines, typewriter times, ink on paper.
+ * - `face`: K1 · On the card. The open card grows in place with the quick edits on its face
+ *   (length, status); "Fleira" opens the rest underneath.
+ * - `flip`: K2 · Flip it over. The card turns to its back, which is the whole editor.
+ * - `panel`: K3 · Editor panel. The grid stays still; the open card is the header of a panel
+ *   beside it (a bottom sheet on a phone).
+ * - `sync`: K4 · Follows the sveit. Every card says whether it is the sveit's version or
+ *   changed for this flokkur, and an edit can go to this flokkur or to every flokkur that
+ *   still follows the sveit.
  */
-export type SplitGridLook = "ren" | "stimplar" | "veifur" | "blad";
+export type CardLook = "face" | "flip" | "panel" | "sync";
 
 export interface SplitGridLabProps {
-  /** Which style variation to render. */
-  look: SplitGridLook;
+  /** Which editing direction to render. */
+  look: CardLook;
   data: PlanBenchData;
   fundurId?: string;
   band?: BandId;
   /** Open the merge confirmation straight away. */
   defaultMergeOpen?: boolean;
+  /** Open this liður's card straight away (by name and flokkur). */
+  defaultOpen?: { patrolId: string; name: string };
 }
 
 /* ── Root ──────────────────────────────────────────────────────────────────── */
@@ -74,33 +94,35 @@ export default function SplitGridLab({ data, ...props }: SplitGridLabProps) {
   );
 }
 
-/** What every direction gets from the band: the model and the shared move paths. */
+/** What every direction gets from the band: the model, the move paths and the card edits. */
 type Ctx = {
-  look: SplitGridLook;
+  look: CardLook;
   model: SplitModel;
   selected: string | null;
   hintId: string;
+  troop: Map<string, TroopVersion>;
   itemProps: (lane: LaneModel, li: LaneItem) => ItemProps;
-  moveTo: (lane: LaneModel, li: LaneItem, toLane: number) => void;
-  reorder: (lane: LaneModel, li: LaneItem, to: number) => void;
+  editorFor: (lane: LaneModel, li: LaneItem) => EditorContext;
   addTo: (lane: LaneModel) => void;
-  deselect: () => void;
 };
 
 type ItemProps = {
   "data-lidur-id": string;
   "aria-label": string;
   "aria-describedby": string;
-  "aria-pressed": boolean;
+  "aria-expanded": boolean;
   onClick: () => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
 };
+
+type Undo = { fundur: Fundur; text: string; restored: string };
 
 function SplitBand({
   look,
   fundurId = LAB_FUNDUR,
   band = "kjarni",
   defaultMergeOpen = false,
+  defaultOpen,
 }: Omit<SplitGridLabProps, "data">) {
   const { state, dispatch } = useLabBench();
   const fundur = state.data.fundir.find((f) => f.event_id === fundurId);
@@ -109,13 +131,24 @@ function SplitBand({
 
   const rootRef = useRef<HTMLDivElement>(null);
   const mergeButtonRef = useRef<HTMLButtonElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
   const mergeId = useId();
   const [mergeOpen, setMergeOpen] = useState(defaultMergeOpen);
   // Focus moves into the confirmation only when the leader opened it, not when a story starts
   // with it open (that would scroll a Docs page to it).
   const [mergeOpenedByUser, setMergeOpenedByUser] = useState(false);
-  const [undo, setUndo] = useState<{ fundur: Fundur; text: string } | null>(null);
+  const [undo, setUndo] = useState<Undo | null>(null);
+  const [said, setSaid] = useState<{ text: string; seq: number }>({ text: "", seq: 0 });
+
+  /*
+   * The sveit's version of each shared liður, taken when the band is first drawn (what most
+   * flokkar have). It only changes when an edit is sent to every flokkur that follows it (K4),
+   * so changing one flokkur's card never quietly redefines the sveit's.
+   */
+  const [troop, setTroop] = useState<Map<string, TroopVersion>>(() =>
+    troopVersions(model?.lanes.map((lane) => lane.items.map((li) => li.item as CardLidur)) ?? [])
+  );
 
   /*
    * Focus follows a moved liður. The block unmounts from one lane and mounts in another, so
@@ -126,8 +159,22 @@ function SplitBand({
     const id = focusTarget.current;
     if (!id) return;
     focusTarget.current = null;
+    if (id === "undo") {
+      undoRef.current?.focus();
+      return;
+    }
     rootRef.current?.querySelector<HTMLElement>(`[data-lidur-id="${CSS.escape(id)}"]`)?.focus();
-  }, [state.data]);
+  }, [state.data, state.laneSelected]);
+
+  // A story can start with one card open.
+  const openedDefault = useRef(false);
+  useEffect(() => {
+    if (openedDefault.current || !defaultOpen || !model) return;
+    openedDefault.current = true;
+    const lane = model.lanes.find((l) => l.patrolId === defaultOpen.patrolId);
+    const li = lane?.items.find((entry) => entry.item.name === defaultOpen.name);
+    if (li) dispatch({ t: "laneSelect", id: li.item.id });
+  }, [defaultOpen, model, dispatch]);
 
   // UX rule 5: "Afturkalla" stays for at least 8 seconds.
   useEffect(() => {
@@ -138,17 +185,19 @@ function SplitBand({
 
   if (!fundur) return null;
 
+  const restore = () => {
+    if (!undo) return;
+    dispatch({ t: "labRestore", fundur: undo.fundur, text: undo.restored });
+    setUndo(null);
+  };
+
   if (!model) {
     return (
       <MergedBand
         fundur={fundur}
         band={band}
         undo={undo}
-        onUndo={() => {
-          if (!undo) return;
-          dispatch({ t: "labRestore", fundur: undo.fundur });
-          setUndo(null);
-        }}
+        onUndo={restore}
         onSplit={() => dispatch({ t: "splitBand", fundurId, band })}
       />
     );
@@ -168,6 +217,7 @@ function SplitBand({
       text: dropped
         ? `Sameinað. ${countIs(dropped, "liður féll", "liðir féllu")} út.`
         : "Sameinað í eina röð. Ekkert féll út.",
+      restored: "Sameining afturkölluð. Flokkarnir hafa aftur hver sína dagskrá.",
     });
     setMergeOpen(false);
     dispatch({ t: "labMerge", fundurId, band, keep });
@@ -183,6 +233,9 @@ function SplitBand({
       toLane,
       id: li.item.id,
     });
+    // The reducer selects a moved liður, and here selected means open. A card moved with ← →
+    // stays as it was: closed cards stay closed, an open one follows its card.
+    if (selected !== li.item.id) dispatch({ t: "laneSelect", id: null });
     focusTarget.current = li.item.id;
   };
 
@@ -190,6 +243,77 @@ function SplitBand({
     if (to < 0 || to >= lane.items.length) return;
     dispatch({ t: "laneMove", fundurId, band, laneIndex: lane.laneIndex, id: li.item.id, to });
     focusTarget.current = li.item.id;
+  };
+
+  const say = (text: string) => setSaid((s) => ({ text, seq: s.seq + 1 }));
+
+  /** One card's change, in its own lane. */
+  const patchOne = (lane: LaneModel, id: string, patch: CardPatch) =>
+    dispatch({ t: "lanePatch", fundurId, band, laneIndex: lane.laneIndex, id, patch });
+
+  /**
+   * "Hjá öllum flokkum sem fylgja sveitinni": the same change on every card that is still the
+   * sveit's version, and the sveit's version itself. A card already changed for its flokkur is
+   * left alone, so one flokkur's adaptation is never overwritten from another column.
+   */
+  const patchFollowers = (li: LaneItem, patch: CardPatch): number => {
+    const key = troopKeyOf(li.item as CardLidur);
+    const version = troop.get(key);
+    if (!version) return 0;
+    let n = 0;
+    for (const lane of model.lanes) {
+      for (const entry of lane.items) {
+        const card = entry.item as CardLidur;
+        if (troopKeyOf(card) !== key) continue;
+        if (entry.item.id !== li.item.id && differences(card, version).length > 0) continue;
+        patchOne(lane, entry.item.id, patch);
+        n += 1;
+      }
+    }
+    setTroop((map) => new Map(map).set(key, versionPatch(version, patch)));
+    return n;
+  };
+
+  const editorFor = (lane: LaneModel, li: LaneItem): EditorContext => {
+    const card = li.item as CardLidur;
+    const version = troop.get(troopKeyOf(card));
+    const actions: CardActions = {
+      patch: (patch) => patchOne(lane, li.item.id, patch),
+      swap: (blockId) => {
+        const block = SWAP_BLOCKS.find((b) => b.id === blockId);
+        if (!block) return;
+        patchOne(lane, li.item.id, swapPatch(card, block));
+        say(`${lane.name}: ${block.name} í stað ${li.item.name}.`);
+      },
+      reset: () => {
+        if (!version) return;
+        patchOne(lane, li.item.id, resetPatch(version));
+        say(`${lane.name}: ${li.item.name} er aftur eins og hjá sveitinni.`);
+      },
+      remove: () => {
+        setUndo({
+          fundur,
+          text: `Liðurinn ${li.item.name} var fjarlægður (${lane.name}).`,
+          restored: `Liðurinn ${li.item.name} er kominn aftur (${lane.name}).`,
+        });
+        dispatch({ t: "laneSelect", id: null });
+        dispatch({
+          t: "laneRemove",
+          fundurId,
+          band,
+          laneIndex: lane.laneIndex,
+          id: li.item.id,
+        });
+        focusTarget.current = "undo";
+      },
+      moveTo: (toLane) => moveTo(lane, li, toLane),
+      reorder: (to) => reorder(lane, li, to),
+      close: () => {
+        dispatch({ t: "laneSelect", id: null });
+        focusTarget.current = li.item.id;
+      },
+    };
+    return { model, lane, li, troop: version, actions };
   };
 
   const addTo = (lane: LaneModel) =>
@@ -212,9 +336,9 @@ function SplitBand({
 
   const itemProps = (lane: LaneModel, li: LaneItem): ItemProps => ({
     "data-lidur-id": li.item.id,
-    "aria-label": itemLabel(lane, li),
+    "aria-label": itemLabel(lane, li, troop),
     "aria-describedby": hintId,
-    "aria-pressed": selected === li.item.id,
+    "aria-expanded": selected === li.item.id,
     onClick: () => dispatch({ t: "laneSelect", id: selected === li.item.id ? null : li.item.id }),
     onKeyDown: (e) => {
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -229,22 +353,24 @@ function SplitBand({
     },
   });
 
-  const ctx: Ctx = {
-    look,
-    model,
-    selected,
-    hintId,
-    itemProps,
-    moveTo,
-    reorder,
-    addTo,
-    deselect: () => dispatch({ t: "laneSelect", id: null }),
-  };
-
+  const ctx: Ctx = { look, model, selected, hintId, troop, itemProps, editorFor, addTo };
   const picked = findSelected(model, selected);
+  const changed = model.lanes.reduce(
+    (n, lane) =>
+      n +
+      lane.items.filter(
+        (li) => differences(li.item as CardLidur, troop.get(troopKeyOf(li.item))).length > 0
+      ).length,
+    0
+  );
 
   return (
-    <div ref={rootRef} className={styles.root} data-style={look}>
+    <div
+      ref={rootRef}
+      className={`${styles.root} ${blockCardStyles.kindScope}`}
+      data-look={look}
+      lang="is"
+    >
       <div className={styles.head}>
         <div className={styles.headText}>
           <h3 className={styles.title}>{model.label}</h3>
@@ -254,6 +380,13 @@ function SplitBand({
               {model.duration} mín samhliða
               {model.from ? ` · ${model.from}–${model.to}` : ""}
             </span>
+            {look === "sync" && (
+              <span data-sync-count>
+                {changed === 0
+                  ? "Allir fylgja sveitinni"
+                  : `${countIs(changed, "spjald breytt", "spjöld breytt")} fyrir flokk`}
+              </span>
+            )}
           </p>
         </div>
         <button
@@ -286,13 +419,36 @@ function SplitBand({
         />
       )}
 
-      <Columns ctx={ctx} />
+      <div className={styles.workArea} data-has-panel={(look === "panel" && !!picked) || undefined}>
+        <Columns ctx={ctx} />
+        {(look === "panel" || look === "sync") && picked && (
+          <EditorPanel
+            ctx={ctx}
+            lane={picked.lane}
+            li={picked.li}
+            patchFollowers={patchFollowers}
+          />
+        )}
+      </div>
 
-      {picked && <MoveStrip ctx={ctx} lane={picked.lane} li={picked.li} />}
+      <div className={styles.toastArea} role="status">
+        {undo && (
+          <p className={styles.undo}>
+            <span>{undo.text}</span>
+            <button ref={undoRef} type="button" className={styles.quiet} onClick={restore}>
+              Afturkalla
+            </button>
+          </p>
+        )}
+      </div>
+      <p aria-live="polite" className={styles.srOnly}>
+        {said.text}
+      </p>
 
       <div className={styles.foot}>
         <p id={hintId} className={styles.hint}>
-          ← → færa milli flokka · ↑ ↓ breyta röð · eða dragðu á annan flokk
+          Smelltu á spjald til að breyta því · ← → færa milli flokka · ↑ ↓ breyta röð · eða dragðu á
+          annan flokk
         </p>
         <p className={styles.summary} data-balanced={model.balanced || undefined}>
           Ristin er {model.duration} mín
@@ -305,9 +461,13 @@ function SplitBand({
 
 /* ── Shared pieces ─────────────────────────────────────────────────────────── */
 
-function itemLabel(lane: LaneModel, li: LaneItem): string {
+function itemLabel(lane: LaneModel, li: LaneItem, troop: Map<string, TroopVersion>): string {
   const when = li.clock ? `kl. ${li.clock}` : `${li.index + 1}. liður`;
-  return `${lane.name} ${when}: ${li.item.name}, ${li.item.minutes} mín, ${STATUS_LABEL[li.item.status].toLowerCase()}`;
+  const card = li.item as CardLidur;
+  const changed = differences(card, troop.get(troopKeyOf(card))).length > 0;
+  return `${lane.name} ${when}: ${li.item.name}, ${li.item.minutes} mín, ${STATUS_LABEL[
+    li.item.status
+  ].toLowerCase()}${changed ? ", breytt fyrir þennan flokk" : ""}`;
 }
 
 function findSelected(model: SplitModel, id: string | null) {
@@ -364,22 +524,97 @@ function useLaneDrop(model: SplitModel, laneIndex: number) {
   return { setNodeRef, over: isOver && !isSource };
 }
 
-/** A liður that can be focused, pressed, moved with ← → and dragged. */
-function DragItem({
-  ctx,
-  lane,
-  li,
-  className,
-  style,
-  children,
-}: {
-  ctx: Ctx;
-  lane: LaneModel;
-  li: LaneItem;
-  className: string;
-  style?: CSSProperties;
-  children: ReactNode;
-}) {
+/* ── The card ──────────────────────────────────────────────────────────────── */
+
+/**
+ * Moves focus to an editor's heading, so a screen reader hears what opened. Only when the
+ * leader opened it from inside this band: a story that starts with a card open doesn't pull
+ * the Docs page down to it.
+ */
+function takeFocus(editor: HTMLElement | null) {
+  const band = editor?.closest("[data-look]");
+  if (!band || !band.contains(document.activeElement)) return;
+  editor?.querySelector<HTMLElement>("h4")?.focus();
+}
+
+/**
+ * The bank card as a liður: the same picture tile, title and kind line as in BlockPalette, with
+ * what the flokkur has made of it (who leads, a note, its status stamp). The whole card is the
+ * button: press to open it, ← → to move it, drag it to another flokkur.
+ */
+function CardFace({ ctx, li }: { ctx: Ctx; li: LaneItem }) {
+  const card = li.item as CardLidur;
+  const block = blockOf(card);
+  const version = ctx.troop.get(troopKeyOf(card));
+  const changed = differences(card, version).length > 0;
+  const tight = li.item.minutes < 15;
+  return (
+    <>
+      <span className={styles.cardPicture}>
+        <BlockMarker kind={card.kind} theme={card.theme} image={block?.image} small />
+        <span className={blockCardStyles.cardMinutes}>{li.item.minutes}</span>
+      </span>
+      <span className={styles.cardText}>
+        <span className={styles.cardTime}>
+          {li.clock ? `${li.clock}–${li.clockEnd}` : `+${li.start}–${li.start + li.item.minutes}`}
+        </span>
+        <span className={`${blockCardStyles.title} ${styles.cardTitle}`}>{li.item.name}</span>
+        {!tight && <BlockKindLine kind={card.kind} theme={card.theme} />}
+        {!tight && (card.leader || card.note) && (
+          <span className={styles.cardMeta}>
+            {card.leader && (
+              <span className={styles.cardMetaItem}>
+                <UserRound aria-hidden="true" />
+                {card.leader}
+              </span>
+            )}
+            {card.note && (
+              <span className={styles.cardMetaItem} title={card.note}>
+                <MessageSquareText aria-hidden="true" />
+                {ctx.look === "face" || ctx.look === "flip" ? card.note : "Aðlögun"}
+              </span>
+            )}
+          </span>
+        )}
+      </span>
+      <span className={styles.cardStamp}>
+        <Stamp entry={{ id: li.item.id, status: li.item.status, type: "flokks" }} size="sm" />
+      </span>
+      {ctx.look === "sync" ? (
+        <span
+          className={styles.syncMark}
+          data-changed={changed || undefined}
+          data-none={!version || undefined}
+        >
+          {!version ? (
+            "Aðeins hér"
+          ) : changed ? (
+            <>
+              <Pencil aria-hidden="true" />
+              Breytt
+            </>
+          ) : (
+            <>
+              <Link2 aria-hidden="true" />
+              Sveitin
+            </>
+          )}
+        </span>
+      ) : (
+        changed && (
+          <span
+            className={styles.changedDot}
+            title="Breytt fyrir þennan flokk"
+            aria-hidden="true"
+          />
+        )
+      )}
+    </>
+  );
+}
+
+/** The card as a focusable, draggable button. */
+function CardButton({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem }) {
   const { model } = ctx;
   // `listeners` only: there is no KeyboardSensor (dnd.ts), and dnd-kit's `attributes` would add
   // a second role and tab stop to what is already a real button.
@@ -397,106 +632,267 @@ function DragItem({
     <button
       ref={setNodeRef}
       type="button"
-      className={className}
-      style={{ ...laneVars(lane.accent), ...style }}
+      className={`${blockCardStyles.card} ${styles.card}`}
       data-on={ctx.selected === li.item.id || undefined}
       data-dragging={isDragging || undefined}
+      data-status={li.item.status}
       {...listeners}
       {...ctx.itemProps(lane, li)}
     >
-      {children}
+      <CardFace ctx={ctx} li={li} />
     </button>
   );
 }
 
 /**
- * What the selected liður can do. Every other flokkur is a named button, so a phone user can
- * send a liður from the first flokkur to the sixth in one tap instead of five.
+ * One liður's place in its column. Closed, it is exactly as tall as the liður is long. Open in
+ * K1 and K2, it grows to fit its editor and pushes the rest of that column down: the time
+ * scale of that one column pauses while it is being edited, and comes back on "Lokið".
  */
-function MoveStrip({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem }) {
-  const { model } = ctx;
-  const when = li.clock ? `${li.clock}–${li.clockEnd}` : `+${li.start} mín`;
+function CardSlot({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem }) {
+  const open = ctx.selected === li.item.id;
+  const inPlace = open && (ctx.look === "face" || ctx.look === "flip");
   return (
-    <div className={styles.strip} role="group" aria-label={`Valinn liður: ${li.item.name}`}>
-      <p className={styles.stripTitle}>
-        <span className={styles.stripName}>{li.item.name}</span>
-        <span className={styles.stripMeta}>
-          <PatrolTag lane={lane} small />
-          <span className={styles.num}>
-            {when} · {li.item.minutes} mín
-          </span>
-        </span>
-      </p>
-      <div className={styles.stripActions}>
-        <span className={styles.stripLabel}>Færa til:</span>
-        {model.lanes
-          .filter((other) => other.laneIndex !== lane.laneIndex)
-          .map((other) => (
-            <button
-              key={other.patrolId}
-              type="button"
-              className={styles.moveTo}
-              style={laneVars(other.accent)}
-              aria-label={`Færa ${li.item.name} til ${other.name}`}
-              onClick={() => ctx.moveTo(lane, li, other.laneIndex)}
-            >
-              {other.name}
-            </button>
-          ))}
-        <span className={styles.stripGap} />
-        <button
-          type="button"
-          className={styles.quiet}
-          disabled={li.index === 0}
-          aria-label={`Færa ${li.item.name} framar`}
-          onClick={() => ctx.reorder(lane, li, li.index - 1)}
-        >
-          ↑ Fyrr
-        </button>
-        <button
-          type="button"
-          className={styles.quiet}
-          disabled={li.index === lane.items.length - 1}
-          aria-label={`Færa ${li.item.name} aftar`}
-          onClick={() => ctx.reorder(lane, li, li.index + 1)}
-        >
-          ↓ Síðar
-        </button>
-        <button type="button" className={styles.quiet} aria-label="Loka" onClick={ctx.deselect}>
-          ✕
-        </button>
-      </div>
+    <div
+      className={styles.slot}
+      data-open={inPlace || undefined}
+      data-flipped={(inPlace && ctx.look === "flip") || undefined}
+      style={{ ["--min" as string]: li.item.minutes }}
+    >
+      {ctx.look === "flip" && inPlace ? (
+        <CardBack ctx={ctx} lane={lane} li={li} />
+      ) : (
+        <CardButton ctx={ctx} lane={lane} li={li} />
+      )}
+      {ctx.look === "face" && inPlace && <QuickEdits ctx={ctx} lane={lane} li={li} />}
     </div>
   );
 }
 
-/* ── The current form ──────────────────────────────────────────────────────── */
-
-/** The status word on S2's stamp. Óákveðið is an empty box with a "?". */
-const STAMP_WORD: Record<Lidur["status"], string> = {
-  confirmed: "Klárt",
-  draft: "Drög",
-  tentative: "Óvíst",
-  unknown: "?",
-};
-
-/** The same small tilt for a liður on every render: −4° … +3°. */
-function tiltOf(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  return (hash % 8) - 4;
+/**
+ * K1: the quick edits on the card itself, the two a foringi changes most on the night (length
+ * and status), and "Fleira" for the rest.
+ */
+function QuickEdits({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem }) {
+  const editor = ctx.editorFor(lane, li);
+  const [more, setMore] = useState(false);
+  const moreId = useId();
+  return (
+    <div
+      className={styles.quick}
+      role="group"
+      aria-label={`Breyta ${li.item.name} (${lane.name})`}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") editor.actions.close();
+      }}
+    >
+      <MinutesField ctx={editor} compact />
+      <StatusField ctx={editor} />
+      <DiffBlock ctx={editor} />
+      <div className={styles.quickFoot}>
+        <button
+          type="button"
+          className={styles.quiet}
+          aria-expanded={more}
+          aria-controls={moreId}
+          onClick={() => setMore((m) => !m)}
+        >
+          {more ? "Færra" : "Fleira…"}
+        </button>
+        <button type="button" className={styles.primary} onClick={editor.actions.close}>
+          Lokið
+        </button>
+      </div>
+      {more && (
+        <div id={moreId}>
+          <CardEditor ctx={editor} rest />
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
- * Time down the side and one column per flokkur, as SplitGrid has it. Heights are exact
- * (`--ppm` per minute), so the columns stay level with the axis and with each other. On a phone
- * the columns scroll sideways with snap, two at a time, and the axis stays pinned.
+ * K2: the back of the card. The front's picture and name stay at the top so it is still the
+ * same card; below them, the whole editor, ruled like the back of a playing card.
+ */
+function CardBack({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem }) {
+  const editor = ctx.editorFor(lane, li);
+  const headingId = useId();
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => takeFocus(ref.current), []);
+  const card = li.item as CardLidur;
+  return (
+    <section
+      ref={ref}
+      className={styles.back}
+      aria-labelledby={headingId}
+      data-lidur-id={li.item.id}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") editor.actions.close();
+      }}
+    >
+      <CardEditor
+        ctx={editor}
+        headingId={headingId}
+        heading={
+          <span className={styles.backHead}>
+            <BlockMarker kind={card.kind} theme={card.theme} image={blockOf(card)?.image} small />
+            <span>
+              <span className={styles.backWho}>{lane.name}</span>
+              {li.item.name}
+            </span>
+          </span>
+        }
+      />
+    </section>
+  );
+}
+
+/**
+ * K3 and K4: the editor beside the grid (under it on a phone), with the open card as its
+ * header. K4 adds where an edit goes: this flokkur, or every flokkur that follows the sveit.
+ */
+function EditorPanel({
+  ctx,
+  lane,
+  li,
+  patchFollowers,
+}: {
+  ctx: Ctx;
+  lane: LaneModel;
+  li: LaneItem;
+  patchFollowers: (li: LaneItem, patch: CardPatch) => number;
+}) {
+  const base = ctx.editorFor(lane, li);
+  const [scope, setScope] = useState<"one" | "all">("one");
+  const [result, setResult] = useState("");
+  const scopeName = useId();
+  const headingId = useId();
+  const ref = useRef<HTMLElement>(null);
+
+  // A newly opened card gets the panel's attention; moving the same card (← →) keeps focus on it.
+  useEffect(() => takeFocus(ref.current), [li.item.id]);
+  useEffect(() => setScope("one"), [li.item.id]);
+
+  const followers = (() => {
+    if (!base.troop) return 0;
+    const key = troopKeyOf(li.item as CardLidur);
+    return ctx.model.lanes.reduce(
+      (n, l) =>
+        n +
+        l.items.filter(
+          (entry) =>
+            troopKeyOf(entry.item as CardLidur) === key &&
+            differences(entry.item as CardLidur, base.troop).length === 0
+        ).length,
+      0
+    );
+  })();
+
+  const toAll = ctx.look === "sync" && scope === "all" && !!base.troop;
+  const editor: EditorContext = toAll
+    ? {
+        ...base,
+        actions: {
+          ...base.actions,
+          patch: (patch) => {
+            const n = patchFollowers(li, patch);
+            setResult(`Breytt hjá ${countIs(n, "flokki", "flokkum")}.`);
+          },
+        },
+      }
+    : base;
+
+  const card = li.item as CardLidur;
+  return (
+    <section
+      ref={ref}
+      className={styles.panel}
+      aria-labelledby={headingId}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") base.actions.close();
+      }}
+    >
+      <CardEditor
+        ctx={editor}
+        headingId={headingId}
+        showDiff={ctx.look !== "sync"}
+        heading={
+          <span className={styles.backHead}>
+            <BlockMarker kind={card.kind} theme={card.theme} image={blockOf(card)?.image} small />
+            <span>
+              <span className={styles.backWho} style={laneVars(lane.accent)}>
+                {lane.name}
+                {li.clock ? ` · ${li.clock}–${li.clockEnd}` : ""}
+              </span>
+              {li.item.name}
+            </span>
+          </span>
+        }
+        before={
+          ctx.look === "sync" ? (
+            <>
+              <DiffBlock ctx={base} always />
+              {base.troop && (
+                <fieldset className={styles.scope}>
+                  <legend className={styles.fieldLabel}>Breytingar gilda</legend>
+                  <label className={styles.scopeChoice}>
+                    <input
+                      type="radio"
+                      name={scopeName}
+                      checked={scope === "one"}
+                      onChange={() => setScope("one")}
+                    />
+                    <span>Aðeins þessi flokkur ({lane.name})</span>
+                  </label>
+                  <label className={styles.scopeChoice}>
+                    <input
+                      type="radio"
+                      name={scopeName}
+                      checked={scope === "all"}
+                      onChange={() => setScope("all")}
+                    />
+                    <span>
+                      Hjá öllum sem fylgja sveitinni ({countIs(followers, "flokkur", "flokkar")})
+                    </span>
+                  </label>
+                  <p className={styles.scopeHelp} role="status">
+                    {result ||
+                      "Flokkur sem hefur sína eigin útgáfu heldur henni, hvað sem þú velur hér."}
+                  </p>
+                </fieldset>
+              )}
+            </>
+          ) : undefined
+        }
+      />
+    </section>
+  );
+}
+
+/* ── The grid ──────────────────────────────────────────────────────────────── */
+
+/**
+ * Time down the side and one column per flokkur, as SplitGrid has it. Closed cards are exactly
+ * as tall as they are long (`--ppm` per minute), so the columns stay level with the axis and
+ * with each other. On a phone the columns scroll sideways with snap and the axis stays pinned.
  */
 function Columns({ ctx }: { ctx: Ctx }) {
   const { model } = ctx;
   const span = Math.max(model.duration, 15);
   const ticks: number[] = [];
   for (let m = 0; m <= span; m += 15) ticks.push(m);
+  const openLane =
+    ctx.look === "face" || ctx.look === "flip"
+      ? findSelected(model, ctx.selected)?.lane.laneIndex
+      : undefined;
+  // The column with an open card widens so its editor has room; the rest keep theirs.
+  const columns = model.lanes
+    .map((lane) =>
+      lane.laneIndex === openLane ? "minmax(var(--col-open), 2fr)" : "minmax(var(--col-min), 1fr)"
+    )
+    .join(" ");
 
   return (
     <div className={styles.columnsWrap}>
@@ -508,13 +904,22 @@ function Columns({ ctx }: { ctx: Ctx }) {
       <div className={styles.scroller}>
         <div
           className={styles.grid}
-          style={{ ["--n" as string]: model.lanes.length, ["--span" as string]: span }}
+          style={{
+            ["--span" as string]: span,
+            gridTemplateColumns: `var(--axis) ${columns}`,
+          }}
         >
           <div className={styles.axisHead} aria-hidden="true">
             kl.
           </div>
           {model.lanes.map((lane) => (
-            <LaneHead key={lane.patrolId} ctx={ctx} lane={lane} />
+            <div key={lane.patrolId} className={styles.laneHead} style={laneVars(lane.accent)}>
+              <span className={styles.laneName}>{lane.name}</span>
+              <span className={styles.laneNums}>
+                <LaneTotal lane={lane} />
+                <LaneState lane={lane} model={model} />
+              </span>
+            </div>
           ))}
           <div className={styles.axis} aria-hidden="true">
             {ticks.map((m) => (
@@ -524,7 +929,12 @@ function Columns({ ctx }: { ctx: Ctx }) {
             ))}
           </div>
           {model.lanes.map((lane) => (
-            <LaneColumn key={lane.patrolId} ctx={ctx} lane={lane} />
+            <LaneColumn
+              key={lane.patrolId}
+              ctx={ctx}
+              lane={lane}
+              open={lane.laneIndex === openLane}
+            />
           ))}
         </div>
       </div>
@@ -532,42 +942,8 @@ function Columns({ ctx }: { ctx: Ctx }) {
   );
 }
 
-function LaneHead({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
-  const { model, look } = ctx;
-  const tilt = look === "stimplar" ? (lane.laneIndex % 2 ? 1.5 : -1.5) : 0;
-  return (
-    <div className={styles.laneHead} style={laneVars(lane.accent)}>
-      <span className={styles.laneName} style={{ ["--tilt" as string]: `${tilt}deg` }}>
-        {lane.name}
-      </span>
-      <span className={styles.laneNums}>
-        <LaneTotal lane={lane} />
-        <LaneState lane={lane} model={model} />
-      </span>
-      {look === "veifur" && <Tally minutes={lane.used} />}
-    </div>
-  );
-}
-
-/** One mark per 5 minutes, struck through in fives, like a tally on a patrol's notebook. */
-function Tally({ minutes }: { minutes: number }) {
-  const marks = Math.round(minutes / 5);
-  const groups = Array.from({ length: Math.ceil(marks / 5) }, (_, g) => Math.min(5, marks - g * 5));
-  return (
-    <span className={styles.tally} aria-hidden="true">
-      {groups.map((n, g) => (
-        <span key={g} className={styles.tallyGroup} data-full={n === 5 || undefined}>
-          {Array.from({ length: Math.min(n, 4) }, (_, i) => (
-            <span key={i} className={styles.tallyMark} />
-          ))}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function LaneColumn({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
-  const { model, look } = ctx;
+function LaneColumn({ ctx, lane, open }: { ctx: Ctx; lane: LaneModel; open: boolean }) {
+  const { model } = ctx;
   const { setNodeRef, over } = useLaneDrop(model, lane.laneIndex);
   const span = Math.max(model.duration, 15);
   const rest = span - lane.used;
@@ -577,35 +953,11 @@ function LaneColumn({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
       ref={setNodeRef}
       className={styles.lane}
       data-over={over || undefined}
+      data-open={open || undefined}
       style={laneVars(lane.accent)}
     >
       {lane.items.map((li) => (
-        <DragItem
-          key={li.item.id}
-          ctx={ctx}
-          lane={lane}
-          li={li}
-          className={styles.item}
-          style={{ height: `calc(var(--ppm) * ${li.item.minutes})` }}
-        >
-          <span className={styles.itemTop} data-tight={li.item.minutes < 15 || undefined}>
-            <span className={styles.itemTime}>{li.clock ?? `+${li.start}`}</span>
-            <span className={styles.itemMin}>{li.item.minutes} mín</span>
-          </span>
-          <span className={styles.itemTitle} data-tight={li.item.minutes < 15 || undefined}>
-            {li.item.name}
-          </span>
-          {look === "stimplar" && (
-            <span
-              className={styles.stamp}
-              data-state={li.item.status}
-              style={{ ["--tilt" as string]: `${tiltOf(li.item.id)}deg` }}
-              aria-hidden="true"
-            >
-              {STAMP_WORD[li.item.status]}
-            </span>
-          )}
-        </DragItem>
+        <CardSlot key={li.item.id} ctx={ctx} lane={lane} li={li} />
       ))}
       {rest > 0 && (
         <button
@@ -614,8 +966,8 @@ function LaneColumn({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
           style={{ height: `calc(var(--ppm) * ${rest})` }}
           aria-label={
             lane.items.length === 0
-              ? `Ekkert skráð. Bæta verkefni við hjá ${lane.name}`
-              : `${rest} mín bið. Bæta verkefni við hjá ${lane.name}`
+              ? `Ekkert skráð. Bæta verkefni við (${lane.name})`
+              : `${rest} mín bið. Bæta verkefni við (${lane.name})`
           }
           onClick={() => ctx.addTo(lane)}
         >

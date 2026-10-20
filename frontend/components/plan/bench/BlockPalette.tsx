@@ -17,7 +17,8 @@ import { countIs } from "@/lib/format";
 import type { LibraryFolder } from "@/lib/mock/folders.mock";
 import { LIBRARY_KINDS, type LibraryBlock } from "@/lib/mock/library.mock";
 import type { SlotKind } from "@/services/plan.service";
-import { KIND_ICON, SOURCES, themeIcon } from "./blockIcons";
+import { BlockKindLine, BlockMarker } from "./BlockCard";
+import { SOURCES } from "./blockIcons";
 import { useBench } from "./BenchProvider";
 import { blockAsLidur, dragId } from "./dnd";
 import { CreateFolder, FolderCovers, FolderGlyph, Popover } from "./PaletteFolders";
@@ -290,21 +291,6 @@ interface CardProps {
   isOnFundur: boolean;
 }
 
-/** The block's picture: its own image if it has one, else its theme's icon on its kind's tint. */
-function Marker({ block }: { block: LibraryBlock }) {
-  const { icon: Icon } = themeIcon(block.theme);
-  return (
-    <span className={styles.marker} data-kind={block.kind}>
-      {block.image ? (
-        // eslint-disable-next-line @next/next/no-img-element -- bank pictures are small SVGs; next/image does not optimise SVG.
-        <img className={styles.markerImage} src={block.image} alt="" />
-      ) : (
-        <Icon className={styles.markerIcon} aria-hidden="true" />
-      )}
-    </span>
-  );
-}
-
 function Card({ block, api, onAdd, disabledReasonId, isOnFundur }: CardProps) {
   // Drag from the picture only, so "Bæta við" stays a plain click. No role="button" on it:
   // there's no keyboard drag here, and "Bæta við" is the keyboard path.
@@ -312,12 +298,11 @@ function Card({ block, api, onAdd, disabledReasonId, isOnFundur }: CardProps) {
     id: dragId.library(block.id),
     data: { kind: "library", block },
   });
-  const { icon: KindIcon, label: kindLabel } = KIND_ICON[block.kind];
 
   return (
     <li className={styles.card} data-dragging={isDragging || undefined}>
       <span ref={setNodeRef} className={styles.cardPicture} aria-hidden="true" {...listeners}>
-        <Marker block={block} />
+        <BlockMarker kind={block.kind} theme={block.theme} image={block.image} />
         <GripVertical className={styles.cardGrip} />
         {/* Minutes on the picture, like the length on a video thumbnail: read with the picture. */}
         <span className={styles.cardMinutes}>{block.minutes} mín</span>
@@ -325,11 +310,7 @@ function Card({ block, api, onAdd, disabledReasonId, isOnFundur }: CardProps) {
       <div className={styles.cardBody}>
         <span className={styles.title}>{block.name}</span>
         <span className={styles.srOnly}>, {block.minutes} mínútur</span>
-        <span className={styles.cardKind}>
-          <KindIcon aria-hidden="true" />
-          {kindLabel}
-          <span className={styles.cardTheme}> · {block.theme}</span>
-        </span>
+        <BlockKindLine kind={block.kind} theme={block.theme} />
         <span className={styles.cardUsed}>{timesUsed(block.timesUsed)}</span>
         {(isOnFundur || block.endurmat) && (
           <span className={styles.badges}>

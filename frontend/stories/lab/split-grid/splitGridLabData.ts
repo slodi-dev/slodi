@@ -15,12 +15,12 @@ import {
 } from "@/stories/vinnubekkur/benchHarness";
 import {
   BAND_OF,
-  type Lidur,
   type Patrol,
   type PatrolLane,
   type PlanBenchData,
   type PlanStatus,
 } from "@/services/plan.service";
+import { STATION_BLOCKS, type CardLidur } from "./cardModel";
 
 export const LAB_FUNDUR = FUNDUR.overTime;
 
@@ -51,25 +51,39 @@ const LONG_STATIONS = [
   "Eldfæri, prímusar og öryggi við eldunarstöðina",
 ];
 
-/** A spread of statuses, so S2's stamps show every state. */
+/** A spread of statuses, so the cards show every state. */
 const STATUS_OF: Record<string, PlanStatus> = {
   Skyndihjálp: "draft",
   "Eldfæri og prímus": "tentative",
   Merkjamál: "unknown",
 };
 
+/** Who runs each station for the whole sveit (the sveit's version of the card). */
+const LEADER_OF: Record<string, string> = {
+  "Hnútar og bönd": "Sigga",
+  "Áttaviti og kort": "Jón",
+  Skyndihjálp: "Elín",
+  "Eldfæri og prímus": "Bjarki",
+};
+
 let counter = 0;
-function lidur(name: string, minutes: number, patrolId: string): Lidur {
+/** A station as a liður: the bank block's kind, theme and búnaður, and the station's leader. */
+function lidur(name: string, minutes: number, patrolId: string): CardLidur {
   counter += 1;
+  const block = STATION_BLOCKS.find((b) => b.name === name);
   return {
     id: `lab-${patrolId}-${counter}`,
     name,
-    kind: "dagskra",
+    kind: block?.kind ?? "dagskra",
     minutes,
     status: STATUS_OF[name] ?? "confirmed",
-    theme: "Ratleikni",
+    theme: block?.theme ?? "Ratleikni",
     venue: null,
-    endurmat: null,
+    endurmat: block?.endurmat ?? null,
+    block_id: block?.id,
+    leader: LEADER_OF[name] ?? null,
+    note: null,
+    gear: block?.needs ?? [],
   };
 }
 
@@ -111,7 +125,8 @@ export function evenData(count = 4, minutes = 15): PlanBenchData {
 /**
  * Uneven: Ernir's Skyndihjálp went to Uglur, and Refir added a Kakó at the end. Uglur (75 mín,
  * Skyndihjálp twice) now set the length; Refir wait 5 mín, Birnir 15 and Ernir 30. Two stations
- * have two flokkar at once.
+ * have two flokkar at once. Refir's Áttaviti has its own note and Birnir's Hnútar its own
+ * leader, so two cards differ from the sveit's version.
  */
 export function unevenData(): PlanBenchData {
   const patrols = LAB_PATROLS.slice(0, 4);
@@ -123,6 +138,14 @@ export function unevenData(): PlanBenchData {
     lanes[2].items = [...lanes[2].items, moved];
   }
   lanes[0].items = [...lanes[0].items, lidur("Kakó og spjall", 10, patrols[0].id)];
+  // Two cards changed for one flokkur: Refir take the compass outside, Birnir have their own
+  // leader for the knots.
+  lanes[0].items = lanes[0].items.map((item: CardLidur) =>
+    item.name === "Áttaviti og kort" ? { ...item, note: "Förum út að Elliðaánum." } : item
+  );
+  lanes[3].items = lanes[3].items.map((item: CardLidur) =>
+    item.name === "Hnútar og bönd" ? { ...item, leader: "Óli" } : item
+  );
   return withLanes(lanes, patrols);
 }
 

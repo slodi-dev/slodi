@@ -79,8 +79,14 @@ once a variation is picked it is **promoted** into the real component and its la
 
 - **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the real calendar's stamp kit
   so the grid and calendar are one family (see "Grid next to calendar").
-- **SplitGrid**: the current form stays; variations are styles only (clean, stamped, patrol
-  flags, paper), with the honest merge.
+- **SplitGrid → a new row, K1–K4: bank cards you can edit.** The S1–S4 styles are scrapped
+  (2026-10-20). Each liður is the BlockPalette card it came from (picture tile and kind line
+  shared through `components/plan/bench/BlockCard.tsx`), and the card is where a foringi changes
+  it for one flokkur: length, status, who leads, adaptation, búnaður, another block, remove with
+  Afturkalla, and back to the sveit's version. K1 on the card, K2 flip it over, K3 editor panel,
+  K4 follows the sveit (edit one flokkur or every flokkur that follows). Time grid, moves and the
+  honest merge are unchanged. _Needs backend:_ block link, leader, note, gear and the sveit's
+  version on a lane liður (sc-646).
 - **FundurSheet + LidurRow**: the current form, functions and interactions stay; variations are
   styles only. F0 is the current sheet with its 13 problems fixed (kind stripe, fit only in the
   footer, shouting title, rows not as tall as their time, spreadsheet rules, look-alike statuses,

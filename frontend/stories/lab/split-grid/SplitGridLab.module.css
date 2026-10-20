@@ -1,4 +1,5 @@
-/* Lab directions for SplitGrid. Every colour is a token; the patrol colour comes in through
+/* Lab directions for SplitGrid: the split band built from editable bank cards (K1–K4).
+   Every colour is a token; the patrol colour comes in through
    --lane / --lane-on (set inline from the lane's accent). The vivid colour is only ever a
    background behind its own foreground, a bar or edge next to the patrol's name, or a 14% tint
    under primary text (light on dark, dark on light, so both themes keep AA).
@@ -25,7 +26,7 @@
 @container (max-width: 40rem) {
   .head,
   .columnsWrap,
-  .strip,
+  .workArea,
   .merge,
   .undo {
     --target: var(--sl-size-button-lg);
@@ -187,53 +188,6 @@
   opacity: 0.4;
 }
 
-/* ── Selection strip (A, B, C under the grid; D inside the card) ── */
-
-.strip {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-xs);
-  padding: var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-primary-border));
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--sl-color-primary-subtle));
-}
-
-.stripTitle {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-compact);
-  margin: 0;
-}
-
-.stripName {
-  font-weight: var(--sl-font-weight-semibold);
-  overflow-wrap: anywhere;
-}
-
-.stripMeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-xs);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.stripActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sl-spacing-xs);
-}
-
-.stripLabel {
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.stripGap {
-  flex: 1;
-}
-
 .moveTo {
   min-height: var(--target);
   padding: 0 var(--sl-spacing-sm);
@@ -253,10 +207,12 @@
 /* ── The current form: axis + one column per flokkur ── */
 
 .columnsWrap {
-  /* Rem per minute. A 15-minute liður is 3.75rem; 0.3rem on a phone so 10 minutes is 48px. */
-  --ppm: 0.25rem;
+  /* Rem per minute. A card needs room for its picture and two lines, so a 15-minute liður is
+     5.25rem (84px) and a 10-minute one 3.5rem; the same on a phone. */
+  --ppm: 0.35rem;
   --axis: 3.25rem;
-  --col-min: 7.5rem;
+  --col-min: 9rem;
+  --col-open: 17rem;
   display: flex;
   flex-direction: column;
   gap: var(--sl-spacing-xs);
@@ -352,6 +308,7 @@
 .lane {
   display: flex;
   flex-direction: column;
+  gap: 0;
   min-width: 0;
   height: calc(var(--ppm) * var(--span));
   border-right: 1px solid hsl(var(--sl-color-border));
@@ -368,49 +325,15 @@
   border-right: 0;
 }
 
-.item {
-  /* Without this the browser claims the gesture for panning and a touch drag never starts. */
-  touch-action: none;
-  position: relative;
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 0.125rem var(--sl-spacing-xs);
-  border: 0;
-  border-bottom: 1px solid hsl(var(--sl-color-border));
-  background: hsl(var(--sl-color-surface));
-  font: inherit;
-  color: hsl(var(--sl-color-text-primary));
-  text-align: left;
-  overflow: hidden;
-  cursor: pointer;
+/* Each column sizes its own cards: a narrow one drops the theme from the kind line. */
+.lane {
+  container-type: inline-size;
 }
 
-.item[data-on] {
-  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
-}
-
-.itemTop {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sl-spacing-xs);
-  font-size: var(--sl-text-caption);
-  font-variant-numeric: tabular-nums;
-}
-
-.itemTop[data-tight] .itemTime {
-  display: none;
-}
-
-.itemTitle {
-  font-weight: var(--sl-font-weight-semibold);
-  line-height: var(--sl-line-height-tight);
-  overflow-wrap: break-word;
-}
-
-.itemTitle[data-tight] {
-  font-size: var(--sl-text-caption);
+/* A column with an open card (K1, K2) grows to fit it: its time scale pauses while editing. */
+.lane[data-open] {
+  height: auto;
+  min-height: calc(var(--ppm) * var(--span));
 }
 
 .gap {
@@ -456,9 +379,9 @@
 /* Phone: the same form, scrolled sideways with snap, two columns in view and the axis pinned. */
 @container (max-width: 40rem) {
   .columnsWrap {
-    --ppm: 0.3rem;
     --axis: 2.75rem;
     --col-min: max(8.5rem, calc((100cqw - var(--axis) - 2.5rem) / 2));
+    --col-open: calc(100cqw - var(--axis) - 2rem);
   }
   .swipe {
     display: block;
@@ -466,241 +389,6 @@
   .scroller {
     scroll-snap-type: x mandatory;
     scroll-padding-left: var(--axis);
-  }
-}
-
-/* ── S1 · Clean: the patrol colour as a full header band, liðir as plain rows ── */
-
-.root[data-style="ren"] .laneHead {
-  background: hsl(var(--lane));
-  color: hsl(var(--lane-on));
-  border-bottom: 0;
-}
-
-.root[data-style="ren"] .laneName {
-  font-size: var(--sl-text-body);
-}
-
-.root[data-style="ren"] .laneHead :is(.leads, .waits) {
-  color: inherit;
-}
-
-.root[data-style="ren"] .itemTop {
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-/* ── S2 · Stamped: ink-stamped column labels, each liður's status as a rubber stamp ── */
-
-.root[data-style="stimplar"] .grid {
-  background: hsl(var(--sl-color-background-secondary));
-}
-
-.root[data-style="stimplar"] .laneHead {
-  align-items: center;
-  padding: var(--sl-spacing-sm) var(--sl-spacing-xs);
-}
-
-.root[data-style="stimplar"] .laneName {
-  padding: 0.125rem var(--sl-spacing-sm);
-  border: 2px solid hsl(var(--lane));
-  border-radius: var(--sl-radius-sm);
-  /* The double rule of a rubber stamp: ink, a gap of paper, ink. */
-  box-shadow:
-    inset 0 0 0 2px hsl(var(--sl-color-background-secondary)),
-    inset 0 0 0 3px hsl(var(--lane));
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: var(--sl-text-caption);
-  font-weight: var(--sl-font-weight-heading);
-  transform: rotate(var(--tilt));
-}
-
-.root[data-style="stimplar"] .item {
-  margin: 0 0.125rem;
-  border-bottom: 1px dashed hsl(var(--sl-color-border-strong));
-  padding-right: 4.25rem;
-}
-
-.stamp {
-  position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
-  padding: 0 0.25rem;
-  border: 2px solid currentColor;
-  border-radius: var(--sl-radius-xs);
-  font-size: var(--sl-text-caption);
-  font-weight: var(--sl-font-weight-heading);
-  line-height: 1.3;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  transform: rotate(var(--tilt));
-}
-
-.stamp[data-state="confirmed"] {
-  color: hsl(var(--sl-color-success-text));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--sl-color-surface)),
-    inset 0 0 0 2px currentColor;
-}
-
-.stamp[data-state="draft"] {
-  color: hsl(var(--sl-color-text-secondary));
-  border-style: dashed;
-  transform: none;
-}
-
-.stamp[data-state="tentative"] {
-  color: hsl(var(--sl-color-warning-text));
-  border-style: dotted;
-  transform: none;
-}
-
-.stamp[data-state="unknown"] {
-  color: hsl(var(--sl-color-text-secondary));
-  border-style: dotted;
-  min-width: 1.5rem;
-  text-align: center;
-  transform: none;
-}
-
-/* ── S3 · Patrol flags: a swallowtail pennant per column, the total as a tally ── */
-
-.root[data-style="veifur"] .laneHead {
-  padding-left: var(--sl-spacing-sm);
-  /* The pole. */
-  background: linear-gradient(to right, hsl(var(--sl-color-text-secondary)) 0 2px, transparent 2px)
-    no-repeat var(--sl-spacing-xs) 0 / 4px 100%;
-}
-
-.root[data-style="veifur"] .laneName {
-  align-self: stretch;
-  margin-left: 0.25rem;
-  padding: 0.25rem 1.25rem 0.25rem var(--sl-spacing-xs);
-  background: hsl(var(--lane));
-  color: hsl(var(--lane-on));
-  clip-path: polygon(0 0, 100% 0, calc(100% - 0.75rem) 50%, 100% 100%, 0 100%);
-}
-
-.root[data-style="veifur"] .laneNums {
-  margin-left: 0.25rem;
-}
-
-.tally {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-left: 0.25rem;
-}
-
-.tallyGroup {
-  position: relative;
-  display: inline-flex;
-  gap: 2px;
-  height: 0.75rem;
-}
-
-.tallyMark {
-  width: 2px;
-  height: 100%;
-  background: hsl(var(--sl-color-text-primary));
-}
-
-/* The fifth mark strikes the four. */
-.tallyGroup[data-full]::after {
-  content: "";
-  position: absolute;
-  left: -2px;
-  right: -2px;
-  top: 50%;
-  height: 2px;
-  background: hsl(var(--sl-color-text-primary));
-  transform: rotate(-25deg);
-}
-
-.root[data-style="veifur"] .leads {
-  padding: 0 0.25rem;
-  border-radius: var(--sl-radius-xs);
-  background: hsl(var(--sl-color-text-primary));
-  color: hsl(var(--sl-color-surface));
-}
-
-.root[data-style="veifur"] .item {
-  /* Spacing as a border in the surface colour, inside the liður's height, so the column
-     stays exactly as tall as the axis. */
-  border: 1px solid hsl(var(--sl-color-surface));
-  border-width: 1px 2px;
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--lane) / 0.14);
-}
-
-/* ── S4 · Paper: a printed sheet ── */
-
-.root[data-style="blad"] {
-  background: hsl(var(--sl-color-surface));
-}
-
-.root[data-style="blad"] .scroller {
-  border-color: hsl(var(--sl-color-text-primary));
-  border-radius: 0;
-}
-
-.root[data-style="blad"] .lane {
-  /* Ruled every 5 minutes, a heavier rule every 15. */
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 calc(var(--ppm) * 15 - 1px),
-      hsl(var(--sl-color-border-strong)) calc(var(--ppm) * 15 - 1px) calc(var(--ppm) * 15)
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 calc(var(--ppm) * 5 - 1px),
-      hsl(var(--sl-color-border-subtle)) calc(var(--ppm) * 5 - 1px) calc(var(--ppm) * 5)
-    );
-}
-
-.root[data-style="blad"] .axis {
-  /* The margin rule of an exercise book. */
-  border-right: 2px solid hsl(var(--sl-color-error) / 0.5);
-}
-
-.root[data-style="blad"] :is(.tick, .itemTop, .laneNums, .axisHead) {
-  font-family: var(--sl-font-family-code);
-}
-
-.root[data-style="blad"] .laneHead {
-  border-bottom: 2px solid hsl(var(--sl-color-text-primary));
-}
-
-.root[data-style="blad"] .laneName::before {
-  content: "";
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  margin-right: 0.375rem;
-  background: hsl(var(--lane));
-  vertical-align: -0.0625rem;
-}
-
-.root[data-style="blad"] .item {
-  background: transparent;
-  border-bottom: 1px solid hsl(var(--sl-color-text-primary) / 0.5);
-  border-left: 3px solid hsl(var(--lane));
-}
-
-.root[data-style="blad"] .gap {
-  background: none;
-  border-style: dotted;
-}
-
-@media print {
-  .root button.quiet,
-  .hint,
-  .swipe {
-    display: none;
-  }
-  .scroller {
-    overflow: visible;
   }
 }
 
@@ -889,7 +577,7 @@
 /* ── Motion: only for those who haven't asked for less ── */
 
 @media (prefers-reduced-motion: no-preference) {
-  .item,
+  .card,
   .gap,
   .lane,
   .choice {
@@ -898,4 +586,611 @@
       box-shadow var(--sl-transition-fast),
       border-color var(--sl-transition-fast);
   }
+}
+
+/* ── The flokkur's name on its column: the vivid colour behind its own ink ── */
+
+.laneName {
+  padding: 0.0625rem var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--lane));
+  color: hsl(var(--lane-on));
+}
+
+/* ── The card: BlockPalette's card (blockCardStyles.card), laid out for a column ── */
+
+/* A liður's place in its column: exactly as tall as it is long while closed. */
+.slot {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-compact);
+  height: calc(var(--ppm) * var(--min));
+  padding: 2px 3px;
+  box-sizing: border-box;
+}
+
+.slot[data-open] {
+  height: auto;
+  min-height: calc(var(--ppm) * var(--min));
+  z-index: 1;
+}
+
+.card {
+  /* Without this the browser claims the gesture for panning and a touch drag never starts. */
+  touch-action: none;
+  position: relative;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--sl-spacing-xs);
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  font: inherit;
+  color: hsl(var(--sl-color-text-primary));
+  text-align: left;
+  cursor: pointer;
+}
+
+.slot[data-open] .card {
+  flex: 0 0 auto;
+  min-height: calc(var(--ppm) * var(--min) - 4px);
+}
+
+.card[data-on] {
+  border-color: hsl(var(--sl-color-primary));
+  box-shadow: inset 0 0 0 1px hsl(var(--sl-color-primary));
+}
+
+/* Óákveðið: the card is only a dotted outline until someone decides. */
+.card[data-status="unknown"] {
+  border-style: dashed;
+}
+
+.cardPicture {
+  position: relative;
+  display: block;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  /* Leaves room for the stamp in the corner. */
+  padding-right: 1.25rem;
+}
+
+.cardTime {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+  font-size: var(--sl-text-overline);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.cardTitle {
+  overflow-wrap: anywhere;
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--sl-spacing-xs);
+  font-size: var(--sl-text-overline);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.cardMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cardMetaItem svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.cardStamp {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* "Breytt fyrir flokkinn", in K1–K3: a small dot by the stamp; the editor says what changed. */
+.changedDot {
+  position: absolute;
+  top: 6px;
+  right: 1.5rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--sl-color-warning));
+  box-shadow: 0 0 0 2px hsl(var(--sl-color-surface));
+}
+
+/* K4: every card says whether it follows the sveit. */
+.syncMark {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface));
+  font-size: var(--sl-text-overline);
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.syncMark svg {
+  width: 11px;
+  height: 11px;
+}
+
+.syncMark[data-changed] {
+  border: 1.5px dashed hsl(var(--sl-color-warning-text));
+  background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-warning-text));
+  font-weight: var(--sl-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.syncMark[data-none] {
+  border-style: dotted;
+}
+
+/* ── K1: quick edits on the open card ── */
+
+.quick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-xs);
+  padding: var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card-hover);
+}
+
+.quickFoot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sl-spacing-xs);
+}
+
+/* ── K2: the back of the card ── */
+
+.back {
+  padding: var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-md);
+  /* Ruled like the back of a playing card, faint enough to write over. */
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.5rem,
+      hsl(var(--sl-color-border-subtle)) 1.5rem calc(1.5rem + 1px)
+    ),
+    hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card-hover);
+}
+
+.backHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+}
+
+.backHead > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.backWho {
+  font-family: var(--sl-font-family-body);
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .back {
+    animation: turnOver 260ms cubic-bezier(0.3, 0.7, 0.4, 1) both;
+    transform-origin: center top;
+  }
+}
+
+@keyframes turnOver {
+  from {
+    transform: perspective(40rem) rotateY(-80deg);
+    opacity: 0.4;
+  }
+  to {
+    transform: perspective(40rem) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+/* ── K3, K4: the panel beside the grid, under it on a phone ── */
+
+.workArea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sl-spacing-sm);
+  align-items: start;
+}
+
+@container (min-width: 52rem) {
+  .workArea[data-has-panel] {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+  .workArea[data-has-panel] .panel {
+    position: sticky;
+    top: var(--sl-spacing-sm);
+  }
+}
+
+.panel {
+  padding: var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-card-hover);
+}
+
+/* On a narrow box the panel is a sheet that stays at the bottom while the grid scrolls. */
+@container (max-width: 40rem) {
+  .panel {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    max-height: 55vh;
+    overflow-y: auto;
+    border-radius: var(--sl-radius-md) var(--sl-radius-md) 0 0;
+  }
+}
+
+.scope {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-compact);
+  margin: 0;
+  padding: var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-md);
+}
+
+.scopeChoice {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: var(--target);
+  cursor: pointer;
+}
+
+.scopeChoice input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: hsl(var(--sl-color-primary));
+}
+
+.scopeHelp,
+.syncNote {
+  margin: 0;
+  font-size: var(--sl-text-caption);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+/* ── The editor's fields (CardEditor.tsx) ── */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-sm);
+  min-width: 0;
+}
+
+.editorHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sl-spacing-xs);
+}
+
+.editorTitle {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--sl-font-family-heading);
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-tight);
+}
+
+.editorTitle:focus {
+  outline: none;
+}
+
+.editorGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sl-spacing-sm);
+}
+
+/* The editor's own width decides: two columns of fields once there is room (K4 under the grid). */
+.panel,
+.back,
+.quick {
+  container-type: inline-size;
+}
+
+@container (min-width: 36rem) {
+  .editorGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.editorFoot {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-compact);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldLabel {
+  padding: 0;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--sl-spacing-compact) var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-color-surface));
+  font: inherit;
+  /* 16px, so iOS doesn't zoom into the field. */
+  font-size: max(1rem, var(--sl-text-body-sm));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.input::placeholder {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+textarea.input {
+  resize: vertical;
+}
+
+.inline {
+  display: flex;
+  gap: var(--sl-spacing-xs);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+}
+
+.stepButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target);
+  height: var(--target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--sl-color-text-primary));
+  cursor: pointer;
+}
+
+.stepButton:disabled {
+  color: hsl(var(--sl-color-text-disabled));
+  cursor: not-allowed;
+}
+
+.stepButton svg,
+.quiet svg,
+.dangerQuiet svg,
+.gearRemove svg {
+  width: var(--sl-size-icon-sm);
+  height: var(--sl-size-icon-sm);
+}
+
+.stepValue {
+  min-width: 4.5rem;
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-compact);
+}
+
+.segment {
+  position: relative;
+  display: inline-flex;
+}
+
+.segment input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.segment span {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding: 0 var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-button);
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.segment input:checked + span {
+  border-color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-primary-subtle));
+  color: hsl(var(--sl-color-primary-text));
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.segment input:focus-visible + span {
+  box-shadow: var(--sl-shadow-focus);
+}
+
+.gear {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-compact);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gearItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-chip);
+  background: hsl(var(--sl-color-background-tertiary));
+  font-size: var(--sl-text-caption);
+}
+
+.gearRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: hsl(var(--sl-color-text-secondary));
+  cursor: pointer;
+}
+
+.moveRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sl-spacing-compact);
+}
+
+.moveRow .moveTo {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--lane) / 0.16);
+  box-shadow: inset 0 0 0 1px hsl(var(--lane));
+}
+
+.dangerQuiet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: var(--target);
+  padding: 0 var(--sl-spacing-sm);
+  border: 1px solid hsl(var(--sl-color-error-text));
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-surface));
+  font: inherit;
+  font-weight: var(--sl-font-weight-medium);
+  color: hsl(var(--sl-color-error-text));
+  cursor: pointer;
+}
+
+.dangerQuiet:hover {
+  background: hsl(var(--sl-color-error-subtle));
+}
+
+/* What differs from the sveit's version. */
+.diff {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sl-spacing-compact);
+  padding: var(--sl-spacing-xs);
+  border: 1.5px dashed hsl(var(--sl-color-warning-text));
+  border-radius: var(--sl-radius-md);
+  background: hsl(var(--sl-color-warning-subtle));
+}
+
+.diffTitle {
+  margin: 0;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(var(--sl-color-warning-text));
+}
+
+.diffList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: var(--sl-text-caption);
+}
+
+.diffRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--sl-spacing-xs);
+}
+
+.diffRow dt {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.diffRow dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.diffTroop {
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.toastArea:empty {
+  display: none;
 }

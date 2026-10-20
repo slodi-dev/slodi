@@ -32,28 +32,47 @@
 
 /* ── Kind tints: the picture tile carries the type, never a side stripe ── */
 
+/* Somewhere else that draws bank cards (BlockCard.tsx), outside the rail. */
+.kindScope {
+  --bp-target: 44px;
+  --bp-kind: var(--sl-color-border-strong);
+  --bp-kind-tint: var(--sl-color-background-tertiary);
+}
+
+/* There, a card in a narrow container (a SplitGrid column) drops the theme from its kind line. */
+@container (max-width: 10rem) {
+  .kindScope .cardTheme {
+    display: none;
+  }
+}
+
 .rail [data-kind="setning"],
-.sheet [data-kind="setning"] {
+.sheet [data-kind="setning"],
+.kindScope [data-kind="setning"] {
   --bp-kind: var(--sl-color-patrol-drekar);
   --bp-kind-tint: var(--sl-color-patrol-drekar-subtle);
 }
 .rail [data-kind="dagskra"],
-.sheet [data-kind="dagskra"] {
+.sheet [data-kind="dagskra"],
+.kindScope [data-kind="dagskra"] {
   --bp-kind: var(--sl-color-primary);
   --bp-kind-tint: var(--sl-color-primary-subtle);
 }
 .rail [data-kind="leikur"],
-.sheet [data-kind="leikur"] {
+.sheet [data-kind="leikur"],
+.kindScope [data-kind="leikur"] {
   --bp-kind: var(--sl-color-patrol-rekkar);
   --bp-kind-tint: var(--sl-color-patrol-rekkar-subtle);
 }
 .rail [data-kind="slit"],
-.sheet [data-kind="slit"] {
+.sheet [data-kind="slit"],
+.kindScope [data-kind="slit"] {
   --bp-kind: var(--sl-color-secondary);
   --bp-kind-tint: var(--sl-color-secondary-subtle);
 }
 .rail [data-kind="endurmat"],
-.sheet [data-kind="endurmat"] {
+.sheet [data-kind="endurmat"],
+.kindScope [data-kind="endurmat"] {
   --bp-kind: var(--sl-color-patrol-falkar);
   --bp-kind-tint: var(--sl-color-patrol-falkar-subtle);
 }
