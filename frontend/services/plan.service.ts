@@ -132,6 +132,11 @@ export type Patrol = {
   name: string;
   /** Optional: the views fall back to a stable rotation when absent. */
   accent?: PatrolAccent;
+  /**
+   * The name in the genitive plural, for "Flokksfundur Arna". Proposed (sc-646): a name can't
+   * be inflected by rule, so without it the calendar says "Flokksfundur (Ernir)".
+   */
+  name_genitive?: string | null;
 };
 
 /** The liður kinds of ADR-002 §1, used for the duration bar on an entry. */
@@ -189,6 +194,16 @@ type PlanEntryBase = {
    * does not have.
    */
   starts_at?: string | null;
+  /**
+   * When a multi-day event ends, as an ISO datetime. Proposed (sc-646): `span_weeks` counts
+   * weeks, so without this a fös–sun útilega is drawn on its first day only.
+   */
+  ends_at?: string | null;
+  /**
+   * The fundur falls out, and why ("vetrarfrí"). Proposed (sc-646): `PlanStatus` has no
+   * "falls out", and deleting the fundur reads the same as "not planned yet".
+   */
+  cancelled?: { reason: string } | null;
   /** The budget for the fundur, against which `actual_minutes` is read. */
   planned_minutes?: number | null;
   /** What the liðir currently on it add up to. Over budget is worth seeing. */

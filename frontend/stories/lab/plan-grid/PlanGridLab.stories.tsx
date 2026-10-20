@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import PlanGrid from "@/components/plan/PlanGrid";
-import PlanCalendarLab from "../plan-calendar/PlanCalendarLab";
+import PlanCalendar from "@/components/plan/PlanCalendar";
+import { BUSY_MONTH, CALENDAR_TODAY, calendarGrid } from "@/stories/vinnubekkur/calendarFixtures";
 import PlanGridLab, {
   ElementStates,
   GearChecklistCloseUp,
@@ -20,7 +21,7 @@ import { busySeason, emptySeason } from "./planGridLabData";
  */
 
 const LOOK_OPTIONS: FundurLook[] = ["stimplar", "chip", "stada", "merki", "vardeldur", "stimpill"];
-/** The looks drawn on this lab's own fixture; A5 uses the calendar lab's. */
+/** The looks drawn on this lab's own fixture; A5 uses the calendar's. */
 const ELEMENT_LOOKS: ElementLook[] = ["chip", "stada", "merki", "vardeldur", "stimpill"];
 
 const meta = {
@@ -112,7 +113,7 @@ export const StimplarEmpty: Story = a5.empty;
 export const StimplarPhone: Story = a5.phone;
 
 /**
- * The calendar lab's D4 · Stimplar and A5 on the same October, one above the other, to judge
+ * The real calendar (D4 · Stimplar, promoted) and A5 on the same October, one above the other, to judge
  * whether the two views speak one language.
  */
 export const GridNextToCalendar: Story = {
@@ -121,8 +122,13 @@ export const GridNextToCalendar: Story = {
   render: (args) => (
     <div style={{ display: "grid", gap: "var(--sl-spacing-xl)" }}>
       <section>
-        <h3 style={heading}>Dagatal · D4 Stimplar (the calendar lab)</h3>
-        <PlanCalendarLab onSelect={args.onSelectEvent} />
+        <h3 style={heading}>Dagatal · D4 Stimplar (the real calendar)</h3>
+        <PlanCalendar
+          data={calendarGrid()}
+          today={CALENDAR_TODAY}
+          month={BUSY_MONTH}
+          onSelect={args.onSelectEvent}
+        />
       </section>
       <section>
         <h3 style={heading}>Rist · A5 Stimplar</h3>

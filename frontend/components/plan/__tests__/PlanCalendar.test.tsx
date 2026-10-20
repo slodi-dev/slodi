@@ -4,8 +4,8 @@ import PlanCalendar from "../PlanCalendar";
 import type { PlanGrid as PlanGridData } from "@/services/plan.service";
 
 /**
- * The month view is the whole troop, not one flokkur, and its load-bearing
- * honesty is about dates: `starts_at` is optional, so an entry that has one is
+ * The month view is the whole troop, not one flokkur, drawn as a stamp book
+ * (D4 · Stimplar). Its load-bearing honesty is about dates: `starts_at` is optional, so an entry that has one is
  * drawn on that day and an entry that does not is listed against its *week*.
  * Pinning an undated entry to a day would invent information the planner does
  * not have, which is the thing these tests exist to stop.
@@ -52,6 +52,12 @@ const utilega = {
   span_weeks: 1,
 };
 
+/** The week rows: the children of the grid after its weekday heading. */
+function weekRows(container: HTMLElement): Element[] {
+  const grid = container.querySelector("[role='group']") as HTMLElement;
+  return [...grid.children].slice(1);
+}
+
 describe("PlanCalendar", () => {
   it("opens on the month containing today", () => {
     render(<PlanCalendar data={grid()} today={TODAY} />);
@@ -73,7 +79,7 @@ describe("PlanCalendar", () => {
     render(<PlanCalendar data={grid({ cells: [flokksfundur] })} today={TODAY} />);
 
     const entry = screen.getByText("Refafundur");
-    expect(entry.closest("td")).toBeNull();
+    expect(entry.closest("[role='group']")).toBeNull();
     expect(screen.getByText(/Skráð á viku, ekki á dag/)).toBeInTheDocument();
     // And it still says which week it belongs to.
     expect(screen.getByText("Vika 2")).toBeInTheDocument();
@@ -83,14 +89,13 @@ describe("PlanCalendar", () => {
     const dated = { ...flokksfundur, starts_at: "2026-09-16T19:30:00" };
     render(<PlanCalendar data={grid({ cells: [dated] })} today={TODAY} />);
 
-    const cell = screen.getByText("Refafundur").closest("td") as HTMLElement;
-    expect(cell).not.toBeNull();
     // The 16th, not the Monday of its week.
-    expect(within(cell).getByText("16")).toBeInTheDocument();
+    const entry = screen.getAllByRole("button", { name: /Refafundur, 16\. september/ })[0];
+    expect(entry.closest("[role='group']")).not.toBeNull();
     expect(screen.queryByText(/Skráð á viku, ekki á dag/)).not.toBeInTheDocument();
   });
 
-  it("shows the clock and venue a dated entry carries", () => {
+  it("shows the clock a dated entry carries, and names its venue", () => {
     const dated = {
       ...flokksfundur,
       starts_at: "2026-09-16T19:30:00",
@@ -98,9 +103,9 @@ describe("PlanCalendar", () => {
     };
     render(<PlanCalendar data={grid({ cells: [dated] })} today={TODAY} />);
 
-    const cell = screen.getByText("Refafundur").closest("td") as HTMLElement;
-    expect(within(cell).getByText("19:30")).toBeInTheDocument();
-    expect(within(cell).getByText("Skátaheimilið")).toBeInTheDocument();
+    const entry = screen.getAllByRole("button", { name: /Refafundur/ })[0];
+    expect(within(entry).getByText("19:30")).toBeInTheDocument();
+    expect(entry).toHaveAccessibleName(/kl\. 19:30, Skátaheimilið, drög$/);
   });
 
   it("moves between the months the season actually covers", () => {
@@ -115,14 +120,11 @@ describe("PlanCalendar", () => {
   });
 
   it("marks today, and only today", () => {
-    // Asserted on the cell rather than by row index: the grid starts on the
-    // Monday on or before the 1st, so which row today lands in depends on the
-    // month, and a positional index would pass or fail for the wrong reason.
     const { container } = render(<PlanCalendar data={grid()} today={TODAY} />);
 
-    const marked = container.querySelectorAll("td[class*='today']");
+    const marked = container.querySelectorAll("[role='group'] span[aria-current='date']");
     expect(marked).toHaveLength(1);
-    expect(within(marked[0] as HTMLElement).getByText("16")).toBeInTheDocument();
+    expect(marked[0].textContent).toMatch(/^16\./);
   });
 
   it("draws the neighbouring days so a week is never cut in half", () => {
@@ -130,10 +132,9 @@ describe("PlanCalendar", () => {
     // August or Monday's column is empty and the week reads as starting late.
     const { container } = render(<PlanCalendar data={grid()} today={TODAY} />);
 
-    const firstRow = container.querySelectorAll("tbody tr")[0];
-    const firstCell = firstRow.querySelector("td") as HTMLElement;
-    expect(firstCell.className).toMatch(/out/);
-    expect(within(firstCell).getByText("31")).toBeInTheDocument();
+    const firstRow = weekRows(container)[0];
+    expect(firstRow.querySelector("[class*='dayBg']")?.className).toMatch(/out/);
+    expect(firstRow.querySelector("[class*='dayNumber']")?.textContent).toMatch(/^31\./);
   });
 
   it("says why an undated scratchpad has no calendar", () => {
@@ -145,17 +146,17 @@ describe("PlanCalendar", () => {
   });
 
   it("never draws a half week", () => {
-    // Trimming stopped as soon as it passed day 35 and left the month, which
-    // cut the final row mid-week: March 2026 rendered a last row of two cells.
-    // Checked across a run of months rather than one, because whether it
-    // happens at all depends on which weekday the 1st falls on.
+    // Trimming once stopped as soon as it passed day 35 and left the month,
+    // which cut the final row mid-week: March 2026 rendered a last row of two
+    // cells. Checked across a run of months, because whether it happens at all
+    // depends on which weekday the 1st falls on.
     for (let month = 0; month < 30; month++) {
       const first = new Date(2026, month, 1);
       const weeks = [{ index: 1, starts_on: isoOf(first), label: "Vika 1" }];
       const { container, unmount } = render(<PlanCalendar data={grid({ weeks })} today={first} />);
 
-      for (const row of container.querySelectorAll("tbody tr")) {
-        expect(row.querySelectorAll("td")).toHaveLength(7);
+      for (const row of weekRows(container)) {
+        expect(row.querySelectorAll("[class*='dayBg']")).toHaveLength(7);
       }
       unmount();
     }
@@ -171,13 +172,13 @@ describe("PlanCalendar", () => {
       />
     );
 
-    expect(container.querySelectorAll("tbody tr")).toHaveLength(4);
+    expect(weekRows(container)).toHaveLength(4);
   });
 
   it("gives each flokkur the colour it has in the Rist", () => {
     // A flokkur keeps one colour across all three views, or the eye cannot
-    // track it. The chip has the props; the calendar used to leave them empty,
-    // so every patrol came out the same.
+    // track it. Neither patrol has an accent, so both fall back to the Rist's
+    // rotation by column, which has to differ.
     const dated = [
       { ...flokksfundur, starts_at: "2026-09-16T19:30:00" },
       {
@@ -188,20 +189,108 @@ describe("PlanCalendar", () => {
         starts_at: "2026-09-17T19:30:00",
       },
     ];
-    const { container } = render(<PlanCalendar data={grid({ cells: dated })} today={TODAY} />);
-
-    const accents = [...container.querySelectorAll("td [style*='--ev']")].map((node) =>
-      (node as HTMLElement).style.getPropertyValue("--ev")
-    );
-    expect(accents).toHaveLength(2);
-    expect(accents[0]).not.toBe(accents[1]);
-  });
-
-  it("counts a single out-of-month fundur in the singular", () => {
-    const dated = [{ ...flokksfundur, starts_at: "2026-10-07T19:30:00" }];
     render(<PlanCalendar data={grid({ cells: dated })} today={TODAY} />);
 
-    expect(screen.getByText(/1 fundur í öðrum mánuðum/)).toBeInTheDocument();
+    const colour = (name: RegExp) =>
+      (screen.getAllByRole("button", { name })[0] as HTMLElement).style.getPropertyValue("--pc");
+    expect(colour(/Refafundur/)).toMatch(/--sl-color-patrol-/);
+    expect(colour(/Refafundur/)).not.toBe(colour(/Arnafundur/));
+  });
+
+  it("counts the month's entries in the singular", () => {
+    const dated = [{ ...flokksfundur, starts_at: "2026-09-16T19:30:00" }];
+    render(<PlanCalendar data={grid({ cells: dated })} today={TODAY} />);
+
+    expect(screen.getByText(/^1 viðburður í mánuðinum/)).toBeInTheDocument();
+  });
+
+  it("draws a multi-day event as one strip, announced once", () => {
+    // A fös–sun útilega is one thing; three buttons for it would read as three.
+    const span = {
+      ...utilega,
+      starts_at: "2026-09-18T17:00:00",
+      ends_at: "2026-09-20T14:00:00",
+    };
+    render(<PlanCalendar data={grid({ bands: [span] })} today={TODAY} />);
+
+    const strips = screen.getAllByRole("button", {
+      name: /^Útilega, fös 18\. sept\.–sun 20\. sept\./,
+    });
+    expect(strips).toHaveLength(1);
+    expect(strips[0]).toHaveAccessibleName(/öll sveitin, staðfest$/);
+  });
+
+  it("keeps a fundur that falls out, crossed out with its reason", () => {
+    // Deleting it would look the same as "not planned yet".
+    const off = {
+      ...flokksfundur,
+      starts_at: "2026-09-16T19:30:00",
+      cancelled: { reason: "vetrarfrí" },
+    };
+    const patrols = [{ id: "p1", name: "Refir", name_genitive: "Refa" }];
+    render(<PlanCalendar data={grid({ patrols, cells: [off] })} today={TODAY} />);
+
+    expect(
+      screen.getAllByRole("button", {
+        name: "Flokksfundur Refa fellur niður, 16. september: vetrarfrí",
+      })
+    ).not.toHaveLength(0);
+    expect(screen.getAllByText("Refir fellur niður")).not.toHaveLength(0);
+  });
+
+  it("prints each flokkur's usual evening once, and keeps its usual fundir quiet", () => {
+    // Three Wednesdays at 19:30 make a rhythm; the cells then drop the time.
+    const weeks = [
+      { index: 1, starts_on: "2026-09-07", label: "Vika 1" },
+      { index: 2, starts_on: "2026-09-14", label: "Vika 2" },
+      { index: 3, starts_on: "2026-09-21", label: "Vika 3" },
+    ];
+    const cells = ["09", "16", "23"].map((d, i) => ({
+      ...flokksfundur,
+      event_id: `r${i}`,
+      week_index: i + 1,
+      title: `Fundur ${d}`,
+      starts_at: `2026-09-${d}T19:30:00`,
+    }));
+    render(<PlanCalendar data={grid({ weeks, cells })} today={TODAY} />);
+
+    expect(screen.getByText("Fundir vikunnar")).toBeInTheDocument();
+    expect(screen.getByText(/Refir mið 19:30/)).toBeInTheDocument();
+    const routine = screen.getAllByRole("button", { name: /Fundur 16/ })[0];
+    expect(within(routine).queryByText("19:30")).not.toBeInTheDocument();
+  });
+
+  it("says when a fundur was moved off its usual day", () => {
+    const weeks = [
+      { index: 1, starts_on: "2026-09-07", label: "Vika 1" },
+      { index: 2, starts_on: "2026-09-14", label: "Vika 2" },
+      { index: 3, starts_on: "2026-09-21", label: "Vika 3" },
+      { index: 4, starts_on: "2026-09-28", label: "Vika 4" },
+    ];
+    const cells = [
+      ...["09", "16", "23"].map((d, i) => ({
+        ...flokksfundur,
+        event_id: `r${i}`,
+        week_index: i + 1,
+        title: `Fundur ${d}`,
+        starts_at: `2026-09-${d}T19:30:00`,
+      })),
+      // Week 4's fundur on the Thursday instead of the Wednesday.
+      {
+        ...flokksfundur,
+        event_id: "moved",
+        week_index: 4,
+        title: "Færður fundur",
+        starts_at: "2026-10-01T19:30:00",
+      },
+    ];
+    render(
+      <PlanCalendar data={grid({ weeks, cells })} today={TODAY} month={new Date(2026, 9, 1)} />
+    );
+
+    expect(
+      screen.getAllByRole("button", { name: /Færður fundur.*fært frá 30\. september/ })
+    ).not.toHaveLength(0);
   });
 });
 

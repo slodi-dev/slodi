@@ -57,10 +57,10 @@ export function isMockSeasonId(seasonId: string): boolean {
 }
 
 export const MOCK_PATROLS: Patrol[] = [
-  { id: "mock-refir", name: "Refir", accent: "rekkar" },
-  { id: "mock-ernir", name: "Ernir", accent: "drekar" },
-  { id: "mock-uglur", name: "Uglur", accent: "falkar" },
-  { id: "mock-birnir", name: "Birnir", accent: "drott" },
+  { id: "mock-refir", name: "Refir", name_genitive: "Refa", accent: "rekkar" },
+  { id: "mock-ernir", name: "Ernir", name_genitive: "Arna", accent: "drekar" },
+  { id: "mock-uglur", name: "Uglur", name_genitive: "Uglna", accent: "falkar" },
+  { id: "mock-birnir", name: "Birnir", name_genitive: "Bjarna", accent: "drott" },
 ];
 
 /** Notes that shape a week without being events — the hi-fi's ATH column. */
@@ -110,6 +110,12 @@ const START_MINUTES: Record<EventType, number> = {
   utilega: 17 * 60,
   dagsferd: 10 * 60,
   mot: 9 * 60,
+};
+
+/** Where a multi-day kind ends: an útilega fös–sun, a mót lau–sun. */
+const END: Partial<Record<EventType, { weekday: number; minutes: number }>> = {
+  utilega: { weekday: 6, minutes: 14 * 60 },
+  mot: { weekday: 6, minutes: 15 * 60 },
 };
 
 const PLANNED_MINUTES: Record<EventType, number> = {
@@ -229,6 +235,11 @@ function detail(type: EventType, weekIndex: number, seed: number, dated: boolean
 
   return {
     starts_at: monday ? isoDateTime(addDays(monday, WEEKDAY[type]), START_MINUTES[type]) : null,
+    // Only the kinds that run over days get an end, so the calendar draws them as one strip.
+    ends_at:
+      monday && END[type]
+        ? isoDateTime(addDays(monday, END[type].weekday), END[type].minutes)
+        : null,
     planned_minutes: planned,
     actual_minutes: actual,
     venue: VENUES[seed % VENUES.length],

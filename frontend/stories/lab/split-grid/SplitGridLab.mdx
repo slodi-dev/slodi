@@ -109,7 +109,7 @@ dashed, **ÓVÍST** dotted amber, and **?** for óákveðið.
 
 **Why:** it's the only style that shows status in the grid, which matters for the last check
 before a fundur ("is everything klárt?"). It matches the calendar, so the plan reads as one
-system. The calendar's `stampKit.tsx` was mid-build when this was written (its CSS module didn't
+system. The calendar's stamp kit (now `components/plan/calendar/Stamp.tsx`) was mid-build when this was written (its CSS module didn't
 exist yet), so the stamp is mirrored in CSS here. Swap in `Stamp` once the kit lands. The stamp
 is decorative (`aria-hidden`), and the status is spoken in each liður's accessible name
 ("…, 15 mín, drög").

@@ -845,8 +845,8 @@
 }
 
 /* ═══ A5 · Stimplar, as the calendar ═══
-   The entries, strips, chips and stamps are the calendar lab's own (PlanCalendarLab.module.css
-   and stampKit); only the grid around them is here. */
+   The entries, strips, chips and stamps are the real calendar's (PlanCalendar.module.css
+   and calendar/Stamp); only the grid around them is here. */
 
 .entryList {
   display: grid;

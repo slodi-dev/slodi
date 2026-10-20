@@ -24,17 +24,17 @@ import {
 } from "lucide-react";
 import PlanEntryChip from "@/components/plan/PlanEntryChip";
 import { cn } from "@/lib/util";
-import { StampEntry, StampKey } from "../plan-calendar/PlanCalendarLab";
-import cal from "../plan-calendar/PlanCalendarLab.module.css";
+import { StampEntry, StampKey } from "@/components/plan/calendar/StampEntry";
+import cal from "@/components/plan/PlanCalendar.module.css";
 import {
   deriveRhythms,
   entryName,
   patrolInitial as calendarInitial,
   placeEntries,
   spanRange,
-  type LabEntry as CalendarEntry,
-} from "../plan-calendar/planCalendarLabData";
-import { RhythmLegend, Stamp, rotationFor, stampStateOf } from "../plan-calendar/stampKit";
+  type CalendarEntry,
+} from "@/components/plan/calendar/calendarEntries";
+import { RhythmLegend, Stamp, rotationFor, stampStateOf } from "@/components/plan/calendar/Stamp";
 import gridStyles from "@/components/plan/PlanGrid.module.css";
 import { accentVarFor, isWeekDone, parseWeekStart } from "@/components/plan/planEntries";
 import {
@@ -80,7 +80,7 @@ import styles from "./PlanGridLab.module.css";
  * - `vardeldur`: A3 · Varðeldur. A fire that grows as the liðir are decided, with a tally.
  * - `stimpill`: A4 · Stimpill. A passport stamp once ready; a dotted empty stamp until then.
  * - `stimplar`: A5 · Stimplar, as the calendar. The Dagatal's picked D4 look in the grid, built
- *   from the calendar lab's own stamp kit and entry, on the calendar lab's own fixture.
+ *   from the calendar's own stamp kit and entry, on the calendar's own fixture.
  */
 export type FundurLook = "stimplar" | "chip" | "stada" | "merki" | "vardeldur" | "stimpill";
 
@@ -727,7 +727,7 @@ function GridStrip({
 }
 
 /**
- * A5: the calendar lab's own fixture and entry in the Rist. Each week is a row; a week with
+ * A5: the calendar's own fixture and entry in the Rist. Each week is a row; a week with
  * troop-wide events gets a "sveitin" line above the flokkar, where a multi-day event is one
  * strip across every column. The flokkar's cells hold the calendar's StampEntry, so a routine
  * fundur is one quiet line with no time and an exception says why.

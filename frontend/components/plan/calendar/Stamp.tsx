@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Stamp kit: the rubber-stamp language of the Stimplar calendar, for any lab that should look
- * the same (the PlanGrid lab reuses it).
+ * The rubber-stamp language of the Dagatal (D4 · Stimplar, picked in Lab/PlanCalendar on
+ * 2026-10-20), for any view that should look the same as the calendar.
  *
  * Exports:
  * - `Stamp`: one stamp in SVG, `size` sm (phone mark) | md (a cell) | lg (a list row) | xl.
@@ -43,7 +43,7 @@ import {
   type PlanStatus,
 } from "@/services/plan.service";
 import { cn } from "@/lib/util";
-import kit from "./stampKit.module.css";
+import kit from "./Stamp.module.css";
 
 /** What a stamp needs to know about its fundur. */
 export type StampSubject = {

@@ -7,12 +7,8 @@ import type {
   PlanWeek,
 } from "@/services/plan.service";
 import { MOCK_PATROLS } from "@/lib/mock/plan.mock";
-import {
-  LAB_TODAY as CALENDAR_TODAY,
-  labGrid as calendarGrid,
-  mondayOf,
-  type LabGrid as CalendarGrid,
-} from "../plan-calendar/planCalendarLabData";
+import { mondayOf } from "@/components/plan/calendar/calendarEntries";
+import { CALENDAR_TODAY, calendarGrid } from "@/stories/vinnubekkur/calendarFixtures";
 
 /**
  * Fixtures and derivations for the Rist lab: A · Two columns (Endurmat and Búnaður), and the
@@ -653,7 +649,7 @@ export interface LabSeason {
   grid: LabGridData;
   sides: Record<number, WeekSide>;
   initialState: Record<number, Record<string, GearState>>;
-  /** Busy or empty: A5 builds its own season from the calendar lab's fixture to match. */
+  /** Busy or empty: A5 builds its own season from the calendar's fixture to match. */
   busy: boolean;
 }
 
@@ -684,10 +680,10 @@ export function patrolInitial(patrol: Patrol | undefined): string {
   return patrol ? patrol.name.charAt(0).toUpperCase() : "S";
 }
 
-/* ── A5: the calendar lab's own fixture ────────────────────────────────────── */
+/* ── A5: the calendar's own fixture ────────────────────────────────────────── */
 
 export interface CalendarSeason {
-  grid: CalendarGrid;
+  grid: PlanGrid;
   sides: Record<number, WeekSide>;
   initialState: Record<number, Record<string, GearState>>;
   today: Date;
@@ -708,7 +704,7 @@ const CALENDAR_STATE: Record<string, Record<string, GearState>> = {
 };
 
 /**
- * The same autumn the calendar lab shows (its `labGrid()`), so A5 and D4 draw the same fundir.
+ * The same autumn the calendar shows (its `calendarGrid()` fixture), so A5 and D4 draw the same fundir.
  * The side columns come from this file's liðir, matched by title.
  */
 export function calendarSeason(busy: boolean): CalendarSeason {

@@ -1,8 +1,8 @@
-/* Stamp kit: the rubber-stamp language (see stampKit.tsx). Tokens only.
+/* The rubber-stamp language (see Stamp.tsx). Tokens only.
 
    A stamp's ink is its `color`, set from data-state:
      staðfest  success-text, inked, double rule, tilted, the thunk
-   Every state shares the same mild ink roughness (the filter in stampKit.tsx).
+   Every state shares the same mild ink roughness (the filter in Stamp.tsx).
      drög      info-text, dashed rule, the picture in pencil grey
      óvíst     warning-text, dotted rule, a faint pencil sketch and a "?"
      óákveðið  text-secondary, an empty dotted box and a "?"

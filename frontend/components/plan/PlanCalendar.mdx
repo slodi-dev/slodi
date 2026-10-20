@@ -1,9 +1,11 @@
 import { Canvas, Meta } from "@storybook/addon-docs/blocks";
-import * as Stories from "./PlanCalendarLab.stories";
+import * as Stories from "./PlanCalendar.stories";
 
 <Meta of={Stories} name="Rationale" />
 
-# PlanCalendar day entries: D4 · Stimplar
+# PlanCalendar: D4 · Stimplar
+
+Picked in the Lab on 2026-10-20 and promoted from `Lab/PlanCalendar`.
 
 ## Why Stimplar
 
@@ -96,24 +98,29 @@ it in words ("…, drög", "…, lokið", "… fellur niður, 22. október: vetr
   falls back to a flag.
 - **Tilt costs a pixel or two** of alignment, and a thunk on page load is a small flurry. It plays
   once per stamp and never on re-render.
-- **The rough edge is a filter per stamp.** That's fine at a month's 30–40 stamps; a season list
+- **The ink texture is a filter per stamp.** That's fine at a month's 30–40 stamps; a season list
   of hundreds would want one shared filter in a `<defs>`.
 
 ## What the data needs (sc-646)
 
+Without the proposed fields the calendar still works: a multi-day event is drawn on its first
+day, nothing falls out, and "Flokksfundur (Ernir)" stands in for the genitive.
+
 Checked against `services/plan.service.ts` and `docs/frontend/plan-api-contract.md` (on
 `origin/release/vinnubekkur-v1`):
 
-- **Recurrence.** No rule exists; a `Patrol` has `id`, `name` and `accent` only. The lab derives
+- **`Patrol.name_genitive`.** "Flokksfundur Arna" needs the genitive plural, which can't be
+  made by rule. Proposed as optional on `Patrol`.
+- **Recurrence.** No rule exists; a `Patrol` has `id`, `name` and `accent` only. The calendar derives
   each flokkur's rhythm from the most common weekday and time among its fundir (at least three).
   A real `Patrol.meets: { weekday, time, venue }` or a series id would make it a fact.
 - **`moved_from`.** "Fært frá mið." is inferred: the flokkur had nothing, not even a cancelled
   fundur, on its usual day that week.
 - **`cancelled`.** `PlanStatus` has no "falls out", so today a cancelled fundur is deleted, which
-  looks the same as "not planned yet". The lab adds `cancelled: { reason }`. `PlanWeek.note`
+  looks the same as "not planned yet". The contract type now has an optional `cancelled: { reason }`, proposed. `PlanWeek.note`
   already covers sveit-wide breaks.
 - **`ends_at`** (or `ends_on`). There is `starts_at` only, and `span_weeks` counts weeks, not days.
-  A fös–sun strip needs an end. The lab adds it.
+  A fös–sun strip needs an end. The contract type now has an optional `ends_at`, proposed.
 - **`decided_count`.** Readiness is the fundur's own status. `item_count` is a total, so "4 of 5
   liðir decided" can't be shown yet.
 - **Band rules.** The contract's "a band week holds no per-flokkur cells" and "one band per week"
@@ -127,5 +134,12 @@ Checked against `services/plan.service.ts` and `docs/frontend/plan-api-contract.
 
 <Canvas of={Stories.Phone} />
 
-The stamp primitives (`Stamp`, `stampStateOf`, `STAMP_MEANING`, `rotationFor`, `RhythmLegend`)
-live in `stampKit.tsx`, so the PlanGrid lab can draw the same stamps.
+## In the code
+
+- `components/plan/calendar/Stamp.tsx`: the stamp primitives (`Stamp`, `stampStateOf`,
+  `STAMP_MEANING`, `STAMP_PICTURES`, `rotationFor`, `RhythmLegend`), so any view can draw the
+  same stamps (the PlanGrid and SplitGrid labs do).
+- `components/plan/calendar/calendarEntries.ts`: placing and judging entries (`placeEntries`,
+  `deriveRhythms`, `entryName`).
+- `components/plan/calendar/StampEntry.tsx`: an entry, a strip, the fold and the key.
+- `stories/vinnubekkur/calendarFixtures.ts`: the autumn-2026 fixture these stories use.

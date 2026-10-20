@@ -1,107 +1,161 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { PlanBand, PlanCell, PlanGrid as PlanGridData } from "@/services/plan.service";
-import { countIs, formatIcelandicMonthYear } from "@/lib/format";
+import { Fragment, useId, useMemo, useState } from "react";
+import type { PlanGrid as PlanGridData } from "@/services/plan.service";
+import { countIs, formatIcelandicDayMonth, formatIcelandicMonthYear } from "@/lib/format";
+import { cn } from "@/lib/util";
 import { entryDay, isSameDay, parseWeekStart } from "./planEntries";
-import PlanEntryChip from "./PlanEntryChip";
+import {
+  WEEKDAY_FULL,
+  WEEKDAY_SHORT,
+  addDays,
+  coversDay,
+  deriveRhythms,
+  mondayOf,
+  parseDay,
+  placeEntries,
+  weekdayOf,
+  type CalendarEntry,
+} from "./calendar/calendarEntries";
+import { RhythmLegend } from "./calendar/Stamp";
+import {
+  DayEntries,
+  Marks,
+  StampEntry,
+  StampKey,
+  StampStrip,
+  dataAttrs,
+  type StripSegment,
+} from "./calendar/StampEntry";
 import styles from "./PlanCalendar.module.css";
 
 /**
- * The Dagatal (A4, sc-39) — the shared artifact A5 builds on. v5 hi-fi.
+ * The Dagatal (A4, sc-39): the whole troop's month, drawn as a stamp book (D4 · Stimplar,
+ * picked in Lab/PlanCalendar on 2026-10-20). Every fundur gets a rubber stamp once it is ready;
+ * until then its box shows how far it has come. Rationale: PlanCalendar.mdx.
+ *
+ * ## A rhythm plus exceptions
+ *
+ * The usual weekly fundur is one quiet line (its time is in "Fundir vikunnar" above the grid);
+ * anything that breaks the rhythm is a full block with its reason; a fundur that falls out gets
+ * a crossed-out stamp; a multi-day event is one perforated strip across its days. The grid is
+ * week rows of CSS grid rather than a <table>, because a strip has to span cells. Below 40rem of
+ * its own width each day becomes a button with small stamps, and the chosen day is listed under
+ * the grid with its stamps at full size.
  *
  * ## Days when it knows the day, weeks when it does not
  *
- * The grid contract carries `week_index` for every entry; `starts_at` is
- * optional, because the endpoints that will supply it do not exist yet. So this
- * view does both, and is explicit about which it is doing:
+ * `starts_at` is optional in the contract. An entry with a date is drawn on that day; one
+ * without is listed under the month against its *week*. Placing an undated útilega on its week's
+ * Monday would invent a date the planner does not have.
  *
- * - an entry with a date is drawn **on that day**, as the design shows;
- * - an entry without one is listed under the month as belonging to a *week*.
- *
- * The fallback is not a nicety. Placing an undated útilega on its week's Monday
- * because that is the only date available would invent information the planner
- * does not have, and a leader setting dates around this calendar would be
- * misled. Better a list that says "this week" than a grid that lies about a day.
- *
- * Month names come from `lib/format.ts`, never `Intl`: Chrome has no is-IS
- * data and falls back to English ("OCTOBER 2026").
+ * Month names come from `lib/format.ts`, never `Intl`: Chrome has no is-IS data and falls back
+ * to English ("OCTOBER 2026").
  */
-
-/** Mánudagur-first, which is how an Icelandic week reads. */
-const WEEKDAYS = ["Mán", "Þri", "Mið", "Fim", "Fös", "Lau", "Sun"];
-
-const DAYS_IN_GRID = 42;
 
 interface Props {
   data: PlanGridData;
   /** Injectable so tests do not depend on the day they run. */
   today?: Date;
+  /** The month to open on. Defaults to today's month, else the season's first. */
+  month?: Date;
+  /** An entry was chosen; its `event_id`. */
+  onSelect?: (eventId: string) => void;
 }
-
-type Placed = {
-  entry: PlanBand | PlanCell;
-  troopWide: boolean;
-  day: Date | null;
-  /** Column position of the owning flokkur, so its colour matches the Rist. */
-  patrolIndex: number;
-};
 
 function monthKeyOf(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-/** The Monday on or before a date — the first cell of its calendar row. */
-function mondayOnOrBefore(date: Date): Date {
-  const weekday = (date.getDay() + 6) % 7;
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - weekday);
+function firstOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-export default function PlanCalendar({ data, today }: Props) {
+function capitalise(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/**
+ * A month's week rows, from the Monday on or before the 1st. Whole rows only: a month is five
+ * or six weeks, never five and two sevenths (March 2026 once rendered a last row of two cells).
+ */
+function weeksOf(month: Date): Date[][] {
+  const start = mondayOf(month);
+  const weeks: Date[][] = [];
+  for (let w = 0; w < 6; w++) {
+    const days = Array.from({ length: 7 }, (_, d) => addDays(start, w * 7 + d));
+    if (w > 0 && days[0].getMonth() !== month.getMonth()) break;
+    weeks.push(days);
+  }
+  return weeks;
+}
+
+/** A week's strip segments, each in the first lane free over its days. */
+function segmentsOf(week: Date[], spans: CalendarEntry[], named: Set<string>): StripSegment[] {
+  const lanes: boolean[][] = [];
+  const out: StripSegment[] = [];
+  for (const entry of spans) {
+    const cols = week.map((d, i) => (coversDay(entry, d) ? i : -1)).filter((i) => i >= 0);
+    if (cols.length === 0) continue;
+    const start = cols[0];
+    const end = cols[cols.length - 1];
+    let lane = 0;
+    while (lanes[lane]?.slice(start, end + 1).some(Boolean)) lane++;
+    lanes[lane] = lanes[lane] ?? Array(7).fill(false);
+    for (let i = start; i <= end; i++) lanes[lane][i] = true;
+    out.push({
+      entry,
+      start,
+      end,
+      lane,
+      continuesFromBefore: !isSameDay(week[start], entry.day),
+      continuesAfter: !isSameDay(week[end], entry.endDay),
+      focusable: !named.has(entry.id),
+    });
+    named.add(entry.id);
+  }
+  return out;
+}
+
+export default function PlanCalendar({ data, today, month: openOn, onSelect }: Props) {
   const now = useMemo(() => today ?? new Date(), [today]);
+  const entries = useMemo(() => placeEntries(data, now), [data, now]);
+  const rhythms = useMemo(() => deriveRhythms(data), [data]);
+  const headingId = useId();
+  const panelId = useId();
 
-  const placed = useMemo<Placed[]>(() => {
-    const all: Placed[] = [];
-    // Every patrol's meetings, not one — this is the whole-troop view.
-    for (const band of data.bands) {
-      all.push({ entry: band, troopWide: true, day: entryDay(band.starts_at), patrolIndex: 0 });
-    }
-    for (const cell of data.cells) {
-      all.push({
-        entry: cell,
-        troopWide: false,
-        day: entryDay(cell.starts_at),
-        // A flokkur keeps its colour across all three views, which only holds
-        // if the calendar resolves it the same way the grid does. Left at -1
-        // when the id matches nothing: drawing an unknown cell in the *first*
-        // flokkur's colour and identity is a label that lies.
-        patrolIndex: data.patrols.findIndex((patrol) => patrol.id === cell.patrol_id),
-      });
-    }
-    return all;
-  }, [data.bands, data.cells, data.patrols]);
-
-  /** Months to page through: any month a dated week or a dated entry falls in. */
+  /** Months to page through: any month a dated week or a dated entry's days fall in. */
   const months = useMemo(() => {
     const byMonth = new Map<string, Date>();
+    const add = (date: Date) => byMonth.set(monthKeyOf(date), firstOfMonth(date));
     for (const week of data.weeks) {
       const start = parseWeekStart(week);
-      if (start) byMonth.set(monthKeyOf(start), new Date(start.getFullYear(), start.getMonth(), 1));
+      if (start) add(start);
     }
-    for (const { day } of placed) {
-      if (day) byMonth.set(monthKeyOf(day), new Date(day.getFullYear(), day.getMonth(), 1));
+    for (const entry of entries) {
+      add(entry.day);
+      add(entry.endDay);
     }
     return [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, date]) => date);
-  }, [data.weeks, placed]);
+  }, [data.weeks, entries]);
 
   const [monthIndex, setMonthIndex] = useState(() => {
-    const current = months.findIndex((month) => monthKeyOf(month) === monthKeyOf(now));
-    return current >= 0 ? current : 0;
+    const wanted = monthKeyOf(openOn ?? now);
+    const index = months.findIndex((m) => monthKeyOf(m) === wanted);
+    return index >= 0 ? index : 0;
   });
+  const [picked, setPicked] = useState<Date | null>(null);
 
   const weekLabelByIndex = useMemo(
     () => new Map(data.weeks.map((week) => [week.index, week.label])),
     [data.weeks]
+  );
+  const undated = useMemo(
+    () => [
+      ...data.bands.filter((b) => !entryDay(b.starts_at)).map((b) => ({ entry: b, troop: true })),
+      ...data.cells.filter((c) => !entryDay(c.starts_at)).map((c) => ({ entry: c, troop: false })),
+    ],
+    [data.bands, data.cells]
   );
 
   if (months.length === 0) {
@@ -113,47 +167,36 @@ export default function PlanCalendar({ data, today }: Props) {
     );
   }
 
+  // Clamped, so a refetch that shortens the season never leaves the view past its end.
   const safeIndex = Math.min(monthIndex, months.length - 1);
   const month = months[safeIndex];
+  const inMonth = (d: Date) =>
+    d.getFullYear() === month.getFullYear() && d.getMonth() === month.getMonth();
+  const weeks = weeksOf(month);
+  const spans = entries.filter((e) => e.kind === "span");
+  const singlesOn = (d: Date) => entries.filter((e) => e.kind !== "span" && isSameDay(e.day, d));
+  const allOn = (d: Date) => entries.filter((e) => coversDay(e, d));
 
-  const inThisMonth = (day: Date) =>
-    day.getFullYear() === month.getFullYear() && day.getMonth() === month.getMonth();
-
-  const gridStart = mondayOnOrBefore(month);
-  const days: Date[] = [];
-  for (let i = 0; i < DAYS_IN_GRID; i++) {
-    days.push(new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i));
-  }
-
-  const dated = placed.filter((p): p is Placed & { day: Date } => p.day !== null);
-  const undated = placed.filter((p) => p.day === null);
-  const elsewhere = dated.filter((p) => !inThisMonth(p.day)).length;
-
-  const rows: Date[][] = [];
-  for (let i = 0; i < days.length; i += 7) rows.push(days.slice(i, i + 7));
-
-  /**
-   * Drop a trailing row that belongs entirely to the next month.
-   *
-   * Trimmed by whole rows, never by day. An earlier version stopped as soon as
-   * it passed day 35 and left the calendar, which cut the final week in half:
-   * March 2026 rendered a last row of two cells instead of seven. A month is
-   * five or six weeks; it is never five and two sevenths.
-   */
-  while (rows.length > 1 && rows[rows.length - 1].every((day) => !inThisMonth(day))) {
-    rows.pop();
-  }
+  const monthEntries = entries.filter((e) => inMonth(e.day) && e.kind !== "cancelled");
+  const stamped = monthEntries.filter((e) => e.status === "confirmed" && !e.past).length;
+  const undecided = monthEntries.filter((e) => e.status === "unknown").length;
+  const selected =
+    picked && inMonth(picked) ? picked : inMonth(now) ? now : (monthEntries[0]?.day ?? month);
+  const named = new Set<string>();
+  const noteOf = (week: Date[]) =>
+    data.weeks.find((w) => w.starts_on && isSameDay(parseDay(w.starts_on), week[0]))?.note;
 
   return (
     <div className={styles.root}>
       <div className={styles.bar}>
-        <h2 className={styles.monthTitle}>{formatIcelandicMonthYear(month)}</h2>
+        <h2 className={styles.monthTitle} id={headingId}>
+          {formatIcelandicMonthYear(month)}
+        </h2>
         <button
           type="button"
           className={styles.nav}
-          // Stepped from `safeIndex`, not the raw state. A refetch that shortens
-          // the season leaves `monthIndex` above the clamp, and stepping from it
-          // means several presses before the view moves at all.
+          // Stepped from `safeIndex`, not the raw state: after a clamp, stepping from the raw
+          // index would take several presses before the view moved at all.
           onClick={() => setMonthIndex(Math.max(0, safeIndex - 1))}
           disabled={safeIndex === 0}
           aria-label="Fyrri mánuður"
@@ -170,76 +213,192 @@ export default function PlanCalendar({ data, today }: Props) {
           →
         </button>
         <span className={styles.eyebrow}>
-          {elsewhere > 0
-            ? `${countIs(elsewhere, "fundur", "fundir")} í öðrum mánuðum`
-            : "allir dagsettir fundir í þessum mánuði"}
+          {countIs(monthEntries.length, "viðburður", "viðburðir")} í mánuðinum
+          {stamped > 0 && ` · ${countIs(stamped, "stimplaður", "stimplaðir")} fram undan`}
+          {undecided > 0 && ` · ${countIs(undecided, "óákveðinn", "óákveðnir")}`}
         </span>
       </div>
 
-      <div className={styles.cal}>
-        <table className={styles.table}>
-          <caption className={styles.caption}>
-            Dagatal — dagsettir fundir á sínum degi. Ódagsettir liðir eru taldir fyrir neðan.
-          </caption>
-          <thead>
-            <tr>
-              {WEEKDAYS.map((day) => (
-                <th key={day} scope="col" className={styles.dayHead}>
-                  {day}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row[0].toDateString()}>
-                {row.map((day) => {
-                  const out = !inThisMonth(day);
-                  const isToday = isSameDay(day, now);
-                  const onThisDay = dated.filter((p) => isSameDay(p.day, day));
-                  return (
-                    <td
-                      key={day.toDateString()}
-                      className={`${styles.day} ${out ? styles.out : ""} ${isToday ? styles.today : ""}`}
-                    >
-                      <span className={styles.dayHd}>
-                        <span className={styles.dayNumber}>{day.getDate()}</span>
-                      </span>
-                      {onThisDay.map(({ entry, troopWide, patrolIndex }) => (
-                        <PlanEntryChip
-                          key={entry.event_id}
-                          entry={entry}
-                          patrol={patrolIndex >= 0 ? data.patrols[patrolIndex] : undefined}
-                          patrolIndex={Math.max(0, patrolIndex)}
-                          meta="venue"
-                          isTroopWide={troopWide}
-                        />
-                      ))}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className={styles.legend}>
+        <RhythmLegend rules={rhythms} />
+        <StampKey compact />
       </div>
+
+      <div className={styles.cal} role="group" aria-labelledby={headingId}>
+        <div className={styles.weekHead} aria-hidden="true">
+          {WEEKDAY_SHORT.map((d) => (
+            <span key={d} className={styles.dayHead}>
+              {d}
+            </span>
+          ))}
+        </div>
+        {weeks.map((week) => {
+          const segments = segmentsOf(week, spans, named);
+          const lanes = segments.reduce((max, s) => Math.max(max, s.lane + 1), 0);
+          const note = noteOf(week);
+          return (
+            // A day's items go in DOM order (number, strips that start here, its entries), so
+            // Tab reads the week day by day; the grid places them.
+            <div key={week[0].toDateString()} className={styles.week}>
+              {week.map((d, c) => (
+                <span
+                  key={`bg-${c}`}
+                  className={cn(styles.dayBg, !inMonth(d) && styles.out, c >= 5 && styles.weekend)}
+                  style={{ gridColumn: c + 1 }}
+                  aria-hidden="true"
+                />
+              ))}
+              {week.map((d, c) => {
+                const isToday = isSameDay(d, now);
+                const singles = singlesOn(d);
+                const covering = allOn(d);
+                const live = covering.filter((e) => e.kind !== "cancelled").length;
+                const cancelled = covering.length - live;
+                const daySegments = segments.filter((s) => s.start === c);
+                return (
+                  <Fragment key={d.toDateString()}>
+                    <span
+                      className={cn(styles.dayHd, isToday && styles.today)}
+                      style={{ gridColumn: c + 1, gridRow: 1 }}
+                    >
+                      <span
+                        className={styles.dayNumber}
+                        aria-current={isToday ? "date" : undefined}
+                      >
+                        {d.getDate()}
+                        <span className="sl-sr-only">
+                          . {formatIcelandicDayMonth(d).replace(/^\d+\. /, "")},{" "}
+                          {WEEKDAY_FULL[weekdayOf(d)]}
+                        </span>
+                      </span>
+                    </span>
+                    {inMonth(d) ? (
+                      <button
+                        type="button"
+                        className={cn(styles.compactDay, isToday && styles.today)}
+                        style={{ gridColumn: c + 1, gridRow: 1 }}
+                        aria-pressed={isSameDay(d, selected)}
+                        aria-controls={panelId}
+                        aria-current={isToday ? "date" : undefined}
+                        aria-label={`${formatIcelandicDayMonth(d)}, ${
+                          live ? countIs(live, "viðburður", "viðburðir") : "ekkert skráð"
+                        }${cancelled ? `, ${countIs(cancelled, "fundur fellur", "fundir falla")} niður` : ""}`}
+                        onClick={() => setPicked(d)}
+                      >
+                        <span className={styles.dayNumber}>{d.getDate()}</span>
+                        <Marks entries={singles} />
+                      </button>
+                    ) : (
+                      <span
+                        className={styles.compactDay}
+                        style={{ gridColumn: c + 1, gridRow: 1 }}
+                        aria-hidden="true"
+                      >
+                        <span className={styles.dayNumber}>{d.getDate()}</span>
+                        <Marks entries={singles} />
+                      </span>
+                    )}
+                    {daySegments.map((segment) => (
+                      <StampStrip key={segment.entry.id} segment={segment} onSelect={onSelect} />
+                    ))}
+                    {daySegments.map((segment) => (
+                      <span
+                        key={`mk-${segment.entry.id}`}
+                        className={cn(
+                          styles.stripMark,
+                          segment.continuesFromBefore && styles.fromBefore,
+                          segment.continuesAfter && styles.intoNext
+                        )}
+                        style={{
+                          gridColumn: `${segment.start + 1} / ${segment.end + 2}`,
+                          gridRow: 2 + segment.lane,
+                        }}
+                        aria-hidden="true"
+                        {...dataAttrs(segment.entry)}
+                      />
+                    ))}
+                    <div
+                      className={styles.dayBody}
+                      style={{ gridColumn: c + 1, gridRow: 2 + lanes }}
+                    >
+                      <DayEntries day={d} entries={singles} onSelect={onSelect} />
+                    </div>
+                  </Fragment>
+                );
+              })}
+              {note && (
+                <p className={styles.weekNote} style={{ gridRow: 3 + lanes }}>
+                  {note}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <section className={styles.dayPanel} id={panelId} aria-live="polite">
+        <h3 className={styles.dayPanelTitle}>
+          {capitalise(WEEKDAY_FULL[weekdayOf(selected)])} {formatIcelandicDayMonth(selected)}
+        </h3>
+        {allOn(selected).length ? (
+          <ul className={styles.panelList}>
+            {allOn(selected).map((entry) => (
+              <li key={entry.id}>
+                <StampEntry entry={entry} detail day={selected} onSelect={onSelect} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.panelEmpty}>Ekkert skráð þennan dag.</p>
+        )}
+      </section>
 
       {undated.length > 0 && (
         <div className={styles.undated}>
           <h3 className={styles.undatedTitle}>Skráð á viku, ekki á dag</h3>
           <ul className={styles.undatedList}>
-            {undated.map(({ entry, troopWide }) => (
+            {undated.map(({ entry, troop }) => (
               <li key={entry.event_id}>
                 <span className={styles.undatedWeek}>
                   {weekLabelByIndex.get(entry.week_index) ?? `Vika ${entry.week_index}`}
                 </span>
                 <span>{entry.title}</span>
-                {troopWide && <span className={styles.troopWide}>Öll sveitin</span>}
+                {troop && <span className={styles.troopWide}>Öll sveitin</span>}
               </li>
             ))}
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+/** One day cell at the grid's desktop width, any strip drawn above its entries (the docs). */
+export function DayCell({
+  day,
+  entries,
+  today = new Date(),
+  onSelect,
+}: {
+  day: Date;
+  entries: CalendarEntry[];
+  today?: Date;
+  onSelect?: (eventId: string) => void;
+}) {
+  const isToday = isSameDay(day, today);
+  const spans = entries.filter((e) => e.kind === "span");
+  const singles = entries.filter((e) => e.kind !== "span");
+  return (
+    <div className={styles.closeCell}>
+      <span className={cn(styles.dayHd, isToday && styles.today)}>
+        <span className={styles.dayNumber} aria-current={isToday ? "date" : undefined}>
+          {day.getDate()}
+        </span>
+      </span>
+      {spans.map((entry) => (
+        <StampEntry key={entry.id} entry={entry} day={day} onSelect={onSelect} />
+      ))}
+      <DayEntries day={day} entries={singles} onSelect={onSelect} />
     </div>
   );
 }

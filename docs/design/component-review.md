@@ -38,6 +38,24 @@ once a variation is picked it is **promoted** into the real component and its la
 - **Header → A2 · Wordmark + logo**, with a skip link, 48px targets, focus rings, aria-current,
   labelled navs, and the Storybook Auth0 leak fixed.
 
+- **PlanCalendar → D4 · Stimplar.** The month is a stamp book: a ready fundur is stamped in ink
+  with its theme's picture, a draft is a dashed, pencilled frame, an unsure one a dotted sketch
+  with "?", an undecided one an empty dotted box; the past fades to a small grey "LOKIÐ" and a
+  fundur that falls out is crossed out. One mild ink texture for every stamp. The month reads as
+  a rhythm plus exceptions: "Fundir vikunnar" prints each flokkur's usual evening once, the
+  usual fundur is one quiet line, exceptions say why ("Fært frá mið."), multi-day events are one
+  strip across their days, and week notes run along their row. Below 40rem days become buttons
+  with a day list under the grid. The today circle is centred and uses the primary colour.
+  Stamps live in `components/plan/calendar/`, shared with the PlanGrid and SplitGrid labs.
+  _Contract (sc-646):_ optional `ends_at`, `cancelled` and `Patrol.name_genitive` are added to
+  the frontend types as proposals; the rhythm and "moved from" are derived.
+- **BlockPalette → C · Card grid with C2 · Covers.** Cards with a picture/icon tile instead of
+  the coloured side stripe, the built-in sources (Allt, Félagið, Færnimerki, Sveitin mín) as
+  tabs, and the leader's own **möppur** (folders) as covers: a 2 × 2 mosaic of the blocks
+  inside, with create, rename, delete with Afturkalla and "Setja í möppu…" on every card. The
+  user-facing word is "mappa", never "albúm". _Backend:_ möppur live in memory
+  (`hooks/useFolders.ts`, fixtures in mock mode) until sc-620.
+
 ## Picked, to promote
 
 - **Side nav (DashboardSidebar) → B · Groups.** Group headings Skipuleggja / Bankinn / Umsjón /
@@ -57,17 +75,10 @@ once a variation is picked it is **promoted** into the real component and its la
 
 ## In the Lab
 
-- **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the calendar's stamp kit so
-  the grid and calendar are one family (see "Grid next to calendar").
+- **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the real calendar's stamp kit
+  so the grid and calendar are one family (see "Grid next to calendar").
 - **SplitGrid**: the current form stays; variations are styles only (clean, stamped, patrol
   flags, paper), with the honest merge.
-
-- **BlockPalette → C · Card grid, collections C2 · Covers.** The coloured side stripe goes
-  (identity comes from the picture/icon tile). The collections area keeps the built-in sources
-  (Allt, Félagið, Færnimerki, Sveitin mín) as tabs and adds the leader's own **möppur**
-  (folders) as covers: a 2 × 2 mosaic of the blocks inside. Picked 2026-10-20; the other layouts
-  (folder list, chips, tabs) are removed. The user-facing word is "mappa", never "albúm". Needs
-  the real favourites backend (sc-620), extended to folders.
 
 - **Header → A, A2, B, B2.** A2 and B2 add the logo (green mark in light, white in dark; B2's band
   stays deep green in dark so the white logo reads). Logo as big as the wordmark; B's tagline is
@@ -81,12 +92,6 @@ once a variation is picked it is **promoted** into the real component and its la
 - **PlanShell (Vinnubekkur) layout**: as intended. Top left is the collections (Allt, Sveitin
   mín, Félagið, Færnimerki), bottom left is the items in the chosen collection, and the main
   body is the plan.
-- **PlanCalendar grid**: no issues. The today circle is now centred on the number and uses the
-  primary colour (fixed on #194). Day entries: **D4 · Stimplar** picked (a passport of
-  fundir: an inked stamp when ready, an empty dotted box while not), now being polished; the
-  other looks are removed. Design input: a month is a regular weekly fundur per
-  flokkur (same weekday and time) plus exceptions — fös–sun útilegur as one spanning bar,
-  single-day events, cancelled or moved fundir.
 - **PlanGrid**: the grid itself is good. The ATH and INNKAUP columns came from a spreadsheet and
   are in `Lab/PlanGrid`: ATH becomes the week's endurmat or a reminder, INNKAUP becomes the
   week's collected búnaður with owned/needed ticks.

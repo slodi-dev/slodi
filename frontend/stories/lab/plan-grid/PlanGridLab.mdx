@@ -153,10 +153,10 @@ reading, so:
 **The story it tells:** "The Rist and the Dagatal are the same stamp book, seen by week and by
 day."
 
-**How it matches the calendar.** It's built from the calendar lab's own code, imported rather
+**How it matches the calendar.** It's built from the real calendar's code, imported rather
 than copied:
 
-- The fundir are the same: the calendar lab's `labGrid()` fixture and `placeEntries()`, so the
+- The fundir are the same: the calendar's `calendarGrid()` fixture and `placeEntries()`, so the
   same October appears in both.
 - Each flokkur's cell holds the calendar's exported `StampEntry`. That gives it the kit's `Stamp`
   for the state (staðfest, drög, óvíst, "?", lokið, fellur niður), the same patrol initial chip,
@@ -199,7 +199,7 @@ every flokksfundur that week.
   skipulagsfundur and an útilega).
 - Within a week a strip can't show _which_ days it covers by position, only by its date range.
   The calendar shows that by position.
-- It's tied to the calendar lab's files. That's intended (one language), but a change there
+- It's tied to the calendar's files (`components/plan/calendar/`). That's intended (one language), but a change there
   changes this.
 - It runs on the calendar's fixture, not this lab's, so it isn't in the "Fundur element states"
   sheet. The calendar's own Stamp states and Key stories cover it.
