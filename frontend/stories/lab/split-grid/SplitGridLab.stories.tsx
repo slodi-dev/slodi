@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Bench, LiveSplit } from "@/stories/vinnubekkur/benchHarness";
+import { CREST_SHEET } from "./crestMarks";
 import { HEADER_LOOKS } from "./headerLooks";
 import SplitGridLab, { type SplitGridLabProps } from "./SplitGridLab";
 import { FIXTURES, LAB_FUNDUR, type FixtureName } from "./splitGridLabData";
@@ -499,9 +500,9 @@ function HeaderSheet({ fixture }: { fixture: FixtureName }) {
 }
 
 /**
- * The flokkur's name at the top of its column, with more character than a pill: a pennant, a
- * crest, a stamp or a band of its colour. Every look keeps the heading, the total and "ræður
- * lengd" / "N mín bið".
+ * The flokkur at the top of its column: the current pill, then H5a–d, the flokkur's crest on a
+ * rule in its colour down the column. Every look keeps the heading, the total and "ræður lengd" /
+ * "N mín bið".
  */
 export const Headers: Story = {
   name: "Headers",
@@ -515,6 +516,15 @@ export const Headers: Story = {
     await expect(canvasElement.querySelectorAll('[data-lane-total="mock-refir"]')).toHaveLength(
       HEADER_LOOKS.length
     );
+    // H5c's rule is as long as the column's minutes: each column carries its total as --used.
+    const band = canvasElement.querySelector<HTMLElement>('[data-header="h5-time"]');
+    await expect(band).not.toBeNull();
+    const heads = band!.querySelectorAll<HTMLElement>("[data-lane-total]");
+    const columns = band!.querySelectorAll<HTMLElement>("[data-lane-col]");
+    await expect(columns).toHaveLength(heads.length);
+    columns.forEach((column, i) => {
+      expect(`${column.style.getPropertyValue("--used")} mín`).toBe(heads[i].textContent);
+    });
   },
 };
 
@@ -587,6 +597,32 @@ export const HeadersLongNamesPhone: Story = {
   name: "Headers · long names, phone",
   render: () => <LongNameSheet />,
   globals: phone,
+};
+
+/** The animal marks drawn for the crests, at the sizes they are used (28, 36 and 44px). */
+function CrestMarkSheet() {
+  return (
+    <div style={{ display: "grid", gap: "var(--sl-spacing-md)" }}>
+      {[28, 36, 44].map((size) => (
+        <div key={size} style={{ display: "flex", flexWrap: "wrap", gap: "var(--sl-spacing-lg)" }}>
+          {CREST_SHEET.map(({ name, icon: Icon }) => (
+            <figure
+              key={name}
+              style={{ margin: 0, display: "grid", justifyItems: "center", gap: 4 }}
+            >
+              <Icon width={size} height={size} />
+              <figcaption style={{ fontSize: "var(--sl-text-caption)" }}>{name}</figcaption>
+            </figure>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export const CrestMarks: Story = {
+  name: "Headers · crest marks",
+  render: () => <CrestMarkSheet />,
 };
 
 /* ── Merge ── */

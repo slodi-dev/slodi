@@ -178,8 +178,9 @@
   font-weight: var(--sl-font-weight-semibold);
 }
 
-/* A lane that is a drop target right now. */
-.root [data-over] {
+/* A lane that is a drop target right now (also over H5d's tint). */
+.root [data-over],
+.root[data-header="h5-tint"] .lane[data-over] {
   box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
   background: hsl(var(--sl-color-primary-subtle));
 }
@@ -659,39 +660,80 @@
   color: hsl(var(--lane-on));
 }
 
-/* H1 · Pennant: hangs from a pole along the top of the head; a long name makes it taller. */
-.laneHead[data-look="pennant"] {
-  padding-top: 0;
+/* ── H5: the crest (H2) on a rule in the flokkur's colour down its column (H4) ──
+
+   One geometry for the head and the column below it, so the rule leaves the crest and carries on
+   into the column without a step:
+     --crest   the badge's diameter
+     --rule    the rule's width
+     --rule-x  the rule's left edge, from the column's left edge
+   The head draws the rule from the crest down to its own bottom edge (.cord, an element rather
+   than ::before so the narrow-column query below can reshape it); the column draws it on from
+   its top (.lane::before). Cards and the drop outline paint over it. */
+
+.root[data-header^="h5"] {
+  --crest: 2.25rem;
+  --crest-gap: 6px;
+  --rule: 3px;
+  --rule-x: 0px;
 }
 
-.laneHead[data-look="pennant"]::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 3px;
-  background: hsl(var(--sl-color-border-strong));
+.root[data-header="h5-thread"] {
+  --rule: 2px;
 }
 
-.laneHead[data-look="pennant"] .laneName {
-  width: fit-content;
-  min-width: 3.5rem;
-  margin: 0 0 var(--sl-spacing-compact) var(--sl-spacing-compact);
-  padding: calc(3px + var(--sl-spacing-compact)) var(--sl-spacing-sm) 0.85rem;
-  background: hsl(var(--lane));
-  color: hsl(var(--lane-on));
-  font-weight: var(--sl-font-weight-heading);
-  line-height: var(--sl-line-height-heading);
-  /* The swallowtail: a notch cut up into the bottom edge. */
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 0.55rem), 0 100%);
+.root[data-header="h5-tint"] {
+  --crest: 2.75rem;
 }
 
-/* H2 · Crest: a round badge with the animal or the initials; the name and numbers beside it,
-   or under it when the column is too narrow for both (flex-wrap: no container query needed). */
-.laneHead[data-look="crest"] {
+.laneHead[data-look^="h5"] {
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--sl-spacing-compact) var(--sl-spacing-sm);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-xs) var(--sl-spacing-sm) var(--crest-gap);
+}
+
+/* The rule in the head, from the crest's middle down to the head's foot. */
+.cord {
+  position: absolute;
+  left: var(--rule-x);
+  top: calc(var(--sl-spacing-sm) + var(--crest) / 2);
+  bottom: -1px;
+  width: var(--rule);
+  background: hsl(var(--lane));
+}
+
+/* H5b, the lanyard: a cord drops from the bottom of the ring, turns at the head's foot and
+   joins the edge rule, so the badge visibly hangs from the column. */
+.laneHead[data-look="h5-thread"] {
+  padding-bottom: var(--sl-spacing-md);
+}
+
+.laneHead[data-look="h5-thread"] .cord {
+  top: calc(var(--sl-spacing-sm) + var(--crest));
+  bottom: 6px;
+  width: calc(var(--crest-gap) + var(--crest) / 2 + var(--rule) / 2);
+  background: none;
+  border-right: var(--rule) solid hsl(var(--lane));
+  border-bottom: var(--rule) solid hsl(var(--lane));
+  border-bottom-right-radius: 8px;
+}
+
+.laneHead[data-look="h5-thread"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: var(--rule);
+  height: calc(6px + var(--rule) + 1px);
+  background: hsl(var(--lane));
+}
+
+/* The column that sets the band's length gets the thicker rule (H5c). */
+.laneHead[data-look="h5-time"][data-longest] .cord,
+.root[data-header="h5-time"] .lane[data-longest]::before {
+  width: calc(var(--rule) + 2px);
 }
 
 .crestText {
@@ -703,13 +745,12 @@
 }
 
 .crest {
+  position: relative;
   flex: none;
   display: grid;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  /* Room for the outer ring (box-shadow, 3.5px), so the column edge never cuts it. */
-  margin: 4px 0 4px 4px;
+  width: var(--crest);
+  height: var(--crest);
   border-radius: 50%;
   background: hsl(var(--lane));
   color: hsl(var(--lane-on));
@@ -719,9 +760,16 @@
     0 0 0 3.5px hsl(var(--lane));
 }
 
+/* H5b's crest is a ring: the colour around a pale centre, the animal in body ink. */
+.laneHead[data-look="h5-thread"] .crest {
+  background: hsl(var(--lane-subtle));
+  color: hsl(var(--sl-color-text-primary));
+  box-shadow: inset 0 0 0 3px hsl(var(--lane));
+}
+
 .crest svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 62%;
+  height: 62%;
 }
 
 .crestInitials {
@@ -731,66 +779,99 @@
   letter-spacing: 0.02em;
 }
 
-.laneHead[data-look="crest"] .laneName {
+.laneHead[data-look^="h5"] .laneName {
   font-family: var(--sl-font-family-heading);
   font-weight: var(--sl-font-weight-heading);
   line-height: var(--sl-line-height-heading);
 }
 
-/* H3 · Stamped: a pressed band in the colour, the name knocked out of it in its own ink, a
-   double rule around it, a little tilt, and the calendar stamps' ink texture (the filter). */
-.laneHead[data-look="stamped"] .laneName {
-  width: fit-content;
-  margin: var(--sl-spacing-compact) 0 var(--sl-spacing-xs) 3px;
-  padding: 0.125rem var(--sl-spacing-xs);
-  border-radius: 2px;
-  background: hsl(var(--lane));
-  color: hsl(var(--lane-on));
-  outline: 2px solid hsl(var(--lane));
-  outline-offset: 2px;
-  font-weight: var(--sl-font-weight-heading);
-  /* Capitals with accents (Ó, Á) on a clamped third line would show above it otherwise. */
-  line-height: 1.35;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transform: rotate(var(--tilt, 0deg));
-}
-
-.inkDefs {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-/* H4 · Colour band: the head is the colour; the name is large, the total sits in the band, and
-   a rule in the colour runs down the column's left edge. */
-.laneHead[data-look="band"] {
-  gap: 0;
-  padding: var(--sl-spacing-xs) var(--sl-spacing-sm) var(--sl-spacing-xs);
-  background: hsl(var(--lane));
-  color: hsl(var(--lane-on));
-  border-bottom-color: hsl(var(--lane));
-}
-
-.laneHead[data-look="band"] .laneName {
+.laneHead[data-look="h5-tint"] .laneName {
   font-size: var(--sl-text-body-lg);
-  font-weight: var(--sl-font-weight-heading);
-  line-height: var(--sl-line-height-heading);
 }
 
-.laneHead[data-look="band"] .laneNums,
-.laneHead[data-look="band"] .leads,
-.laneHead[data-look="band"] .waits {
+/* H5c: the total is a tag in the colour, hung on the rule's line. */
+.laneHead[data-look="h5-time"] .num {
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--lane));
   color: hsl(var(--lane-on));
+  font-weight: var(--sl-font-weight-semibold);
 }
 
-.laneHead[data-look="band"] .waits {
-  font-weight: var(--sl-font-weight-body);
+/* The column's half of the rule, down its left edge; the cards and the wait sit to its right,
+   so it always shows. (A thread centred behind the cards was tried: it only showed as stitches
+   in the 4px between cards, which read as noise.) */
+.root[data-header^="h5"] .lane {
+  position: relative;
 }
 
-.root[data-header="band"] .lane {
-  box-shadow: inset 3px 0 0 hsl(var(--lane));
+.root[data-header^="h5"] .lane::before {
+  content: "";
+  position: absolute;
+  left: var(--rule-x);
+  top: 0;
+  bottom: 0;
+  width: var(--rule);
+  background: hsl(var(--lane));
+  pointer-events: none;
+}
+
+.root[data-header^="h5"] .slot {
+  padding-left: calc(var(--rule) + 5px);
+}
+
+.root[data-header^="h5"] .gap {
+  margin-left: calc(var(--rule) + 5px);
+}
+
+/* H5c: the rule is as long as the flokkur's minutes; the wait after them is a dashed tail. */
+.root[data-header="h5-time"] .lane::before {
+  bottom: auto;
+  height: calc(var(--ppm) * var(--used));
+}
+
+.root[data-header="h5-time"] .lane::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(var(--ppm) * var(--used));
+  bottom: 0;
+  width: var(--rule);
+  background: repeating-linear-gradient(to bottom, hsl(var(--lane)) 0 6px, transparent 6px 11px);
+  pointer-events: none;
+}
+
+/* H5d: a faint wash of the colour behind the whole column, under the 15-minute lines. */
+.root[data-header="h5-tint"] .lane {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(var(--ppm) * 15 - 1px),
+      hsl(var(--sl-color-border-subtle)) calc(var(--ppm) * 15 - 1px) calc(var(--ppm) * 15)
+    ),
+    hsl(var(--lane-subtle) / 0.6);
+}
+
+/* A column too narrow for the crest and the name side by side puts the name under it. The
+   lanyard would then run through the name, so there the cord hangs from the edge instead, like
+   the pole, and the ring moves over to meet it. */
+@container (max-width: 9rem) {
+  .laneHead[data-look^="h5"] .crestText {
+    flex-basis: 100%;
+  }
+
+  .laneHead[data-look="h5-thread"] .cord {
+    top: calc(var(--sl-spacing-sm) + var(--crest) / 2);
+    bottom: -1px;
+    width: var(--rule);
+    border: 0;
+    border-radius: 0;
+    background: hsl(var(--lane));
+  }
+
+  .laneHead[data-look="h5-thread"] .crest {
+    margin-left: calc(var(--rule) - var(--crest-gap));
+  }
 }
 
 /* ── The card: BlockPalette's card (blockCardStyles.card), laid out for a column ── */
@@ -859,6 +940,11 @@
   white-space: nowrap;
 }
 
+/* The length never gives way; the clock span after it does (and goes, in a narrow column). */
+.cardTime > :first-child {
+  flex: none;
+}
+
 .cardClock {
   min-width: 0;
   overflow: hidden;
@@ -913,6 +999,18 @@
   }
 }
 
+/* A phone column (about 8.5rem): the length matters more than the picture, so the picture goes
+   and the text takes the card's whole width. The kind is still in the card's accessible name. */
+@container (max-width: 9.5rem) {
+  .card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card > :first-child {
+    display: none;
+  }
+}
+
 .cardMeta {
   display: flex;
   flex-wrap: wrap;
@@ -926,7 +1024,16 @@
   align-items: center;
   gap: 3px;
   min-width: 0;
-  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+/* One line each, then "…": a long note used to wrap and push its icon onto a line the card had
+   no room for. The whole note is the item's tooltip and on the flip side. */
+.cardMetaText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cardMetaItem svg {

@@ -40,7 +40,7 @@ import {
   type DropSpot,
 } from "./cardDrag";
 import { CardEditor, type CardActions, type EditorContext } from "./CardEditor";
-import { InkFilter, LaneHeader, type HeaderLook } from "./laneHeaders";
+import { LaneHeader, type HeaderLook } from "./laneHeaders";
 import {
   SWAP_BLOCKS,
   blockOf,
@@ -113,8 +113,6 @@ type Ctx = {
   drag: CardDrag | null;
   spot: DropSpot | null;
   header: HeaderLook;
-  /** The stamped header's ink filter. */
-  inkId: string;
 };
 
 type ItemProps = {
@@ -160,7 +158,6 @@ function SplitBand({
   const undoRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
   const mergeId = useId();
-  const inkId = useId();
   const [mergeOpen, setMergeOpen] = useState(defaultMergeOpen);
   // Focus moves into the confirmation only when the leader opened it, not when a story starts
   // with it open (that would scroll a Docs page to it).
@@ -501,7 +498,6 @@ function SplitBand({
     drag,
     spot,
     header,
-    inkId,
   };
   const dragged = drag ? findSelected(model, drag.id) : null;
 
@@ -513,7 +509,6 @@ function SplitBand({
       data-header={header}
       lang="is"
     >
-      {header === "stamped" && <InkFilter id={inkId} />}
       <div className={styles.head}>
         <div className={styles.headText}>
           <h3 className={styles.title}>{model.label}</h3>
@@ -625,6 +620,7 @@ function laneVars(accent: PatrolAccent): CSSProperties {
   return {
     ["--lane" as string]: `var(--sl-color-patrol-${accent})`,
     ["--lane-on" as string]: `var(--sl-color-patrol-${accent}-foreground)`,
+    ["--lane-subtle" as string]: `var(--sl-color-patrol-${accent}-subtle)`,
   };
 }
 
@@ -682,13 +678,13 @@ function CardFace({ ctx, li }: { ctx: Ctx; li: LaneItem }) {
             {card.leader && (
               <span className={styles.cardMetaItem}>
                 <UserRound aria-hidden="true" />
-                {card.leader}
+                <span className={styles.cardMetaText}>{card.leader}</span>
               </span>
             )}
             {card.note && (
               <span className={styles.cardMetaItem} title={card.note}>
                 <MessageSquareText aria-hidden="true" />
-                {card.note}
+                <span className={styles.cardMetaText}>{card.note}</span>
               </span>
             )}
           </span>
@@ -919,7 +915,6 @@ function Columns({ ctx }: { ctx: Ctx }) {
               look={ctx.header}
               lane={lane}
               model={model}
-              inkId={ctx.inkId}
               laneStyle={laneVars(lane.accent)}
             />
           ))}
@@ -954,7 +949,8 @@ function LaneColumn({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
       className={styles.lane}
       data-lane-col={lane.laneIndex}
       data-over={over || undefined}
-      style={laneVars(lane.accent)}
+      data-longest={(lane.longest && !model.balanced) || undefined}
+      style={{ ...laneVars(lane.accent), ["--used" as string]: lane.used }}
     >
       {lane.items.map((li) => (
         <CardSlot key={li.item.id} ctx={ctx} lane={lane} li={li} />

@@ -84,7 +84,10 @@ Nothing waiting.
 
 - **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the real calendar's stamp kit
   so the grid and calendar are one family (see "Grid next to calendar").
-- **SplitGrid → K2 · Flip it over picked, being polished** (2026-10-20). Each liður is the
+- **SplitGrid → K2 · Flip it over approved apart from the column head** (2026-10-20). The flip
+  card, the clock length, dragging along the timeline and between flokkar, and long-name handling
+  are approved; the head is in progress as **H5, H2's crest + H4's rule** (H5a Pole, H5b Lanyard,
+  H5c Time rule, H5d Tinted lane), with animal crests drawn for Slóði. Each liður is the
   BlockPalette card it came from (picture tile, length and kind line shared through
   `components/plan/bench/BlockCard.tsx`); pressing it turns it over, and the back is the editor:
   length, status, who leads, adaptation, búnaður, another block, remove with Afturkalla, and back
@@ -95,9 +98,9 @@ Nothing waiting.
   cut their text. Cards drag up and down their flokkur's timeline and to a chosen place in
   another flokkur, with the result shown live ("hefst 19:55", totals, "ræður lengd"), Escape or
   letting go outside to cancel, Afturkalla after a drop, and a long press on phones so a swipe
-  still scrolls. Column heads in four looks besides the pill (H1 Pennant, H2 Crest, H3
-  Stamped, H4 Colour band), all handling long names (two lines, hyphenated or broken, then "…",
-  full name in the heading and tooltip). Time grid and the honest merge are unchanged.
+  still scrolls. The first round of heads (H1 Pennant, H2 Crest, H3 Stamped, H4 Colour band) is
+  replaced by H5; every head handles long names (two lines, hyphenated or broken, then "…", full
+  name in the heading and tooltip). Time grid and the honest merge are unchanged.
   _Needs backend:_ block
   link, leader, note, gear and the sveit's version on a lane liður (sc-646).
 - **FundurSheet + LidurRow**: the current form, functions and interactions stay; variations are

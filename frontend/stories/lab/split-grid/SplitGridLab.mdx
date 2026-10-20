@@ -214,35 +214,67 @@ it should take the same sensors.
 
 ## 7. The flokkur at the top of its column
 
-The pill was the one generic thing left on the grid: every flokkur reads as the same lozenge in a
-different colour. These heads give the flokkur some character of its own. Every look keeps the same
-content: the name is a real heading (`h4`, under the band's `h3`), and beside or under it are the
-column's total and "ræður lengd" or "N mín bið". The colour is always behind the flokkur's own ink
-(`--sl-color-patrol-*` with its `-foreground`, the set-A pairs that pass AA as badges in both
-themes), never coloured text on the page, so yellow stays legible. Switch with the `header` prop
-(`laneHeaders.tsx`).
+The pill was the one generic thing left on the grid: every flokkur read as the same lozenge in a
+different colour. A first round tried four heads (pennant, crest, stamp, colour band); the pick
+was to combine **H2's crest** (the flokkur's animal in a round badge) with **H4's rule** (a line
+in the flokkur's colour down its column). That is H5, refined here as four variations.
+
+Every look keeps the same content. The name is a real heading (`h4`, under the band's `h3`), and
+beside or under it are the column's total and "ræður lengd" or "N mín bið". The colour is always
+behind the flokkur's own ink (`--sl-color-patrol-*` with its `-foreground`, the set-A pairs that
+pass AA in both themes), never coloured text on the page, so yellow stays legible. The rule is a
+graphic, not the only carrier of anything: the name, the total and the wait are all text. Switch
+with the `header` prop (`laneHeaders.tsx`, `headerLooks.ts`).
+
+**What H5 says.** The crest says _whose_ column this is, at a glance and with some character; the
+rule carries that identity down the whole column, so a card at 20:40 still reads as Ernir's
+without looking back up. Hierarchy: crest and name first, then the total, then the wait; the rule
+is the quietest of them, a colour on the edge.
+
+**One geometry.** The head draws the rule from the crest down to its own foot (`.cord`); the
+column draws it on from the top (`.lane::before`), both at `--rule-x` with width `--rule`, so the
+line runs on without a step. Cards and the wait sit to its right (the slot is indented by the
+rule's width), so the rule always shows and never runs through text.
 
 <Canvas of={Stories.Headers} />
 
-- **H1 · Pennant.** The flokksfáni: a swallowtail pennant hanging from a pole along the top of the
-  grid. It says "this column is a flokkur" the way a camp does, and it is the most scout-like of the
-  four. _Trade-off:_ it costs height (the notch needs room under the name), and a long name makes the
-  pennant taller rather than shorter.
-- **H2 · Crest.** A round badge with the flokkur's animal and the name beside it in the heading
-  weight. The pictures come from one table (`CRESTS`): Refir a paw print, Ernir a bird, Uglur the
-  moon, Birnir the one bear lucide has (a panda), and a few for invented names (Þrumuskýin a storm
-  cloud, geimverur a rocket, ofurhetjur a lightning bolt). Anything else gets its initials ("FF",
-  "H"). _Trade-off:_ lucide has no fox, owl or bear, so a real crest set would be drawn for Slóði;
-  and a name with no picture is only as distinctive as its letters.
-- **H3 · Stamped.** The name pressed like the calendar's stamps: a band in the colour, the name in
-  capitals knocked out of it, a double rule, a small tilt from the flokkur's id and the stamps' own
-  ink texture (the same filter values as `Stamp.tsx`). It ties the split grid to the calendar,
-  PlanGrid A5 and FundurSheet F2. _Trade-off:_ the capitals and letter-spacing make names longer, so
-  they wrap and clamp sooner, and the ink texture softens the letters a little.
-- **H4 · Colour band.** The whole head is the colour, the name large, and the total sits in the band;
-  a thin rule in the colour runs down the column's left edge, so a card far down the grid still says
-  whose it is. The loudest look and the easiest to scan across six columns. _Trade-off:_ six bands of
-  vivid colour side by side are a lot on a screen that is mostly about the cards.
+- **H5a · Pole.** The filled crest is pinned to a 3px rule on the column's left edge, from the
+  crest's middle to the bottom of the grid. The plainest join of the two ideas: the badge flies
+  from a pole. _Trade-off:_ the rule is the same length in every column, so it says whose, not how
+  long.
+- **H5b · Lanyard.** A ringed crest (the colour as a ring around a pale centre, the animal in body
+  ink) hangs from a 2px cord that drops from the bottom of the ring, turns at the head's foot and
+  runs down the edge. The lightest of the four; the turn makes the badge visibly _hang_ from the
+  column. _Trade-off:_ the head is a little taller (room for the turn), and in a column too narrow
+  for the name beside the crest (six flokkar, a phone) the cord would cross the name, so there it
+  hangs straight from the edge like the pole. A first try ran the thread down the middle behind
+  the cards; it only showed as stitches in the 4px between cards, which read as noise, and was
+  dropped.
+- **H5c · Time rule.** The rule is the time. It is solid for exactly the flokkur's minutes, then a
+  dashed tail to the end of the band for the wait, so the columns' rules side by side are a small
+  bar chart of who is busy for how long. The column that sets the length gets a thicker rule, and
+  the total is a tag in the colour. While a card is dragged the rules follow the live result, so
+  a leader sees one flokkur's time shrink and another's grow before they drop. _Trade-off:_ the
+  most information and the most to learn; the dash has to be read as "waiting", which the "+ N mín
+  bið" box next to it explains.
+- **H5d · Tinted lane.** H5a with a larger crest (2.75rem), the name a step larger, and a faint
+  wash of the flokkur's `-subtle` colour behind its whole column. The strongest sense of separate
+  lanes on a busy evening. _Trade-off:_ six tinted columns are a lot of colour on a screen that is
+  mostly about the cards, and the drop highlight has to sit over the tint (it does).
+
+**With dragging and the open card.** The rule is part of the column, under everything that
+moves: the dashed drop outline and the lifted card paint over it, and the drop column's highlight
+still shows. In H5c the rules re-measure live as the card moves. The open K2 back is lifted over
+the grid, so it covers the rules beside it rather than being cut by them.
+
+**The crests.** lucide has no fox, owl or bear, so the animals are drawn for Slóði in
+`crestMarks.tsx`: refur, örn (also fálki), ugla, björn, úlfur, hrafn and selur. They follow
+lucide's grid (24 units, a 2px stroke, round caps and joins) so they sit with its icons, and they
+are a few strokes each so they read at 28–36px. One table maps a word in the name to a mark, first
+match wins. A few invented names that aren't animals borrow a lucide icon (Þrumuskýin a storm
+cloud, geimverur a rocket, ofurhetjur a bolt); anything else gets its initials ("FF", "H").
+
+<Canvas of={Stories.CrestMarks} />
 
 <Canvas of={Stories.HeadersDark} />
 
@@ -259,11 +291,14 @@ Breiðholti", "Litlu grænu geimverurnar frá Mars", or one compound with nowher
   (a screen reader hears all of it) and it is the tooltip.
 - **Nothing overlaps.** The numbers always sit under the name, never beside it, so a long name
   pushes them down rather than running into them; all heads in a row grow together.
-- **Per look:** the pill becomes a rounded block of two lines; the pennant grows taller and keeps its
-  notch; the crest keeps its badge and, in a column too narrow for both (six flokkar, a phone),
-  puts the name under it, with the initials standing in when there is no picture; the stamp grows to
-  two lines of capitals (line height raised so the accents of a clamped line don't show); the band
-  wraps its large name.
+- **Per look:** the pill becomes a rounded block of two lines. Every H5 head keeps its crest; in a
+  column too narrow for both (six flokkar, a phone) the name goes under the crest, and a name with
+  no picture shows its initials in the badge. The lanyard straightens into the pole there, so the
+  cord never crosses the name.
+- **The cards in a phone column.** The length is the one thing a card never cuts: "15 mín" stays
+  whole, the clock span goes first, and in a column under 9.5rem the picture goes too, so the
+  length and the title get the card's whole width. A long leader or note ends in "…" on one line
+  (its icon used to wrap onto a line the card had no room for).
 - **The flip side** names other flokkar on its "Færa til" buttons: they wrap to two lines and clamp
   the same way, with the full name as tooltip and in the accessible name, "Færa Kakó og spjall í
   annan flokk: Fjólublá fljúgandi avókadó svínin" (the name after a colon, never declined after
