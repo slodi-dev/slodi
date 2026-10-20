@@ -167,6 +167,11 @@ export type StampSize = "sm" | "md" | "lg" | "xl";
 /** Bands only fit from `lg`; below that the frame, icon and "?" carry the state. */
 const HAS_BAND: Record<StampSize, boolean> = { sm: false, md: false, lg: true, xl: true };
 
+/** How far the ink edge wanders, in the stamp's 48-unit space. */
+const INK_ROUGHNESS = 0.9;
+/** The speckle threshold: closer to 0 leaves fewer gaps in the ink. */
+const INK_GAPS = -0.55;
+
 export interface StampProps {
   entry: StampSubject;
   size?: StampSize;
@@ -175,9 +180,11 @@ export interface StampProps {
 /**
  * One rubber stamp, drawn in SVG. Decorative: every entry's accessible name says its state.
  *
- * - The pressed stamp's ink edge is roughened by an SVG filter (turbulence → displacement, and a
- *   second, finer noise as a speckle mask). No images, and its colour is a token.
- * - The band's word is drawn *outside* the filter, so it stays crisp.
+ * - Every stamp, in every state and size, is inked the same way: one SVG filter over the whole
+ *   stamp (turbulence → displacement, and a finer noise as a speckle mask). It works in the
+ *   stamp's own 48-unit space, so a small stamp is exactly as rough as a big one. Kept mild
+ *   (INK_ROUGHNESS, INK_GAPS) so the band's word and the "?" stay readable. No images, and the
+ *   colour is a token.
  * - The thunk is a CSS animation on the pressed state: it runs when the stamp first mounts or
  *   when its state turns to staðfest, never on a re-render.
  */
@@ -196,82 +203,81 @@ export function Stamp({ entry, size = "md" }: StampProps) {
       aria-hidden="true"
     >
       <svg viewBox="0 0 48 48" width="100%" height="100%" overflow="visible">
-        {pressed && (
-          <defs>
-            <filter id={filterId} x="-10%" y="-10%" width="120%" height="120%">
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.85"
-                numOctaves={2}
-                seed={4}
-                result="edge"
-              />
-              <feDisplacementMap
-                in="SourceGraphic"
-                in2="edge"
-                scale={size === "xl" ? 2.2 : 1.4}
-                xChannelSelector="R"
-                yChannelSelector="G"
-                result="rough"
-              />
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="2.4"
-                numOctaves={1}
-                seed={9}
-                result="grain"
-              />
-              <feColorMatrix
-                in="grain"
-                type="matrix"
-                values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  4 0 0 0 -0.9"
-                result="speckle"
-              />
-              <feComposite in="rough" in2="speckle" operator="in" />
-            </filter>
-          </defs>
-        )}
-        <g
-          className={kit.frame}
-          filter={pressed && size !== "sm" ? `url(#${filterId})` : undefined}
-        >
-          <rect className={kit.outer} x="2" y="2" width="44" height="44" rx="5" />
-          {pressed && <rect className={kit.inner} x="6" y="6" width="36" height="36" rx="3" />}
-          {band && pressed && <rect className={kit.bandFill} x="6" y="32" width="36" height="10" />}
+        <defs>
+          <filter id={filterId} x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.85"
+              numOctaves={2}
+              seed={4}
+              result="edge"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="edge"
+              scale={INK_ROUGHNESS}
+              xChannelSelector="R"
+              yChannelSelector="G"
+              result="rough"
+            />
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="2.4"
+              numOctaves={1}
+              seed={9}
+              result="grain"
+            />
+            <feColorMatrix
+              in="grain"
+              type="matrix"
+              values={`0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  4 0 0 0 ${INK_GAPS}`}
+              result="speckle"
+            />
+            <feComposite in="rough" in2="speckle" operator="in" />
+          </filter>
+        </defs>
+        <g filter={`url(#${filterId})`}>
+          <g className={kit.frame}>
+            <rect className={kit.outer} x="2" y="2" width="44" height="44" rx="5" />
+            {pressed && <rect className={kit.inner} x="6" y="6" width="36" height="36" rx="3" />}
+            {band && pressed && (
+              <rect className={kit.bandFill} x="6" y="32" width="36" height="10" />
+            )}
+          </g>
+          {state !== "unknown" && (
+            <Icon
+              className={kit.icon}
+              x={14}
+              y={iconY}
+              width={20}
+              height={20}
+              strokeWidth={state === "draft" || state === "tentative" ? 1.75 : 2.4}
+            />
+          )}
+          {(state === "unknown" || state === "tentative") && (
+            <text
+              className={kit.question}
+              x={state === "unknown" ? 24 : 38}
+              y={state === "unknown" ? (band ? 26 : 32) : 15}
+              textAnchor="middle"
+            >
+              ?
+            </text>
+          )}
+          {state === "cancelled" && <path className={kit.strike} d="M7 41 41 7M7 7l34 34" />}
+          {band && (
+            <text
+              className={cn(kit.bandText, pressed && kit.bandKnockout)}
+              x="24"
+              y="39.6"
+              textAnchor="middle"
+              textLength={band.length > 6 ? 34 : undefined}
+              lengthAdjust="spacingAndGlyphs"
+            >
+              {band}
+            </text>
+          )}
         </g>
-        {state !== "unknown" && (
-          <Icon
-            className={kit.icon}
-            x={14}
-            y={iconY}
-            width={20}
-            height={20}
-            strokeWidth={state === "draft" || state === "tentative" ? 1.75 : 2.4}
-          />
-        )}
-        {(state === "unknown" || state === "tentative") && (
-          <text
-            className={kit.question}
-            x={state === "unknown" ? 24 : 38}
-            y={state === "unknown" ? (band ? 26 : 32) : 15}
-            textAnchor="middle"
-          >
-            ?
-          </text>
-        )}
-        {state === "cancelled" && <path className={kit.strike} d="M7 41 41 7M7 7l34 34" />}
-        {band && (
-          <text
-            className={cn(kit.bandText, pressed && kit.bandKnockout)}
-            x="24"
-            y="39.6"
-            textAnchor="middle"
-            textLength={band.length > 6 ? 34 : undefined}
-            lengthAdjust="spacingAndGlyphs"
-          >
-            {band}
-          </text>
-        )}
       </svg>
     </span>
   );
