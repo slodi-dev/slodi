@@ -1,0 +1,88 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./UserManagement.stories";
+
+<Meta of={Stories} name="Rationale" />
+
+# UserManagement: C · Split
+
+The users section of `/admin`, for platform admins. Picked as **C · Split** in the Lab on
+2026-10-19 and promoted from `Lab/UserManagement` on 2026-10-20 (sc-640). The other directions (A
+Table, B Cards, D Bulk) were removed.
+
+Code: `UserManagement.tsx` (the page: toolbar, summary, pages, confirm and undo),
+`UserSplit.tsx` (the list and the panel, and the keyboard), `UserDetail.tsx` (one person),
+`ConfirmDialog.tsx`, `UndoToast.tsx`, `UserStates.tsx` (loading, error, empty, no match),
+`useUserDirectory.ts` (the data), `useUserListUrl.ts` (the URL) and `userRules.ts` (copy, rules,
+search and errors, unit tested).
+
+## The story it tells
+
+An admin comes here to do one thing to one person: make a leader an umsjónarmaður dagskrár, give
+someone editing rights in the bank, or remove an account. The list is for finding that person;
+the panel is for looking at them properly before changing anything. Side by side, the admin sees
+whom they are changing while they change it.
+
+## What the old table got wrong
+
+- **A role was saved the moment the `<select>` changed**, with no confirm. On Windows, arrowing
+  a closed select changes it, so an admin could promote someone by accident.
+- **No feedback and no undo**: a bare "…" while saving, then nothing.
+- **Delete was the only action**, a red word on every row.
+- **No permission filter**, search only from two letters, and nothing in the URL.
+- **Raw English errors** ("Failed to update user: 500 - …") and no way to retry.
+- **24–28px targets** and a small select font, which iOS zooms into.
+- **The own row was disabled with no reason.**
+
+## Hierarchy
+
+1. **Search and filter** on top. Search ignores case and accents ("astros" finds "Ástrós"); the
+   chips filter by permission and show how many each has.
+2. **The list**: avatar, name, email, permission. One Tab stop; ↑ ↓ Home End move inside it. The
+   selected row is tinted _and_ has a bar, so it doesn't rely on colour alone.
+3. **The panel**, top to bottom: who (name, email, permission), **Réttindi**, **Aðgangur að
+   dagskrárbanka**, then **Eyða notanda** last and quiet.
+
+## Why it works this way
+
+- **Saved on purpose.** Each section has its own save button and saves only what changed; with
+  nothing changed it says "Engin breyting til að vista." instead of saving (UX rule 6). The hint
+  next to the button reads "Meðlimur → Skoðandi, óvistað" so the admin sees the change before
+  they make it.
+- **Confirm when it grants power** (UX rule 5): a promotion to umsjónarmaður dagskrár, and making
+  someone a bank admin. Demotions and smaller steps don't ask.
+- **Afturkalla instead of asking twice.** Every saved role change says what happened and offers
+  "Afturkalla" for 10 seconds. The one exception: giving a role in the bank to someone who had
+  none, because the API can't take a membership away again.
+- **Delete is the only permanent action**, so it's a named dialog ("Aron Freyr Kristjánsson
+  (aron@…) verður eytt úr Slóða. Ekki er hægt að afturkalla þetta."), with "Hætta við" first and
+  focused. A failed delete keeps the dialog open with the reason.
+- **Read-only, with the reason.** The admin's own permission ("Annar stjórnandi þarf að gera
+  það.") and other platform admins ("skilgreindir í stillingum kerfisins") can't be changed here,
+  and the panel says why rather than greying things out (sc-535: admin comes from ADMIN_EMAILS).
+- **Errors in the house voice**, chosen from the HTTP status (`userErrorMessage`); the backend's
+  English never shows. A failed load has "Reyna aftur".
+- **The URL** keeps the search, filter, page and person (`?q=&rettindi=&sida=&notandi=`, with
+  `replace`, UX rule 10), so a refresh or a shared link opens the same view.
+- **On a phone** the panel replaces the list, with "Til baka í lista"; focus moves to the name
+  and back to the row. Targets are 44px, 48px on a phone; inputs are 16px.
+
+## Real data, and what's missing
+
+Everything shown comes from the API today:
+
+- `GET /users/admin/list`, paged through in pages of 200 (`listAllUsers`), so search, filter and
+  counts cover everyone rather than one page.
+- `PATCH /users/{id}` for the permission, `DELETE /users/{id}` for delete.
+- `GET` and `PUT /workspaces/{bank}/members…` for the bank role. The bank section appears once
+  those roles have loaded, and is left out if they fail or no bank is set up.
+
+The Lab's version also had **freeze and reinstate, join and last-seen dates, and a change
+history**. None of these is in the API, so they are left out here rather than faked; each place
+they'd go is marked `TODO(sc-640)`.
+
+## Trade-offs
+
+- Loading every user is fine at Slóði's size (hundreds). At many thousands, search and the counts
+  would have to move to the backend.
+- The confirm dialog is a native `<dialog>` of its own rather than the shared `Modal`, which has
+  no focus trap or focus return yet.

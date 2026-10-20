@@ -66,14 +66,19 @@ once a variation is picked it is **promoted** into the real component and its la
   token layer, and goes to `#efni` like the public pages'; `--sl-touch-target` (48px) is now a
   token and the menu button uses it.
 
+- **UserManagement → C · Split**, on today's API only (sc-640). List and panel: search that
+  ignores accents, permission chips with counts, `?q=&rettindi=&sida=&notandi=` in the URL; in
+  the panel the platform permission and the bank role each save on their own button, only when
+  changed, with a confirm for promotions (umsjónarmaður dagskrár, bank admin) and "Afturkalla"
+  after; delete behind a named dialog; own row and platform admins read-only with the reason;
+  Icelandic errors chosen from the status, "Reyna aftur"; 44px targets, 48px on a phone. It
+  now loads every user (pages of 200), not one page of 20. Rationale on its docs page. _Backend
+  follow-ups (sc-640):_ freeze/reinstate, join and last-seen dates and the change history are
+  left out until the API has them.
+
 ## Picked, to promote
 
-- **UserManagement → C · Split.** List and detail panel: role with save only when changed and a
-  confirm for promotion, freeze with a reason and date, a history timeline. Problems in the
-  current page: promotion saves on `<select>` change with no confirm; no undo or success
-  feedback; delete is the only access action; no permission filter and nothing in the URL;
-  raw English errors; 24–28px targets. _Needs backend:_ status, freeze, join/last-seen and
-  history fields don't exist in the API yet. _Open wording:_ "Frystur"/"Virkur" is masculine.
+Nothing waiting.
 
 ## In the Lab
 

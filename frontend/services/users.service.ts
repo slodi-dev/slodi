@@ -54,6 +54,43 @@ export type PaginatedUsersResult = {
   total: number;
 };
 
+/**
+ * A failed admin request, with the HTTP status so the page can pick its own
+ * Icelandic message. Status 0 is a network failure. `detail` is the backend's
+ * text, for the console and small print only.
+ */
+export class UserRequestError extends Error {
+  readonly status: number;
+  readonly detail: string;
+
+  constructor(status: number, detail: string) {
+    super(detail || `API error: ${status}`);
+    this.name = "UserRequestError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+/** Sends one admin request; throws `UserRequestError` unless the response is ok. */
+async function sendAdminRequest(url: string, token: string, init: RequestInit = {}) {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers: { ...(init.headers as Record<string, string>), Authorization: `Bearer ${token}` },
+      credentials: "include",
+    });
+  } catch (err) {
+    throw new UserRequestError(0, err instanceof Error ? err.message : "Network error");
+  }
+  if (!response.ok) {
+    const detail = await response.text();
+    console.error(`[API ${response.status}]`, detail);
+    throw new UserRequestError(response.status, detail);
+  }
+  return response;
+}
+
 export type ListUsersParams = {
   q?: string;
   limit?: number;
@@ -121,25 +158,29 @@ export async function listUsers(
   if (q && q.length >= 2) searchParams.set("q", q);
 
   const url = `${buildApiUrl("/users/admin/list")}?${searchParams.toString()}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Failed to list users: ${response.status} - ${errorBody}`);
-  }
+  const response = await sendAdminRequest(url, token);
 
   const items: User[] = await response.json();
   const totalHeader = response.headers.get("X-Total-Count");
   const total = totalHeader ? parseInt(totalHeader, 10) : items.length;
 
   return { items, total };
+}
+
+/** The most the backend returns in one page (`Limit`, `app/core/pagination.py`). */
+const USERS_PAGE_LIMIT = 200;
+
+/**
+ * Every user (admin only), paged through in the backend's largest pages, so the
+ * page can search, filter and count on the whole list.
+ */
+export async function listAllUsers(token: string): Promise<User[]> {
+  const all: User[] = [];
+  for (;;) {
+    const page = await listUsers(token, { limit: USERS_PAGE_LIMIT, offset: all.length });
+    all.push(...page.items);
+    if (page.items.length < USERS_PAGE_LIMIT || all.length >= page.total) return all;
+  }
 }
 
 /**
@@ -150,23 +191,11 @@ export async function adminUpdateUser(
   userId: string,
   updates: AdminUserUpdateInput
 ): Promise<User> {
-  const url = buildApiUrl(`/users/${userId}`);
-
-  const response = await fetch(url, {
+  const response = await sendAdminRequest(buildApiUrl(`/users/${userId}`), token, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
-    credentials: "include",
   });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Failed to update user: ${response.status} - ${errorBody}`);
-  }
-
   return response.json();
 }
 
@@ -174,18 +203,5 @@ export async function adminUpdateUser(
  * Delete a user (admin only).
  */
 export async function adminDeleteUser(token: string, userId: string): Promise<void> {
-  const url = buildApiUrl(`/users/${userId}`);
-
-  const response = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Failed to delete user: ${response.status} - ${errorBody}`);
-  }
+  await sendAdminRequest(buildApiUrl(`/users/${userId}`), token, { method: "DELETE" });
 }

@@ -3,6 +3,7 @@
  * Icelandic order, and the one message the reader sees for each failure.
  */
 import { countIs } from "@/lib/format";
+import { compareIs } from "@/lib/icelandic-text";
 import { TagRequestError, type Tag } from "@/services/tags.service";
 
 /** Mirrors `backend/app/domain/tag_constraints.py` (NAME_MAX). */
@@ -21,21 +22,7 @@ export function sameName(a: string, b: string): boolean {
   return normaliseName(a) === normaliseName(b);
 }
 
-/** Icelandic alphabetical order. `localeCompare` can't be trusted: Chrome has no is-IS data. */
-const ALPHABET = "aábcdðeéfghiíjklmnoópqrstuúvwxyýzþæö";
-
-export function compareIs(a: string, b: string): number {
-  const x = a.toLowerCase();
-  const y = b.toLowerCase();
-  for (let i = 0; i < Math.min(x.length, y.length); i++) {
-    const ix = ALPHABET.indexOf(x[i]);
-    const iy = ALPHABET.indexOf(y[i]);
-    const dx = ix === -1 ? 100 + x.charCodeAt(i) : ix;
-    const dy = iy === -1 ? 100 + y.charCodeAt(i) : iy;
-    if (dx !== dy) return dx - dy;
-  }
-  return x.length - y.length;
-}
+export { compareIs };
 
 /**
  * The tags whose name contains the search text, in Icelandic order, with an
