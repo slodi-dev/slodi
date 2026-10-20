@@ -1,477 +1,389 @@
-@import "./../../app/slodi-tokens.css";
-@import "./../../app/slodi-utilities.css";
+/* The side nav (B · Groups). Every colour is a token, so it works in light, dark and the patrol
+   themes. Collapsed applies from 768px up; on a phone the nav sits in AppShell's drawer and is
+   always expanded. The --nav-* properties are bare HSL triplets, wrapped where they are used. */
 
-/* ═══════════════════════════════════════════════════════════════
-   SIDEBAR NAVIGATION - Using Slóði Design Tokens
-   UPDATED: No header on dashboard routes, sidebar starts at viewport top
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ===== SIDEBAR CONTAINER ===== */
 .sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  width: 100%; /* Fill the wrapper */
-  background: hsl(var(--sl-color-surface));
-  border-right: 1px solid hsl(var(--sl-color-border));
+  --nav-w: 16rem;
+  --nav-w-collapsed: 4.5rem;
+  --nav-bg: var(--sl-color-surface-secondary);
+  --nav-edge: var(--sl-color-border-subtle);
+  --nav-fg: var(--sl-color-text-secondary);
+  --nav-fg-strong: var(--sl-color-text-primary);
+  /* surface-active is the same shade as surface-secondary in light, so hover went unseen. */
+  --nav-hover: var(--sl-color-surface-tertiary);
+  --nav-pressed: var(--sl-color-border-subtle);
+  --nav-active-bg: var(--sl-color-primary-text);
+  --nav-active-fg: var(--sl-color-text-inverse);
+
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  z-index: var(--sl-z-fixed);
+  box-sizing: border-box;
+  width: var(--nav-w);
+  height: 100%;
+  background: hsl(var(--nav-bg));
+  border-right: 1px solid hsl(var(--nav-edge));
+  color: hsl(var(--nav-fg));
+  font-family: var(--sl-font-family-body);
+}
+
+/* The width animates only after a real toggle, not when a tablet's first paint collapses it. */
+.sidebar[data-toggled="true"] {
   transition: width var(--sl-transition-base);
-
-  /* Hide scrollbar while maintaining scroll functionality */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
 }
 
-.sidebar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
-}
-
-/* Collapsed state */
-.sidebarCollapsed {
-  width: 64px;
-}
-
-/* Collapsed state on desktop using data attribute */
-.sidebar[data-collapsed="true"] {
-  width: 64px;
-}
-
-/* ===== COLLAPSE BUTTON (INTEGRATED) ===== */
-.collapseButtonWrapper {
-  padding: 0 var(--sl-spacing-inline);
-  margin-top: var(--sl-spacing-element);
-}
-
-.collapseButton {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-md);
-  width: 100%;
-  padding: var(--sl-spacing-inset-md);
-  background: transparent;
-  border: none;
-  border-radius: var(--sl-radius-button);
-  color: hsl(var(--sl-color-text-secondary));
-  font-size: var(--sl-text-body);
-  font-weight: var(--sl-font-weight-medium);
-  cursor: pointer;
-  transition: var(--sl-transition-fast);
-  white-space: nowrap;
-}
-
-/* Compact variant for collapse button */
-.collapseButtonCompact {
-  padding: var(--sl-spacing-inset-sm);
-  font-size: var(--sl-text-body-sm);
-}
-
-.collapseButton:hover {
-  background: hsl(var(--sl-color-surface-hover));
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.collapseButton:focus-visible {
-  outline: none;
-  box-shadow: var(--sl-shadow-focus);
-}
-
-.collapseButton:active {
-  transform: scale(0.98);
-}
-
-.collapseIcon {
-  width: var(--sl-size-icon-md);
-  height: var(--sl-size-icon-md);
-  flex-shrink: 0;
-  transition: transform var(--sl-transition-fast);
-}
-
-.collapseButton:hover .collapseIcon {
-  transform: scale(1.1);
-}
-
-.collapseLabel {
-  flex: 1;
-  text-align: left;
-}
-
-/* Collapsed state - center icon only */
-.sidebarCollapsed .collapseButtonWrapper {
-  padding: 0 var(--sl-spacing-compact);
-  margin-top: var(--sl-spacing-element);
-}
-
-.sidebarCollapsed .collapseButton {
-  justify-content: center;
-}
-
-.sidebarCollapsed .collapseButtonCompact {
-  padding: var(--sl-spacing-inset-sm);
-}
-
-.sidebarCollapsed .collapseLabel {
-  display: none;
-}
-
-/* ===== NAVIGATION ===== */
-.nav {
-  display: flex;
-  flex-direction: column;
-  padding: var(--sl-spacing-component) 0;
-  flex: 1;
-  overflow-y: auto;
+/* Rhythm: 4px between items, 8px from a heading to its items, 20px between groups. */
+.body {
   position: relative;
-}
-
-.navList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sl-spacing-gap-xs);
+  gap: var(--sl-primitive-space-5);
+  padding: var(--sl-spacing-md) var(--sl-spacing-sm);
+  overflow-y: auto;
+}
+
+/* The groups sit above the sliding pill. */
+.group {
   position: relative;
   z-index: 1;
 }
 
-/* Personal section pinned to bottom */
-.personalList {
+.groupBottom {
   margin-top: auto;
 }
 
-/* ===== NAV ITEMS ===== */
-.navItem {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-gap-md);
-  padding: var(--sl-spacing-inset-md);
-  margin: 0 var(--sl-spacing-inline);
-  border-radius: var(--sl-radius-button);
+/* The heading's first letter lines up with the icons beneath it. */
+.heading {
+  margin: 0 0 var(--sl-spacing-gap-sm);
+  padding: 0 calc(var(--sl-spacing-sm) + (2rem - var(--sl-size-icon-md)) / 2);
   color: hsl(var(--sl-color-text-secondary));
-  text-decoration: none;
-  font-size: var(--sl-text-body);
-  font-weight: var(--sl-font-weight-medium);
-  line-height: var(--sl-line-height-normal);
-  transition: var(--sl-transition-fast);
-  cursor: pointer;
-  position: relative;
-  white-space: nowrap;
-}
-
-.navItem:hover {
-  background: hsl(var(--sl-color-surface-hover));
-  color: hsl(var(--sl-color-text-primary));
-}
-
-.navItem:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
-}
-
-/* Active state */
-.navItemActive {
-  background: hsl(var(--sl-color-primary-subtle));
-  color: hsl(var(--sl-color-primary));
+  font-size: var(--sl-text-overline);
   font-weight: var(--sl-font-weight-semibold);
-  border-left: 3px solid hsl(var(--sl-color-primary));
-  padding-left: calc(var(--sl-spacing-inset-md) - 3px);
+  letter-spacing: var(--sl-primitive-letter-spacing-widest);
+  line-height: var(--sl-line-height-normal);
+  text-transform: uppercase;
 }
 
-.navItemActive:hover {
-  background: hsl(var(--sl-color-primary-subtle));
+.list {
+  position: relative;
+  display: grid;
+  gap: var(--sl-spacing-gap-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* Disabled state */
-.navItemDisabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* The sliding pill behind the active item. Placed by JS in body coordinates; it slides only
+   once it has been placed the first time. Before that, the active item paints its own. */
+.marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--nav-active-bg));
+  box-shadow: var(--sl-shadow-card);
   pointer-events: none;
 }
-
-.navItemDisabled:hover {
-  background: transparent;
-  color: hsl(var(--sl-color-text-secondary));
+.sidebar[data-marker="placed"] .marker {
+  transition:
+    transform var(--sl-transition-base),
+    width var(--sl-transition-base),
+    height var(--sl-transition-base);
 }
 
-/* Icon */
-.navIcon {
-  width: var(--sl-size-icon-md);
-  height: var(--sl-size-icon-md);
-  flex-shrink: 0;
+.foot {
+  padding: var(--sl-spacing-sm);
+  border-top: 1px solid hsl(var(--nav-edge));
 }
 
-/* Label */
-.navLabel {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Badge (notification count) */
-.navBadge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 var(--sl-spacing-compact);
-  background: hsl(var(--sl-color-error));
-  color: hsl(var(--sl-color-text-inverse));
-  border-radius: var(--sl-radius-badge);
-  font-size: var(--sl-primitive-font-size-2xs);
-  font-weight: var(--sl-primitive-font-weight-bold);
-  line-height: 1;
-}
-
-/* ===== SEPARATOR ===== */
-.navSeparator {
-  height: 1px;
-  background: hsl(var(--sl-color-border-subtle));
-  margin: var(--sl-spacing-element) var(--sl-spacing-component);
+/* ── One entry: a link, an item not built yet, or the collapse toggle ── */
+.item {
   position: relative;
-  z-index: 1;
-}
-
-/* ===== USER SECTION ===== */
-.userSection {
-  margin: var(--sl-spacing-element) var(--sl-spacing-inline);
-}
-
-.userLink {
   display: flex;
   align-items: center;
-  gap: var(--sl-spacing-gap-md);
-  padding: var(--sl-spacing-inset-md);
+  gap: var(--sl-spacing-gap-sm);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--sl-touch-target);
+  padding: 0 var(--sl-spacing-sm);
+  border: 0;
   border-radius: var(--sl-radius-button);
-  color: hsl(var(--sl-color-text-primary));
-  text-decoration: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-size: var(--sl-text-body);
   font-weight: var(--sl-font-weight-medium);
-  transition: var(--sl-transition-fast);
-}
-
-.userLink:hover {
-  background: hsl(var(--sl-color-surface-hover));
-}
-
-.userLink:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px hsl(var(--sl-color-primary));
-}
-
-.userLinkActive {
-  background: hsl(var(--sl-color-primary-subtle));
-  color: hsl(var(--sl-color-primary));
-}
-
-.userAvatar {
-  width: var(--sl-size-icon-lg);
-  height: var(--sl-size-icon-lg);
-  border-radius: var(--sl-radius-avatar);
-  border: 2px solid hsl(var(--sl-color-border));
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.userAvatarPlaceholder {
-  width: var(--sl-size-icon-lg);
-  height: var(--sl-size-icon-lg);
-  border-radius: var(--sl-radius-avatar);
-  background: hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-text-inverse));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--sl-text-body-lg);
-  font-weight: var(--sl-primitive-font-weight-bold);
-  flex-shrink: 0;
-}
-
-.userName {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ===== SKIP LINK (Accessibility) ===== */
-.skipLink {
-  position: absolute;
-  top: -100px;
-  left: 0;
-  padding: var(--sl-spacing-inset-md);
-  background: hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-text-inverse));
+  line-height: var(--sl-line-height-tight);
+  text-align: left;
   text-decoration: none;
-  font-weight: var(--sl-font-weight-semibold);
-  z-index: 9999;
-  transition: var(--sl-transition-fast);
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    color var(--sl-transition-base),
+    transform var(--sl-transition-fast);
 }
 
-.skipLink:focus {
-  top: 0;
+.item:hover {
+  background: hsl(var(--nav-hover));
+  color: hsl(var(--nav-fg-strong));
+}
+
+.item:not(.disabled):not(.active):active {
+  background: hsl(var(--nav-pressed));
+  transform: scale(0.98);
+}
+
+.item:focus-visible {
+  /* The transparent outline shows up in forced-colours mode, where box-shadow is dropped. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: var(--sl-shadow-focus);
 }
 
-/* ===== COLLAPSED STATE ADJUSTMENTS ===== */
-.sidebarCollapsed .navLabel,
-.sidebarCollapsed .userName,
-.sidebarCollapsed .navBadge {
-  display: none;
+.active,
+.active:hover {
+  background: hsl(var(--nav-active-bg));
+  color: hsl(var(--nav-active-fg));
+  font-weight: var(--sl-font-weight-semibold);
+}
+.sidebar[data-marker="placed"] .active,
+.sidebar[data-marker="placed"] .active:hover {
+  background: transparent;
 }
 
-.sidebarCollapsed .navItem,
-.sidebarCollapsed .userLink {
+.disabled {
+  cursor: default;
+}
+.disabled:hover {
+  background: transparent;
+  color: hsl(var(--nav-fg));
+}
+.disabled .icon svg {
+  opacity: var(--sl-opacity-muted);
+}
+
+.icon {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
   justify-content: center;
-  padding: var(--sl-spacing-inset-md);
-  margin: 0 var(--sl-spacing-compact);
+  width: 2rem;
+  height: 2rem;
+}
+.icon svg {
+  width: var(--sl-size-icon-md);
+  height: var(--sl-size-icon-md);
 }
 
-.sidebarCollapsed .navItemActive {
-  border-left: none;
-  border-bottom: 3px solid hsl(var(--sl-color-primary));
-  padding: var(--sl-spacing-inset-md);
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sidebarCollapsed .userSection {
-  margin: var(--sl-spacing-element) var(--sl-spacing-compact);
+/* ", kemur síðar" inside the label: read out always, seen only in the collapsed tip (the
+   "Kemur síðar" tag shows it when expanded). */
+.labelSoon {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
-/* ===== RESPONSIVE BREAKPOINTS ===== */
+.soon {
+  flex: none;
+  padding: 0 var(--sl-spacing-xs);
+  border: 1px solid hsl(var(--nav-edge));
+  border-radius: var(--sl-radius-pill);
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-font-weight-medium);
+  line-height: var(--sl-line-height-normal);
+  white-space: nowrap;
+}
 
-/* Tablet: Force collapsed mode */
-@media (min-width: 768px) and (max-width: 1199px) {
-  .sidebar {
-    width: 64px;
+.badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 var(--sl-spacing-xs);
+  box-sizing: border-box;
+  border-radius: var(--sl-radius-pill);
+  background: hsl(var(--sl-color-error-text));
+  color: hsl(var(--sl-color-text-inverse));
+  box-shadow: 0 0 0 2px hsl(var(--nav-bg));
+  font-size: var(--sl-text-xs);
+  font-weight: var(--sl-primitive-font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.active .badge {
+  box-shadow: 0 0 0 2px hsl(var(--nav-active-bg));
+}
+/* A new count pops in. Scale only, so the number is always fully legible. */
+.badgePop {
+  animation: badge-pop var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out);
+}
+
+/* ═════ Tablet and desktop: expanded, or collapsed to icons ═════ */
+@media (min-width: 768px) {
+  .item {
+    min-height: 2.75rem;
   }
 
-  .navLabel,
-  .userName,
-  .navBadge,
-  .collapseLabel {
+  .sidebar[data-collapsed="true"] {
+    width: var(--nav-w-collapsed);
+  }
+
+  /* Collapsed, nothing scrolls, so the tips can pop out to the right. */
+  .sidebar[data-collapsed="true"] .body {
+    gap: var(--sl-spacing-stack-sm);
+    overflow: visible;
+  }
+
+  .sidebar[data-collapsed="true"] .item {
+    justify-content: center;
+    width: var(--sl-touch-target);
+    min-height: var(--sl-touch-target);
+    margin-inline: auto;
+    padding: 0;
+  }
+
+  .sidebar[data-collapsed="true"] .soon {
     display: none;
   }
 
-  .navItem,
-  .userLink {
-    justify-content: center;
-    padding: var(--sl-spacing-inset-md);
-    margin: 0 var(--sl-spacing-compact);
+  /* The headings stay for screen readers; a short centred rule stands in for each. */
+  .sidebar[data-collapsed="true"] .heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
   }
-
-  .navItemActive {
-    border-left: none;
-    border-bottom: 3px solid hsl(var(--sl-color-primary));
-    padding: var(--sl-spacing-inset-md);
-  }
-
-  .userSection {
-    margin: var(--sl-spacing-element) var(--sl-spacing-compact);
-  }
-
-  .collapseButtonWrapper {
-    padding: 0 var(--sl-spacing-compact);
-    margin-top: var(--sl-spacing-element);
-  }
-
-  .collapseButton {
-    justify-content: center;
-  }
-
-  .collapseButtonCompact {
-    padding: var(--sl-spacing-inset-sm);
-  }
-}
-
-/* Mobile: Hide sidebar by default (use drawer/hamburger) */
-@media (max-width: 767px) {
-  .sidebar {
-    width: 280px; /* Fixed width on mobile */
-    transform: translateX(-280px); /* Hide off-screen to the left */
-    transition: transform var(--sl-transition-base);
-    box-shadow: none; /* No shadow when closed */
-  }
-
-  /* Show sidebar when open */
-  .sidebar[data-open="true"] {
-    transform: translateX(0);
-    box-shadow: var(--sl-shadow-modal);
-  }
-
-  /* Push nav content below the floating hamburger button */
-  .sidebar .nav {
-    padding-top: 4.5rem;
-  }
-
-  /* Ensure labels are visible on mobile */
-  .sidebar .navLabel,
-  .sidebar .userName,
-  .sidebar .navBadge,
-  .sidebar .collapseLabel {
+  .sidebar[data-collapsed="true"] .group + .group::before {
+    content: "";
     display: block;
+    width: 1.5rem;
+    height: 2px;
+    margin: 0 auto var(--sl-spacing-stack-sm);
+    border-radius: var(--sl-radius-pill);
+    background: hsl(var(--sl-color-border));
   }
 
-  /* Reset collapsed styles on mobile - always show full menu */
-  .sidebar .navItem,
-  .sidebar .userLink {
-    justify-content: flex-start;
-    padding: var(--sl-spacing-inset-md);
-    margin: 0 var(--sl-spacing-inline);
+  /* The label stays in the DOM for screen readers and shows as a tip on hover or focus. */
+  .sidebar[data-collapsed="true"] .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
   }
 
-  .sidebar .navItemActive {
-    border-left: 3px solid hsl(var(--sl-color-primary));
-    border-bottom: none;
-    padding-left: calc(var(--sl-spacing-inset-md) - 3px);
+  .sidebar[data-collapsed="true"] .item:hover .label,
+  .sidebar[data-collapsed="true"] .item:focus-visible .label {
+    top: 50%;
+    left: calc(100% + var(--sl-spacing-sm));
+    z-index: var(--sl-z-tooltip);
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: var(--sl-tooltip-padding);
+    overflow: visible;
+    clip: auto;
+    border-radius: var(--sl-tooltip-radius);
+    background: hsl(var(--sl-tooltip-background));
+    color: hsl(var(--sl-tooltip-text));
+    box-shadow: var(--sl-tooltip-shadow);
+    font-size: var(--sl-tooltip-font-size);
+    font-weight: var(--sl-font-weight-medium);
+    pointer-events: none;
+    transform: translateY(-50%);
+    animation: tip-in var(--sl-transition-fast);
+  }
+  /* In the tip, the reason an item is not a link yet is shown too. */
+  .sidebar[data-collapsed="true"] .item:hover .labelSoon,
+  .sidebar[data-collapsed="true"] .item:focus-visible .labelSoon {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
   }
 
-  .sidebar .userSection {
-    margin: var(--sl-spacing-element) var(--sl-spacing-inline);
-  }
-
-  .sidebar .collapseButtonWrapper {
-    padding: 0 var(--sl-spacing-inline);
-  }
-
-  .sidebar .collapseButton {
-    justify-content: flex-start;
+  /* After a real expand, the labels, headings and tags fade in as the column widens. */
+  .sidebar[data-toggled="true"][data-collapsed="false"] .label,
+  .sidebar[data-toggled="true"][data-collapsed="false"] .heading,
+  .sidebar[data-toggled="true"][data-collapsed="false"] .soon {
+    animation: nav-fade-in var(--sl-transition-base);
   }
 }
-/* ===== PRINT STYLES ===== */
-@media print {
+
+/* ═════ Phone: inside the drawer, full width, no collapsing ═════ */
+@media (max-width: 767.98px) {
   .sidebar {
+    width: 100%;
+    border-right: 0;
+  }
+
+  .foot {
     display: none;
   }
 }
 
-/* ===== REDUCED MOTION ===== */
+/* ═════ Motion: short (150–350ms), never in the way of a click ═════ */
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translate(-0.25rem, -50%);
+  }
+}
+
+@keyframes nav-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: nothing animates or slides. The tokens already drop to 0ms; this also stops
+   the keyframes and the transitions timed with primitive durations. 1ms rather than none, so
+   transitionend still fires for anything waiting on it. */
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .navItem,
-  .userLink,
-  .collapseButton,
-  .collapseIcon {
-    transition: none;
-  }
-}
-
-/* ===== HIGH CONTRAST MODE ===== */
-@media (prefers-contrast: high) {
-  .navItemActive {
-    outline: 2px solid currentColor;
-  }
-
-  .navItem:focus-visible,
-  .userLink:focus-visible,
-  .collapseButton:focus-visible {
-    outline: 3px solid currentColor;
-  }
-
-  .collapseButton {
-    border-width: 2px;
+  .sidebar *,
+  .sidebar *::before,
+  .sidebar *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
   }
 }

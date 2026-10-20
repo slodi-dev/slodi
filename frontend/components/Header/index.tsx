@@ -81,7 +81,7 @@ function GithubLink({ className, onClick }: { className: string; onClick?: () =>
  * and a `<base>` element would turn it into a page load. Without JavaScript the plain link
  * still works.
  */
-function skipToMain(event: MouseEvent<HTMLAnchorElement>) {
+export function skipToMain(event: MouseEvent<HTMLAnchorElement>) {
   const main = document.getElementById(MAIN_CONTENT_ID);
   if (!main) return;
   event.preventDefault();

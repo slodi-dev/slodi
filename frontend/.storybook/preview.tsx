@@ -172,6 +172,13 @@ const preview: Preview = {
           styles: { width: "390px", height: "844px" },
           type: "mobile",
         },
+        // Not a tested width: for the stories that show the in-between layouts (AppShell's
+        // icon-only nav at 768–1199px).
+        tablet: {
+          name: "Tablet (1024)",
+          styles: { width: "1024px", height: "768px" },
+          type: "tablet",
+        },
         desktop: {
           name: "Desktop (1280)",
           styles: { width: "1280px", height: "800px" },

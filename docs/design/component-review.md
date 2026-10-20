@@ -56,16 +56,18 @@ once a variation is picked it is **promoted** into the real component and its la
   user-facing word is "mappa", never "albúm". _Backend:_ möppur live in memory
   (`hooks/useFolders.ts`, fixtures in mock mode) until sc-620.
 
+- **Side nav (DashboardSidebar) → B · Groups, and `DashboardLayout` is now `AppShell`.**
+  Headings Skipuleggja / Bankinn / Umsjón / Mínar síður, a sliding active pill, animations off
+  under reduced motion; rationale on the AppShell docs page. Fixed: "Slóði" was `aria-current`
+  on every page; the collapse button's text and name now match ("Minnka/Stækka valmynd");
+  unbuilt items show "Kemur síðar" and say it to screen readers and in the collapsed tip; the
+  badge count is read out; collapsed tips show on focus too; 768–1199px starts as icons and the
+  toggle overrides it with a truthful `aria-expanded`; `100dvh`; the skip link comes first, on a
+  token layer, and goes to `#efni` like the public pages'; `--sl-touch-target` (48px) is now a
+  token and the menu button uses it.
+
 ## Picked, to promote
 
-- **Side nav (DashboardSidebar) → B · Groups.** Group headings Skipuleggja / Bankinn / Umsjón /
-  Mínar síður, a sliding active pill, animations off under reduced motion. Bugs to fix on
-  promotion: "Slóði" is `aria-current` on every page (`startsWith("/")`); the collapse button
-  says "Fela valmynd" but is labelled "Loka valmynd"; unbuilt items have a tooltip-only reason;
-  the badge count is hidden from screen readers; collapsed labels are hover-only; 768–1199px is
-  forced to icons while the toggle still flips `aria-expanded`; `100vh`; the skip link comes
-  after the nav at `z-index: 9999`; `--sl-touch-target` is referenced by the UX doc but not
-  defined.
 - **UserManagement → C · Split.** List and detail panel: role with save only when changed and a
   confirm for promotion, freeze with a reason and date, a history timeline. Problems in the
   current page: promotion saves on `<select>` change with no confirm; no undo or success
@@ -116,8 +118,6 @@ once a variation is picked it is **promoted** into the real component and its la
 
 ## To do
 
-- **Rename `DashboardLayout` → `AppShell`.** It is the app shell around the side nav, not a
-  dashboard. Do it with the side-nav promotion.
 - **Storybook in English.** Storybook itself (sidebar groups, story titles and names, docs) is in
   English; component examples are in Icelandic. Many existing titles are Icelandic
   (`Components/Sameiginlegt/…`, `Components/Útlit/…`, `Components/Síur/…`) and need a sweep,

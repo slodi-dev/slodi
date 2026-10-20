@@ -1,0 +1,86 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./AppShell.stories";
+
+<Meta of={Stories} name="Rationale" />
+
+# AppShell and the side nav: B · Groups
+
+Picked in the Lab on 2026-10-19, promoted from `Lab/Sidebar` on 2026-10-20. `AppShell` was
+`DashboardLayout`: it is the frame around every signed-in page, not a dashboard.
+
+<Canvas of={Stories.Member} />
+
+## The story it tells
+
+A leader opens Slóði to do one of four things, and the nav says which part of Slóði each item
+belongs to:
+
+- **Skipuleggja**: planning your own sveit (Stjórnborð, Vinnubekkurinn, Veggurinn).
+- **Bankinn**: the shared programme bank, and for Dagskrárstjórnarteymið its tags and review
+  (Dagskrárbankinn, Merkimiðar, Yfirferð).
+- **Umsjón**: running the platform (Greining, Stjórnun). "Umsjón", so that "Stjórnun" stays the
+  name of one item and the same word as the heading of the page it opens.
+- **Mínar síður**: your own pages, pinned to the bottom (Prófíll, Stillingar, Merkin mín), the
+  phrase Icelandic sites use for account pages.
+
+Slóði itself, the way back to the front page, sits on its own above the groups.
+
+## Hierarchy
+
+1. **Where you are**: the active item is a solid pill in the primary ink with inverse text, the
+   strongest thing in the column. It slides to the new item when the page changes, so the eye
+   follows the move instead of searching for it.
+2. **The groups**: small uppercase headings, aligned with the icons below them. Collapsed, a
+   short centred rule stands in for each, and the headings stay for screen readers (each list is
+   labelled by its heading).
+3. **The items**: icon and label at 44px rows on desktop, 48px collapsed and on a phone.
+4. **What isn't built yet**: shown, dimmed, with a "Kemur síðar" tag, so leaders see what is
+   coming without a dead link. It is a `role="link"` with `aria-disabled`, focusable, so the
+   reason can be reached from the keyboard too.
+
+## Behaviour
+
+- **Widths.** 1200px and up: full width. 768–1199px: icons only. Below 768px: a drawer behind
+  the menu button. On a tablet or desktop the toggle at the bottom ("Minnka valmynd" / "Stækka
+  valmynd") overrides the width, and its `aria-expanded` always tells the truth.
+- **Collapsed tips.** Each label stays in the DOM and shows as a tip on hover _and_ on keyboard
+  focus. An item not built yet says ", kemur síðar" in its tip.
+- **The badge.** The unread count on Merkin mín sits on the icon and is read out with the label
+  ("Merkin mín, 3 ný"). A new count pops in.
+- **The drawer.** Opening moves focus to its first link; Tab cycles through the drawer and the
+  menu button; Escape, the menu button, the backdrop or a link closes it and focus returns to
+  the menu button. Closed, it is `visibility: hidden`, so nothing in it can be reached.
+- **The skip link** "Fara beint í efni" is the first stop on Tab, above everything, and goes to
+  `<main id="efni">`, the same target as the public header's.
+- **Motion.** The pill slide, the labels fading in after an expand, the badge pop and the
+  drawer's small overshoot are 150–350ms, on transform and opacity, and never block a click.
+  Under reduced motion none of them run.
+
+## Fixed on promotion
+
+- Slóði ("/") was `aria-current` on every page (a bare `startsWith`); now only on the front page.
+- The collapse button showed "Fela valmynd" but was named "Loka valmynd"; the visible text is
+  now the name.
+- Items not built yet had their reason only in a `title` tooltip; it is now visible and read out.
+- The badge count was hidden from screen readers; it is now part of the label.
+- Collapsed labels showed on hover only; now on keyboard focus too.
+- 768–1199px was forced to icons by CSS while the toggle still flipped `aria-expanded`; the
+  width now sets the starting state and the toggle overrides it.
+- `100vh` (cut off behind phone browser bars) is now `100dvh`.
+- The skip link came after the nav, at `z-index: 9999`, and pointed at a different id from the
+  public pages'; it now comes first, on the toast layer token, and points at `#efni`.
+- The menu button was 40px; it and every item are now at least `--sl-touch-target` (48px), a
+  token the UX rules named but that didn't exist.
+- The mobile scrim was a literal `rgba(0…)`; it is the overlay token.
+
+## Trade-offs
+
+- **Headings cost height.** Four headings add about 100px; on a short laptop screen the bottom
+  group can scroll. Collapsed, the rules take far less.
+- **The pill is measured in JS.** Before it is placed (the first paint, and without JS) the
+  active item paints its own pill, so nothing is ever missing; it just doesn't slide yet.
+- **A tablet's first paint is the desktop's.** The server can't know the width, so a tablet
+  sees the full nav for a moment before it collapses. The width doesn't animate then; only a
+  real toggle animates.
+- **The user section is gone.** The old sidebar could show the avatar and name, but the app
+  never turned it on. Prófíll will carry that when it is built.

@@ -21,9 +21,9 @@ const meta = {
       story: { inline: false, height: "560px" },
       description: {
         component:
-          "Picks the layout from the path: Header + Footer for public pages, DashboardLayout " +
+          "Picks the layout from the path: Header + Footer for public pages, AppShell " +
           "for app routes. Set the path with `parameters.nextjs.navigation.pathname`. On a public " +
-          "page `<main>` has the id `efni`, the target of the header's skip link.",
+          "page and in AppShell `<main>` has the id `efni`, the target of the skip link.",
       },
     },
   },

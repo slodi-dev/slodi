@@ -1,78 +1,85 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-/**
- * Return type for useSidebarState hook
- */
+/** Below this window width the side nav is a drawer behind the menu button. */
+export const PHONE_MAX_WIDTH = 767;
+/** Below this window width (and above a phone) the side nav starts collapsed to icons. */
+export const TABLET_MAX_WIDTH = 1199;
+
+type Viewport = "phone" | "tablet" | "desktop";
+
+function viewportOf(width: number): Viewport {
+  if (width <= PHONE_MAX_WIDTH) return "phone";
+  if (width <= TABLET_MAX_WIDTH) return "tablet";
+  return "desktop";
+}
+
 interface UseSidebarStateReturn {
-  sidebarCollapsed: boolean; // Is sidebar collapsed (desktop/tablet)
-  mobileMenuOpen: boolean; // Is mobile menu open
-  isMobile: boolean; // Is current viewport mobile
-  isTablet: boolean; // Is current viewport tablet
-  isDesktop: boolean; // Is current viewport desktop
-  toggleSidebar: () => void; // Toggle sidebar collapsed state
-  toggleMobileMenu: () => void; // Toggle mobile menu open/close
-  closeMobileMenu: () => void; // Close mobile menu
+  /** Whether the nav shows icons only. Never true on a phone, where the nav is a drawer. */
+  sidebarCollapsed: boolean;
+  /** Whether the user has collapsed or expanded the nav since the page loaded. */
+  sidebarToggled: boolean;
+  mobileMenuOpen: boolean;
+  isMobile: boolean;
+  toggleSidebar: () => void;
+  toggleMobileMenu: () => void;
+  closeMobileMenu: () => void;
 }
 
 /**
- * Custom React hook to manage sidebar and mobile menu state
- * Handles responsive breakpoints, scroll locking, and state toggles
+ * The side nav's state: collapsed or not on a tablet or desktop, the drawer open or not on a
+ * phone.
+ *
+ * Collapsed follows the window until the user says otherwise: icons only on a tablet, full
+ * width on a desktop. Once the user presses the toggle, their choice holds at any width, so
+ * the toggle's `aria-expanded` always tells the truth (the old layout forced icons at
+ * 768–1199px with CSS while the toggle still flipped).
+ *
+ * The first render assumes a desktop, the same as the server's, so hydration matches; the
+ * real width is read straight after mount.
  */
-export function useSidebarState(): UseSidebarStateReturn {
-  // State for sidebar collapsed/expanded
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  // State for mobile menu open/closed
+export function useSidebarState(initialCollapsed?: boolean): UseSidebarStateReturn {
+  const [viewport, setViewport] = useState<Viewport>("desktop");
+  const [choice, setChoice] = useState<boolean | undefined>(initialCollapsed);
+  const [toggled, setToggled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // State for current window width (used for breakpoints)
-  const [windowWidth, setWindowWidth] = useState<number>(
-    typeof window !== "undefined" ? window.innerWidth : 1200
-  );
 
-  // Update window width on resize
   useEffect(() => {
-    function handleResize() {
-      setWindowWidth(window.innerWidth);
-    }
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const update = () => setViewport(viewportOf(window.innerWidth));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Auto-close mobile menu when switching to desktop/tablet
-  useEffect(() => {
-    if (windowWidth >= 768 && mobileMenuOpen) {
-      setMobileMenuOpen(false);
-    }
-  }, [windowWidth, mobileMenuOpen]);
+  const isMobile = viewport === "phone";
 
-  // Prevent body scroll when mobile menu is open
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+  // Off a phone the drawer has nothing to be open over.
+  if (!isMobile && mobileMenuOpen) setMobileMenuOpen(false);
 
-    // Cleanup: always reset body overflow on unmount
+  // The page behind an open drawer doesn't scroll.
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
   }, [mobileMenuOpen]);
 
-  // Responsive breakpoints
-  const isMobile = windowWidth < 768;
-  const isTablet = windowWidth >= 768 && windowWidth < 1200;
-  const isDesktop = windowWidth >= 1200;
+  const sidebarCollapsed = !isMobile && (choice ?? viewport === "tablet");
 
-  // Return state and toggles for sidebar and mobile menu
+  const toggleSidebar = useCallback(() => {
+    setChoice(!sidebarCollapsed);
+    setToggled(true);
+  }, [sidebarCollapsed]);
+  const toggleMobileMenu = useCallback(() => setMobileMenuOpen((open) => !open), []);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
   return {
     sidebarCollapsed,
+    sidebarToggled: toggled,
     mobileMenuOpen,
     isMobile,
-    isTablet,
-    isDesktop,
-    toggleSidebar: () => setSidebarCollapsed(!sidebarCollapsed),
-    toggleMobileMenu: () => setMobileMenuOpen(!mobileMenuOpen),
-    closeMobileMenu: () => setMobileMenuOpen(false),
+    toggleSidebar,
+    toggleMobileMenu,
+    closeMobileMenu,
   };
 }

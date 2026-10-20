@@ -1167,7 +1167,7 @@ AUTH0_ALGORITHMS=["RS256"]
 3. **Auth0 SDK Integration**
    - ✅ `lib/auth0.ts` - Auth0 client initialized
    - ✅ `app/api/auth/[auth0]/route.ts` - Dynamic route for Auth0 endpoints
-   - ✅ `useUser()` hook already used in Header and DashboardLayout components
+   - ✅ `useUser()` hook already used in the Header component
    - Login/logout routes: `/auth/login`, `/auth/logout`, `/auth/me`
 
 #### 🟡 Needs Implementation:

@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Header, { MAIN_CONTENT_ID } from "@/components/Header";
 import Footer from "@/components/Footer";
-import DashboardLayout from "@/components/DashboardLayout";
+import AppShell from "@/components/AppShell";
 import styles from "./ConditionalLayout.module.css";
 
 /**
@@ -17,7 +17,7 @@ import styles from "./ConditionalLayout.module.css";
  *    - Dev logs: /dev
  *    - Any other public/marketing pages
  *
- * 2. Dashboard Layout (Sidebar + Content, no Header/Footer)
+ * 2. AppShell (side nav + content, no Header/Footer)
  *    - Dashboard: /dashboard
  *    - Programs: /programs
  *    - Builder: /builder
@@ -103,6 +103,6 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
     );
   }
 
-  // Dashboard/App Layout: Sidebar + Content (no header/footer)
-  return <DashboardLayout>{children}</DashboardLayout>;
+  // App pages: the side nav and the page (no header/footer). AppShell renders its own <main>.
+  return <AppShell>{children}</AppShell>;
 }

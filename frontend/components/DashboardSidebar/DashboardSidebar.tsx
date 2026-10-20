@@ -1,432 +1,391 @@
-/**
- * DashboardSidebar Component
- *
- * A collapsible navigation sidebar for the dashboard with role-based access control.
- * Features:
- * - Three-tier navigation structure (primary, secondary, personal)
- * - Collapsible state with smooth transitions
- * - Role-based menu item visibility (leader, editor, admin)
- * - Active route highlighting
- * - Badge notifications for items
- * - Accessible keyboard navigation and ARIA labels
- * - Responsive mobile drawer support (via parent component)
- */
-
 "use client";
 
-import { useEffect, useState } from "react";
+/**
+ * The app's side nav (B · Groups, picked in Lab/Sidebar on 2026-10-20): the items sorted under
+ * headings, the active item a solid pill that slides to the new item when the page changes.
+ * Collapsed, it shows icons only, with short rules standing in for the headings and each label
+ * as a tip on hover or keyboard focus. On a phone it sits in AppShell's drawer and never
+ * collapses. Rationale: AppShell.mdx.
+ */
+
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import styles from "./DashboardSidebar.module.css";
-
-// Icons from lucide-react for navigation items and controls
 import {
-  Home, // Slóði (Home)
-  LayoutDashboard, // Stjórnborð (Dashboard)
-  Calendar, // Dagskrárbankinn (Programs)
-  Hammer, // Vinnubekkurinn (Builder)
-  MessageSquare, // Veggurinn (Social wall)
-  BarChart3, // Greining (Analytics)
-  Tags, // Merkimiðar (Tags)
-  Shield, // Stjórnun (Admin)
-  User, // Prófíll (Profile)
-  Settings, // Stillingar (Settings)
-  Award, // Merkin mín (Badges)
-  ShieldCheck, // Yfirferð (review board)
-  PanelLeftClose, // Collapse sidebar icon
-  PanelLeftOpen, // Expand sidebar icon
+  Award,
+  BarChart3,
+  Calendar,
+  Hammer,
+  Home,
+  LayoutDashboard,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  Shield,
+  ShieldCheck,
+  Tags,
+  User,
 } from "lucide-react";
 import {
   type UserPermissions,
   hasPermission as hasPlatformPermission,
 } from "@/services/users.service";
+import styles from "./DashboardSidebar.module.css";
 
-/**
- * Navigation item configuration
- */
+type WorkspaceRole = "leader" | "editor" | "admin";
+
 interface NavItem {
-  label: string; // Display text (Icelandic)
-  path: string; // Route path
-  icon: React.ComponentType<{ className?: string }>; // Lucide icon component
-  badge?: number; // Optional notification count
-  roleRequired?: "admin" | "editor"; // Minimum workspace role (omit for all users)
+  label: string;
+  path: string;
+  icon: React.ComponentType<{ className?: string }>;
+  /** Minimum workspace role. */
+  roleRequired?: "admin" | "editor";
   /**
-   * Minimum *platform* permission. Distinct from roleRequired, which is a
-   * workspace role — Yfirferð is open to Dagskrárstjórnarteymið regardless of
-   * which workspaces they happen to belong to.
+   * Minimum *platform* permission. Distinct from roleRequired, which is a workspace role:
+   * Yfirferð and Merkimiðar belong to Dagskrárstjórnarteymið whichever workspaces they are in.
    */
   permissionRequired?: UserPermissions;
-  group?: "home" | "dashboard" | "primary" | "secondary" | "personal"; // Navigation section
-  disabled?: boolean; // Whether item is disabled (not yet implemented)
+  /** Not built yet: shown, marked "Kemur síðar", not a link. */
+  disabled?: boolean;
+}
+
+interface NavGroup {
+  id: string;
+  /** Shown when expanded; screen-reader only when collapsed, where a short rule stands in. */
+  heading?: string;
+  /** Pinned to the bottom of the nav. */
+  bottom?: boolean;
+  items: NavItem[];
 }
 
 /**
- * Sidebar component props
+ * The admin group is "Umsjón" so that "Stjórnun" stays the name of one item, the same word as
+ * the heading of the page it opens. The personal group is "Mínar síður", the phrase Icelandic
+ * sites use for your own account pages, in the same voice as "Merkin mín".
  */
-interface DashboardSidebarProps {
-  userRole?: "leader" | "editor" | "admin"; // User's role for access control
-  userName?: string; // Display name for user section
-  userAvatar?: string; // Avatar URL for user section
-  badgeCount?: number; // Unread badge count
-  userPermissions?: UserPermissions; // Platform permission, for moderator-only items
-  collapsed?: boolean; // Initial collapsed state
-  onCollapsedChange?: (collapsed: boolean) => void; // Callback for state changes
-  showUserSection?: boolean; // Whether to display user avatar section
-}
-
-/**
- * Navigation items configuration
- * Organized into groups:
- * - Home: Back to main site
- * - Dashboard: Dashboard overview
- * - Primary: Main application features (Programs, Builder, Social)
- * - Secondary: Analytics and administration
- * - Personal: User profile, settings, and badges
- *
- * Access control:
- * - Items without roleRequired are visible to all users
- * - roleRequired "editor": visible to editors and admins
- * - roleRequired "admin": visible only to admins
- *
- * Disabled items are shown but not clickable (for features in development)
- */
-const NAV_ITEMS: NavItem[] = [
-  // Home navigation
+const NAV_GROUPS: NavGroup[] = [
+  { id: "home", items: [{ label: "Slóði", path: "/", icon: Home }] },
   {
-    label: "Slóði",
-    path: "/",
-    icon: Home,
-    group: "home",
-  },
-  // Dashboard navigation
-  {
-    label: "Stjórnborð",
-    path: "/dashboard",
-    icon: LayoutDashboard,
-    group: "dashboard",
-  },
-  // Primary navigation - core features accessible to most users
-  {
-    label: "Dagskrárbankinn",
-    path: "/programs",
-    icon: Calendar,
-    group: "primary",
+    id: "plan",
+    heading: "Skipuleggja",
+    items: [
+      { label: "Stjórnborð", path: "/dashboard", icon: LayoutDashboard },
+      {
+        label: "Vinnubekkurinn",
+        path: "/builder",
+        icon: Hammer,
+        roleRequired: "editor",
+        disabled: true,
+      },
+      { label: "Veggurinn", path: "/social", icon: MessageSquare, disabled: true },
+    ],
   },
   {
-    label: "Vinnubekkurinn",
-    path: "/builder",
-    icon: Hammer,
-    group: "primary",
-    roleRequired: "editor", // Requires editor or admin role
-    disabled: true, // Not yet implemented
+    id: "bank",
+    heading: "Bankinn",
+    items: [
+      { label: "Dagskrárbankinn", path: "/programs", icon: Calendar },
+      // Merkimiðar, not "Flokkar": "flokkar" is already the patrol filter in the bank. The
+      // permission must stay in step with the guard inside TagManagement.
+      { label: "Merkimiðar", path: "/tags", icon: Tags, permissionRequired: "moderator" },
+      { label: "Yfirferð", path: "/yfirferd", icon: ShieldCheck, permissionRequired: "moderator" },
+    ],
   },
   {
-    label: "Veggurinn",
-    path: "/social",
-    icon: MessageSquare,
-    group: "primary",
-    disabled: true, // Not yet implemented
-  },
-  // Secondary navigation - advanced features
-  {
-    label: "Greining",
-    path: "/analytics",
-    icon: BarChart3,
-    group: "secondary",
-    disabled: true, // Not yet implemented
+    id: "admin",
+    heading: "Umsjón",
+    items: [
+      { label: "Greining", path: "/analytics", icon: BarChart3, disabled: true },
+      // Platform permission, the same check UserManagement guards itself with, so a workspace
+      // admin never sees a link that then refuses them.
+      { label: "Stjórnun", path: "/admin", icon: Shield, permissionRequired: "admin" },
+    ],
   },
   {
-    // Merkimiðar, not "Flokkar" — the page manages tags, and "flokkar" is
-    // already the word for the patrol filter in the bank sidebar.
-    label: "Merkimiðar",
-    path: "/tags",
-    icon: Tags,
-    group: "secondary",
-    // Platform permission, not workspace role: the tag vocabulary is shared by
-    // the whole bank, so it belongs to Dagskrárstjórnarteymið rather than to
-    // whoever happens to be an editor of one workspace. Must stay in step with
-    // the guard inside TagManagement.
-    permissionRequired: "moderator",
-  },
-  {
-    label: "Yfirferð",
-    path: "/yfirferd",
-    icon: ShieldCheck,
-    group: "secondary",
-    permissionRequired: "moderator",
-  },
-  {
-    label: "Stjórnun",
-    path: "/admin",
-    icon: Shield,
-    group: "secondary",
-    /*
-     * Platform permission, not workspace role. `UserManagement` guards itself
-     * on `permissions !== "admin"`, so gating the link on `roleRequired` meant
-     * the two disagreed in both directions: a workspace admin saw a link that
-     * then refused them, and a platform admin who happened not to be an admin
-     * of any workspace never saw the screen that appoints moderators.
-     */
-    permissionRequired: "admin",
-  },
-  // Personal navigation - user-specific items
-  {
-    label: "Prófíll",
-    path: "/profile",
-    icon: User,
-    group: "personal",
-    disabled: true, // Not yet implemented
-  },
-  {
-    label: "Stillingar",
-    path: "/settings",
-    icon: Settings,
-    group: "personal",
-  },
-  {
-    label: "Merkin mín",
-    path: "/badges",
-    icon: Award,
-    group: "personal",
-    disabled: true, // Not yet implemented
+    id: "you",
+    heading: "Mínar síður",
+    bottom: true,
+    items: [
+      { label: "Prófíll", path: "/profile", icon: User, disabled: true },
+      { label: "Stillingar", path: "/settings", icon: Settings },
+      { label: "Merkin mín", path: "/badges", icon: Award, disabled: true },
+    ],
   },
 ];
+
+function canSee(item: NavItem, role: WorkspaceRole, permissions: UserPermissions | undefined) {
+  if (item.permissionRequired && !hasPlatformPermission(permissions, item.permissionRequired)) {
+    return false;
+  }
+  if (item.roleRequired === "admin") return role === "admin";
+  if (item.roleRequired === "editor") return role === "editor" || role === "admin";
+  return true;
+}
+
+/** "/" matches only itself (it used to be a bare `startsWith`, so Slóði was current on every
+ * page); the rest match the path or a sub-route. */
+export function isActivePath(pathname: string, path: string) {
+  if (path === "/") return pathname === "/";
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
+/** Where the sliding pill goes: the active item, in the coordinates of the scrolling body. */
+interface Box {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+/** Measures the pill's box, again whenever the active page or the nav's size changes. */
+function useMarkerBox(
+  bodyRef: React.RefObject<HTMLElement | null>,
+  activePath: string,
+  collapsed: boolean,
+  itemCount: number
+) {
+  const [marker, setMarker] = useState<Box | null>(null);
+
+  const measure = useCallback(() => {
+    const body = bodyRef.current;
+    const active = body?.querySelector('[aria-current="page"]');
+    if (!body || !active) {
+      setMarker(null);
+      return;
+    }
+    const origin = body.getBoundingClientRect();
+    const rect = active.getBoundingClientRect();
+    setMarker({
+      top: rect.top - origin.top + body.scrollTop,
+      left: rect.left - origin.left + body.scrollLeft,
+      width: rect.width,
+      height: rect.height,
+    });
+  }, [bodyRef]);
+
+  useLayoutEffect(measure, [measure, activePath, collapsed, itemCount]);
+
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [bodyRef, measure]);
+
+  return marker;
+}
+
+function NavEntry({
+  item,
+  active,
+  badge,
+  badgePops,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  badge: number;
+  /** Whether the count has changed since the nav mounted, so a new count pops in. */
+  badgePops: boolean;
+  onNavigate?: (path: string) => void;
+}) {
+  const Icon = item.icon;
+  const content = (
+    <>
+      <span className={styles.icon} aria-hidden="true">
+        <Icon />
+        {badge > 0 && (
+          // Keyed on the count, so each new count mounts afresh and replays the pop.
+          <span key={badge} className={`${styles.badge} ${badgePops ? styles.badgePop : ""}`}>
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
+      </span>
+      {/* The label is also the collapsed tip, so the reason and the count go with it. */}
+      <span className={styles.label}>
+        {item.label}
+        {item.disabled && <span className={styles.labelSoon}>, kemur síðar</span>}
+        {badge > 0 && <span className="sl-sr-only">, {badge} ný</span>}
+      </span>
+      {item.disabled && (
+        <span className={styles.soon} aria-hidden="true">
+          Kemur síðar
+        </span>
+      )}
+    </>
+  );
+
+  if (item.disabled) {
+    // A link that isn't one yet: focusable, so the "kemur síðar" tip can also be reached from
+    // the keyboard when collapsed, and announced as a dimmed link.
+    return (
+      <span
+        className={`${styles.item} ${styles.disabled}`}
+        role="link"
+        aria-disabled="true"
+        tabIndex={0}
+      >
+        {content}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={item.path}
+      className={`${styles.item} ${active ? styles.active : ""}`}
+      aria-current={active ? "page" : undefined}
+      onClick={() => onNavigate?.(item.path)}
+    >
+      {content}
+    </Link>
+  );
+}
+
+export interface DashboardSidebarProps {
+  /** Workspace role, for the items behind `roleRequired`. */
+  userRole?: WorkspaceRole;
+  /** Platform permission, for the moderator- and admin-only items. */
+  userPermissions?: UserPermissions;
+  /** Unread count on Merkin mín. */
+  badgeCount?: number;
+  /** Icons only. AppShell decides it (by width, then by the user's toggle). */
+  collapsed?: boolean;
+  /** Called with the new state when the collapse toggle is pressed. */
+  onCollapsedChange?: (collapsed: boolean) => void;
+  /** Whether the user has toggled since load; the labels fade in only after a real toggle. */
+  toggled?: boolean;
+  /** Id of the element the collapse toggle resizes. */
+  controls?: string;
+  /** Accessible name of the nav. */
+  navLabel?: string;
+  /** Overrides `usePathname()`, so a story can move the active page without a router. */
+  activePath?: string;
+  /** Called with the item's path when a nav link is clicked (AppShell closes the drawer). */
+  onNavigate?: (path: string) => void;
+}
 
 export default function DashboardSidebar({
   userRole = "leader",
   userPermissions,
-  userName = "Notandi",
-  userAvatar,
   badgeCount = 0,
   collapsed = false,
   onCollapsedChange,
-  showUserSection = false, // Default to hidden
-  ...props // Accept additional props like data-open
-}: DashboardSidebarProps & { "data-open"?: string }) {
-  const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(collapsed);
+  toggled = false,
+  controls,
+  navLabel = "Aðalvalmynd",
+  activePath,
+  onNavigate,
+}: DashboardSidebarProps) {
+  const routerPath = usePathname();
+  const pathname = activePath ?? routerPath ?? "/";
+  const uid = useId();
 
   /*
-   * Permissions arrive from an async fetch, so the server renders the sidebar
-   * without them and the client may render it with them — different markup for
-   * the same tree, which React reports as a hydration mismatch and then throws
-   * the server's HTML away.
-   *
-   * Holding the gated items back until after mount makes the first client paint
-   * identical to the server's by construction. They appear a moment later,
-   * which is the honest behaviour anyway: until the fetch lands nobody knows
-   * whether this person is a moderator.
+   * Permissions arrive from an async fetch, so the server renders the nav without them and the
+   * client may render it with them: different markup for the same tree, which React reports as
+   * a hydration mismatch. Holding the gated items back until after mount makes the first client
+   * paint match the server's. Until the fetch lands nobody knows whether this is a moderator.
    */
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  /**
-   * Check if user has permission to see a navigation item
-   * Implements hierarchical role system: admin > editor > leader
-   */
-  const hasPermission = (item: NavItem): boolean => {
-    if (item.permissionRequired) {
-      if (!mounted) return false;
-      if (!hasPlatformPermission(userPermissions, item.permissionRequired)) return false;
-    }
-    if (!item.roleRequired) return true;
-    if (item.roleRequired === "admin") return userRole === "admin";
-    if (item.roleRequired === "editor") return userRole === "editor" || userRole === "admin";
-    return true;
-  };
+  // The badge pops only when its count changes after mount, not on the first paint.
+  const [shownBadge, setShownBadge] = useState(badgeCount);
+  const [badgePops, setBadgePops] = useState(false);
+  if (shownBadge !== badgeCount) {
+    setShownBadge(badgeCount);
+    setBadgePops(true);
+  }
 
-  /**
-   * Toggle sidebar collapsed state
-   * Notifies parent component via callback for responsive handling
-   */
-  const toggleCollapsed = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    onCollapsedChange?.(newState);
-  };
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter(
+      (item) => (!item.permissionRequired || mounted) && canSee(item, userRole, userPermissions)
+    ),
+  })).filter((group) => group.items.length > 0);
+  const itemCount = groups.reduce((sum, group) => sum + group.items.length, 0);
 
-  /**
-   * Determine if a navigation path is currently active
-   * Uses exact match for root and prefix match for sub-routes
-   */
-  const isActive = (path: string) => {
-    // Exact match for root paths
-    if (path === "/dashboard") return pathname === "/dashboard";
-    // Starts with match for sub-routes
-    return pathname.startsWith(path);
-  };
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const marker = useMarkerBox(bodyRef, pathname, collapsed, itemCount);
+  // The pill slides only once it has been placed, so it doesn't fly in from the corner.
+  const [markerPlaced, setMarkerPlaced] = useState(false);
+  const hasMarker = Boolean(marker);
+  useEffect(() => {
+    if (!hasMarker || markerPlaced) return;
+    const frame = requestAnimationFrame(() => setMarkerPlaced(true));
+    return () => cancelAnimationFrame(frame);
+  }, [hasMarker, markerPlaced]);
 
-  // Group navigation items by their designated section
-  const homeItems = NAV_ITEMS.filter((item) => item.group === "home");
-  const dashboardItems = NAV_ITEMS.filter((item) => item.group === "dashboard");
-  const primaryItems = NAV_ITEMS.filter((item) => item.group === "primary");
-  const secondaryItems = NAV_ITEMS.filter((item) => item.group === "secondary");
-  const personalItems = NAV_ITEMS.filter((item) => item.group === "personal");
-
-  /**
-   * Render a single navigation item
-   * Handles permission checking, active state, badges, disabled state, and accessibility
-   */
-  const renderNavItem = (item: NavItem) => {
-    // Hide items the user doesn't have permission for
-    if (!hasPermission(item)) return null;
-
-    const Icon = item.icon;
-    const active = isActive(item.path);
-    const isDisabled = item.disabled || false;
-
-    // Apply badge count to "Merkin mín" item
-    const badge = item.path === "/badges" ? badgeCount : item.badge;
-    const showBadge = badge && badge > 0;
-
-    const content = (
-      <>
-        <Icon className={styles.navIcon} aria-hidden="true" />
-        {!isCollapsed && <span className={styles.navLabel}>{item.label}</span>}
-        {showBadge && (
-          <span className={styles.navBadge} aria-label={`${badge} ólesnar`}>
-            {badge}
-          </span>
-        )}
-      </>
-    );
-
-    return (
-      <li key={item.path}>
-        {isDisabled ? (
-          <div
-            className={`${styles.navItem} ${styles.navItemDisabled}`}
-            aria-disabled="true"
-            title="Ennþá í vinnslu..."
-          >
-            {content}
-          </div>
-        ) : (
-          <Link
-            href={item.path}
-            className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
-            aria-current={active ? "page" : undefined}
-            aria-label={item.label}
-            title={isCollapsed ? item.label : undefined} // Tooltip when collapsed
-          >
-            {content}
-          </Link>
-        )}
-      </li>
-    );
-  };
+  // The visible text is the accessible name, so speech control can say what it sees.
+  const toggleLabel = collapsed ? "Stækka valmynd" : "Minnka valmynd";
+  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
 
   return (
-    <aside
-      className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""}`}
-      aria-label="Aðalvalmynd"
-      data-collapsed={isCollapsed}
-      data-open={props["data-open"]}
+    <nav
+      aria-label={navLabel}
+      className={styles.sidebar}
+      data-collapsed={collapsed}
+      data-toggled={toggled}
+      data-marker={markerPlaced && hasMarker ? "placed" : undefined}
     >
-      <nav className={styles.nav}>
-        {/* Home navigation: Slóði */}
-        <ul className={styles.navList} role="list">
-          {homeItems.map((item) => renderNavItem(item))}
-        </ul>
-
-        {/* Visual separator */}
-        <div className={styles.navSeparator} role="separator" aria-hidden="true" />
-
-        {/* Dashboard navigation: Stjórnborð */}
-        <ul className={styles.navList} role="list">
-          {dashboardItems.map((item) => renderNavItem(item))}
-        </ul>
-
-        {/* Primary navigation: main features like Programs, Builder, Social */}
-        <ul className={styles.navList} role="list">
-          {primaryItems.map((item) => renderNavItem(item))}
-        </ul>
-
-        {/* Visual separator between navigation sections */}
-        <div className={styles.navSeparator} role="separator" aria-hidden="true" />
-
-        {/* Secondary navigation: analytics and admin tools */}
-        <ul className={styles.navList} role="list">
-          {secondaryItems.map((item) => renderNavItem(item))}
-        </ul>
-
-        {/* 
-                    User avatar section - optional
-                    Only displays if showUserSection prop is true
-                */}
-        {showUserSection && (
-          <div className={styles.userSection}>
-            <Link
-              href="/profile"
-              className={`${styles.userLink} ${isActive("/profile") ? styles.userLinkActive : ""}`}
-              aria-label={`Prófíll: ${userName}`}
-              title={isCollapsed ? userName : undefined}
-            >
-              {userAvatar ? (
-                /* Same reasoning as the settings avatar: an identity-provider
-                   URL cannot be allowlisted for next/image without either an
-                   unbounded host list or the wildcard #135 removed. This one
-                   was also missing the width/height next/image requires, so it
-                   would have thrown for every signed-in user on every
-                   dashboard page. */
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={userAvatar}
-                  alt=""
-                  width={32}
-                  height={32}
-                  className={styles.userAvatar}
-                  aria-hidden="true"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <div className={styles.userAvatarPlaceholder} aria-hidden="true">
-                  {userName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              {!isCollapsed && <span className={styles.userName}>{userName}</span>}
-            </Link>
-          </div>
+      <div ref={bodyRef} className={styles.body}>
+        {marker && (
+          <span
+            className={styles.marker}
+            aria-hidden="true"
+            style={{
+              width: marker.width,
+              height: marker.height,
+              transform: `translate(${marker.left}px, ${marker.top}px)`,
+            }}
+          />
         )}
-
-        {/* 
-                    Personal navigation: pinned to bottom using CSS (margin-top: auto)
-                    Contains profile, settings, and badges
-                */}
-        <ul className={`${styles.navList} ${styles.personalList}`} role="list">
-          {personalItems.map((item) => renderNavItem(item))}
-        </ul>
-
-        {/* Visual separator before collapse button */}
-        <div className={styles.navSeparator} role="separator" aria-hidden="true" />
-
-        {/* Collapse/expand toggle button - at bottom */}
-        <div className={styles.collapseButtonWrapper}>
-          <button
-            className={`${styles.collapseButton} ${styles.collapseButtonCompact}`}
-            onClick={toggleCollapsed}
-            aria-label={isCollapsed ? "Opna valmynd" : "Loka valmynd"}
-            aria-expanded={!isCollapsed}
-            title={isCollapsed ? "Opna valmynd" : "Loka valmynd"}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen className={styles.collapseIcon} />
-            ) : (
-              <>
-                <PanelLeftClose className={styles.collapseIcon} />
-                {!isCollapsed && <span className={styles.collapseLabel}>Fela valmynd</span>}
-              </>
-            )}
-          </button>
-        </div>
-      </nav>
-
-      {/* Accessibility: skip link for keyboard navigation to main content */}
-      <a href="#main-content" className={styles.skipLink}>
-        Sleppa í efni
-      </a>
-    </aside>
+        {groups.map((group) => {
+          const headingId = `${uid}-${group.id}`;
+          return (
+            <div
+              key={group.id}
+              className={`${styles.group} ${group.bottom ? styles.groupBottom : ""}`}
+              data-group={group.id}
+            >
+              {group.heading && (
+                <h2 id={headingId} className={styles.heading}>
+                  {group.heading}
+                </h2>
+              )}
+              <ul className={styles.list} aria-labelledby={group.heading ? headingId : undefined}>
+                {group.items.map((item) => (
+                  <li key={item.path}>
+                    <NavEntry
+                      item={item}
+                      active={isActivePath(pathname, item.path)}
+                      badge={item.path === "/badges" ? badgeCount : 0}
+                      badgePops={badgePops}
+                      onNavigate={onNavigate}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+      <div className={styles.foot}>
+        <button
+          type="button"
+          className={styles.item}
+          onClick={() => onCollapsedChange?.(!collapsed)}
+          aria-expanded={!collapsed}
+          aria-controls={controls}
+        >
+          <span className={styles.icon} aria-hidden="true">
+            <ToggleIcon />
+          </span>
+          <span className={styles.label}>{toggleLabel}</span>
+        </button>
+      </div>
+    </nav>
   );
 }

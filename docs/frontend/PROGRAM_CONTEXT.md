@@ -456,7 +456,7 @@ router.push(`/programs/${id}`);
 - [x] `frontend/components/DashboardSidebar/DashboardSidebar.tsx` — collapsible sidebar with role-based nav, uses `lucide-react` icons
 - [x] `frontend/components/Footer/index.tsx`
 - [x] `frontend/components/Header/index.tsx`
-- [x] `frontend/components/DashboardLayout/index.tsx`
+- [x] `frontend/components/AppShell/index.tsx` (was DashboardLayout)
 - [x] `frontend/components/LikeButton/LikeButton.tsx`
 - [x] `frontend/contexts/LikesContext.tsx` — `useLikes(programId, initialCount)` → `{ likeCount, isLiked, toggleLike }`
 - [x] `frontend/contexts/FavoritesContext.tsx` — `useFavorite(programId)` → `{ isFavorite, toggleFavorite }`
