@@ -214,6 +214,64 @@ export function longNamesData(count: 4 | 6 = 4): PlanBenchData {
   return withLanes(lanes, patrols);
 }
 
+/** One lane from `[station, minutes]` pairs. */
+function laneOf(patrol: Patrol, items: [string, number][]): PatrolLane {
+  return {
+    patrol_id: patrol.id,
+    items: items.map(([name, minutes]) => lidur(name, minutes, patrol.id)),
+  };
+}
+
+/**
+ * Mixed lengths, the usual case once a leader has planned per flokkur: starts don't line up and
+ * a long liður runs past the others' starts. Refir 30 + 15 + 15, Ernir 20 + 20 + 20, Uglur one
+ * 60-min Ratleikur, Birnir 10 + 40 and then 10 mín bið. At 20:00 Refir are 20 mín into their
+ * 30, Ernir start their second liður and Uglur are still on the Ratleikur.
+ */
+function mixedLanes(): PatrolLane[] {
+  const [refir, ernir, uglur, birnir] = LAB_PATROLS;
+  return [
+    laneOf(refir, [
+      ["Hnútar og bönd", 30],
+      ["Áttaviti og kort", 15],
+      ["Skyndihjálp", 15],
+    ]),
+    laneOf(ernir, [
+      ["Eldfæri og prímus", 20],
+      ["Merkjamál", 20],
+      ["Tjaldreising", 20],
+    ]),
+    laneOf(uglur, [["Ratleikur um hverfið", 60]]),
+    laneOf(birnir, [
+      ["Skyndihjálp", 10],
+      ["Tjaldreising", 40],
+    ]),
+  ];
+}
+
+export function mixedData(): PlanBenchData {
+  return withLanes(mixedLanes(), LAB_PATROLS.slice(0, 4));
+}
+
+/** Six flokkar with lengths from 5 to 60 mín, so almost no two starts meet. */
+export function mixedSixData(): PlanBenchData {
+  const [, , , , selir, hrafnar] = LAB_PATROLS;
+  const lanes = [
+    ...mixedLanes(),
+    laneOf(selir, [
+      ["Kakó og spjall", 5],
+      ["Áttaviti og kort", 25],
+      ["Hnútar og bönd", 15],
+      ["Merkjamál", 10],
+    ]),
+    laneOf(hrafnar, [
+      ["Eldfæri og prímus", 45],
+      ["Frágangur", 15],
+    ]),
+  ];
+  return withLanes(lanes, LAB_PATROLS);
+}
+
 export const FIXTURES = {
   even: evenData,
   uneven: unevenData,
@@ -224,6 +282,8 @@ export const FIXTURES = {
   copied: copiedSplitData,
   longNames: () => longNamesData(4),
   longNamesSix: () => longNamesData(6),
+  mixed: mixedData,
+  mixedSix: mixedSixData,
 } as const;
 
 export type FixtureName = keyof typeof FIXTURES;

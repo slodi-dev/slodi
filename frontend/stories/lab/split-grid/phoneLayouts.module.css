@@ -54,6 +54,83 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
+/* "til 20:10": when a liður ends, next to its length. */
+.until {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A flokkur still on an earlier liður (M3a): slim and quiet, with a bar along its foot for how
+   far in it is. */
+.continueLine {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  min-height: 2.5rem;
+  padding: 0.2rem var(--sl-spacing-sm) 0.35rem;
+  border-left: 3px solid hsl(var(--lane));
+  border-radius: 0 var(--sl-radius-md) var(--sl-radius-md) 0;
+  background: hsl(var(--lane) / 0.1);
+  color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body-sm);
+  overflow: hidden;
+}
+
+.continueLine .lineMeta {
+  color: hsl(var(--sl-color-text-primary));
+}
+
+.progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: hsl(var(--sl-color-border));
+}
+
+.progress > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: hsl(var(--sl-color-text-primary));
+}
+
+/* Who is still busy at this time, on one quiet line (M3b, M3d). */
+.continueNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
+  padding: 0.35rem var(--sl-spacing-xs) 0.35rem 0;
+  font-size: var(--sl-text-caption);
+  line-height: var(--sl-line-height-tight);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
+.continueCrests {
+  flex: none;
+  display: flex;
+}
+
+.continueCrests > * + * {
+  margin-left: -0.3rem;
+}
+
+.continueLead {
+  font-weight: var(--sl-font-weight-semibold);
+  color: hsl(var(--sl-color-text-primary));
+}
+
 /* ── M3 · the first version (and the legend and lines M3a reuses) ── */
 
 .legend {
@@ -429,8 +506,43 @@
 
 .logGroup {
   display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr);
+  grid-template-columns: 2.75rem calc(var(--tracks) * 7px + 4px) minmax(0, 1fr);
   border-bottom: 1px solid hsl(var(--sl-color-border-strong));
+}
+
+/* One narrow track per flokkur, edge to edge from group to group: a solid segment for as long as
+   a liður lasts, a tick where the next one starts, a dashed run while the flokkur waits. */
+.tracks {
+  display: flex;
+  gap: 3px;
+  padding-left: 4px;
+  border-right: 1px solid hsl(var(--sl-color-border));
+}
+
+.track {
+  position: relative;
+  flex: none;
+  width: 4px;
+  margin-bottom: -1px;
+}
+
+.track[data-state="start"],
+.track[data-state="busy"] {
+  background: hsl(var(--lane));
+}
+
+/* A new liður breaks the track with a gap of paper, so each liður is its own segment. */
+.track[data-state="start"] {
+  border-top: 4px solid hsl(var(--sl-color-surface));
+  background-clip: padding-box;
+}
+
+.track[data-state="wait"] {
+  background: repeating-linear-gradient(to bottom, hsl(var(--lane)) 0 4px, transparent 4px 8px);
+}
+
+.logContinue {
+  padding-left: var(--sl-spacing-sm);
 }
 
 .logTime {
@@ -462,7 +574,6 @@
   min-height: var(--sl-touch-target);
   padding: 0 var(--sl-spacing-xs) 0 var(--sl-spacing-sm);
   border: 0;
-  border-left: 4px solid hsl(var(--lane));
   background: transparent;
   color: hsl(var(--sl-color-text-primary));
   font: inherit;
@@ -471,7 +582,6 @@
 }
 
 .logWait {
-  border-left-style: dashed;
   background: hsl(var(--lane) / 0.1);
 }
 
@@ -488,6 +598,9 @@
 
 .logMeta {
   flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
   font-size: var(--sl-text-caption);
   color: hsl(var(--sl-color-text-secondary));
   font-variant-numeric: tabular-nums;
@@ -506,7 +619,6 @@
   gap: var(--sl-spacing-xs);
   min-height: var(--sl-touch-target);
   padding-left: var(--sl-spacing-sm);
-  border-left: 4px solid hsl(var(--sl-color-border-strong));
 }
 
 .logSharedCrests {
@@ -542,56 +654,90 @@
 
 /* ── M3c · Cards in rows ──
 
-   At each time a row of small bank cards in flokkur order (two or three across, --cards).
-   The time pins to the top of the screen while its row scrolls under it. */
+   The flokkar as columns (--cards, at most four), time running down: a card spans the rows of
+   its liður, so it is as tall as it is long. The rows' heights come inline from the minutes. */
 
-.cardTimeline {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-sm);
+.cardGrid {
+  position: relative;
+  display: grid;
+  /* Tight on purpose: four columns at 390px leave each card about 70px, and an Icelandic word
+     like "Tjaldreising" needs 66px of it. */
+  grid-template-columns: 2.4rem repeat(var(--cards), minmax(0, 1fr));
+  column-gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.cardTime {
+/* The column heads: crest and name, pinned while the column scrolls by. */
+.cardHeads {
   position: sticky;
   top: 0;
   z-index: 2;
-  margin: 0;
+  grid-row: 1;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
   padding: var(--sl-spacing-xs) 0;
   background: hsl(var(--sl-color-surface));
-  border-bottom: 1px solid hsl(var(--sl-color-border));
+  border-bottom: 2px solid hsl(var(--sl-color-text-primary));
+}
+
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  text-align: center;
+}
+
+.cardHead .oneLine {
+  max-width: 100%;
+}
+
+/* A start time: a hairline across every column, the time in the margin. */
+.cardMark {
+  grid-column: 1 / -1;
+  align-self: start;
+  border-top: 1px solid hsl(var(--sl-color-border-subtle));
+}
+
+.cardMark[data-end] {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sl-spacing-sm);
+  border-top: 2px solid hsl(var(--sl-color-text-primary));
+}
+
+.cardTime {
+  display: block;
+  width: 2.4rem;
+  padding-top: 0.3rem;
   font-family: var(--sl-font-family-code);
-  font-size: var(--sl-text-body-sm);
+  font-size: var(--sl-text-caption);
   font-weight: var(--sl-font-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
 
-.cardRow {
-  display: grid;
-  grid-template-columns: repeat(var(--cards), minmax(0, 1fr));
-  gap: var(--sl-spacing-xs);
-  margin: 0;
-  padding: var(--sl-spacing-xs) 0 0;
-  list-style: none;
-}
-
-.cardRow > li {
+.cardCell {
+  z-index: 1;
   display: flex;
   min-width: 0;
+  padding: 3px 0;
 }
 
 .mini,
 .miniWait {
   position: relative;
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.2rem;
   width: 100%;
-  min-height: 6rem;
-  padding: var(--sl-spacing-xs);
+  min-height: var(--sl-touch-target);
+  padding: 0.3rem 3px;
   border: 1px solid hsl(var(--sl-color-border));
   /* The flokkur's cord as the card's top edge. */
   border-top: 3px solid hsl(var(--lane));
@@ -619,89 +765,53 @@
   background: hsl(var(--lane) / 0.1);
 }
 
-.miniHead {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 0;
-}
-
-.miniFlokkur {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: var(--sl-text-caption);
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.miniBody {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sl-spacing-xs);
-  min-width: 0;
-}
-
-.miniPic {
-  flex: none;
-}
-
-/* Three across on a phone leaves no room for the picture: the name gets the whole card. */
-@container (max-width: 8.5rem) {
-  .miniPic {
-    display: none;
-  }
-}
-
 .miniTitle {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
   min-width: 0;
   hyphens: auto;
   overflow-wrap: anywhere;
-  font-size: var(--sl-text-body-sm);
+  font-size: var(--sl-text-caption);
   font-weight: var(--sl-font-weight-semibold);
   line-height: var(--sl-line-height-tight);
 }
 
 .miniFoot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sl-spacing-xs);
+  gap: 0.2rem;
   margin-top: auto;
   font-size: var(--sl-text-caption);
 }
 
-/* A flokkur's place when nothing starts for it at this time. */
-.miniGap {
-  min-height: 6rem;
-  border: 1px dashed hsl(var(--sl-color-border-subtle));
-  border-radius: var(--sl-radius-md);
-}
-
-.miniGap[data-busy] {
-  border-style: solid;
-  border-color: hsl(var(--sl-color-border-subtle));
-  border-top: 3px solid hsl(var(--lane) / 0.45);
-  background: hsl(var(--lane) / 0.05);
-}
-
-.miniGapText {
+/* "til 20:10" and the stamp share the card's last line. */
+.miniUntil {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: var(--sl-spacing-xs);
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.2rem;
   font-size: var(--sl-text-caption);
   color: hsl(var(--sl-color-text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+
+/* On a narrow card the changed dot sits on the top edge, clear of the name. */
+.mini .changedDot {
+  top: -6px;
+  right: 4px;
+}
+
+.miniWait .addMark {
+  white-space: nowrap;
+  gap: 0.15rem;
 }
 
 .cardEnd {
-  margin: 0;
-  padding-top: var(--sl-spacing-xs);
   font-size: var(--sl-text-caption);
   color: hsl(var(--sl-color-text-secondary));
 }
@@ -718,7 +828,8 @@
 }
 
 .thread,
-.threadFork {
+.threadFork,
+.threadBusy {
   display: grid;
   grid-template-columns: 2.75rem calc(var(--threads) * 12px + 6px) minmax(0, 1fr);
   align-items: stretch;
@@ -742,24 +853,46 @@
   min-height: var(--sl-touch-target);
 }
 
+/* The room under a time grows with the minutes until the next (--gap, set inline). */
+.thread,
+.threadBusy {
+  padding-bottom: var(--gap, 0);
+}
+
+.thread .cords,
+.threadBusy .cords {
+  margin-bottom: calc(-1 * var(--gap, 0));
+}
+
+.threadBusy .cords {
+  min-height: 0;
+}
+
+.threadBusy > .continueNote {
+  padding-left: var(--sl-spacing-sm);
+}
+
 .cord {
   position: relative;
   flex: none;
   width: 12px;
 }
 
+/* In a liður: the cord thick and solid, for as long as the liður lasts. */
 .cord::before {
   content: "";
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 5px;
-  width: 2px;
+  left: 4px;
+  width: 4px;
   background: hsl(var(--lane));
 }
 
-/* Waiting for the others: the cord dashed. */
+/* Waiting for the others: the cord thin and dashed. */
 .cord[data-state="wait"]::before {
+  left: 5px;
+  width: 2px;
   background: repeating-linear-gradient(to bottom, hsl(var(--lane)) 0 4px, transparent 4px 8px);
 }
 

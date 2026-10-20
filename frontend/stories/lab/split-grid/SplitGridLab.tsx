@@ -463,7 +463,18 @@ function SplitBand({
         });
         focusTarget.current = "undo";
       },
-      moveTo: (toLane) => moveTo(lane, li, toLane),
+      // From the card's back a move gets Afturkalla, as a drop does; ← → on a card don't need
+      // it, since the opposite arrow puts it back.
+      moveTo: (toLane) => {
+        const to = model.lanes[toLane];
+        if (!to || toLane === lane.laneIndex) return;
+        setUndo({
+          fundur,
+          text: `${li.item.name} var færður í annan flokk: ${to.name}.`,
+          restored: `Færslan afturkölluð. ${li.item.name} er aftur hjá sínum flokki (${lane.name}).`,
+        });
+        moveTo(lane, li, toLane);
+      },
       reorder: (to) => reorder(lane, li, to),
       close: () => {
         dispatch({ t: "laneSelect", id: null });

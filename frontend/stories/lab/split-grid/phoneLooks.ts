@@ -23,21 +23,21 @@ export const PHONE_LOOKS: { look: PhoneLook; name: string; idea: string }[] = [
   {
     look: "m3a",
     name: "M3a · Rail",
-    idea: "A time rail down the left with a stop at every start. Each stop folds to one line of crests and names; open the stop you are working on. The shortest of the four.",
+    idea: "A time rail down the left with a stop at every start. Each stop folds to one line (“1 byrjar · 3 halda áfram”); open, it lists every flokkur: who starts, who is still busy (with a bar for how far in) and who waits. The shortest of the four.",
   },
   {
     look: "m3b",
     name: "M3b · Ruled log",
-    idea: "A run sheet: times in a mono margin, one ruled 48px line per start with the crest, the name and the length, the flokkur's colour as a narrow edge. Flokkar doing the same thing at the same time share a line.",
+    idea: "A run sheet: times in a mono margin, one ruled 48px line per start with the crest, the name, the length and “til 20:10”, and a gutter with a track per flokkur: a solid segment for each liður, dashed while it waits. Under each time, who is still busy.",
   },
   {
     look: "m3c",
     name: "M3c · Cards in rows",
-    idea: "At each time a row of small bank cards, two across, always in the same flokkur order, so a flokkur sits in the same place all the way down. The time stays pinned while its row scrolls by.",
+    idea: "A column per flokkur and time running down: a card is as tall as its liður, so a 60-min liður runs beside three of 20. Five or six flokkar are two timelines of three.",
   },
   {
     look: "m3d",
     name: "M3d · Threads",
-    idea: "Every flokkur is a cord down the left, branching off the sveit at the top and joining it again at Lok. A liður is a bead on its cord with its name beside it; a wait is the cord dashed.",
+    idea: "Every flokkur is a cord down the left, branching off the sveit at the top and joining it again at Lok. A liður is a bead where it starts and a thick run of cord for as long as it lasts; a wait is the cord thin and dashed. Under each time, who is still busy.",
   },
 ];

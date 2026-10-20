@@ -93,7 +93,11 @@ Nothing waiting.
   bottom sheet with Fyrr / Síðar and Færa til. Now in four styles: **M3a · Rail** (stops that
   fold, the shortest), **M3b · Ruled log** (a run sheet, shared lines), **M3c · Cards in rows**
   (small bank cards in fixed flokkur places) and **M3d · Threads** (a cord per flokkur that
-  splits off the sveit and joins it at Lok). Also fixed: a touch drag
+  splits off the sveit and joins it at Lok). Lengths that don't line up (a 30-min liður beside
+  one of 20 and one of 60) are now shown in every style: each liður's "til 20:10", and at every
+  time who is still busy (M3a's slim progress lines, M3b's per-flokkur tracks, M3c's cards as
+  tall as their liðir, M3d's thick cord runs). A move with "Færa til" from the card's back now
+  gets Afturkalla. Also fixed: a touch drag
   stopped following the finger once the card was redrawn in another flokkur. Desktop: The flip card, the clock length, dragging along the timeline and between
   flokkar, and long-name handling are approved, and the column head is **H6: H5b's lanyard on
   H5d's tinted lane** (a ringed animal crest on a 2px cord down the column's edge, over the

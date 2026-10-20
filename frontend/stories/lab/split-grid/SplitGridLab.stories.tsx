@@ -656,8 +656,9 @@ const row = {
 
 /**
  * Today's phone (the desktop grid scrolled sideways) first, then the first M3 and its styles
- * M3a–d, each at 390px with the four flokkar of the uneven stöðvaleikur. The diagnosis is in
- * the MDX, section 9.
+ * M3a–d, each at 390px with four flokkar on liðir of different lengths (Refir 30 + 15 + 15,
+ * Ernir 20 × 3, Uglur one of 60, Birnir 10 + 40 and a wait). The diagnosis is in the MDX,
+ * section 9.
  */
 export const PhoneComparison: Story = {
   name: "Phone · Comparison",
@@ -665,12 +666,12 @@ export const PhoneComparison: Story = {
     <div style={row}>
       <section>
         <h2 style={heading}>Current phone</h2>
-        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="uneven" />
+        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="mixed" />
       </section>
       {PHONE_LOOKS.map(({ look, name }) => (
         <section key={look}>
           <h2 style={heading}>{name}</h2>
-          <PhoneFrame width={390} label="390 · 4 flokkar" fixture="uneven" look={look} />
+          <PhoneFrame width={390} label="390 · 4 flokkar" fixture="mixed" look={look} />
         </section>
       ))}
     </div>
@@ -687,8 +688,8 @@ function PhoneSheetOf({ look }: { look: PhoneLook }) {
         <p style={{ ...idea, maxWidth: "48rem" }}>{text}</p>
       </div>
       <div style={row}>
-        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="uneven" look={look} />
-        <PhoneFrame width={360} label="360 · 6 flokkar" fixture="six" look={look} />
+        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="mixed" look={look} />
+        <PhoneFrame width={360} label="360 · 6 flokkar" fixture="mixedSix" look={look} />
         <PhoneFrame width={390} label="390 · long names, 4" fixture="longNames" look={look} />
         <PhoneFrame width={360} label="360 · long names, 6" fixture="longNamesSix" look={look} />
       </div>
@@ -731,41 +732,72 @@ async function closeSheet(canvas: ReturnType<typeof within>) {
   await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
 }
 
+/** Everything a look shows at one time: its time row, and on M3d the lines under it. */
+function textAt(band: HTMLElement, time: string): string {
+  return [...band.querySelectorAll(`[data-time="${time}"]`)]
+    .map((element) => element.textContent)
+    .join(" ");
+}
+
 /**
- * The look's interactions in one 390px frame, on the uneven stöðvaleikur: the timeline is in
- * time order; a tap opens the card's sheet; Fyrr and Síðar move it in time; Færa til moves it
- * to another flokkur and back; a removed liður comes back with Afturkalla; "+ Bæta við" fills
- * a wait.
+ * The look's interactions in one 390px frame, on liðir of different lengths: the timeline is
+ * in time order; at 20:00 it says who is still busy (Refir on their 30-min Hnútar, Uglur on
+ * their 60-min Ratleikur); a tap opens the card's sheet; Fyrr and Síðar move it in time; Færa
+ * til moves it to another flokkur, and Afturkalla puts it back; a removed liður comes back with
+ * Afturkalla; "+ Bæta við" fills a wait.
  */
 const phoneInteractions = (look: PhoneLook): Story => ({
   name: `Phone · ${nameOf(look).split(" · ")[0]} · interactions`,
   globals: phone,
-  render: () => <SplitGridLab data={FIXTURES.uneven()} phone={look} />,
+  render: () => <SplitGridLab data={FIXTURES.mixed()} phone={look} />,
   play: async ({ canvasElement, step }) => {
     const band = firstBand(canvasElement);
     const canvas = within(band);
     window.scrollTo(0, 0);
 
     await step("one timeline, in time order, from 19:40 to Lok", async () => {
-      const timeline = canvas.getByRole("list", { name: "Tímalína" });
-      const text = timeline.textContent ?? "";
-      const times = ["19:40", "19:55", "20:10", "20:25", "20:40", "20:50", "20:55"];
-      const places = times.map((time) => text.indexOf(time));
-      await expect(places.every((place) => place >= 0)).toBe(true);
-      await expect(places).toEqual([...places].sort((a, b) => a - b));
-      await expect(timeline).toHaveTextContent(/20:55.*Lok/);
+      const timelines = canvas.getAllByRole("list", { name: /^Tímalína/ });
+      // M3c with more than four flokkar has two timelines; this fixture has four, so one.
+      await expect(timelines).toHaveLength(1);
+      const clocks = [...timelines[0].querySelectorAll("[data-clock]")].map((el) =>
+        el.textContent?.trim()
+      );
+      await expect(clocks).toEqual([
+        "19:40",
+        "19:50",
+        "20:00",
+        "20:10",
+        "20:20",
+        "20:25",
+        "20:30",
+        "20:40",
+      ]);
+      await expect(timelines[0]).toHaveTextContent(/20:40.*Lok/);
       if (look === "m3a") {
         // The rail folds every stop but the first: open them all.
         await userEvent.click(canvas.getByRole("button", { name: "Opna allt" }));
       }
-      await expect(card(canvas, "Refir", "Áttaviti og kort")).toHaveAccessibleName(/kl\. 19:55/);
+      await expect(card(canvas, "Refir", "Áttaviti og kort")).toHaveAccessibleName(
+        /kl\. 20:10.*til 20:25$/
+      );
     });
+
+    if (look !== "m3") {
+      await step("at 20:00 it says who is still busy, and until when", async () => {
+        const now = textAt(band, "20:00");
+        await expect(now).toMatch(/Uglur.*Ratleikur um hverfið.*til 20:40/);
+        await expect(now).toMatch(/Refir.*Hnútar og bönd.*til 20:10/);
+        await expect(card(canvas, "Uglur", "Ratleikur um hverfið")).toHaveAccessibleName(
+          /60 mín.*til 20:40$/
+        );
+      });
+    }
 
     await step("a tap opens the card as a sheet; Lokið goes back to the card", async () => {
-      await sheetRoundTrip(band, /^Refir kl\. 19:55: Áttaviti og kort/);
+      await sheetRoundTrip(band, /^Refir kl\. 20:10: Áttaviti og kort/);
     });
 
-    await step("Fyrr moves it to 19:40, Síðar back to 19:55", async () => {
+    await step("Fyrr moves it to 19:40, Síðar back to 20:10", async () => {
       await userEvent.click(card(canvas, "Refir", "Áttaviti og kort"));
       const sheet = await canvas.findByRole("dialog");
       await userEvent.click(
@@ -780,26 +812,23 @@ const phoneInteractions = (look: PhoneLook): Story => ({
         })
       );
       await waitFor(() =>
-        expect(card(canvas, "Refir", "Áttaviti og kort")).toHaveAccessibleName(/kl\. 19:55/)
+        expect(card(canvas, "Refir", "Áttaviti og kort")).toHaveAccessibleName(/kl\. 20:10/)
       );
     });
 
-    await step("Færa til moves it to Ernir, and back to Refir from Ernir's card", async () => {
+    await step("Færa til moves it to Ernir; Afturkalla puts it back", async () => {
       await userEvent.click(
         within(canvas.getByRole("dialog")).getByRole("button", {
           name: "Færa Áttaviti og kort í annan flokk: Ernir",
         })
       );
-      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("55 mín"));
-      await expect(totalOf(band, "mock-ernir")).toBe("60 mín");
-      await userEvent.click(
-        within(canvas.getByRole("dialog")).getByRole("button", {
-          name: "Færa Áttaviti og kort í annan flokk: Refir",
-        })
-      );
-      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("70 mín"));
-      await expect(totalOf(band, "mock-ernir")).toBe("45 mín");
+      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("45 mín"));
+      await expect(totalOf(band, "mock-ernir")).toBe("75 mín");
       await closeSheet(canvas);
+      await userEvent.click(canvas.getByRole("button", { name: "Afturkalla" }));
+      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("60 mín"));
+      await expect(totalOf(band, "mock-ernir")).toBe("60 mín");
+      await expect(card(canvas, "Refir", "Áttaviti og kort")).toHaveAccessibleName(/kl\. 20:10/);
     });
 
     await step("remove from the sheet, then Afturkalla", async () => {
@@ -809,20 +838,20 @@ const phoneInteractions = (look: PhoneLook): Story => ({
           name: "Fjarlægja úr flokknum",
         })
       );
-      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("55 mín"));
+      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("45 mín"));
       await closeSheet(canvas);
       await userEvent.click(canvas.getByRole("button", { name: "Afturkalla" }));
-      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("70 mín"));
+      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("60 mín"));
       await expect(card(canvas, "Refir", "Skyndihjálp")).toBeInTheDocument();
     });
 
-    await step("+ Bæta við fills Ernir's wait", async () => {
+    await step("+ Bæta við fills Birnir's wait", async () => {
       await userEvent.click(
-        canvas.getByRole("button", { name: "30 mín bið. Bæta verkefni við (Ernir)" })
+        canvas.getByRole("button", { name: "10 mín bið. Bæta verkefni við (Birnir)" })
       );
-      await waitFor(() => expect(totalOf(band, "mock-ernir")).toBe("60 mín"));
+      await waitFor(() => expect(totalOf(band, "mock-birnir")).toBe("60 mín"));
       await closeSheet(canvas);
-      await expect(card(canvas, "Ernir", "Nýtt verkefni")).toBeInTheDocument();
+      await expect(card(canvas, "Birnir", "Nýtt verkefni")).toBeInTheDocument();
     });
   },
 });
@@ -848,21 +877,7 @@ export const PhoneM3aInteractions: Story = {
 
 export const PhoneM3b: Story = phoneStory("m3b");
 export const PhoneM3bDark: Story = phoneStory("m3b", { name: "Phone · M3b · dark", globals: dark });
-export const PhoneM3bInteractions: Story = {
-  ...phoneInteractions("m3b"),
-  play: async (context) => {
-    const canvas = within(firstBand(context.canvasElement));
-    await context.step(
-      "Ernir and Uglur both start Eldfæri og prímus at 19:55: one line, two crests",
-      async () => {
-        const ernir = card(canvas, "Ernir", "Eldfæri og prímus");
-        const uglur = card(canvas, "Uglur", "Eldfæri og prímus");
-        await expect(ernir.parentElement).toBe(uglur.parentElement);
-      }
-    );
-    await phoneInteractions("m3b").play!(context);
-  },
-};
+export const PhoneM3bInteractions: Story = phoneInteractions("m3b");
 
 export const PhoneM3c: Story = phoneStory("m3c");
 export const PhoneM3cDark: Story = phoneStory("m3c", { name: "Phone · M3c · dark", globals: dark });

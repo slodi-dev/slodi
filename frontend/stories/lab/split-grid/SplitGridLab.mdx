@@ -398,26 +398,48 @@ Screenshots with 2, 4 and 6 flokkar, short and long names, an open card and a dr
   a keyboard, and the announcements are the band's own and unchanged.
 - **48px targets** (`--sl-touch-target`), and the hint at the foot is written for a thumb.
 - **Screen readers hear a timeline.** An ordered list "Tímalína" in time order. Every liður's
-  name says its flokkur, time, name, length and status ("Refir kl. 19:55: Áttaviti og kort, 15
-  mín, staðfest"), so the crests and cords are decoration.
+  name says its flokkur, time, name, length, status and end ("Refir kl. 20:10: Áttaviti og
+  kort, 15 mín, staðfest, til 20:25"), and every time says who is still busy ("Heldur áfram:
+  Uglur: Ratleikur um hverfið til 20:40"), so the crests, cords and tracks are decoration.
+
+### Lengths that don't line up
+
+A stöðvaleikur of equal stations is the easy case: everyone changes at once. Once a leader
+plans per flokkur, lengths differ: Refir do a 30-minute liður and then two of 15, Ernir three
+of 20, Uglur one Ratleikur of 60, Birnir 10 and then 40. Starts no longer line up, and a long
+liður runs past the others' starts. The first versions listed starts only, so at 20:00 you saw
+Ernir start Merkjamál and nothing about the three others. A leader glancing at 20:00 needs to
+see that Refir are 20 minutes into their 30, Ernir start their second liður, Uglur are still on
+the Ratleikur, and Birnir 10 minutes into their 40.
+
+So every look now shows, at every time:
+
+1. **each liður's span**: its length and "til 20:10" beside it;
+2. **who is still busy** with a liður that started earlier, and until when ("heldur áfram");
+3. **where each flokkur ends** and how long it waits, with "+ Bæta við".
+
+The phone stories use that case (`mixed`: Refir 30 + 15 + 15, Ernir 20 × 3, Uglur 60, Birnir
+10 + 40 and a 10-minute wait) and a six-flokkar version with lengths from 5 to 60 (`mixedSix`,
+adding Selir 5 + 25 + 15 + 10 and Hrafnar 45 + 15). Each look below says how it shows it.
 
 ### How long they get
 
 The band's timeline area, in px, measured in the stories (legend included; the band's own head
-and foot left out). "Lines" are the tappable lines on screen.
+and foot left out). The four and six flokkar are the mixed lengths; the long names are a
+stöðvaleikur of 15-minute stations.
 
-| Look                     | 390 · 4 flokkar | 360 · 6 flokkar | 390 · long names, 4 | 360 · long names, 6 |
-| ------------------------ | --------------- | --------------- | ------------------- | ------------------- |
-| M3 · first version       | 1311 (20 lines) | 2172 (36 lines) | 1337                | 1967                |
-| M3a · Rail (as it opens) | 684             | 832             | 636                 | 784                 |
-| M3b · Ruled log          | 1015            | 1936            | 1113                | 1250                |
-| M3c · Cards in rows      | 1616            | 1605            | 1373                | 1367                |
-| M3d · Threads            | 1135            | 1940            | 1134                | 1665                |
+| Look                     | 390 · 4 flokkar, mixed | 360 · 6 flokkar, mixed | 390 · long names, 4 | 360 · long names, 6 |
+| ------------------------ | ---------------------- | ---------------------- | ------------------- | ------------------- |
+| M3 · first version       | 772                    | 1222                   | 1337                | 1967                |
+| M3a · Rail (as it opens) | 732                    | 976                    | 636                 | 784                 |
+| M3b · Ruled log          | 906                    | 1383                   | 1113                | 1250                |
+| M3c · Cards in rows      | 532                    | 1055                   | 663                 | 1234                |
+| M3d · Threads            | 921                    | 1398                   | 1160                | 1691                |
 
-The six-flokkar fixture is the hardest case there is: a 60-minute stöðvaleikur, every flokkur at
-a different station every 10 minutes, so 36 starts and nothing in common. Only folding (M3a) or
-putting several flokkar on one line (M3c) beats it by much; a plain line per start can only be
-made denser (M3b, M3d).
+M3 is short here because it says nothing about who is still busy. Showing it costs M3b and
+M3d one quiet line per time (about 30px); M3a pays only in its open stops. M3c got shorter,
+not longer: a card spans its rows instead of a "heldur áfram" placeholder taking a place in
+each, and with four flokkar side by side a time is one row, not two.
 
 ### M3 · the first version
 
@@ -435,9 +457,12 @@ border and gap, 51px a start, and with six flokkar the page is 36 cards long.
 leader planning a split thinks one station change at a time.
 
 **Hierarchy:** the legend, then a rail down the left with the times beside it in mono and a node
-at every start time. Each stop folds to one 48px line: its flokkar's crests, overlapping like a
-hand of cards, then what starts there ("Hnútar og bönd · Áttaviti og kort · …") and the count
-("4 liðir · 1 flokkur bíður"). Open, its liðir hang off the rail as M3's card lines. An open stop's
+at every start time. Each stop folds to one 48px line: the crests of the flokkar that start
+there, overlapping like a hand of cards, then what starts ("Tjaldreising") and the count ("1
+byrjar · 3 halda áfram · 1 bíður"). Open, it lists every flokkur: who starts, as M3's card lines
+with "til 20:30" beside the length; who is still busy, as a slim line in the flokkur's wash
+("Uglur · Ratleikur um hverfið", "heldur áfram til 20:40 · 20 af 60 mín") with a bar along its
+foot for how far in it is; and who waits. An open stop's
 node is filled, a folded one is a ring. "Opna allt" opens every stop.
 
 **Why:** it's the only look that stays short however many flokkar there are: about 50px a stop
@@ -446,6 +471,11 @@ who is busy and with what, and the rail gives the evening a shape.
 
 **Rules:** the first stop is open to begin with. The stop of the card in the sheet is always
 open, so a Fyrr or Síðar that carries it to another time never hides it.
+
+**Concurrency:** the most explicit of the four. An open stop is a full answer to "what is
+everyone doing at 20:00", in words and with a progress bar, and the folded count says how many
+are mid-liður. The cost is length when open: every stop repeats every busy flokkur, so six
+flokkar with "Opna allt" are long.
 
 **Trade-offs:** a folded stop hides the lengths and stamps, so "is everything confirmed?" needs
 "Opna allt". The crests overlap: with six, the initials of one ("FF") are partly covered by the
@@ -463,8 +493,17 @@ ruled line per thing that happens, nothing decorative.
 
 **Hierarchy:** a heavy rule under the legend, then the times in a mono margin, written once per
 time with a rule between times. Each start is one ruled line, exactly 48px: the crest (small),
-the name, "15 mín" at the right, the stamp. The flokkur's colour is a 4px left edge, solid for a
-liður and dashed for a wait ("30 mín bið +", on the flokkur's wash).
+the name, "15 mín til 20:25" at the right, the stamp. A wait is a line on the flokkur's wash
+("10 mín bið +").
+
+**Concurrency: tracks.** Between the time and the lines is a gutter with a narrow track per
+flokkur, in flokkur order, running unbroken from time to time. A liður is a solid segment of its
+flokkur's colour for as long as it lasts; a new liður breaks the track with a gap of paper; a
+wait is dashed. So at a glance Uglur's track is one long segment beside Ernir's three, and
+where a track goes dashed that flokkur is waiting. Under each time's lines one quiet line says
+who is still busy and until when ("Heldur áfram Refir til 20:10 · Uglur til 20:40"); a reader
+hears the liðir's names too. The rows aren't proportional to time (a 5-minute gap and a
+30-minute one are the same height); the "til" times and the tracks carry the lengths.
 
 **Shared lines:** flokkar starting the same liður at the same time (the same name, length and
 status), as right after "Skipta á flokka" or at a station two flokkar share, get one line. The
@@ -476,35 +515,44 @@ prints well and matches FundurSheet's F3 · Run sheet.
 
 **Trade-offs:** a shared line is tapped on a crest, not on the line, which is a second way of
 opening a card. A single line names the liður but not the flokkur on screen, only the crest
-(the legend and the accessible name say it). With six flokkar and nothing shared it is still 36
-lines.
+(the legend and the accessible name say it). With five or six busy, the "heldur áfram" line is
+clamped to two lines and ends in "…"; the tracks still show everyone. At 360 with "til 20:25"
+beside the length, titles get about 90px and end in "…" ("Hnútar og …").
 
 ### M3c · Cards in rows
 
 <Canvas of={Stories.PhoneM3c} />
 
-**The story it tells:** "at 19:55, here is every flokkur": the bank cards, small, at their
-time.
+**The story it tells:** "the flokkar side by side, and time runs down": the bank cards, as tall
+as their liðir.
 
-**Hierarchy:** at each time a heading (mono, pinned to the top of the screen while its row
-scrolls by) and a row of small bank cards, **always in flokkur order**, two across for two or
-four flokkar and three across for three, five or six. A card has the crest and flokkur on top
-(its colour as the top edge), the bank picture and name (two lines), and the clock and stamp at
-the foot. When three across leaves no room, the picture goes and the name gets the card.
+**Hierarchy:** the legend, then a column per flokkur under its crest and name (pinned while the
+column scrolls by), and time running down with every start time in a mono margin and a hairline
+across. A card is as tall as its liður: it spans the rows from its start to its end, at 0.3rem a
+minute (at least 1.75rem a row, more if a card needs it). Its flokkur's colour is its top edge;
+inside, the name (three lines), the clock and length, then "til 20:10" and the stamp. A wait
+card ("10 mín bið + Bæta við", dashed, on the wash) fills from where the flokkur is done to Lok.
 
-**Fixed places:** a flokkur keeps its place in every row, so you follow a flokkur down by place
-and colour. When nothing starts for it at a time, its place says so: "heldur áfram" (still busy
-with the last liður, faintly in its colour), its wait card ("30 mín bið + Bæta við"), or empty
-once it is done.
+**Concurrency:** the most literal. Read across at any height and you see what every flokkur is
+doing: Uglur's 60-minute Ratleikur is one tall card beside Ernir's three 20-minute ones, and
+Refir's 30 is half its height. Nothing needs saying "heldur áfram" on screen; a reader hears it
+at each time.
 
-**Why:** the closest to the desktop cards and the bank: the same picture, name and clock. With
-six flokkar, three across makes each time two rows, so it is 1605px against M3's 2172.
+**Five or six flokkar** are two timelines of three, one under the other (Refir, Ernir, Uglur,
+then Birnir, Selir, Hrafnar), each with its own times. Six columns on a 360px phone leave a card
+about 50px, the squeeze this whole section is about; three leave about 90px.
 
-**Trade-offs:** with four flokkar it is the tallest look (two rows of 100px cards per time). The
-empty places take room. At 360px three across, a card is about 100px, so a long name gets two
-short lines.
+**Why:** time as height is how the desktop grid reads, and here it fits a phone because the
+cards are narrow and the columns few. It is the shortest look with four flokkar (532px).
 
-**Structure:** each time is an `h4` (the band's title is the `h3`), then a list of cards.
+**Trade-offs:** four columns at 390px leave a card about 70px, enough for "Tjaldreising" (66px)
+but not for a long compound, which breaks mid-word (no Icelandic hyphenation in this browser).
+The margin and gaps are tight for that. Rows grow when a short liður's card needs more room
+than its minutes, so heights are only roughly proportional. With six flokkar the two halves
+can't be compared side by side.
+
+**Structure:** each grid is an ordered list "Tímalína" in time order: at each start time its
+time (with who is still busy, for a reader), then the cards that start then.
 
 ### M3d · Threads
 
@@ -516,33 +564,43 @@ again at Lok."
 **Hierarchy:** the legend, then the times in a mono margin and a cord per flokkur, 12px apart,
 in flokkur order. At the top the cords leave one bar ("Sveitin skiptist"); at Lok they join it
 again. Each start is a line: a bead on its own flokkur's cord, the name, "15 mín" and the
-flokkur, the stamp. While a flokkur waits for the others, its cord is dashed and its wait line
-has a hollow bead ("15 mín bið + Bæta við").
+flokkur, the stamp. While a flokkur waits for the others, its cord is thin and dashed and its
+wait line has a hollow bead ("10 mín bið + Bæta við").
+
+**Concurrency:** a cord is thick and solid for as long as a liður lasts, and its bead marks where
+the next one starts, so Uglur's cord is one bead and a long run beside Ernir's three beads. The
+room under a time grows a little with the minutes until the next (a 30-minute gap is taller than
+a 5-minute one), so the page keeps some of the clock's shape. After each time's starts, one
+quiet line with the cords running past says who is still busy and until when.
 
 **Why:** the shape of the split is visible without reading: which cord carries each line, where
 the dashes start (who waits, and how long), and that it all comes back together. It is the most
 personal of the four and fits H6's cords.
 
 **Trade-offs:** the beads are colour first; the flokkur's name is on every line so it doesn't rely
-on colour alone. Six cords take 78px of a 360px screen. One line per start, so six flokkar are
-still 36 lines (1940px).
+on colour alone. Six cords take 78px of a 360px screen. One line per start plus a "heldur
+áfram" line per time makes it the longest with six flokkar (1398px).
 
 ### Testing it
 
 Each look has a plain story (390 and 360, four and six flokkar, long names), light and dark,
 with no play test, so it shows the look as it opens. Its "… · interactions" story runs the play
-test on one 390px frame of the uneven fixture:
+test on one 390px frame of the mixed lengths:
 
-- the timeline is in time order, from 19:40 to "20:55 Lok";
+- the timeline's times are in order, from 19:40 to "20:40 Lok";
+- at 20:00 it says Uglur are still on Ratleikur um hverfið until 20:40 and Refir on Hnútar og
+  bönd until 20:10, and Uglur's card is named "…, 60 mín, …, til 20:40" (M3a–d);
 - a tap opens the card as a sheet, and Lokið goes back to the liður;
-- Fyrr moves it to 19:40 and Síðar back to 19:55;
-- Færa til moves it to Ernir, and back to Refir from the sheet;
+- Fyrr moves Refir's Áttaviti og kort to 19:40 and Síðar back to 20:10;
+- Færa til moves it to Ernir, and **Afturkalla** puts it back (a move from the card's back
+  now gets Afturkalla, as a drop does, on desktop too);
 - remove from the sheet, then Afturkalla;
-- "+ Bæta við" fills Ernir's 30-minute wait.
+- "+ Bæta við" fills Birnir's 10-minute wait.
 
-M3a's test also checks that only the first stop starts open; M3b's that Ernir's and Uglur's
-Eldfæri og prímus share a line. They run on light phone, dark phone and light desktop (the
-desktop stories unchanged), with a11y.
+M3a's test also checks that only the first stop starts open. The shared line in M3b (two
+flokkar starting the same liður at the same time) isn't in the mixed fixture, so it's no longer
+tested. They run on light phone, dark phone and light
+desktop (the desktop stories unchanged), with a11y.
 
 ## 10. What's real and what's fixture
 
