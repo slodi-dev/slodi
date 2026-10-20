@@ -49,7 +49,7 @@ dagsferð, a mót, a moved fundur, a week that falls out.
 Each state is a different **shape**, not only a different colour. A stamp is only drawn once it's
 _earned_; until then the box shows how far the fundur has come.
 
-- **Staðfest** (KLÁRT): inked: double rule, roughened edge, its picture, a slight tilt. The only pressed planning stamp. A month of these is a month that's ready.
+- **Staðfest** (KLÁRT): inked: double rule, its picture, a slight tilt. The only pressed planning stamp. A month of these is a month that's ready.
 - **Drög** (DRÖG): a dashed rule, the picture drawn in pencil grey. The plan exists and its picture is known, but it hasn't been pressed.
 - **Óvíst** (ÓVÍST): a dotted outline, a faint pencil sketch, a small "?" in the corner. An idea, not a decision. Dotted, not dashed, so it can't be confused with drög.
 - **Óákveðið**: an empty dotted box with a big "?". ADR-002 §3's first-class "?": a place for a fundur, with nothing in it yet.
@@ -62,9 +62,12 @@ it in words ("…, drög", "…, lokið", "… fellur niður, 22. október: vetr
 
 **Craft:**
 
-- **The ink edge** is an SVG filter: turbulence drives a small displacement, and a second, finer
-  noise is used as a speckle mask, so no two edges are perfectly straight. There are no images,
-  and the colour is a token. The band's word is drawn outside the filter, so it stays crisp.
+- **One ink texture for every stamp.** An SVG filter over the whole stamp, in every state and
+  size: turbulence drives a small displacement, and a second, finer noise is used as a speckle
+  mask, so no two edges are perfectly straight. It is kept mild so the band's word and the "?"
+  stay readable, and it works in the stamp's own 48-unit space, so a small stamp is as rough as a
+  big one. Earlier only the pressed stamps were roughened, which read as two styles. There are no
+  images, and the colour is a token.
 - **The tilt** comes from the fundur's id (`rotationFor`, −9° … +6°). It's the same on every
   render and in every view, but neighbours differ, so a stamped month looks hand-stamped rather
   than tiled.
