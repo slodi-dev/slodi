@@ -241,10 +241,12 @@ function MoveRow({ ctx }: { ctx: EditorContext }) {
               style={{
                 ["--lane" as string]: `var(--sl-color-patrol-${other.accent})`,
               }}
-              aria-label={`Færa ${li.item.name} til ${other.name}`}
+              // The name after a colon, so it never has to be declined after "til".
+              aria-label={`Færa ${li.item.name} í annan flokk: ${other.name}`}
+              title={other.name}
               onClick={() => actions.moveTo(other.laneIndex)}
             >
-              {other.name}
+              <span className={styles.nameClamp}>{other.name}</span>
             </button>
           ))}
         <button

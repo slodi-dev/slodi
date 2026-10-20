@@ -168,9 +168,9 @@ export type StampSize = "sm" | "md" | "lg" | "xl";
 const HAS_BAND: Record<StampSize, boolean> = { sm: false, md: false, lg: true, xl: true };
 
 /** How far the ink edge wanders, in the stamp's 48-unit space. */
-const INK_ROUGHNESS = 0.9;
+export const INK_ROUGHNESS = 0.9;
 /** The speckle threshold: closer to 0 leaves fewer gaps in the ink. */
-const INK_GAPS = -0.55;
+export const INK_GAPS = -0.55;
 
 export interface StampProps {
   entry: StampSubject;

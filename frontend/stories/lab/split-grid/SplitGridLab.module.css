@@ -338,7 +338,22 @@
 
 .laneName {
   max-width: 100%;
+  margin: 0;
+  font: inherit;
   font-weight: var(--sl-font-weight-semibold);
+}
+
+/* A long name: two lines at most, hyphenated in Icelandic where the browser knows how, broken
+   anywhere as the last resort (a compound like "Hraðbrautarbrúarsmiðirnir" has nowhere else),
+   then "…". The heading keeps the whole name for screen readers, and it is the tooltip. */
+.laneNameText,
+.nameClamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 
@@ -627,13 +642,155 @@
   }
 }
 
-/* ── The flokkur's name on its column: the vivid colour behind its own ink ── */
+/* ── Column heads (laneHeaders.tsx). The flokkur's colour is always behind its own ink
+   (--lane / --lane-on, AA in both themes), never text in the colour on the page. ── */
 
-.laneName {
-  padding: 0.0625rem var(--sl-spacing-xs);
-  border-radius: var(--sl-radius-chip);
+.laneHead {
+  position: relative;
+  container-type: inline-size;
+}
+
+/* Current · Pill */
+.laneHead[data-look="pill"] .laneName {
+  padding: 0.0625rem var(--sl-spacing-sm);
+  /* Round enough to read as a pill on one line, not so round a second line pokes out of it. */
+  border-radius: 0.8rem;
   background: hsl(var(--lane));
   color: hsl(var(--lane-on));
+}
+
+/* H1 · Pennant: hangs from a pole along the top of the head; a long name makes it taller. */
+.laneHead[data-look="pennant"] {
+  padding-top: 0;
+}
+
+.laneHead[data-look="pennant"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: hsl(var(--sl-color-border-strong));
+}
+
+.laneHead[data-look="pennant"] .laneName {
+  width: fit-content;
+  min-width: 3.5rem;
+  margin: 0 0 var(--sl-spacing-compact) var(--sl-spacing-compact);
+  padding: calc(3px + var(--sl-spacing-compact)) var(--sl-spacing-sm) 0.85rem;
+  background: hsl(var(--lane));
+  color: hsl(var(--lane-on));
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+  /* The swallowtail: a notch cut up into the bottom edge. */
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 0.55rem), 0 100%);
+}
+
+/* H2 · Crest: a round badge with the animal or the initials; the name and numbers beside it,
+   or under it when the column is too narrow for both (flex-wrap: no container query needed). */
+.laneHead[data-look="crest"] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-compact) var(--sl-spacing-sm);
+}
+
+.crestText {
+  flex: 1 1 6.5rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-compact);
+}
+
+.crest {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  /* Room for the outer ring (box-shadow, 3.5px), so the column edge never cuts it. */
+  margin: 4px 0 4px 4px;
+  border-radius: 50%;
+  background: hsl(var(--lane));
+  color: hsl(var(--lane-on));
+  /* A ring of paper, then the colour again: a badge, not a dot. */
+  box-shadow:
+    0 0 0 2px hsl(var(--sl-color-surface)),
+    0 0 0 3.5px hsl(var(--lane));
+}
+
+.crest svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.crestInitials {
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: var(--sl-text-body-sm);
+  letter-spacing: 0.02em;
+}
+
+.laneHead[data-look="crest"] .laneName {
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+}
+
+/* H3 · Stamped: a pressed band in the colour, the name knocked out of it in its own ink, a
+   double rule around it, a little tilt, and the calendar stamps' ink texture (the filter). */
+.laneHead[data-look="stamped"] .laneName {
+  width: fit-content;
+  margin: var(--sl-spacing-compact) 0 var(--sl-spacing-xs) 3px;
+  padding: 0.125rem var(--sl-spacing-xs);
+  border-radius: 2px;
+  background: hsl(var(--lane));
+  color: hsl(var(--lane-on));
+  outline: 2px solid hsl(var(--lane));
+  outline-offset: 2px;
+  font-weight: var(--sl-font-weight-heading);
+  /* Capitals with accents (Ó, Á) on a clamped third line would show above it otherwise. */
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transform: rotate(var(--tilt, 0deg));
+}
+
+.inkDefs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* H4 · Colour band: the head is the colour; the name is large, the total sits in the band, and
+   a rule in the colour runs down the column's left edge. */
+.laneHead[data-look="band"] {
+  gap: 0;
+  padding: var(--sl-spacing-xs) var(--sl-spacing-sm) var(--sl-spacing-xs);
+  background: hsl(var(--lane));
+  color: hsl(var(--lane-on));
+  border-bottom-color: hsl(var(--lane));
+}
+
+.laneHead[data-look="band"] .laneName {
+  font-size: var(--sl-text-body-lg);
+  font-weight: var(--sl-font-weight-heading);
+  line-height: var(--sl-line-height-heading);
+}
+
+.laneHead[data-look="band"] .laneNums,
+.laneHead[data-look="band"] .leads,
+.laneHead[data-look="band"] .waits {
+  color: hsl(var(--lane-on));
+}
+
+.laneHead[data-look="band"] .waits {
+  font-weight: var(--sl-font-weight-body);
+}
+
+.root[data-header="band"] .lane {
+  box-shadow: inset 3px 0 0 hsl(var(--lane));
 }
 
 /* ── The card: BlockPalette's card (blockCardStyles.card), laid out for a column ── */
@@ -1095,6 +1252,8 @@ textarea.input {
 }
 
 .moveRow .moveTo {
+  max-width: 100%;
+  text-align: left;
   color: hsl(var(--sl-color-text-primary));
   background: hsl(var(--lane) / 0.16);
   box-shadow: inset 0 0 0 1px hsl(var(--lane));

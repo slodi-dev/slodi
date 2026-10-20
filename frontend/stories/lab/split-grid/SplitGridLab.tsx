@@ -40,6 +40,7 @@ import {
   type DropSpot,
 } from "./cardDrag";
 import { CardEditor, type CardActions, type EditorContext } from "./CardEditor";
+import { InkFilter, LaneHeader, type HeaderLook } from "./laneHeaders";
 import {
   SWAP_BLOCKS,
   blockOf,
@@ -85,6 +86,8 @@ export interface SplitGridLabProps {
   defaultMergeOpen?: boolean;
   /** Open this liður's card straight away (by name and flokkur). */
   defaultOpen?: { patrolId: string; name: string };
+  /** How each column's flokkur is shown at its top (laneHeaders.tsx). */
+  header?: HeaderLook;
 }
 
 /* ── Root ──────────────────────────────────────────────────────────────────── */
@@ -109,6 +112,9 @@ type Ctx = {
   /** The card being dragged, and where it would land (null: outside, it goes back). */
   drag: CardDrag | null;
   spot: DropSpot | null;
+  header: HeaderLook;
+  /** The stamped header's ink filter. */
+  inkId: string;
 };
 
 type ItemProps = {
@@ -127,6 +133,7 @@ function SplitBand({
   band = "kjarni",
   defaultMergeOpen = false,
   defaultOpen,
+  header = "pill",
 }: Omit<SplitGridLabProps, "data">) {
   const { state, dispatch } = useLabBench();
   const fundur = state.data.fundir.find((f) => f.event_id === fundurId);
@@ -153,6 +160,7 @@ function SplitBand({
   const undoRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
   const mergeId = useId();
+  const inkId = useId();
   const [mergeOpen, setMergeOpen] = useState(defaultMergeOpen);
   // Focus moves into the confirmation only when the leader opened it, not when a story starts
   // with it open (that would scroll a Docs page to it).
@@ -482,7 +490,19 @@ function SplitBand({
     },
   });
 
-  const ctx: Ctx = { model, selected, hintId, troop, itemProps, editorFor, addTo, drag, spot };
+  const ctx: Ctx = {
+    model,
+    selected,
+    hintId,
+    troop,
+    itemProps,
+    editorFor,
+    addTo,
+    drag,
+    spot,
+    header,
+    inkId,
+  };
   const dragged = drag ? findSelected(model, drag.id) : null;
 
   return (
@@ -490,8 +510,10 @@ function SplitBand({
       ref={rootRef}
       className={`${styles.root} ${blockCardStyles.kindScope}`}
       data-split-band
+      data-header={header}
       lang="is"
     >
+      {header === "stamped" && <InkFilter id={inkId} />}
       <div className={styles.head}>
         <div className={styles.headText}>
           <h3 className={styles.title}>{model.label}</h3>
@@ -613,22 +635,6 @@ function PatrolTag({ lane, small = false }: { lane: LaneModel; small?: boolean }
       {lane.name}
     </span>
   );
-}
-
-/** The lane's total, which every direction shows and the play tests read. */
-function LaneTotal({ lane }: { lane: LaneModel }) {
-  return (
-    <span className={styles.num} data-lane-total={lane.patrolId}>
-      {lane.used} mín
-    </span>
-  );
-}
-
-/** "ræður lengd" for the lane that sets the band, "15 mín bið" for one that waits. */
-function LaneState({ lane, model }: { lane: LaneModel; model: SplitModel }) {
-  if (model.balanced || model.duration === 0) return null;
-  if (lane.longest) return <span className={styles.leads}>ræður lengd</span>;
-  return <span className={styles.waits}>{lane.idle} mín bið</span>;
 }
 
 /* ── The card ──────────────────────────────────────────────────────────────── */
@@ -789,7 +795,9 @@ function CardBack({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem }
           <span className={styles.backHead}>
             <BlockMarker kind={card.kind} theme={card.theme} image={blockOf(card)?.image} small />
             <span>
-              <span className={styles.backWho}>{lane.name}</span>
+              <span className={`${styles.backWho} ${styles.nameClamp}`} title={lane.name}>
+                {lane.name}
+              </span>
               {li.item.name}
             </span>
           </span>
@@ -906,13 +914,14 @@ function Columns({ ctx }: { ctx: Ctx }) {
             kl.
           </div>
           {model.lanes.map((lane) => (
-            <div key={lane.patrolId} className={styles.laneHead} style={laneVars(lane.accent)}>
-              <span className={styles.laneName}>{lane.name}</span>
-              <span className={styles.laneNums}>
-                <LaneTotal lane={lane} />
-                <LaneState lane={lane} model={model} />
-              </span>
-            </div>
+            <LaneHeader
+              key={lane.patrolId}
+              look={ctx.header}
+              lane={lane}
+              model={model}
+              inkId={ctx.inkId}
+              laneStyle={laneVars(lane.accent)}
+            />
           ))}
           <div className={styles.axis} aria-hidden="true">
             {ticks.map((m) => (

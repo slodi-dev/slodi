@@ -212,7 +212,71 @@ be partly covered; the card's own clock says where it would start. The real benc
 (`BenchProvider`) still uses the pointer sensor and `touch-action: none`; if this is promoted,
 it should take the same sensors.
 
-## 7. "Sameina í eitt" that says what it keeps
+## 7. The flokkur at the top of its column
+
+The pill was the one generic thing left on the grid: every flokkur reads as the same lozenge in a
+different colour. These heads give the flokkur some character of its own. Every look keeps the same
+content: the name is a real heading (`h4`, under the band's `h3`), and beside or under it are the
+column's total and "ræður lengd" or "N mín bið". The colour is always behind the flokkur's own ink
+(`--sl-color-patrol-*` with its `-foreground`, the set-A pairs that pass AA as badges in both
+themes), never coloured text on the page, so yellow stays legible. Switch with the `header` prop
+(`laneHeaders.tsx`).
+
+<Canvas of={Stories.Headers} />
+
+- **H1 · Pennant.** The flokksfáni: a swallowtail pennant hanging from a pole along the top of the
+  grid. It says "this column is a flokkur" the way a camp does, and it is the most scout-like of the
+  four. _Trade-off:_ it costs height (the notch needs room under the name), and a long name makes the
+  pennant taller rather than shorter.
+- **H2 · Crest.** A round badge with the flokkur's animal and the name beside it in the heading
+  weight. The pictures come from one table (`CRESTS`): Refir a paw print, Ernir a bird, Uglur the
+  moon, Birnir the one bear lucide has (a panda), and a few for invented names (Þrumuskýin a storm
+  cloud, geimverur a rocket, ofurhetjur a lightning bolt). Anything else gets its initials ("FF",
+  "H"). _Trade-off:_ lucide has no fox, owl or bear, so a real crest set would be drawn for Slóði;
+  and a name with no picture is only as distinctive as its letters.
+- **H3 · Stamped.** The name pressed like the calendar's stamps: a band in the colour, the name in
+  capitals knocked out of it, a double rule, a small tilt from the flokkur's id and the stamps' own
+  ink texture (the same filter values as `Stamp.tsx`). It ties the split grid to the calendar,
+  PlanGrid A5 and FundurSheet F2. _Trade-off:_ the capitals and letter-spacing make names longer, so
+  they wrap and clamp sooner, and the ink texture softens the letters a little.
+- **H4 · Colour band.** The whole head is the colour, the name large, and the total sits in the band;
+  a thin rule in the colour runs down the column's left edge, so a card far down the grid still says
+  whose it is. The loudest look and the easiest to scan across six columns. _Trade-off:_ six bands of
+  vivid colour side by side are a lot on a screen that is mostly about the cards.
+
+<Canvas of={Stories.HeadersDark} />
+
+### Long names
+
+Leaders name flokkar whatever they like: "Fjólublá fljúgandi avókadó svínin", "Ofurhetjur úr
+Breiðholti", "Litlu grænu geimverurnar frá Mars", or one compound with nowhere to break,
+"Hraðbrautarbrúarsmiðirnir". Every head treats them the same way on purpose:
+
+- **Two lines at most.** The name wraps; `hyphens: auto` with `lang="is"` on the band hyphenates
+  where the browser has an Icelandic dictionary, and `overflow-wrap: anywhere` breaks a compound
+  that still doesn't fit. Past two lines it ends in "…".
+- **The whole name is never lost.** The clamp is visual only: the heading's text is the full name
+  (a screen reader hears all of it) and it is the tooltip.
+- **Nothing overlaps.** The numbers always sit under the name, never beside it, so a long name
+  pushes them down rather than running into them; all heads in a row grow together.
+- **Per look:** the pill becomes a rounded block of two lines; the pennant grows taller and keeps its
+  notch; the crest keeps its badge and, in a column too narrow for both (six flokkar, a phone),
+  puts the name under it, with the initials standing in when there is no picture; the stamp grows to
+  two lines of capitals (line height raised so the accents of a clamped line don't show); the band
+  wraps its large name.
+- **The flip side** names other flokkar on its "Færa til" buttons: they wrap to two lines and clamp
+  the same way, with the full name as tooltip and in the accessible name, "Færa Kakó og spjall í
+  annan flokk: Fjólublá fljúgandi avókadó svínin" (the name after a colon, never declined after
+  "til"). The editor's own heading clamps the flokkur's name the same way.
+
+<Canvas of={Stories.HeadersLongNames} />
+
+_Found while testing:_ Chromium on Linux has no Icelandic hyphenation dictionary, so there the
+compound breaks at the column edge without a hyphen ("Hraðbrautarbrúarsmi / ðirnir"). Browsers that
+have one hyphenate it. If that matters, the fix is soft hyphens from a small Icelandic syllable
+rule, or a hyphenation library.
+
+## 8. "Sameina í eitt" that says what it keeps
 
 <Canvas of={Stories.Merge} />
 
@@ -240,7 +304,7 @@ sheet's total afterwards. To ship it, `mergeBand` needs a `keep: "all" | patrolI
 
 <Canvas of={Stories.MergeFlow} />
 
-## 8. What's real and what's fixture
+## 9. What's real and what's fixture
 
 | What                                   | Where it lives today                                                                                | Status                                                                                                                      |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |

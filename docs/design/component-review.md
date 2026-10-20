@@ -95,7 +95,10 @@ Nothing waiting.
   cut their text. Cards drag up and down their flokkur's timeline and to a chosen place in
   another flokkur, with the result shown live ("hefst 19:55", totals, "ræður lengd"), Escape or
   letting go outside to cancel, Afturkalla after a drop, and a long press on phones so a swipe
-  still scrolls. Time grid and the honest merge are unchanged. _Needs backend:_ block
+  still scrolls. Column heads in four looks besides the pill (H1 Pennant, H2 Crest, H3
+  Stamped, H4 Colour band), all handling long names (two lines, hyphenated or broken, then "…",
+  full name in the heading and tooltip). Time grid and the honest merge are unchanged.
+  _Needs backend:_ block
   link, leader, note, gear and the sveit's version on a lane liður (sc-646).
 - **FundurSheet + LidurRow**: the current form, functions and interactions stay; variations are
   styles only. F0 is the current sheet with its 13 problems fixed (kind stripe, fit only in the

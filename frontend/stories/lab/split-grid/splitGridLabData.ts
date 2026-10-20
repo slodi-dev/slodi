@@ -192,6 +192,28 @@ export function copiedSplitData(): PlanBenchData {
   return afterIntents(base, [{ t: "splitBand", fundurId: LAB_FUNDUR, band: "kjarni" }]);
 }
 
+/**
+ * Flokkar with long, funny names, mixed with short ones, as leaders really name them: a phrase
+ * of five words, a 25-letter compound with no space to break at, and a one-word name.
+ */
+const LONG_NAMED: Patrol[] = [
+  { id: "mock-svin", name: "Fjólublá fljúgandi avókadó svínin", accent: "adrir" },
+  { id: "mock-refir", name: "Refir", accent: "rekkar" },
+  { id: "mock-bru", name: "Hraðbrautarbrúarsmiðirnir", accent: "rover" },
+  { id: "mock-hetjur", name: "Ofurhetjur úr Breiðholti", accent: "falkar" },
+  { id: "mock-sky", name: "Þrumuskýin", accent: "drekar" },
+  { id: "mock-geim", name: "Litlu grænu geimverurnar frá Mars", accent: "drott" },
+];
+
+/** Four or six flokkar from LONG_NAMED, uneven. The four keep the longest names. */
+export function longNamesData(count: 4 | 6 = 4): PlanBenchData {
+  const patrols =
+    count === 4 ? [LONG_NAMED[0], LONG_NAMED[1], LONG_NAMED[2], LONG_NAMED[5]] : LONG_NAMED;
+  const lanes = rotation(patrols, STATIONS.slice(0, 4), 15);
+  lanes[1].items = [...lanes[1].items, lidur("Kakó og spjall", 10, patrols[1].id)];
+  return withLanes(lanes, patrols);
+}
+
 export const FIXTURES = {
   even: evenData,
   uneven: unevenData,
@@ -200,6 +222,8 @@ export const FIXTURES = {
   empty: emptyLaneData,
   longUndated: longUndatedData,
   copied: copiedSplitData,
+  longNames: () => longNamesData(4),
+  longNamesSix: () => longNamesData(6),
 } as const;
 
 export type FixtureName = keyof typeof FIXTURES;

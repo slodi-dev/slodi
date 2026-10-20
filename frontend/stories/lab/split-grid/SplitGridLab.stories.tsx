@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Bench, LiveSplit } from "@/stories/vinnubekkur/benchHarness";
+import { HEADER_LOOKS } from "./headerLooks";
 import SplitGridLab, { type SplitGridLabProps } from "./SplitGridLab";
 import { FIXTURES, LAB_FUNDUR, type FixtureName } from "./splitGridLabData";
 
@@ -238,7 +239,7 @@ const k2 = {
         });
         await userEvent.click(ernir[ernir.length - 1]);
         await userEvent.click(
-          canvas.getByRole("button", { name: "Færa Hnútar og bönd til Birnir" })
+          canvas.getByRole("button", { name: "Færa Hnútar og bönd í annan flokk: Birnir" })
         );
         await waitFor(() => expect(totalOf(canvasElement, "mock-ernir")).toBe("45 mín"));
         await expect(totalOf(canvasElement, "mock-birnir")).toBe("75 mín");
@@ -479,6 +480,114 @@ export const Phone: Story = k2.phone;
 export const Dark: Story = k2.dark;
 export const Edit: Story = k2.edit;
 export const RemoveAndMove: Story = k2.removeAndMove;
+
+/* ── Column heads ── */
+
+/** Every head look on the same band, the current pill first. */
+function HeaderSheet({ fixture }: { fixture: FixtureName }) {
+  return (
+    <div style={{ ...wide, display: "grid", gap: "var(--sl-spacing-xl)" }}>
+      {HEADER_LOOKS.map(({ look, name, idea: text }) => (
+        <section key={look}>
+          <h2 style={heading}>{name}</h2>
+          <p style={idea}>{text}</p>
+          <SplitGridLab data={FIXTURES[fixture]()} header={look} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The flokkur's name at the top of its column, with more character than a pill: a pennant, a
+ * crest, a stamp or a band of its colour. Every look keeps the heading, the total and "ræður
+ * lengd" / "N mín bið".
+ */
+export const Headers: Story = {
+  name: "Headers",
+  render: () => <HeaderSheet fixture="uneven" />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Each look's four columns are headings named by the flokkur, with their totals.
+    await expect(canvas.getAllByRole("heading", { level: 4, name: "Refir" })).toHaveLength(
+      HEADER_LOOKS.length
+    );
+    await expect(canvasElement.querySelectorAll('[data-lane-total="mock-refir"]')).toHaveLength(
+      HEADER_LOOKS.length
+    );
+  },
+};
+
+export const HeadersDark: Story = {
+  name: "Headers · dark",
+  render: () => <HeaderSheet fixture="uneven" />,
+  globals: dark,
+};
+
+/** Long, funny names next to short ones, in four and six columns. */
+function LongNameSheet() {
+  return (
+    <div style={{ ...wide, display: "grid", gap: "var(--sl-spacing-xl)" }}>
+      {HEADER_LOOKS.map(({ look, name }) => (
+        <section key={look} style={{ display: "grid", gap: "var(--sl-spacing-md)" }}>
+          <h2 style={heading}>{name}</h2>
+          <SplitGridLab data={FIXTURES.longNames()} header={look} />
+          <SplitGridLab data={FIXTURES.longNamesSix()} header={look} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+const SVIN = "Fjólublá fljúgandi avókadó svínin";
+
+/**
+ * "Fjólublá fljúgandi avókadó svínin", "Hraðbrautarbrúarsmiðirnir" and "Litlu grænu geimverurnar
+ * frá Mars" beside "Refir". Two lines at most, hyphenated or broken anywhere, then "…"; the full
+ * name is the heading's text and its tooltip.
+ */
+export const HeadersLongNames: Story = {
+  name: "Headers · long names",
+  render: () => <LongNameSheet />,
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement);
+
+    await step("the heading is the whole name, whatever the clamp shows", async () => {
+      const heads = canvas.getAllByRole("heading", { level: 4, name: SVIN });
+      await expect(heads).toHaveLength(HEADER_LOOKS.length * 2);
+      for (const head of heads) await expect(head).toHaveAttribute("title", SVIN);
+    });
+
+    await step("no head is more than two lines of its name, and none spills out", async () => {
+      for (const text of canvasElement.querySelectorAll<HTMLElement>("h4 > span")) {
+        const lines =
+          text.getBoundingClientRect().height / parseFloat(getComputedStyle(text).lineHeight);
+        await expect(lines).toBeLessThan(2.6);
+        await expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth + 1);
+        const head = text.closest("[data-look]") as HTMLElement;
+        await expect(text.getBoundingClientRect().right).toBeLessThanOrEqual(
+          head.getBoundingClientRect().right + 1
+        );
+      }
+    });
+
+    await step("the flip side's Færa til buttons carry long names too", async () => {
+      const [first] = canvas.getAllByRole("button", { name: /^Refir kl\. \d\d:\d\d: / });
+      await userEvent.click(first);
+      const move = await canvas.findByRole("button", {
+        name: `Færa ${first.getAttribute("aria-label")?.split(": ")[1].split(",")[0]} í annan flokk: ${SVIN}`,
+      });
+      await expect(move).toHaveAttribute("title", SVIN);
+      await expect(move.scrollWidth).toBeLessThanOrEqual(move.clientWidth + 1);
+    });
+  },
+};
+
+export const HeadersLongNamesPhone: Story = {
+  name: "Headers · long names, phone",
+  render: () => <LongNameSheet />,
+  globals: phone,
+};
 
 /* ── Merge ── */
 
