@@ -9,10 +9,14 @@ SplitGrid is what a section of a fundur turns into after "Skipta á flokka": one
 running at the same time. It sits inside the fundur sheet (**Lab → FundurSheet**) in place of the
 section's list of liðir.
 
-This row (K1–K4) replaces the earlier style variations (S1–S4, scrapped 2026-10-20). The idea:
-**each liður is the bank card it came from**, the same card a leader dragged out of BlockPalette,
-and that card is where the leader changes it for one flokkur. The time grid, the merge proposal
-and every move path stay as they were.
+This row replaced the earlier style variations (S1–S4, scrapped 2026-10-20). The idea: **each
+liður is the bank card it came from**, the same card a leader dragged out of BlockPalette, and
+that card is where the leader changes it for one flokkur. The time grid, the merge proposal and
+every move path stay as they were.
+
+**K2 · Flip it over was picked** (2026-10-20) from four ways of editing a card; K1 (on the card),
+K3 (editor panel) and K4 (follows the sveit) are removed. K2 is now being polished: the bugs found
+and fixed are in section 5.
 
 Everything is live. Moves and edits dispatch the real `benchReducer` intents (`laneMoveAcross`,
 `laneMove`, `laneAdd`, `laneRemove`, `lanePatch`), so the announcements are the bench's own, and
@@ -64,18 +68,20 @@ two lines), the free tail as "+ N mín bið", the column header's total and "ræ
 summary line, ← → ↑ ↓, drag, and the merge proposal. On a phone the columns scroll sideways with
 snap, two in view, the axis pinned.
 
-**The card, top to bottom:** the picture with the minutes on it (like a video's length on its
-thumbnail), the clock span, the name, the kind and theme (the theme drops in a column narrower
-than 10rem), who leads it and the adaptation note. Its status is the calendar's stamp in the
-corner (the same rubber-stamp language as the Dagatal, PlanGrid A5 and FundurSheet F2), and an
-óákveðið card has a dashed edge. No coloured stripe: the column's flokkur name carries the
+**The card, top to bottom:** the picture; a clock icon with the length ("15 mín", sharp in body
+ink) and the clock span after it, quieter (left out in a column narrower than 13rem, where the
+axis carries the time); the name; the kind and theme (from 20 minutes up); who leads it and the
+adaptation note. The name has two lines at most, and one under 20 minutes. Under 10 minutes the
+card is a single line: the length and the name, no picture. Its status is the calendar's stamp in
+the corner (the same rubber-stamp language as the Dagatal, PlanGrid A5 and FundurSheet F2), and
+an óákveðið card has a dashed edge. No coloured stripe: the column's flokkur name carries the
 patrol colour, and the picture carries the kind.
 
 <Canvas of={Stories.Comparison} />
 
 ## 3. What a card can change, and the sveit's version
 
-Every direction offers the same edits, all applied at once (no Save button to forget):
+The back of the card offers these edits, all applied at once (no Save button to forget):
 
 - **Lengd:** − and + in steps of 5, never under 5 minutes. The column's total and the band's
   length follow at once.
@@ -92,41 +98,17 @@ Every direction offers the same edits, all applied at once (no Save button to fo
 
 **The sveit's version.** After a split every flokkur has a copy of the same liður. When one
 flokkur's copy changes, the leader needs to see that it now differs, from what, and how to put
-it back. So each card knows its _útgáfa sveitarinnar_: a changed card is marked (a dot in K1–K3,
-"BREYTT" in K4), and its editor lists the differences ("Stýrir: Óli (sveitin: Sigga)") with
-**Nota útgáfu sveitarinnar**. A liður only one flokkur has is "Aðeins hér": there is nothing to
-differ from.
+it back. So each card knows its _útgáfa sveitarinnar_: a changed card is marked with a dot by its stamp,
+and its back lists the differences ("Stýrir: Óli (sveitin: Sigga)") with
+**Nota útgáfu sveitarinnar**. A liður only one flokkur has has nothing to differ from.
 
-## 4. The directions: how a card is edited
+## 4. K2 · Flip it over
 
-They differ in _where_ the editor appears, not in what it does, so a leader who learns one has
-learned them all. Pressing a card opens it; pressing it again, "Lokið" or Escape closes it and
-gives focus back to the card. Moving a closed card with ← → leaves it closed.
+<Canvas of={Stories.Open} />
 
-### K1 · On the card
-
-<Canvas of={Stories.FaceOpen} />
-
-**Story:** "Change it right where it is." The card stays in its column and grows: length and
-status are on its face, with what differs from the sveit; "Fleira…" opens the rest under it.
-
-**Hierarchy:** the two edits a leader makes most on the night (length and status) come first
-and need no extra step. Everything else is one tap away.
-
-**Why:** the closest thing to writing on the plan. The leader never loses their place: the card
-they pressed is the card they're editing.
-
-**Trade-offs:** an open card pushes the rest of its column down, so that one column's time scale
-pauses while it's open (the column widens to 17rem so the controls fit; on a phone it takes the
-screen's width). Two cards can't be compared while one is open. "Fleira" makes the card long.
-
-### K2 · Flip it over
-
-<Canvas of={Stories.FlipOpen} />
-
-**Story:** "The back of the card is where you write." Pressing the card turns it over (a quarter
-turn, none under reduced motion); its picture and name stay at the top of the back, so it is
-still the same card. The back is ruled like a playing card's and holds the whole editor.
+**Story:** "The back of the card is where you write." Pressing a card turns it over (a quarter
+turn, 240ms, none under reduced motion). Its picture and name stay at the top of the back, so it
+is still the same card, and the back holds the whole editor on a plain surface.
 
 **Hierarchy:** the card's identity (picture, flokkur, name, "Lokið"), then what differs from the
 sveit, then the fields in the order a leader thinks of them, then the moves, then Fjarlægja.
@@ -134,54 +116,59 @@ sveit, then the fields in the order a leader thinks of them, then the moves, the
 **Why:** a clean split between reading (front) and changing (back). The front never carries
 controls, so the grid stays calm.
 
-**Trade-offs:** like K1, the open column's time scale pauses and the column widens. While a card
-is turned over its front (time, stamp) is hidden, and the flip is a gimmick if it's slow, so it
-is 260ms and only when motion is welcome. Focus moves to the back's heading.
+**How it behaves:**
 
-### K3 · Editor panel
+- The back is **lifted above the grid**, placed over its own card: at least 24rem wide, moved
+  left when it would run off the right edge, the full width on a phone. Nothing in the grid
+  moves: every column keeps its width, every card its height, and the time axis stays true.
+- The box grows underneath a tall back, so the back never covers the summary or Afturkalla.
+- The front stays in the grid under it and changes at once (length, stamp, the changed dot).
+- Pressing the card again, "Lokið" or Escape turns it back and gives focus to the card. Focus
+  moves to the back's heading when it opens. Moving an open card ("Færa til", Fyrr, Síðar) keeps
+  it open, and focus stays on its back.
 
-<Canvas of={Stories.PanelOpen} />
+**Trade-offs:** the back covers part of the neighbouring columns while it's open, so two cards
+can't be compared then. The turn is a gimmick if it's slow, so it is short and only when motion
+is welcome.
 
-**Story:** "The grid is the plan; the panel is the desk." The grid never changes shape. The open
-card is outlined in place, and a panel beside the grid (20rem, sticky) is headed by that same
-card: its picture, "Refir · 19:55–20:10", its name.
+<Canvas of={Stories.Phone} />
 
-**Hierarchy:** the grid keeps the room it needs to compare flokkar; the panel is secondary,
-beside it, and gone on "Lokið".
+<Canvas of={Stories.Dark} />
 
-**Why:** the time scale never pauses, so a leader can change Refir's length and watch the whole
-band rebalance ("Lengsti flokkur ræður") as they press +. It is also the only direction where
-the editor has a fixed, generous width.
+## 5. Polishing K2: the bugs found and fixed
 
-**Trade-offs:** the grid gets narrower while the panel is open (four columns at 1280px is fine;
-six get tight). On a phone the panel becomes a sheet stuck to the bottom of the screen, at most
-55% of its height, over the grid: the leader sees the card's column above it but not the rest.
+Found in screenshots of every K2 story (front and back, short and long cards, light and dark,
+desktop and phone, at 2× scale):
 
-### K4 · Follows the sveit
+1. **The open column widened and squeezed the others.** Its column went to `2fr` / 17rem, so
+   every other column shrank the moment a card opened. _Fixed:_ every column keeps its width;
+   the back is lifted over the grid instead.
+2. **The time axis lied while a card was open.** The open card pushed the rest of its column
+   down, so that column's cards no longer lined up with the axis or with the other columns.
+   _Fixed:_ the card's slot keeps its height; the grid never moves.
+3. **The grid's lines showed through the back.** The back was "ruled like a playing card", and
+   the lines ran through the fields and labels like the grid's own rules bleeding through.
+   _Fixed:_ a plain surface.
+4. **Text left blurred after the turn.** The turn's animation kept its final 3D transform
+   (`fill-mode: both`), which keeps the back on its own composited layer and can blur its text.
+   _Fixed:_ `backwards` fill, so nothing is left on the back once it has turned.
+5. **The length was a blob over the picture.** "15" sat in a white chip laid over the picture's
+   corner, hard to read on the light tiles and covering the picture. _Fixed:_ a clock icon and
+   "15 mín" in body ink, on the card's first line with the clock span (and the same in
+   BlockPalette, through the shared `BlockMinutes`).
+6. **Short cards cut their text in half.** On a 10-minute card a two-line title ("Eldfæri og
+   prímus") was clipped through its second line, and on a 15-minute card the leader's line was
+   cut at the bottom edge. _Fixed:_ the name has one line under 20 minutes and two at most
+   otherwise (the full name is in the card's title and accessible name); under 20 minutes the
+   kind line goes, since the picture carries the kind.
+7. **A 5-minute card cut its picture in half.** 28px is too short for the 40px tile. _Fixed:_
+   under 10 minutes a card is one line, the length and the name.
+8. **Clock spans cut to "19:4…" in narrow columns** (six flokkar, phone). _Fixed:_ below 13rem
+   the span is left out; the axis carries the time, and the card's accessible name still says
+   it.
+   <Canvas of={Stories.Six} />
 
-<Canvas of={Stories.SyncOpen} />
-
-**Story:** "One plan for the sveit, adapted per flokkur." Every card says whether it is the
-sveit's version ("⛓ Sveitin"), changed for this flokkur ("✎ BREYTT"), or only this flokkur's
-("Aðeins hér"), and the header counts the changed ones ("2 spjöld breytt fyrir flokk"). The
-editor (K3's, under the grid) starts with that status and adds one choice: **Breytingar gilda:
-aðeins þessi flokkur (Refir), or hjá öllum sem fylgja sveitinni (3 flokkar).**
-
-**Hierarchy:** sync state first, on every card; the scope choice above the fields, because it
-decides what every field does.
-
-**Why:** this is what a stöðvaleikur actually needs. The station leader changes Hnútar to 20
-minutes once, and every flokkur that does Hnútar gets it, except Birnir, who have their own
-leader for it and keep their version. "Flokkur sem hefur sína eigin útgáfu heldur henni, hvað sem
-þú velur hér." Nothing a leader adapted for one flokkur is overwritten from another column.
-
-**Trade-offs:** the most to learn: a second idea (the sveit's version) on top of the plan, and a
-scope choice on every edit (it starts at "aðeins þessi flokkur", the safe one, each time a card opens). It
-needs the most from the API (below).
-
-<Canvas of={Stories.SyncToAll} />
-
-## 5. "Sameina í eitt" that says what it keeps
+## 6. "Sameina í eitt" that says what it keeps
 
 <Canvas of={Stories.Merge} />
 
@@ -209,7 +196,7 @@ sheet's total afterwards. To ship it, `mergeBand` needs a `keep: "all" | patrolI
 
 <Canvas of={Stories.MergeFlow} />
 
-## 6. What's real and what's fixture
+## 7. What's real and what's fixture
 
 | What                                   | Where it lives today                                                                                | Status                                                                                                                      |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -220,7 +207,6 @@ sheet's total afterwards. To ship it, `mergeBand` needs a `keep: "all" | patrolI
 | Adaptation for this flokkur            | Lab-only `note`                                                                                     | **Gap.** No field (`endurmat` is last time's, not this flokkur's plan).                                                     |
 | Búnaður per liður                      | Lab-only `gear`                                                                                     | **Gap.** Bank content has `equipment: list[str]`; it isn't copied to a liður (see Lab/PlanGrid).                            |
 | The sveit's version                    | Lab: what most flokkar have when the band is drawn (`troopVersions`)                                | **Gap.** A lane's liður has no link to the band liður it was copied from, and there is no "changed for this flokkur" state. |
-| Edit for every follower (K4)           | Lab: one `lanePatch` per follower                                                                   | Needs a server-side "apply to followers" or the client must send N patches.                                                 |
 | Merge "keep everything"                | `labMerge`                                                                                          | `mergeBand` needs `keep: "all" \| patrolId`.                                                                                |
 
 The gaps are on Shortcut sc-646.

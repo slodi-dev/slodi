@@ -1,10 +1,11 @@
+import { Clock } from "lucide-react";
 import type { SlotKind } from "@/services/plan.service";
 import { KIND_ICON, themeIcon } from "./blockIcons";
 import styles from "./palette.module.css";
 
 /**
- * The parts of a bank card that are drawn the same wherever a block appears: the picture tile
- * and the kind line. BlockPalette's cards use them, and so does anything else that shows a
+ * The parts of a bank card that are drawn the same wherever a block appears: the picture tile,
+ * the length and the kind line. BlockPalette's cards use them, and so does anything else that shows a
  * block as a card (the SplitGrid lab's editable cards), so a block looks the same in the bank
  * and on the plan.
  *
@@ -16,7 +17,6 @@ export const blockCardStyles = {
   card: styles.card,
   marker: styles.marker,
   markerSmall: styles.markerSmall,
-  cardMinutes: styles.cardMinutes,
   title: styles.title,
   cardKind: styles.cardKind,
   cardTheme: styles.cardTheme,
@@ -47,6 +47,20 @@ export function BlockMarker({ kind, theme, image, small = false }: BlockPictureP
       ) : (
         <Icon className={styles.markerIcon} aria-hidden="true" />
       )}
+    </span>
+  );
+}
+
+/**
+ * "🕒 15 mín": the block's length, a clock and the minutes in the body text, never laid over the
+ * picture, so it stays sharp on any tile and in both themes. Decorative for screen readers when
+ * the card's own name already says the length.
+ */
+export function BlockMinutes({ minutes, hidden = false }: { minutes: number; hidden?: boolean }) {
+  return (
+    <span className={styles.minutes} aria-hidden={hidden || undefined}>
+      <Clock aria-hidden="true" />
+      {minutes} mín
     </span>
   );
 }

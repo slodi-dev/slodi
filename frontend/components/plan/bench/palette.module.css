@@ -747,17 +747,24 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
-.cardMinutes {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  padding: 0 5px;
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-color-surface));
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-emphasis);
+/* The length: a clock and the minutes, in body ink on the card, not a chip over the picture. */
+.minutes {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
   font-variant-numeric: tabular-nums;
+  line-height: var(--sl-line-height-tight);
   color: hsl(var(--sl-color-text-primary));
+  white-space: nowrap;
+}
+
+.minutes svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  color: hsl(var(--sl-color-text-secondary));
 }
 
 .cardBody {

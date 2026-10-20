@@ -17,7 +17,7 @@ import { countIs } from "@/lib/format";
 import type { LibraryFolder } from "@/lib/mock/folders.mock";
 import { LIBRARY_KINDS, type LibraryBlock } from "@/lib/mock/library.mock";
 import type { SlotKind } from "@/services/plan.service";
-import { BlockKindLine, BlockMarker } from "./BlockCard";
+import { BlockKindLine, BlockMarker, BlockMinutes } from "./BlockCard";
 import { SOURCES } from "./blockIcons";
 import { useBench } from "./BenchProvider";
 import { blockAsLidur, dragId } from "./dnd";
@@ -304,12 +304,11 @@ function Card({ block, api, onAdd, disabledReasonId, isOnFundur }: CardProps) {
       <span ref={setNodeRef} className={styles.cardPicture} aria-hidden="true" {...listeners}>
         <BlockMarker kind={block.kind} theme={block.theme} image={block.image} />
         <GripVertical className={styles.cardGrip} />
-        {/* Minutes on the picture, like the length on a video thumbnail: read with the picture. */}
-        <span className={styles.cardMinutes}>{block.minutes} mín</span>
       </span>
       <div className={styles.cardBody}>
         <span className={styles.title}>{block.name}</span>
         <span className={styles.srOnly}>, {block.minutes} mínútur</span>
+        <BlockMinutes minutes={block.minutes} hidden />
         <BlockKindLine kind={block.kind} theme={block.theme} />
         <span className={styles.cardUsed}>{timesUsed(block.timesUsed)}</span>
         {(isOnFundur || block.endurmat) && (

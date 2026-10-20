@@ -1,4 +1,4 @@
-/* Lab directions for SplitGrid: the split band built from editable bank cards (K1–K4).
+/* Lab/SplitGrid, K2 · Flip it over: the split band built from editable bank cards.
    Every colour is a token; the patrol colour comes in through
    --lane / --lane-on (set inline from the lane's accent). The vivid colour is only ever a
    background behind its own foreground, a bar or edge next to the patrol's name, or a 14% tint
@@ -212,7 +212,6 @@
   --ppm: 0.35rem;
   --axis: 3.25rem;
   --col-min: 9rem;
-  --col-open: 17rem;
   display: flex;
   flex-direction: column;
   gap: var(--sl-spacing-xs);
@@ -328,12 +327,6 @@
 /* Each column sizes its own cards: a narrow one drops the theme from the kind line. */
 .lane {
   container-type: inline-size;
-}
-
-/* A column with an open card (K1, K2) grows to fit it: its time scale pauses while editing. */
-.lane[data-open] {
-  height: auto;
-  min-height: calc(var(--ppm) * var(--span));
 }
 
 .gap {
@@ -611,12 +604,6 @@
   box-sizing: border-box;
 }
 
-.slot[data-open] {
-  height: auto;
-  min-height: calc(var(--ppm) * var(--min));
-  z-index: 1;
-}
-
 .card {
   /* Without this the browser claims the gesture for panning and a touch drag never starts. */
   touch-action: none;
@@ -636,11 +623,6 @@
   cursor: pointer;
 }
 
-.slot[data-open] .card {
-  flex: 0 0 auto;
-  min-height: calc(var(--ppm) * var(--min) - 4px);
-}
-
 .card[data-on] {
   border-color: hsl(var(--sl-color-primary));
   box-shadow: inset 0 0 0 1px hsl(var(--sl-color-primary));
@@ -649,11 +631,6 @@
 /* Óákveðið: the card is only a dotted outline until someone decides. */
 .card[data-status="unknown"] {
   border-style: dashed;
-}
-
-.cardPicture {
-  position: relative;
-  display: block;
 }
 
 .cardText {
@@ -665,17 +642,68 @@
   padding-right: 1.25rem;
 }
 
+/* "🕒 15 mín  19:40–19:55": the length sharp in body ink, the clock times quieter after it. */
 .cardTime {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
-  text-overflow: clip;
-  font-size: var(--sl-text-overline);
+}
+
+.cardClock {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--sl-text-caption);
   font-variant-numeric: tabular-nums;
   color: hsl(var(--sl-color-text-secondary));
 }
 
+/* Two lines at most, one on a card under 20 minutes (there the kind and leader need the room);
+   the full name is in its title and the card's accessible name. */
 .cardTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
+}
+
+.card[data-short] .cardTitle {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+/* Under 10 minutes a card is one line high (28px for 5 minutes): the length and the name, no
+   picture, which would only be cut in half. */
+.card[data-tiny] {
+  align-items: center;
+  padding-block: 0;
+}
+
+.card[data-tiny] > [data-kind] {
+  display: none;
+}
+
+.card[data-tiny] .cardText {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+}
+
+.card[data-tiny] .cardClock {
+  display: none;
+}
+
+/* A narrow column has no room for the clock span next to the length: the axis carries the time
+   there (and the card's accessible name still says it), so it goes rather than being cut. */
+@container (max-width: 13rem) {
+  .cardClock {
+    display: none;
+  }
 }
 
 .cardMeta {
@@ -707,7 +735,7 @@
   right: 4px;
 }
 
-/* "Breytt fyrir flokkinn", in K1–K3: a small dot by the stamp; the editor says what changed. */
+/* "Breytt fyrir flokkinn": a small dot by the stamp; the card's back says what changed. */
 .changedDot {
   position: absolute;
   top: 6px;
@@ -719,75 +747,34 @@
   box-shadow: 0 0 0 2px hsl(var(--sl-color-surface));
 }
 
-/* K4: every card says whether it follows the sveit. */
-.syncMark {
+/* ── The back of the card, lifted above the grid ── */
+
+/* The grid and the lifted back share this box; the back is placed over its own card. */
+.workArea {
+  position: relative;
+}
+
+.lift {
   position: absolute;
-  right: 4px;
-  bottom: 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 0 4px;
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-sm);
-  background: hsl(var(--sl-color-surface));
-  font-size: var(--sl-text-overline);
-  font-weight: var(--sl-font-weight-medium);
-  color: hsl(var(--sl-color-text-secondary));
+  z-index: 4;
+  top: 0;
+  left: 0;
+  width: min(100%, 24rem);
 }
 
-.syncMark svg {
-  width: 11px;
-  height: 11px;
+/* Until it is measured into place the back waits unseen (still focusable), so it never
+   flashes at the top of the grid. */
+.lift:not([data-placed]) {
+  opacity: 0;
 }
-
-.syncMark[data-changed] {
-  border: 1.5px dashed hsl(var(--sl-color-warning-text));
-  background: hsl(var(--sl-color-warning-subtle));
-  color: hsl(var(--sl-color-warning-text));
-  font-weight: var(--sl-font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.syncMark[data-none] {
-  border-style: dotted;
-}
-
-/* ── K1: quick edits on the open card ── */
-
-.quick {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-xs);
-  padding: var(--sl-spacing-xs);
-  border: 1px solid hsl(var(--sl-color-primary));
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--sl-color-surface));
-  box-shadow: var(--sl-shadow-card-hover);
-}
-
-.quickFoot {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sl-spacing-xs);
-}
-
-/* ── K2: the back of the card ── */
 
 .back {
-  padding: var(--sl-spacing-xs);
+  padding: var(--sl-spacing-sm);
   border: 1px solid hsl(var(--sl-color-primary));
   border-radius: var(--sl-radius-md);
-  /* Ruled like the back of a playing card, faint enough to write over. */
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 1.5rem,
-      hsl(var(--sl-color-border-subtle)) 1.5rem calc(1.5rem + 1px)
-    ),
-    hsl(var(--sl-color-surface));
-  box-shadow: var(--sl-shadow-card-hover);
+  /* A plain surface: nothing from the grid shows through behind the fields. */
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-dropdown);
 }
 
 .backHead {
@@ -811,93 +798,24 @@
   color: hsl(var(--sl-color-text-secondary));
 }
 
+/* The turn. `backwards`, not `both`: once it has turned, no transform is left on the back, so
+   its text is drawn crisp instead of on a blurred 3D layer. */
 @media (prefers-reduced-motion: no-preference) {
-  .back {
-    animation: turnOver 260ms cubic-bezier(0.3, 0.7, 0.4, 1) both;
+  .lift[data-placed] .back {
+    animation: turnOver 240ms cubic-bezier(0.3, 0.7, 0.4, 1) backwards;
     transform-origin: center top;
   }
 }
 
 @keyframes turnOver {
   from {
-    transform: perspective(40rem) rotateY(-80deg);
-    opacity: 0.4;
+    transform: perspective(60rem) rotateY(-70deg);
+    opacity: 0;
   }
   to {
-    transform: perspective(40rem) rotateY(0deg);
+    transform: perspective(60rem) rotateY(0deg);
     opacity: 1;
   }
-}
-
-/* ── K3, K4: the panel beside the grid, under it on a phone ── */
-
-.workArea {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sl-spacing-sm);
-  align-items: start;
-}
-
-@container (min-width: 52rem) {
-  .workArea[data-has-panel] {
-    grid-template-columns: minmax(0, 1fr) 20rem;
-  }
-  .workArea[data-has-panel] .panel {
-    position: sticky;
-    top: var(--sl-spacing-sm);
-  }
-}
-
-.panel {
-  padding: var(--sl-spacing-sm);
-  border: 1px solid hsl(var(--sl-color-border-strong));
-  border-radius: var(--sl-radius-md);
-  background: hsl(var(--sl-color-surface));
-  box-shadow: var(--sl-shadow-card-hover);
-}
-
-/* On a narrow box the panel is a sheet that stays at the bottom while the grid scrolls. */
-@container (max-width: 40rem) {
-  .panel {
-    position: sticky;
-    bottom: 0;
-    z-index: 3;
-    max-height: 55vh;
-    overflow-y: auto;
-    border-radius: var(--sl-radius-md) var(--sl-radius-md) 0 0;
-  }
-}
-
-.scope {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sl-spacing-compact);
-  margin: 0;
-  padding: var(--sl-spacing-xs);
-  border: 1px solid hsl(var(--sl-color-border));
-  border-radius: var(--sl-radius-md);
-}
-
-.scopeChoice {
-  display: flex;
-  align-items: center;
-  gap: var(--sl-spacing-xs);
-  min-height: var(--target);
-  cursor: pointer;
-}
-
-.scopeChoice input {
-  width: 1.125rem;
-  height: 1.125rem;
-  margin: 0;
-  accent-color: hsl(var(--sl-color-primary));
-}
-
-.scopeHelp,
-.syncNote {
-  margin: 0;
-  font-size: var(--sl-text-caption);
-  color: hsl(var(--sl-color-text-secondary));
 }
 
 /* ── The editor's fields (CardEditor.tsx) ── */
@@ -935,10 +853,8 @@
   gap: var(--sl-spacing-sm);
 }
 
-/* The editor's own width decides: two columns of fields once there is room (K4 under the grid). */
-.panel,
-.back,
-.quick {
+/* The editor's own width decides: two columns of fields once there is room. */
+.back {
   container-type: inline-size;
 }
 

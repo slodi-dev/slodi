@@ -13,10 +13,9 @@ import type { LaneItem, LaneModel, SplitModel } from "./labBench";
 import styles from "./SplitGridLab.module.css";
 
 /**
- * The editing pieces every K direction is built from. They differ in *where* these appear (on
- * the card's face, on its back, in a panel), not in what they do, so a foringi who learns one
- * has learned them all. Every change is applied at once through the reducer's `lanePatch`;
- * there is no Save button to forget, and removing is the only step with an Afturkalla.
+ * The editor on the back of a turned card (K2). Every change is applied at once through the
+ * reducer's `lanePatch`; there is no Save button to forget, and removing is the only step with
+ * an Afturkalla.
  */
 
 const STATUSES: PlanStatus[] = ["confirmed", "draft", "tentative", "unknown"];
@@ -44,13 +43,13 @@ export interface EditorContext {
 const item = (ctx: EditorContext) => ctx.li.item as CardLidur;
 
 /** Lengd: − 15 mín +. Steps of five, never under five minutes. */
-export function MinutesField({ ctx, compact = false }: { ctx: EditorContext; compact?: boolean }) {
+function MinutesField({ ctx }: { ctx: EditorContext }) {
   const { minutes, name } = item(ctx);
   const set = (next: number) =>
     ctx.actions.patch({ minutes: Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, next)) });
   return (
-    <div className={styles.field} data-compact={compact || undefined}>
-      {!compact && <span className={styles.fieldLabel}>Lengd</span>}
+    <div className={styles.field}>
+      <span className={styles.fieldLabel}>Lengd</span>
       <span className={styles.stepper} role="group" aria-label={`Lengd ${name}`}>
         <button
           type="button"
@@ -79,7 +78,7 @@ export function MinutesField({ ctx, compact = false }: { ctx: EditorContext; com
 }
 
 /** Staða: four words as a radio group, the same order as everywhere on the bench. */
-export function StatusField({ ctx }: { ctx: EditorContext }) {
+function StatusField({ ctx }: { ctx: EditorContext }) {
   const name = useId();
   const { status } = item(ctx);
   return (
@@ -102,7 +101,7 @@ export function StatusField({ ctx }: { ctx: EditorContext }) {
   );
 }
 
-export function LeaderField({ ctx }: { ctx: EditorContext }) {
+function LeaderField({ ctx }: { ctx: EditorContext }) {
   const id = useId();
   return (
     <div className={styles.field}>
@@ -121,7 +120,7 @@ export function LeaderField({ ctx }: { ctx: EditorContext }) {
   );
 }
 
-export function NoteField({ ctx }: { ctx: EditorContext }) {
+function NoteField({ ctx }: { ctx: EditorContext }) {
   const id = useId();
   return (
     <div className={styles.field}>
@@ -141,7 +140,7 @@ export function NoteField({ ctx }: { ctx: EditorContext }) {
 }
 
 /** Búnaður: what this flokkur needs for it. Starts as the bank block's own list. */
-export function GearField({ ctx }: { ctx: EditorContext }) {
+function GearField({ ctx }: { ctx: EditorContext }) {
   const id = useId();
   const [draft, setDraft] = useState("");
   const gear = item(ctx).gear ?? [];
@@ -200,7 +199,7 @@ export function GearField({ ctx }: { ctx: EditorContext }) {
 }
 
 /** Another block from the bank, in this flokkur only. A native select: the phone's own picker. */
-export function SwapField({ ctx }: { ctx: EditorContext }) {
+function SwapField({ ctx }: { ctx: EditorContext }) {
   const id = useId();
   const current = item(ctx);
   return (
@@ -226,7 +225,7 @@ export function SwapField({ ctx }: { ctx: EditorContext }) {
 }
 
 /** Færa til: every other flokkur by name, then earlier and later in this one. */
-export function MoveRow({ ctx }: { ctx: EditorContext }) {
+function MoveRow({ ctx }: { ctx: EditorContext }) {
   const { model, lane, li, actions } = ctx;
   return (
     <div className={styles.field}>
@@ -275,16 +274,9 @@ export function MoveRow({ ctx }: { ctx: EditorContext }) {
  * "Breytt fyrir Refi": what differs from the sveit's version, side by side, and the way back.
  * Nothing when the card is the sveit's version or has none.
  */
-export function DiffBlock({ ctx, always = false }: { ctx: EditorContext; always?: boolean }) {
+function DiffBlock({ ctx }: { ctx: EditorContext }) {
   const diffs = differences(item(ctx), ctx.troop);
-  if (!ctx.troop) {
-    return always ? (
-      <p className={styles.syncNote}>Aðeins í þessum flokki: engin útgáfa sveitarinnar.</p>
-    ) : null;
-  }
-  if (diffs.length === 0) {
-    return always ? <p className={styles.syncNote}>Eins og hjá sveitinni.</p> : null;
-  }
+  if (!ctx.troop || diffs.length === 0) return null;
   return (
     <div className={styles.diff}>
       <p className={styles.diffTitle}>Breytt fyrir þennan flokk</p>
@@ -305,7 +297,7 @@ export function DiffBlock({ ctx, always = false }: { ctx: EditorContext; always?
   );
 }
 
-export function RemoveButton({ ctx }: { ctx: EditorContext }) {
+function RemoveButton({ ctx }: { ctx: EditorContext }) {
   return (
     <button type="button" className={styles.dangerQuiet} onClick={ctx.actions.remove}>
       <Trash2 aria-hidden="true" /> Fjarlægja úr flokknum
@@ -313,45 +305,31 @@ export function RemoveButton({ ctx }: { ctx: EditorContext }) {
   );
 }
 
-/**
- * The whole editor: what K2's back, K3's panel and K4's panel show. `rest` is K1's "Fleira":
- * everything the card's face doesn't already have (no heading, length, status or changes).
- */
+/** The whole editor on the card's back: heading and Lokið, the changes, then every field. */
 export function CardEditor({
   ctx,
   headingId,
   heading,
-  before,
-  rest = false,
-  showDiff = true,
 }: {
   ctx: EditorContext;
   headingId?: string;
   /** Replaces the default heading (the block's name). */
   heading?: ReactNode;
-  /** Shown above the fields, e.g. K4's scope choice. */
-  before?: ReactNode;
-  rest?: boolean;
-  /** Off when `before` already shows the changes (K4). */
-  showDiff?: boolean;
 }) {
   return (
     <div className={styles.editor}>
-      {!rest && (
-        <div className={styles.editorHead}>
-          <h4 id={headingId} className={styles.editorTitle} tabIndex={-1}>
-            {heading ?? ctx.li.item.name}
-          </h4>
-          <button type="button" className={styles.quiet} onClick={ctx.actions.close}>
-            Lokið
-          </button>
-        </div>
-      )}
-      {before}
-      {!rest && showDiff && <DiffBlock ctx={ctx} />}
+      <div className={styles.editorHead}>
+        <h4 id={headingId} className={styles.editorTitle} tabIndex={-1}>
+          {heading ?? ctx.li.item.name}
+        </h4>
+        <button type="button" className={styles.quiet} onClick={ctx.actions.close}>
+          Lokið
+        </button>
+      </div>
+      <DiffBlock ctx={ctx} />
       <div className={styles.editorGrid}>
-        {!rest && <MinutesField ctx={ctx} />}
-        {!rest && <StatusField ctx={ctx} />}
+        <MinutesField ctx={ctx} />
+        <StatusField ctx={ctx} />
         <LeaderField ctx={ctx} />
         <NoteField ctx={ctx} />
         <GearField ctx={ctx} />
