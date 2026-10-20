@@ -20,10 +20,16 @@ import type { HeaderLook } from "./headerLooks";
 
 export type { HeaderLook };
 
-function Crest({ name }: { name: string }) {
+/** The flokkur's ringed crest. `size` is the badge's diameter (the head's own is 2.75rem). */
+export function Crest({ name, size }: { name: string; size?: string }) {
   const Icon = crestFor(name);
   return (
-    <span className={styles.crest} aria-hidden="true">
+    <span
+      className={styles.crest}
+      aria-hidden="true"
+      data-small={size ? true : undefined}
+      style={size ? ({ ["--crest" as string]: size } as CSSProperties) : undefined}
+    >
       {Icon ? <Icon /> : <span className={styles.crestInitials}>{initialsOf(name)}</span>}
     </span>
   );

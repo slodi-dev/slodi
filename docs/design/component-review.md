@@ -84,8 +84,14 @@ Nothing waiting.
 
 - **PlanGrid**: A with A1–A4, plus **A5 · Stimplar**, which reuses the real calendar's stamp kit
   so the grid and calendar are one family (see "Grid next to calendar").
-- **SplitGrid → K2 · Flip it over with the H6 head, approved and ready to promote**
-  (2026-10-20). The flip card, the clock length, dragging along the timeline and between
+- **SplitGrid → K2 · Flip it over with the H6 head: desktop approved; phone in the Lab
+  (M1–M4)** (2026-10-20). On a phone the desktop grid gets squished (one and a half flokkar in
+  view, cut cards, the open card's back covering everything, the pinned axis scrolling away), so
+  four phone layouts take over at 620px or less: **M1 · One flokkur at a time** (crests on top,
+  one column, the next peeking), **M2 · Compare two**, **M3 · Stacked by time** (one timeline of
+  what each flokkur starts when) and **M4 · List per flokkur** (rows with a length bar, opened to
+  their cards). On a phone the card's back is a bottom sheet in all four. Also fixed: a touch drag
+  stopped following the finger once the card was redrawn in another flokkur. Desktop: The flip card, the clock length, dragging along the timeline and between
   flokkar, and long-name handling are approved, and the column head is **H6: H5b's lanyard on
   H5d's tinted lane** (a ringed animal crest on a 2px cord down the column's edge, over the
   flokkur's colour at 10%), with animal crests drawn for Slóði. Each liður is the

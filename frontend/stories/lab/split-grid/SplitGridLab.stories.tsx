@@ -3,6 +3,7 @@ import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Bench, LiveSplit } from "@/stories/vinnubekkur/benchHarness";
 import { CREST_SHEET } from "./crestMarks";
 import { HEADER_LOOKS } from "./headerLooks";
+import { PHONE_LOOKS, type PhoneLook } from "./phoneLooks";
 import SplitGridLab, { type SplitGridLabProps } from "./SplitGridLab";
 import { FIXTURES, LAB_FUNDUR, type FixtureName } from "./splitGridLabData";
 
@@ -277,7 +278,10 @@ function centre(el: Element) {
 
 /** Just inside the top of the n-th slot of a column: "in front of that card". */
 function frontOf(root: HTMLElement, lane: number, n: number) {
-  const column = root.querySelector(`[data-lane-col="${lane}"]`) as HTMLElement;
+  // The column, not a phone layout's crest for the same flokkur (`data-drop-end`).
+  const column = root.querySelector(
+    `[data-lane-col="${lane}"]:not([data-drop-end])`
+  ) as HTMLElement;
   const slots = column.querySelectorAll("[data-slot-id]");
   const box = column.getBoundingClientRect();
   const slot = slots[n]?.getBoundingClientRect();
@@ -623,6 +627,307 @@ export const CrestMarks: Story = {
   name: "Headers · crest marks",
   render: () => <CrestMarkSheet />,
 };
+
+/* ── Phone ── */
+
+/** A phone-wide box: the band measures its own width, so this is a phone on any screen. */
+function PhoneFrame({
+  width,
+  label,
+  fixture,
+  look,
+}: {
+  width: 390 | 360;
+  label: string;
+  fixture: FixtureName;
+  look?: PhoneLook;
+}) {
+  return (
+    <figure style={{ margin: 0, width, maxWidth: "100%", flex: "none" }}>
+      <figcaption style={{ ...idea, margin: "0 0 var(--sl-spacing-xs)" }}>{label}</figcaption>
+      <SplitGridLab data={FIXTURES[fixture]()} phone={look} />
+    </figure>
+  );
+}
+
+const row = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "flex-start",
+  gap: "var(--sl-spacing-lg)",
+} as const;
+
+/**
+ * Today's phone (the desktop grid scrolled sideways) first, then M1–M4, each at 390px with the
+ * four flokkar of the uneven stöðvaleikur. The diagnosis is in the MDX, section 8.
+ */
+export const PhoneComparison: Story = {
+  name: "Phone · Comparison",
+  render: () => (
+    <div style={row}>
+      <section>
+        <h2 style={heading}>Current phone</h2>
+        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="uneven" />
+      </section>
+      {PHONE_LOOKS.map(({ look, name }) => (
+        <section key={look}>
+          <h2 style={heading}>{name}</h2>
+          <PhoneFrame width={390} label="390 · 4 flokkar" fixture="uneven" look={look} />
+        </section>
+      ))}
+    </div>
+  ),
+};
+
+/** One layout at 390 and 360, with four and six flokkar and with long names. */
+function PhoneSheetOf({ look }: { look: PhoneLook }) {
+  const { name, idea: text } = PHONE_LOOKS.find((entry) => entry.look === look)!;
+  return (
+    <div style={{ display: "grid", gap: "var(--sl-spacing-md)" }}>
+      <div>
+        <h2 style={heading}>{name}</h2>
+        <p style={{ ...idea, maxWidth: "48rem" }}>{text}</p>
+      </div>
+      <div style={row}>
+        <PhoneFrame width={390} label="390 · 4 flokkar" fixture="uneven" look={look} />
+        <PhoneFrame width={360} label="360 · 6 flokkar" fixture="six" look={look} />
+        <PhoneFrame width={390} label="390 · long names, 4" fixture="longNames" look={look} />
+        <PhoneFrame width={360} label="360 · long names, 6" fixture="longNamesSix" look={look} />
+      </div>
+    </div>
+  );
+}
+
+const phoneStory = (look: PhoneLook, extra: Partial<Story> = {}): Story => ({
+  name: `Phone · ${PHONE_LOOKS.find((entry) => entry.look === look)!.name}`,
+  render: () => <PhoneSheetOf look={look} />,
+  ...extra,
+});
+
+/**
+ * Scrolls the page so `el` sits `at` of the way down the screen (the upper middle by default). A drag that starts in the
+ * top or bottom fifth makes dnd-kit scroll the page (as it should for a thumb), and the cards
+ * would move under a test's fixed path.
+ */
+async function bringToMiddle(el: Element, at = 0.4) {
+  // Instant: the app's smooth scrolling would still be moving the page during the drag.
+  window.scrollBy({
+    top: el.getBoundingClientRect().top - window.innerHeight * at,
+    behavior: "instant",
+  });
+  await frame(60);
+}
+
+/** The first band on the page (the 390 · 4 flokkar frame). */
+function firstBand(canvasElement: HTMLElement): HTMLElement {
+  return canvasElement.querySelector("[data-split-band]") as HTMLElement;
+}
+
+/** Open a card, check the sheet, close it with Lokið and land back on the card. */
+async function sheetRoundTrip(band: HTMLElement, cardName: RegExp) {
+  const canvas = within(band);
+  const [target] = canvas.getAllByRole("button", { name: cardName });
+  await userEvent.click(target);
+  const sheet = await canvas.findByRole("dialog");
+  await waitFor(() => expect(sheet).toHaveAttribute("open"));
+  await expect(within(sheet).getByRole("button", { name: "Lengra um 5 mín" })).toBeVisible();
+  await userEvent.click(within(sheet).getByRole("button", { name: "Lokið" }));
+  await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+  await waitFor(() => expect(document.activeElement).toHaveAccessibleName(cardName));
+}
+
+export const PhoneM1: Story = phoneStory("m1", {
+  play: async ({ canvasElement, step }) => {
+    const band = firstBand(canvasElement);
+    const canvas = within(band);
+    window.scrollTo(0, 0);
+
+    await step("the crests say which flokkur is in view; a tap shows another", async () => {
+      const crests = within(canvas.getByRole("group", { name: "Flokkar, einn í einu" }));
+      await expect(crests.getByRole("button", { name: /^Refir/ })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      await userEvent.click(crests.getByRole("button", { name: /^Uglur/ }));
+      await waitFor(() =>
+        expect(crests.getByRole("button", { name: /^Uglur/ })).toHaveAttribute(
+          "aria-pressed",
+          "true"
+        )
+      );
+      const scroller = band.querySelector("[data-scroller]") as HTMLElement;
+      await waitFor(() => expect(scroller.scrollLeft).toBeGreaterThan(0));
+      await userEvent.click(crests.getByRole("button", { name: /^Refir/ }));
+      await waitFor(() => expect(scroller.scrollLeft).toBe(0));
+    });
+
+    await step("a card opens as a sheet, and Lokið goes back to the card", async () => {
+      await sheetRoundTrip(band, /^Refir kl\. \d\d:\d\d: Áttaviti og kort/);
+    });
+
+    await step("hold and drag up the column: Kakó og spjall one up in Refir", async () => {
+      await bringToMiddle(card(canvas, "Refir", "Kakó og spjall"));
+      await touchDrag(card(canvas, "Refir", "Kakó og spjall"), frontOf(band, 0, 3));
+      await waitFor(() =>
+        expect(namesIn(band, 0)).toEqual([...REFIR.slice(0, 3), "Kakó og spjall", REFIR[3]])
+      );
+    });
+
+    await step(
+      "dropped on another flokkur's crest, it goes to the end of that flokkur",
+      async () => {
+        const crests = within(canvas.getByRole("group", { name: "Flokkar, einn í einu" }));
+        const crest = crests.getByRole("button", { name: /^Birnir/ });
+        // Bring the crest into the row's view first, as a thumb would only aim at one it sees.
+        const row = crest.parentElement as HTMLElement;
+        row.scrollLeft = crest.offsetLeft + crest.offsetWidth - row.clientWidth;
+        window.scrollTo({ top: 0, behavior: "instant" });
+        await frame(50);
+        await expect(namesIn(band, 3)).toHaveLength(4);
+        await touchDrag(card(canvas, "Refir", "Skyndihjálp"), centre(crest));
+        await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("55 mín"));
+        await expect(namesIn(band, 3)).toHaveLength(5);
+        await expect(namesIn(band, 3).at(-1)).toBe("Skyndihjálp");
+        await userEvent.click(canvas.getByRole("button", { name: "Afturkalla" }));
+        await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("70 mín"));
+      }
+    );
+  },
+});
+
+export const PhoneM2: Story = phoneStory("m2", {
+  play: async ({ canvasElement, step }) => {
+    const band = firstBand(canvasElement);
+    const canvas = within(band);
+    window.scrollTo(0, 0);
+
+    await step(
+      "two flokkar side by side; a third crest replaces the one picked first",
+      async () => {
+        await expect(band.querySelectorAll("[data-lane-col]:not([data-drop-end])")).toHaveLength(2);
+        const crests = within(canvas.getByRole("group", { name: "Flokkar sem eru bornir saman" }));
+        await userEvent.click(crests.getByRole("button", { name: /^Birnir/ }));
+        await waitFor(() =>
+          expect(crests.getByRole("button", { name: /^Refir/ })).toHaveAttribute(
+            "aria-pressed",
+            "false"
+          )
+        );
+        await expect(crests.getByRole("button", { name: /^Ernir/ })).toHaveAttribute(
+          "aria-pressed",
+          "true"
+        );
+        await expect(crests.getByRole("button", { name: /^Birnir/ })).toHaveAttribute(
+          "aria-pressed",
+          "true"
+        );
+      }
+    );
+
+    await step("drag across to the other column in view, to a place in it", async () => {
+      await bringToMiddle(card(canvas, "Ernir", "Áttaviti og kort"));
+      await touchDrag(card(canvas, "Ernir", "Áttaviti og kort"), frontOf(band, 3, 1));
+      await waitFor(() => expect(namesIn(band, 3)[1]).toBe("Áttaviti og kort"));
+      await userEvent.click(canvas.getByRole("button", { name: "Afturkalla" }));
+      await waitFor(() => expect(namesIn(band, 1)[0]).toBe("Áttaviti og kort"));
+    });
+
+    await step("a card opens as a sheet", async () => {
+      await sheetRoundTrip(band, /^Ernir kl\. \d\d:\d\d: Eldfæri og prímus/);
+    });
+  },
+});
+
+export const PhoneM3: Story = phoneStory("m3", {
+  play: async ({ canvasElement, step }) => {
+    const band = firstBand(canvasElement);
+    const canvas = within(band);
+    window.scrollTo(0, 0);
+
+    await step("one timeline: at 19:40 every flokkur's first liður", async () => {
+      const timeline = canvas.getByRole("list", { name: "Tímalína" });
+      const first = within(timeline).getAllByRole("listitem")[0];
+      await expect(first).toHaveTextContent("19:40");
+      await expect(within(first).getAllByRole("button")).toHaveLength(4);
+    });
+
+    await step(
+      "a tap opens the card as a sheet; Færa til moves it to another flokkur",
+      async () => {
+        await userEvent.click(card(canvas, "Refir", "Hnútar og bönd"));
+        const sheet = await canvas.findByRole("dialog");
+        await userEvent.click(
+          within(sheet).getByRole("button", { name: "Færa Hnútar og bönd í annan flokk: Birnir" })
+        );
+        await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("55 mín"));
+        // Birnir had their own already: now two.
+        await expect(
+          canvas.getAllByRole("button", { name: /^Birnir kl\. \d\d:\d\d: Hnútar og bönd/ })
+        ).toHaveLength(2);
+      }
+    );
+
+    await step("remove from the sheet, then Afturkalla", async () => {
+      const sheet = canvas.getByRole("dialog");
+      await userEvent.click(within(sheet).getByRole("button", { name: "Lokið" }));
+      await userEvent.click(card(canvas, "Refir", "Skyndihjálp"));
+      await userEvent.click(
+        within(await canvas.findByRole("dialog")).getByRole("button", {
+          name: "Fjarlægja úr flokknum",
+        })
+      );
+      await waitFor(() =>
+        expect(canvas.queryByRole("button", { name: /^Refir kl\. .*Skyndihjálp/ })).toBeNull()
+      );
+      await userEvent.click(canvas.getByRole("button", { name: "Afturkalla" }));
+      await waitFor(() => expect(card(canvas, "Refir", "Skyndihjálp")).toBeInTheDocument());
+    });
+  },
+});
+
+export const PhoneM4: Story = phoneStory("m4", {
+  play: async ({ canvasElement, step }) => {
+    const band = firstBand(canvasElement);
+    const canvas = within(band);
+    window.scrollTo(0, 0);
+
+    await step("one row per flokkur; the first is open", async () => {
+      const refir = canvas.getByRole("button", { name: /^Refir/, expanded: true });
+      await expect(refir).toBeVisible();
+      await userEvent.click(canvas.getByRole("button", { name: /^Ernir/, expanded: false }));
+      await expect(canvas.getByRole("button", { name: /^Ernir/, expanded: true })).toBeVisible();
+      await expect(card(canvas, "Ernir", "Áttaviti og kort")).toBeVisible();
+    });
+
+    await step("hold and drag inside an open flokkur", async () => {
+      await bringToMiddle(card(canvas, "Refir", "Kakó og spjall"));
+      await touchDrag(card(canvas, "Refir", "Kakó og spjall"), frontOf(band, 0, 3));
+      await waitFor(() => expect(namesIn(band, 0)[3]).toBe("Kakó og spjall"));
+    });
+
+    await step("onto a closed flokkur's row: to the end of that flokkur", async () => {
+      // Close Ernir again, so Birnir's row is just under Refir's last card, both on screen.
+      await userEvent.click(canvas.getByRole("button", { name: /^Ernir/, expanded: true }));
+      const birnir = canvas.getByRole("button", { name: /^Birnir/, expanded: false });
+      // High enough that Birnir's row, three rows further down, is out of the bottom fifth.
+      await bringToMiddle(card(canvas, "Refir", "Eldfæri og prímus"), 0.25);
+      await touchDrag(card(canvas, "Refir", "Eldfæri og prímus"), centre(birnir));
+      await waitFor(() => expect(totalOf(band, "mock-refir")).toBe("55 mín"));
+      await userEvent.click(canvas.getByRole("button", { name: /^Birnir/, expanded: false }));
+      await waitFor(() => expect(namesIn(band, 3)).toHaveLength(5));
+      await expect(namesIn(band, 3).at(-1)).toBe("Eldfæri og prímus");
+    });
+
+    await step("a card opens as a sheet", async () => {
+      await sheetRoundTrip(band, /^Birnir kl\. \d\d:\d\d: Áttaviti og kort/);
+    });
+  },
+});
+
+export const PhoneM1Dark: Story = phoneStory("m1", { name: "Phone · M1 · dark", globals: dark });
+export const PhoneM2Dark: Story = phoneStory("m2", { name: "Phone · M2 · dark", globals: dark });
+export const PhoneM3Dark: Story = phoneStory("m3", { name: "Phone · M3 · dark", globals: dark });
+export const PhoneM4Dark: Story = phoneStory("m4", { name: "Phone · M4 · dark", globals: dark });
 
 /* ── Merge ── */
 

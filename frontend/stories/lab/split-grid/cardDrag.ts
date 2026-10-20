@@ -26,14 +26,26 @@ export type DropSpot = { lane: number; index: number };
 /** How far above or below a column the pointer can be and still aim at it, in px. */
 const REACH = 40;
 
+/** The index of "at the end of that flokkur" (the reducer clamps it to the lane's length). */
+export const AT_END = 9999;
+
 /**
  * The spot under the pointer, or null when it is outside every column (letting go there puts
- * the card back). Columns carry `data-lane-col`, card slots `data-slot-id`.
+ * the card back). Columns carry `data-lane-col`, card slots `data-slot-id`. A phone layout's
+ * crest or row for a flokkur (`data-lane-col` with `data-drop-end`) takes the card at the end
+ * of that flokkur, and only right on it, so it never steals a drop meant for the column below.
  */
 export function spotAt(root: HTMLElement, x: number, y: number, dragId: string): DropSpot | null {
   for (const column of root.querySelectorAll<HTMLElement>("[data-lane-col]")) {
     const box = column.getBoundingClientRect();
-    if (x < box.left || x > box.right || y < box.top - REACH || y > box.bottom + REACH) continue;
+    const reach = column.dataset.dropEnd ? 0 : REACH;
+    if (x < box.left || x > box.right || y < box.top - reach || y > box.bottom + reach) continue;
+    if (column.dataset.dropEnd) {
+      // A crest scrolled half out of its row only counts where it can be seen.
+      const clip = column.parentElement?.getBoundingClientRect();
+      if (clip && (x < clip.left || x > clip.right || y < clip.top || y > clip.bottom)) continue;
+      return { lane: Number(column.dataset.laneCol), index: AT_END };
+    }
     const above = [...column.querySelectorAll<HTMLElement>("[data-slot-id]")].filter((slot) => {
       if (slot.dataset.slotId === dragId) return false;
       const r = slot.getBoundingClientRect();
@@ -88,7 +100,13 @@ export function pointOf(event: Event | null): { x: number; y: number } | null {
 export function useFollowPointer(
   active: boolean,
   start: { x: number; y: number } | null,
-  onPoint: (x: number, y: number) => void
+  onPoint: (x: number, y: number) => void,
+  /**
+   * Where the finger first touched. A touch keeps going to that element even after it leaves
+   * the page (the card is redrawn in another flokkur while it is dragged), and then its moves
+   * no longer bubble up to the window, so they are also heard on the element itself.
+   */
+  touchTarget?: EventTarget | null
 ) {
   const last = useRef(start);
   const callback = useRef(onPoint);
@@ -109,8 +127,15 @@ export function useFollowPointer(
     window.addEventListener("mousemove", move, options);
     window.addEventListener("touchmove", move, options);
     window.addEventListener("scroll", scrolled, options);
+    // On the element too, unless it is still on the page (then the window hears it already).
+    const target = touchTarget;
+    const onTarget = (event: Event) => {
+      if (target instanceof Node && !target.isConnected) move(event);
+    };
+    target?.addEventListener("touchmove", onTarget, options);
     at(start);
     return () => {
+      target?.removeEventListener("touchmove", onTarget, options);
       window.removeEventListener("pointermove", move, options);
       window.removeEventListener("mousemove", move, options);
       window.removeEventListener("touchmove", move, options);

@@ -41,6 +41,8 @@ import {
 } from "./cardDrag";
 import { CardEditor, type CardActions, type EditorContext } from "./CardEditor";
 import { LaneHeader, type HeaderLook } from "./laneHeaders";
+import { PhoneArea, type PhoneParts } from "./phoneLayouts";
+import { PHONE_MAX_WIDTH, type PhoneLook } from "./phoneLooks";
 import {
   SWAP_BLOCKS,
   blockOf,
@@ -88,6 +90,12 @@ export interface SplitGridLabProps {
   defaultOpen?: { patrolId: string; name: string };
   /** How each column's flokkur is shown at its top (laneHeaders.tsx). */
   header?: HeaderLook;
+  /**
+   * The layout once the band is phone-narrow (phoneLayouts.tsx). Without it a narrow band is
+   * the desktop grid scrolled sideways, as K2 has it today; wider than a phone it is always the
+   * desktop grid.
+   */
+  phone?: PhoneLook;
 }
 
 /* ── Root ──────────────────────────────────────────────────────────────────── */
@@ -113,6 +121,8 @@ type Ctx = {
   drag: CardDrag | null;
   spot: DropSpot | null;
   header: HeaderLook;
+  /** The phone layout in use, once the band is phone-narrow. */
+  phone: PhoneLook | null;
 };
 
 type ItemProps = {
@@ -132,6 +142,7 @@ function SplitBand({
   defaultMergeOpen = false,
   defaultOpen,
   header = "h6",
+  phone,
 }: Omit<SplitGridLabProps, "data">) {
   const { state, dispatch } = useLabBench();
   const fundur = state.data.fundir.find((f) => f.event_id === fundurId);
@@ -145,6 +156,7 @@ function SplitBand({
   const [drag, setDrag] = useState<CardDrag | null>(null);
   const [spot, setSpot] = useState<DropSpot | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const touchTarget = useRef<EventTarget | null>(null);
   const dragRef = useRef<CardDrag | null>(null);
   const spotRef = useRef<DropSpot | null>(null);
   const model =
@@ -154,6 +166,8 @@ function SplitBand({
 
   const rootRef = useRef<HTMLDivElement>(null);
   const workAreaRef = useRef<HTMLDivElement>(null);
+  const narrow = useNarrow(rootRef, PHONE_MAX_WIDTH);
+  const phoneLook = phone && narrow ? phone : null;
   const mergeButtonRef = useRef<HTMLButtonElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const hintId = useId();
@@ -229,7 +243,10 @@ function SplitBand({
       say(`Sleppt utan flokkanna. ${moving.name} er á sínum stað.`);
       return;
     }
-    if (to.lane === moving.fromLane && to.index === moving.fromIndex) {
+    // A phone crest drops at the end of its flokkur (cardDrag AT_END): clamp it to read the move.
+    const laneLength = baseModel.lanes[to.lane]?.items.length ?? 0;
+    const index = Math.min(to.index, to.lane === moving.fromLane ? laneLength - 1 : laneLength);
+    if (to.lane === moving.fromLane && index === moving.fromIndex) {
       say(`${moving.name} er á sínum stað.`);
       return;
     }
@@ -285,6 +302,7 @@ function SplitBand({
       setDrag(picked);
       setSpot(spotRef.current);
       setDragStart(pointOf(activatorEvent));
+      touchTarget.current = activatorEvent?.target ?? null;
       // An open back covers its neighbours, so a drag closes it: the card travels as its front.
       if (selected) dispatch({ t: "laneSelect", id: null });
       say(
@@ -299,15 +317,20 @@ function SplitBand({
     },
   });
 
-  useFollowPointer(drag !== null, dragStart, (x, y) => {
-    const root = rootRef.current;
-    const moving = dragRef.current;
-    if (!root || !moving) return;
-    const next = spotAt(root, x, y, moving.id);
-    if (sameSpot(next, spotRef.current)) return;
-    spotRef.current = next;
-    setSpot(next);
-  });
+  useFollowPointer(
+    drag !== null,
+    dragStart,
+    (x, y) => {
+      const root = rootRef.current;
+      const moving = dragRef.current;
+      if (!root || !moving) return;
+      const next = spotAt(root, x, y, moving.id);
+      if (sameSpot(next, spotRef.current)) return;
+      spotRef.current = next;
+      setSpot(next);
+    },
+    touchTarget.current
+  );
 
   // Where it would land, said once per new spot (not for the spot it was picked up from).
   const lastSaid = useRef<string>("");
@@ -498,6 +521,7 @@ function SplitBand({
     drag,
     spot,
     header,
+    phone: phoneLook,
   };
   const dragged = drag ? findSelected(model, drag.id) : null;
 
@@ -507,6 +531,7 @@ function SplitBand({
       className={`${styles.root} ${blockCardStyles.kindScope}`}
       data-split-band
       data-header={header}
+      data-phone={phoneLook ?? undefined}
       lang="is"
     >
       <div className={styles.head}>
@@ -550,7 +575,20 @@ function SplitBand({
         />
       )}
 
-      <FlipArea ctx={ctx} areaRef={workAreaRef} />
+      {phoneLook ? (
+        <>
+          <PhoneArea
+            look={phoneLook}
+            model={model}
+            drag={drag}
+            spot={spot}
+            parts={phoneParts(ctx)}
+          />
+          <PhoneSheet ctx={ctx} />
+        </>
+      ) : (
+        <FlipArea ctx={ctx} areaRef={workAreaRef} />
+      )}
 
       {/* The card in the hand: its front, lifted, with the times it would get where it is. */}
       <DragOverlay dropAnimation={null}>
@@ -583,8 +621,14 @@ function SplitBand({
 
       <div className={styles.foot}>
         <p id={hintId} className={styles.hint}>
-          Smelltu á spjald til að breyta því · dragðu það upp, niður eða á annan flokk (í síma:
-          haltu inni fyrst) · ↑ ↓ breyta röð · ← → færa milli flokka
+          {phoneLook ? (
+            PHONE_HINT[phoneLook]
+          ) : (
+            <>
+              Smelltu á spjald til að breyta því · dragðu það upp, niður eða á annan flokk (í síma:
+              haltu inni fyrst) · ↑ ↓ breyta röð · ← → færa milli flokka
+            </>
+          )}
         </p>
         <p className={styles.summary} data-balanced={model.balanced || undefined}>
           Ristin er {model.duration} mín
@@ -596,6 +640,93 @@ function SplitBand({
 }
 
 /* ── Shared pieces ─────────────────────────────────────────────────────────── */
+
+/**
+ * Whether the band is at most `max` px wide: the JS side of the container queries, because a
+ * phone layout is a different tree, not only different CSS. Measured before paint, so a phone
+ * never shows the desktop grid first.
+ */
+function useNarrow(ref: RefObject<HTMLElement | null>, max: number): boolean {
+  const [narrow, setNarrow] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setNarrow(el.getBoundingClientRect().width <= max);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, max]);
+  return narrow;
+}
+
+/** What a card does on a phone, per layout; the keys still work with a keyboard. */
+const PHONE_HINT: Record<PhoneLook, string> = {
+  m1: "Ýttu á spjald til að breyta því · haltu fingri á því til að færa það upp eða niður, eða á merki annars flokks · strjúktu til hliðar til að skipta um flokk · ↑ ↓ ← → á lyklaborði",
+  m2: "Ýttu á spjald til að breyta því · haltu fingri á því til að færa það, líka yfir á hinn flokkinn eða á merki annars flokks · ↑ ↓ ← → á lyklaborði",
+  m3: "Ýttu á lið til að opna spjaldið hans: þar er lengd, röð (Fyrr, Síðar) og Færa til · ↑ ↓ ← → á lyklaborði",
+  m4: "Opnaðu flokk til að sjá spjöldin hans · ýttu á spjald til að breyta því · haltu fingri á því til að færa það upp eða niður, eða á línu annars flokks · ↑ ↓ ← → á lyklaborði",
+};
+
+/** The grid's own pieces, handed to the phone layouts so they draw the same cards and heads. */
+function phoneParts(ctx: Ctx): PhoneParts {
+  return {
+    columns: (lanes, style) => <Columns ctx={ctx} lanes={lanes} wrapStyle={style} />,
+    // One flokkur's column on its own (M4), with the same minute scale as the grid.
+    lane: (lane) => (
+      <div
+        className={styles.columnsWrap}
+        style={{ ["--span" as string]: Math.max(ctx.model.duration, 15) }}
+      >
+        <LaneColumn ctx={ctx} lane={lane} />
+      </div>
+    ),
+    itemProps: ctx.itemProps,
+    laneVars,
+    selected: ctx.selected,
+    addTo: ctx.addTo,
+    changed: (li) => {
+      const card = li.item as CardLidur;
+      return differences(card, ctx.troop.get(troopKeyOf(card))).length > 0;
+    },
+  };
+}
+
+/**
+ * On a phone the card's back is a sheet from the bottom of the screen instead of a panel over
+ * the grid: the grid can't spare the width, and a thumb reaches the bottom half. A native
+ * modal `<dialog>`, so focus stays in it and the page behind is inert; Escape, Lokið and a tap
+ * on the dimmed page close it, and focus goes back to the card.
+ */
+function PhoneSheet({ ctx }: { ctx: Ctx }) {
+  const picked = findSelected(ctx.model, ctx.selected);
+  const ref = useRef<HTMLDialogElement>(null);
+  const openId = picked?.li.item.id ?? null;
+  useEffect(() => {
+    const dialog = ref.current;
+    if (dialog && openId && !dialog.open) dialog.showModal();
+  }, [openId]);
+  if (!picked) return null;
+  const close = () => ctx.editorFor(picked.lane, picked.li).actions.close();
+  return (
+    <dialog
+      ref={ref}
+      className={styles.sheet}
+      style={laneVars(picked.lane.accent)}
+      aria-label={`${picked.lane.name}: ${picked.li.item.name}`}
+      onCancel={(e) => {
+        e.preventDefault();
+        close();
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close();
+      }}
+    >
+      <span className={styles.sheetGrip} aria-hidden="true" />
+      <CardBack ctx={ctx} lane={picked.lane} li={picked.li} />
+    </dialog>
+  );
+}
 
 function itemLabel(lane: LaneModel, li: LaneItem, troop: Map<string, TroopVersion>): string {
   const when = li.clock ? `kl. ${li.clock}` : `${li.index + 1}. liður`;
@@ -888,15 +1019,25 @@ function samePlace(a: Place, b: Place) {
  * as tall as they are long (`--ppm` per minute), so the columns stay level with the axis and
  * with each other. On a phone the columns scroll sideways with snap and the axis stays pinned.
  */
-function Columns({ ctx }: { ctx: Ctx }) {
+function Columns({
+  ctx,
+  lanes,
+  wrapStyle,
+}: {
+  ctx: Ctx;
+  /** The flokkar to show (M2 shows two); all of them by default. */
+  lanes?: LaneModel[];
+  wrapStyle?: CSSProperties;
+}) {
   const { model } = ctx;
+  const shown = lanes ?? model.lanes;
   const span = Math.max(model.duration, 15);
   const ticks: number[] = [];
   for (let m = 0; m <= span; m += 15) ticks.push(m);
 
   return (
-    <div className={styles.columnsWrap}>
-      {model.lanes.length > 2 && (
+    <div className={styles.columnsWrap} style={wrapStyle}>
+      {!ctx.phone && model.lanes.length > 2 && (
         <p className={styles.swipe}>
           Strjúktu til hliðar til að sjá alla {countIs(model.lanes.length, "flokk", "flokka")}.
         </p>
@@ -904,12 +1045,22 @@ function Columns({ ctx }: { ctx: Ctx }) {
       <div className={styles.scroller} data-scroller>
         <div
           className={styles.grid}
-          style={{ ["--span" as string]: span, ["--n" as string]: model.lanes.length }}
+          style={{
+            ["--span" as string]: span,
+            ["--n" as string]: shown.length,
+            // A phone layout sizes the grid to its columns: as wide as the scroller only, the
+            // pinned axis would scroll away with the grid past the first screen (sticky stays
+            // inside its grid).
+            // `--tail` is room after the last column, so it can also sit against the axis.
+            ...(ctx.phone
+              ? { width: "calc(var(--axis) + var(--n) * var(--col-min) + var(--tail, 0px))" }
+              : {}),
+          }}
         >
           <div className={styles.axisHead} aria-hidden="true">
             kl.
           </div>
-          {model.lanes.map((lane) => (
+          {shown.map((lane) => (
             <LaneHeader
               key={lane.patrolId}
               look={ctx.header}
@@ -925,7 +1076,7 @@ function Columns({ ctx }: { ctx: Ctx }) {
               </span>
             ))}
           </div>
-          {model.lanes.map((lane) => (
+          {shown.map((lane) => (
             <LaneColumn key={lane.patrolId} ctx={ctx} lane={lane} />
           ))}
         </div>
