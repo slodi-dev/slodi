@@ -87,7 +87,7 @@
 /* A two-handled slider with the values riding on the handles (Lab/RangeInput C2, 2026-10-19).
    Every control has a 48px hit area (UX rule 8); --thumb is the visible handle. */
 .rangeInputWrapper {
-  --hit: 3rem;
+  --hit: var(--sl-touch-target);
   display: grid;
   gap: var(--sl-spacing-sm);
   font-family: var(--sl-font-family-body);
@@ -256,7 +256,7 @@
 /* ── The editor: a popover under the value, or a bottom sheet on phones ── */
 .rangeInputPopover,
 .rangeInputSheet {
-  --hit: 3rem;
+  --hit: var(--sl-touch-target);
   position: fixed;
   z-index: var(--sl-z-popover);
   display: grid;

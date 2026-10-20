@@ -628,6 +628,8 @@
   --sl-size-icon-sm: var(--sl-primitive-icon-sm);
   --sl-size-icon-md: var(--sl-primitive-icon-md);
   --sl-size-icon-lg: var(--sl-primitive-icon-lg);
+  /* The smallest hit area of anything interactive (docs/ux-conventions.md rule 8). */
+  --sl-touch-target: 3rem;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
