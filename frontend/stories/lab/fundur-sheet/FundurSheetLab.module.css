@@ -926,10 +926,9 @@
 }
 
 .sheet[data-look="flokkur"] .row {
-  grid-template-columns: var(--grip-w) calc(var(--clock-w) + var(--sl-spacing-xs)) minmax(
-      0,
-      1fr
-    ) auto;
+  grid-template-columns:
+    var(--grip-w) calc(var(--clock-w) + var(--sl-spacing-xs)) minmax(0, 1fr)
+    auto;
 }
 
 .sheet[data-look="flokkur"] .row[aria-current="true"] {
