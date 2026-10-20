@@ -8,7 +8,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from "react";
-import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import { DragOverlay, useDndMonitor, useDraggable } from "@dnd-kit/core";
 import { MessageSquareText, UserRound } from "lucide-react";
 import {
   BlockKindLine,
@@ -17,7 +17,7 @@ import {
   blockCardStyles,
 } from "@/components/plan/bench/BlockCard";
 import { MIN_MINUTES } from "@/components/plan/bench/benchState";
-import { dragId } from "@/components/plan/bench/dnd";
+import { dragId, readDrag } from "@/components/plan/bench/dnd";
 import { Stamp } from "@/components/plan/calendar/Stamp";
 import { countIs } from "@/lib/format";
 import {
@@ -30,6 +30,15 @@ import {
   type PatrolAccent,
   type PlanBenchData,
 } from "@/services/plan.service";
+import {
+  pointOf,
+  previewFundur,
+  sameSpot,
+  spotAt,
+  useFollowPointer,
+  type CardDrag,
+  type DropSpot,
+} from "./cardDrag";
 import { CardEditor, type CardActions, type EditorContext } from "./CardEditor";
 import {
   SWAP_BLOCKS,
@@ -97,6 +106,9 @@ type Ctx = {
   itemProps: (lane: LaneModel, li: LaneItem) => ItemProps;
   editorFor: (lane: LaneModel, li: LaneItem) => EditorContext;
   addTo: (lane: LaneModel) => void;
+  /** The card being dragged, and where it would land (null: outside, it goes back). */
+  drag: CardDrag | null;
+  spot: DropSpot | null;
 };
 
 type ItemProps = {
@@ -118,8 +130,22 @@ function SplitBand({
 }: Omit<SplitGridLabProps, "data">) {
   const { state, dispatch } = useLabBench();
   const fundur = state.data.fundir.find((f) => f.event_id === fundurId);
-  const model = fundur ? splitModel(fundur, band, state.data.patrols) : null;
+  const baseModel = fundur ? splitModel(fundur, band, state.data.patrols) : null;
   const selected = state.laneSelected;
+
+  /*
+   * A drag draws the result while it is going on: the card out of its column and in at the
+   * spot under the pointer, so every time and total on screen is what the drop will give.
+   */
+  const [drag, setDrag] = useState<CardDrag | null>(null);
+  const [spot, setSpot] = useState<DropSpot | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<CardDrag | null>(null);
+  const spotRef = useRef<DropSpot | null>(null);
+  const model =
+    fundur && drag
+      ? splitModel(previewFundur(fundur, band, drag, spot), band, state.data.patrols)
+      : baseModel;
 
   const rootRef = useRef<HTMLDivElement>(null);
   const workAreaRef = useRef<HTMLDivElement>(null);
@@ -139,7 +165,9 @@ function SplitBand({
    * flokkar have). Changing one flokkur's card never quietly redefines the sveit's.
    */
   const [troop] = useState<Map<string, TroopVersion>>(() =>
-    troopVersions(model?.lanes.map((lane) => lane.items.map((li) => li.item as CardLidur)) ?? [])
+    troopVersions(
+      baseModel?.lanes.map((lane) => lane.items.map((li) => li.item as CardLidur)) ?? []
+    )
   );
 
   /*
@@ -175,6 +203,132 @@ function SplitBand({
     const li = lane?.items.find((entry) => entry.item.name === defaultOpen.name);
     if (li) dispatch({ t: "laneSelect", id: li.item.id });
   }, [defaultOpen, model, dispatch]);
+
+  const say = (text: string) => setSaid((s) => ({ text, seq: s.seq + 1 }));
+
+  const endDrag = () => {
+    dragRef.current = null;
+    spotRef.current = null;
+    setDrag(null);
+    setSpot(null);
+    setDragStart(null);
+  };
+
+  /** Letting go: a move through the reducer, with Afturkalla; outside the grid, nothing. */
+  const drop = () => {
+    const moving = dragRef.current;
+    const to = spotRef.current;
+    endDrag();
+    if (!moving || !fundur || !baseModel) return;
+    if (!to) {
+      say(`Sleppt utan flokkanna. ${moving.name} er á sínum stað.`);
+      return;
+    }
+    if (to.lane === moving.fromLane && to.index === moving.fromIndex) {
+      say(`${moving.name} er á sínum stað.`);
+      return;
+    }
+    setUndo({
+      fundur,
+      text: `${moving.name} var færður.`,
+      restored: `Færslan afturkölluð. ${moving.name} er aftur á sínum stað.`,
+    });
+    if (to.lane === moving.fromLane) {
+      dispatch({
+        t: "laneMove",
+        fundurId,
+        band,
+        laneIndex: to.lane,
+        id: moving.id,
+        to: to.index,
+      });
+    } else {
+      dispatch({
+        t: "laneMoveAcross",
+        fundurId,
+        band,
+        fromLane: moving.fromLane,
+        toLane: to.lane,
+        id: moving.id,
+        toIndex: to.index,
+      });
+      // The reducer selects a moved liður, and in the lab selected means open: it lands closed.
+      dispatch({ t: "laneSelect", id: null });
+    }
+    focusTarget.current = moving.id;
+  };
+
+  useDndMonitor({
+    onDragStart: ({ active, activatorEvent }) => {
+      const payload = readDrag(active);
+      if (payload?.kind !== "lane" || payload.fundurId !== fundurId || payload.band !== band) {
+        return;
+      }
+      const li = baseModel?.lanes[payload.laneIndex]?.items.find(
+        (entry) => entry.item.id === payload.lidur.id
+      );
+      if (!li) return;
+      const picked: CardDrag = {
+        id: li.item.id,
+        name: li.item.name,
+        minutes: li.item.minutes,
+        fromLane: payload.laneIndex,
+        fromIndex: li.index,
+      };
+      dragRef.current = picked;
+      spotRef.current = { lane: picked.fromLane, index: picked.fromIndex };
+      setDrag(picked);
+      setSpot(spotRef.current);
+      setDragStart(pointOf(activatorEvent));
+      // An open back covers its neighbours, so a drag closes it: the card travels as its front.
+      if (selected) dispatch({ t: "laneSelect", id: null });
+      say(
+        `Liður tekinn upp: ${picked.name}, ${picked.minutes} mín. Dragðu hann upp, niður eða á annan flokk og slepptu. Escape hættir við.`
+      );
+    },
+    onDragEnd: () => drop(),
+    onDragCancel: () => {
+      const moving = dragRef.current;
+      endDrag();
+      if (moving) say(`Hætt við. ${moving.name} er á sínum stað.`);
+    },
+  });
+
+  useFollowPointer(drag !== null, dragStart, (x, y) => {
+    const root = rootRef.current;
+    const moving = dragRef.current;
+    if (!root || !moving) return;
+    const next = spotAt(root, x, y, moving.id);
+    if (sameSpot(next, spotRef.current)) return;
+    spotRef.current = next;
+    setSpot(next);
+  });
+
+  // Where it would land, said once per new spot (not for the spot it was picked up from).
+  const lastSaid = useRef<string>("");
+  useEffect(() => {
+    if (!drag) {
+      lastSaid.current = "";
+      return;
+    }
+    const key = spot ? `${spot.lane}:${spot.index}` : "out";
+    if (!lastSaid.current) {
+      lastSaid.current = key;
+      return;
+    }
+    if (key === lastSaid.current || !model) return;
+    lastSaid.current = key;
+    if (!spot) {
+      say("Utan flokkanna. Slepptu til að hætta við.");
+      return;
+    }
+    const lane = model.lanes[spot.lane];
+    const li = lane?.items.find((entry) => entry.item.id === drag.id);
+    if (!lane || !li) return;
+    say(`${lane.name}: ${li.index + 1}. af ${lane.items.length}, hefst ${at(model, li.start)}.`);
+    // `model` is rebuilt from `spot` every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drag, spot]);
 
   // UX rule 5: "Afturkalla" stays for at least 8 seconds.
   useEffect(() => {
@@ -244,8 +398,6 @@ function SplitBand({
     dispatch({ t: "laneMove", fundurId, band, laneIndex: lane.laneIndex, id: li.item.id, to });
     focusTarget.current = li.item.id;
   };
-
-  const say = (text: string) => setSaid((s) => ({ text, seq: s.seq + 1 }));
 
   /** One card's change, in its own lane. */
   const patchOne = (lane: LaneModel, id: string, patch: CardPatch) =>
@@ -330,7 +482,8 @@ function SplitBand({
     },
   });
 
-  const ctx: Ctx = { model, selected, hintId, troop, itemProps, editorFor, addTo };
+  const ctx: Ctx = { model, selected, hintId, troop, itemProps, editorFor, addTo, drag, spot };
+  const dragged = drag ? findSelected(model, drag.id) : null;
 
   return (
     <div
@@ -382,6 +535,21 @@ function SplitBand({
 
       <FlipArea ctx={ctx} areaRef={workAreaRef} />
 
+      {/* The card in the hand: its front, lifted, with the times it would get where it is. */}
+      <DragOverlay dropAnimation={null}>
+        {dragged ? (
+          <div
+            className={`${blockCardStyles.card} ${styles.card} ${styles.lifted}`}
+            data-status={dragged.li.item.status}
+            data-tight={dragged.li.item.minutes < 15 || undefined}
+            data-short={dragged.li.item.minutes < 20 || undefined}
+            data-tiny={dragged.li.item.minutes < 10 || undefined}
+          >
+            <CardFace ctx={ctx} li={dragged.li} />
+          </div>
+        ) : null}
+      </DragOverlay>
+
       <div className={styles.toastArea} role="status">
         {undo && (
           <p className={styles.undo}>
@@ -398,8 +566,8 @@ function SplitBand({
 
       <div className={styles.foot}>
         <p id={hintId} className={styles.hint}>
-          Smelltu á spjald til að breyta því · ← → færa milli flokka · ↑ ↓ breyta röð · eða dragðu á
-          annan flokk
+          Smelltu á spjald til að breyta því · dragðu það upp, niður eða á annan flokk (í síma:
+          haltu inni fyrst) · ↑ ↓ breyta röð · ← → færa milli flokka
         </p>
         <p className={styles.summary} data-balanced={model.balanced || undefined}>
           Ristin er {model.duration} mín
@@ -461,18 +629,6 @@ function LaneState({ lane, model }: { lane: LaneModel; model: SplitModel }) {
   if (model.balanced || model.duration === 0) return null;
   if (lane.longest) return <span className={styles.leads}>ræður lengd</span>;
   return <span className={styles.waits}>{lane.idle} mín bið</span>;
-}
-
-/** A drop target for one lane. Not lit for the lane the drag came from: that drop is refused. */
-function useLaneDrop(model: SplitModel, laneIndex: number) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: dragId.laneDrop(model.fundur.event_id, model.band, laneIndex),
-    data: { kind: "lane", fundurId: model.fundur.event_id, band: model.band, laneIndex },
-  });
-  const { active } = useDndContext();
-  const from = active?.data.current as { kind?: string; laneIndex?: number } | undefined;
-  const isSource = from?.kind === "lane" && from.laneIndex === laneIndex;
-  return { setNodeRef, over: isOver && !isSource };
 }
 
 /* ── The card ──────────────────────────────────────────────────────────────── */
@@ -576,11 +732,32 @@ function CardButton({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem
   );
 }
 
-/** One liður's place in its column: exactly as tall as the liður is long, open or not. */
+/**
+ * One liður's place in its column: exactly as tall as the liður is long, open or not. While its
+ * card is dragged the slot is where it would land, with the time it would start.
+ */
 function CardSlot({ ctx, lane, li }: { ctx: Ctx; lane: LaneModel; li: LaneItem }) {
+  const landing = ctx.drag?.id === li.item.id;
   return (
-    <div className={styles.slot} style={{ ["--min" as string]: li.item.minutes }}>
+    <div
+      className={styles.slot}
+      data-slot-id={li.item.id}
+      data-landing={landing || undefined}
+      style={{ ["--min" as string]: li.item.minutes }}
+    >
       <CardButton ctx={ctx} lane={lane} li={li} />
+      {landing && (
+        <span className={styles.landing} aria-hidden="true">
+          {ctx.spot ? (
+            <>
+              <span className={styles.landingTime}>hefst {at(ctx.model, li.start)}</span>
+              <span className={styles.landingMin}>{li.item.minutes} mín</span>
+            </>
+          ) : (
+            <span className={styles.landingTime}>fer aftur hingað</span>
+          )}
+        </span>
+      )}
     </div>
   );
 }
@@ -755,14 +932,18 @@ function Columns({ ctx }: { ctx: Ctx }) {
 
 function LaneColumn({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
   const { model } = ctx;
-  const { setNodeRef, over } = useLaneDrop(model, lane.laneIndex);
   const span = Math.max(model.duration, 15);
   const rest = span - lane.used;
+  const ref = useRef<HTMLDivElement>(null);
+  const over =
+    !!ctx.drag && ctx.spot?.lane === lane.laneIndex && ctx.drag.fromLane !== lane.laneIndex;
+  useSlideIntoPlace(ref, ctx.drag !== null);
 
   return (
     <div
-      ref={setNodeRef}
+      ref={ref}
       className={styles.lane}
+      data-lane-col={lane.laneIndex}
       data-over={over || undefined}
       style={laneVars(lane.accent)}
     >
@@ -786,6 +967,34 @@ function LaneColumn({ ctx, lane }: { ctx: Ctx; lane: LaneModel }) {
       )}
     </div>
   );
+}
+
+/**
+ * While a card is dragged, the cards it passes slide to their new place instead of jumping
+ * (FLIP: measure, then animate from the old position). Off under reduced motion; the Web
+ * Animations API leaves no transform behind, so the text is as sharp as before.
+ */
+function useSlideIntoPlace(ref: RefObject<HTMLDivElement | null>, dragging: boolean) {
+  const tops = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const column = ref.current;
+    if (!column) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const next = new Map<string, number>();
+    for (const slot of column.querySelectorAll<HTMLElement>("[data-slot-id]")) {
+      const id = slot.dataset.slotId as string;
+      const top = slot.offsetTop;
+      next.set(id, top);
+      const before = tops.current.get(id);
+      if (dragging && !still && before !== undefined && before !== top) {
+        slot.animate([{ transform: `translateY(${before - top}px)` }, { transform: "none" }], {
+          duration: 160,
+          easing: "cubic-bezier(0.2, 0.7, 0.3, 1)",
+        });
+      }
+    }
+    tops.current = next;
+  });
 }
 
 /* ── Merge ─────────────────────────────────────────────────────────────────── */

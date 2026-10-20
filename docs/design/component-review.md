@@ -92,7 +92,10 @@ Nothing waiting.
   grid that no longer moves (columns kept their width, the axis stays true), no ruled lines
   through the editor, no 3D transform left on it after the turn, the length is a clock icon and
   "15 mín" instead of a chip over the picture (also on the bank card), and short cards no longer
-  cut their text. Time grid, moves and the honest merge are unchanged. _Needs backend:_ block
+  cut their text. Cards drag up and down their flokkur's timeline and to a chosen place in
+  another flokkur, with the result shown live ("hefst 19:55", totals, "ræður lengd"), Escape or
+  letting go outside to cancel, Afturkalla after a drop, and a long press on phones so a swipe
+  still scrolls. Time grid and the honest merge are unchanged. _Needs backend:_ block
   link, leader, note, gear and the sveit's version on a lane liður (sc-646).
 - **FundurSheet + LidurRow**: the current form, functions and interactions stay; variations are
   styles only. F0 is the current sheet with its 13 problems fixed (kind stripe, fit only in the

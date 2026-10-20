@@ -20,8 +20,9 @@ and fixed are in section 5.
 
 Everything is live. Moves and edits dispatch the real `benchReducer` intents (`laneMoveAcross`,
 `laneMove`, `laneAdd`, `laneRemove`, `lanePatch`), so the announcements are the bench's own, and
-drag uses the same `dragId` vocabulary and collision rule as `BenchProvider`. The lab adds only
-what the merge proposal and Afturkalla need (`labMerge` and `labRestore` in `labBench.tsx`).
+drag uses the same `dragId` vocabulary as `BenchProvider` (where a card lands is the lab's own,
+section 6). The lab adds only what the merge proposal and Afturkalla need (`labMerge` and
+`labRestore` in `labBench.tsx`).
 
 ## 1. Why a leader splits a section, and what they need to see
 
@@ -36,8 +37,8 @@ What the leader needs, in order:
    phone.
 2. **Whether the lanes are balanced.** The longest lane sets the section's length. A flokkur that
    finishes early is standing around, so a wait has to be visible, with a number.
-3. **How to move a liður to another flokkur:** ← →, drag, or the "Færa til:" buttons, and every
-   move is announced.
+3. **How to move a liður:** up and down its flokkur's timeline, or to a place in another
+   flokkur. Drag, ↑ ↓ ← →, or the "Færa til:" buttons, and every move is announced.
 4. **What this flokkur does differently.** A station's leader, a shorter version for the
    youngest, the búnaður they bring, or another block altogether, without losing sight of what
    the rest of the sveit does.
@@ -166,9 +167,52 @@ desktop and phone, at 2× scale):
 8. **Clock spans cut to "19:4…" in narrow columns** (six flokkar, phone). _Fixed:_ below 13rem
    the span is left out; the axis carries the time, and the card's accessible name still says
    it.
+9. **On a narrow card the "changed" dot sat on the length** ("15 mí●"). _Fixed:_ below 13rem the
+   dot moves to the card's bottom corner.
    <Canvas of={Stories.Six} />
 
-## 6. "Sameina í eitt" that says what it keeps
+## 6. Dragging along the timeline and between flokkar
+
+A card can be dragged up and down its own column, to change the order and so the clock, or to a
+chosen place in another flokkur's column: not just "to the end of that flokkur".
+
+- **The grid shows the result while you drag.** The card is taken out of its column and put in
+  at the spot under the pointer, so the clock times, the column totals, "ræður lengd" and
+  "+ N mín bið" are the ones the drop will give. The spot it would land in is a dashed outline in
+  its own height, with a line along its top edge and "hefst 19:55"; the card in the hand shows
+  the clock it would get too, so the time stays readable when the hand covers the outline. The
+  cards it passes slide to their new place (none of that under reduced motion).
+- **Where it lands** is the column under the pointer and, in it, the number of cards whose middle
+  is above the pointer (`cardDrag.ts`). Taken from the screen rather than from dnd-kit's
+  collision rules, because the columns are the flokkar and their cards change height as the
+  preview moves. Within 40px above or below a column still counts; anywhere else is outside.
+- **Putting it back:** letting go outside the flokkar, or Escape at any point, leaves everything
+  as it was and says so ("Hætt við. Skyndihjálp er á sínum stað.").
+- **An open card closes when it is picked up.** Its back is lifted over the neighbouring
+  columns, so it can't travel with the card without covering where it is going; the card goes
+  as its front, and the leader opens it again where it landed. (The other choice, dragging only
+  from the front, would leave an open card with no way to move it but the buttons.)
+- **Afturkalla** follows every drop, for 10 seconds. The arrow keys move one step at a time and
+  the opposite arrow undoes it, so they don't get one.
+- **On a phone** a swipe across the cards scrolls the page and the columns, as everywhere else;
+  a finger that holds still on a card for 200ms picks it up, and from then on the page stays
+  still under it. There is no separate handle: the whole card is the handle (a 10-minute card is
+  still 3.5rem tall). Mouse and touch are separate sensors, because the pointer sensor would also
+  take a touch after 5px of a swipe. Before this the card had `touch-action: none`, so a
+  swipe that started on a card couldn't scroll at all.
+- **Keyboard:** ↑ ↓ change the order and ← → change the flokkur, exactly as a drop does, and the
+  reducer announces each step. **Screen readers** hear the drag too: "Liður tekinn upp:
+  Skyndihjálp, 15 mín…", then each new spot ("Ernir: 2. af 4, hefst 19:55."), then the move or
+  the cancel. Flokkur names are never declined after a preposition; they stand before a colon.
+
+<Canvas of={Stories.Drag} />
+
+_Trade-off:_ the lifted card sits under the finger, so on a phone the outline it is aiming at can
+be partly covered; the card's own clock says where it would start. The real bench
+(`BenchProvider`) still uses the pointer sensor and `touch-action: none`; if this is promoted,
+it should take the same sensors.
+
+## 7. "Sameina í eitt" that says what it keeps
 
 <Canvas of={Stories.Merge} />
 
@@ -196,7 +240,7 @@ sheet's total afterwards. To ship it, `mergeBand` needs a `keep: "all" | patrolI
 
 <Canvas of={Stories.MergeFlow} />
 
-## 7. What's real and what's fixture
+## 8. What's real and what's fixture
 
 | What                                   | Where it lives today                                                                                | Status                                                                                                                      |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |

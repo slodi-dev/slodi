@@ -8,19 +8,12 @@
  * `labRestore` (Afturkalla, after a merge or a removed card). Card edits are the reducer's own
  * `lanePatch`.
  *
- * The provider is a small copy of `BenchProvider` (same sensors, same collision rule, same
- * `dragId` vocabulary), because `BenchProvider` owns its reducer and the lab needs to extend it.
+ * The provider is a small copy of `BenchProvider` (the same `dragId` vocabulary), because
+ * `BenchProvider` owns its reducer and the lab needs to extend it. Its sensors differ: see
+ * below.
  */
-import { createContext, useContext, useMemo, useReducer, useState, type ReactNode } from "react";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
+import { createContext, useContext, useMemo, useReducer, type ReactNode } from "react";
+import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import {
   bandMinutes,
   bandOffset,
@@ -30,7 +23,6 @@ import {
   type BenchIntent,
   type BenchState,
 } from "@/components/plan/bench/benchState";
-import { benchCollision, readDrag, readDrop, type DragPayload } from "@/components/plan/bench/dnd";
 import { PATROL_ACCENTS } from "@/components/plan/planEntries";
 import { countIs } from "@/lib/format";
 import {
@@ -196,34 +188,19 @@ export function useLabBench(): LabBenchValue {
 
 export function LabBench({ data, children }: { data: PlanBenchData; children: ReactNode }) {
   const [state, dispatch] = useReducer(labReducer, data, initialBenchState);
-  const [dragging, setDragging] = useState<DragPayload | null>(null);
   const value = useMemo(() => ({ state, dispatch }), [state]);
 
-  // The same constraints as BenchProvider: a press that drifts 5px is still a click, and a
-  // thumb has to hold for 200ms before the sheet stops scrolling and the drag starts.
+  /*
+   * A mouse drag starts after 5px, so a press that drifts is still a click. A finger has to
+   * hold the card for 200ms (moving at most 6px) before it is picked up, so a swipe across
+   * the cards scrolls the page and the columns as usual. The mouse and touch sensors are
+   * separate on purpose: the pointer sensor would also take a touch, after 5px of a swipe.
+   * Where a card lands, and the drop itself, are the band's (SplitGridLab, cardDrag.ts).
+   */
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } })
   );
-
-  const onDragEnd = (event: DragEndEvent) => {
-    setDragging(null);
-    const drag = readDrag(event.active);
-    const drop = readDrop(event.over);
-    if (drag?.kind !== "lane" || drop?.kind !== "lane") return;
-    if (drop.fundurId !== drag.fundurId || drop.band !== drag.band) return;
-    if (drop.laneIndex === drag.laneIndex) return;
-    dispatch({
-      t: "laneMoveAcross",
-      fundurId: drag.fundurId,
-      band: drag.band,
-      fromLane: drag.laneIndex,
-      toLane: drop.laneIndex,
-      id: drag.lidur.id,
-    });
-    // A dropped card lands closed: in the lab, a selected card is an open editor.
-    dispatch({ t: "laneSelect", id: null });
-  };
 
   const announcement = state.announcement;
 
@@ -231,12 +208,8 @@ export function LabBench({ data, children }: { data: PlanBenchData; children: Re
     <LabBenchContext.Provider value={value}>
       <DndContext
         sensors={sensors}
-        collisionDetection={benchCollision}
-        onDragStart={(event) => setDragging(readDrag(event.active))}
-        onDragEnd={onDragEnd}
-        onDragCancel={() => setDragging(null)}
-        // The reducer announces every move that lands; dnd-kit's own narration would be a
-        // second voice describing the same move.
+        // The band says what is being dragged, where to and what happened, in Icelandic;
+        // dnd-kit's own narration would be a second voice describing the same move.
         accessibility={{
           announcements: {
             onDragStart: () => undefined,
@@ -245,7 +218,7 @@ export function LabBench({ data, children }: { data: PlanBenchData; children: Re
             onDragCancel: () => undefined,
           },
           screenReaderInstructions: {
-            draggable: "Vinstri og hægri ör færa lið í fyrri eða næsta flokk.",
+            draggable: "Örvarnar færa liðinn: ↑ ↓ í röðinni, ← → milli flokka.",
           },
         }}
       >
@@ -257,14 +230,6 @@ export function LabBench({ data, children }: { data: PlanBenchData; children: Re
           {announcement.seq % 2 === 1 ? announcement.text : ""}
         </p>
         {children}
-        <DragOverlay dropAnimation={null}>
-          {dragging?.kind === "lane" ? (
-            <div className={benchStyles.ghost}>
-              <span className={benchStyles.ghostTitle}>{dragging.lidur.name}</span>
-              <span className={benchStyles.ghostMeta}>{dragging.lidur.minutes} mín</span>
-            </div>
-          ) : null}
-        </DragOverlay>
       </DndContext>
     </LabBenchContext.Provider>
   );

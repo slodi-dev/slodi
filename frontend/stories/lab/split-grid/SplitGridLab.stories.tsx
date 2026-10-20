@@ -247,6 +247,230 @@ const k2 = {
   } satisfies Story,
 };
 
+/* ── Dragging: helpers ── */
+
+/** The liður names in one flokkur's column, top to bottom. */
+function namesIn(root: HTMLElement, lane: number): string[] {
+  return [...root.querySelectorAll(`[data-lane-col="${lane}"] button[data-lidur-id]`)].map(
+    (el) =>
+      (el.getAttribute("aria-label") ?? "")
+        .replace(/^.*?(kl\. \d\d:\d\d|\d+\. liður): /, "")
+        .split(",")[0]
+  );
+}
+
+/** Everything the live regions say right now. */
+function spoken(root: HTMLElement): string {
+  const owner = root.ownerDocument;
+  return [...owner.querySelectorAll("[aria-live]")].map((el) => el.textContent).join(" | ");
+}
+
+/** A timer, not requestAnimationFrame: a background test tab throttles animation frames. */
+const frame = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function centre(el: Element) {
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+/** Just inside the top of the n-th slot of a column: "in front of that card". */
+function frontOf(root: HTMLElement, lane: number, n: number) {
+  const column = root.querySelector(`[data-lane-col="${lane}"]`) as HTMLElement;
+  const slots = column.querySelectorAll("[data-slot-id]");
+  const box = column.getBoundingClientRect();
+  const slot = slots[n]?.getBoundingClientRect();
+  return { x: box.left + box.width / 2, y: slot ? slot.top + 6 : box.bottom - 6 };
+}
+
+function mouse(type: string, target: EventTarget, at: { x: number; y: number }) {
+  target.dispatchEvent(
+    new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: at.x,
+      clientY: at.y,
+      button: 0,
+      buttons: type === "mouseup" ? 0 : 1,
+    })
+  );
+}
+
+/** Press a card, move in steps, and either let go or (with `escape`) cancel before letting go. */
+async function mouseDrag(card: HTMLElement, to: { x: number; y: number }, escape = false) {
+  const from = centre(card);
+  mouse("mousedown", card, from);
+  for (let step = 1; step <= 10; step++) {
+    await frame();
+    mouse("mousemove", document, {
+      x: from.x + ((to.x - from.x) * step) / 10,
+      y: from.y + ((to.y - from.y) * step) / 10,
+    });
+  }
+  await frame(80);
+  if (escape) {
+    // dnd-kit listens for Escape on the document while a drag is on.
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true })
+    );
+    await frame();
+  }
+  mouse("mouseup", document, to);
+  await frame(80);
+}
+
+function touch(type: string, target: Element, at: { x: number; y: number }) {
+  const point = new Touch({ identifier: 7, target, clientX: at.x, clientY: at.y });
+  const live = type === "touchend" ? [] : [point];
+  target.dispatchEvent(
+    new TouchEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      touches: live,
+      targetTouches: live,
+      changedTouches: [point],
+    })
+  );
+}
+
+/** A finger: hold still past the 200ms pick-up, then move and lift. */
+async function touchDrag(card: HTMLElement, to: { x: number; y: number }) {
+  const from = centre(card);
+  touch("touchstart", card, from);
+  await frame(300);
+  for (let step = 1; step <= 10; step++) {
+    touch("touchmove", card, {
+      x: from.x + ((to.x - from.x) * step) / 10,
+      y: from.y + ((to.y - from.y) * step) / 10,
+    });
+    await frame();
+  }
+  await frame(80);
+  touch("touchend", card, to);
+  await frame(80);
+}
+
+const REFIR = [
+  "Hnútar og bönd",
+  "Áttaviti og kort",
+  "Skyndihjálp",
+  "Eldfæri og prímus",
+  "Kakó og spjall",
+];
+
+/**
+ * Drag a card up and down its flokkur's timeline, or to a place in another flokkur. While it is
+ * dragged the grid shows the result: the slot it would land in says when it would start, and
+ * every time, total and "ræður lengd" is the one the drop gives. Letting go outside the
+ * flokkar, or Escape, puts it back. A drop has Afturkalla.
+ */
+export const Drag: Story = {
+  name: "Drag along the timeline",
+  args: { fixture: "uneven" },
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement);
+    window.scrollTo(0, 0);
+
+    await step("up the timeline: Kakó og spjall from last to first in Refir", async () => {
+      await expect(namesIn(canvasElement, 0)).toEqual(REFIR);
+      await mouseDrag(card(canvas, "Refir", "Kakó og spjall"), frontOf(canvasElement, 0, 0));
+      await waitFor(() =>
+        expect(namesIn(canvasElement, 0)).toEqual(["Kakó og spjall", ...REFIR.slice(0, 4)])
+      );
+      await waitFor(() =>
+        expect(spoken(canvasElement)).toContain("Liður færður í sæti 1 af 5: Kakó og spjall.")
+      );
+      // Its clock moved with it: it starts the band now.
+      await expect(card(canvas, "Refir", "Kakó og spjall")).toHaveAccessibleName(
+        /^Refir kl\. 19:40/
+      );
+    });
+
+    await step("Afturkalla puts it back", async () => {
+      await userEvent.click(canvas.getByRole("button", { name: "Afturkalla" }));
+      await waitFor(() => expect(namesIn(canvasElement, 0)).toEqual(REFIR));
+    });
+
+    await step("to a place in another flokkur: Hnútar og bönd second in Ernir", async () => {
+      await mouseDrag(card(canvas, "Refir", "Hnútar og bönd"), frontOf(canvasElement, 1, 1));
+      await waitFor(() =>
+        expect(namesIn(canvasElement, 1)).toEqual([
+          "Áttaviti og kort",
+          "Hnútar og bönd",
+          "Eldfæri og prímus",
+          "Hnútar og bönd",
+        ])
+      );
+      await expect(totalOf(canvasElement, "mock-refir")).toBe("55 mín");
+      await expect(totalOf(canvasElement, "mock-ernir")).toBe("60 mín");
+      await waitFor(() => expect(spoken(canvasElement)).toContain("Sæti 2 af 4."));
+    });
+
+    await step("Escape mid-drag cancels: nothing moves", async () => {
+      const before = namesIn(canvasElement, 0);
+      await mouseDrag(card(canvas, "Refir", "Skyndihjálp"), frontOf(canvasElement, 2, 0), true);
+      await expect(namesIn(canvasElement, 0)).toEqual(before);
+      await waitFor(() =>
+        expect(spoken(canvasElement)).toContain("Hætt við. Skyndihjálp er á sínum stað.")
+      );
+    });
+
+    await step("letting go outside the flokkar puts it back", async () => {
+      const before = namesIn(canvasElement, 0);
+      const outside = canvasElement.querySelector("[data-split-band] h3") as HTMLElement;
+      await mouseDrag(card(canvas, "Refir", "Skyndihjálp"), centre(outside));
+      await expect(namesIn(canvasElement, 0)).toEqual(before);
+      await waitFor(() => expect(spoken(canvasElement)).toContain("Sleppt utan flokkanna."));
+    });
+
+    await step("the keyboard does the same: ↑ moves a card up its timeline", async () => {
+      card(canvas, "Refir", "Skyndihjálp").focus();
+      await userEvent.keyboard("{ArrowUp}");
+      await waitFor(() =>
+        expect(namesIn(canvasElement, 0).slice(0, 2)).toEqual(["Skyndihjálp", "Áttaviti og kort"])
+      );
+      await waitFor(() =>
+        expect(document.activeElement).toHaveAccessibleName(/^Refir kl\. 19:40: Skyndihjálp/)
+      );
+    });
+  },
+};
+
+/** On a phone: a swipe scrolls, a finger held still on a card picks it up. */
+export const DragTouch: Story = {
+  name: "Drag by touch (phone)",
+  args: { fixture: "uneven" },
+  globals: phone,
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement);
+    window.scrollTo(0, 0);
+
+    await step("hold, then drag Kakó og spjall up to second in Refir", async () => {
+      await touchDrag(card(canvas, "Refir", "Kakó og spjall"), frontOf(canvasElement, 0, 1));
+      await waitFor(() =>
+        expect(namesIn(canvasElement, 0)).toEqual([
+          "Hnútar og bönd",
+          "Kakó og spjall",
+          ...REFIR.slice(1, 4),
+        ])
+      );
+    });
+
+    await step("a quick swipe is not a drag", async () => {
+      const before = namesIn(canvasElement, 0);
+      const target = card(canvas, "Refir", "Skyndihjálp");
+      const from = centre(target);
+      touch("touchstart", target, from);
+      for (let i = 1; i <= 5; i++) {
+        touch("touchmove", target, { x: from.x, y: from.y - i * 20 });
+        await frame(10);
+      }
+      touch("touchend", target, { x: from.x, y: from.y - 100 });
+      await frame(300);
+      await expect(namesIn(canvasElement, 0)).toEqual(before);
+    });
+  },
+};
+
 export const Uneven: Story = k2.uneven;
 export const Open: Story = k2.open;
 export const Six: Story = k2.six;

@@ -184,8 +184,54 @@
   background: hsl(var(--sl-color-primary-subtle));
 }
 
-.root [data-dragging] {
-  opacity: 0.4;
+/* ── Dragging ──
+   The slot a dragged card would land in keeps the card's height, so the columns show the
+   result: a dashed outline in the lane's colour with the time it would start. The card itself
+   travels in the overlay (.lifted), its front only. */
+.slot[data-landing] > .card {
+  visibility: hidden;
+}
+
+.landing {
+  position: absolute;
+  inset: 2px 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: baseline;
+  gap: 0 var(--sl-spacing-xs);
+  padding: var(--sl-spacing-compact) var(--sl-spacing-xs);
+  border: 2px dashed hsl(var(--sl-color-primary));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-primary-subtle));
+  /* The insertion line: where the card's top edge will be. */
+  box-shadow: inset 0 3px 0 hsl(var(--sl-color-primary));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.landingTime {
+  font-size: var(--sl-text-caption);
+  font-weight: var(--sl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-primary));
+  white-space: nowrap;
+}
+
+.landingMin {
+  font-size: var(--sl-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sl-color-text-secondary));
+  white-space: nowrap;
+}
+
+/* The card in the hand. No tilt: a rotated card blurs its text. */
+.lifted {
+  height: 100%;
+  border-color: hsl(var(--sl-color-primary));
+  background: hsl(var(--sl-color-surface));
+  box-shadow: var(--sl-shadow-dropdown);
+  cursor: grabbing;
 }
 
 .moveTo {
@@ -605,8 +651,12 @@
 }
 
 .card {
-  /* Without this the browser claims the gesture for panning and a touch drag never starts. */
-  touch-action: none;
+  /* A swipe across the cards scrolls; a finger that holds still for 200ms picks the card up,
+     and from then on dnd-kit stops the page from moving under it. `none` here would make the
+     cards a dead zone for scrolling on a phone. No callout or text selection on the hold. */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
   position: relative;
   flex: 1 1 auto;
   display: grid;
@@ -745,6 +795,16 @@
   border-radius: 50%;
   background: hsl(var(--sl-color-warning));
   box-shadow: 0 0 0 2px hsl(var(--sl-color-surface));
+}
+
+/* A narrow column has no room beside the stamp: the dot moves to the bottom corner, so it never
+   sits on the card's length. */
+@container (max-width: 13rem) {
+  .card .changedDot {
+    top: auto;
+    right: 7px;
+    bottom: 7px;
+  }
 }
 
 /* ── The back of the card, lifted above the grid ── */
