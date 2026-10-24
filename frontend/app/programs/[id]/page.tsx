@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useState } from "react";
-import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
+import type { BadgeContentType } from "@/components/TypeBadge/TypeBadge";
 import DocumentViewer, { type ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
 import ContentCreateModal from "@/components/ContentCreateModal/ContentCreateModal";
 import {
@@ -25,6 +25,7 @@ import {
   canDeleteProgram,
   canEditComment,
   canEditProgram,
+  isOwner,
 } from "@/lib/permissions";
 import { cn } from "@/lib/util";
 import { createComment, deleteComment, updateComment } from "@/services/comments.service";
@@ -152,11 +153,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         </span>
       </nav>
       <div className={styles.titleblock}>
-        <div className={styles.badges}>
-          <TypeBadge type={type} size="md" />
-          {/* Only moderators and the author are ever sent a hidden item. */}
-          {isHidden(program) && <HiddenChip />}
-        </div>
+        {/* Only moderators and the author are ever sent a hidden item. The
+            type is in the Upplýsingar box with the other facts. */}
+        {isHidden(program) && (
+          <div className={styles.badges}>
+            <HiddenChip />
+          </div>
+        )}
         <h1 className={cn(styles.title, isHidden(program) && hiddenDimClass)}>{program.name}</h1>
       </div>
       <div className={styles.actions}>
@@ -243,7 +246,10 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
               program={program}
               typeLabel={copy.definite}
               onPrint={() => window.print()}
-              onReport={isAuthenticated ? () => setShowReport(true) : undefined}
+              // Not on your own item, as with your own comments.
+              onReport={
+                isAuthenticated && !isOwner(user, program) ? () => setShowReport(true) : undefined
+              }
             />
           </aside>
         )}

@@ -42,6 +42,23 @@
   height: 16px;
 }
 
+/* On a card: the word and glyph as a small-caps label, no box. The card already
+   has grey chips, solid age badges and outlined tags; a fourth kind of pill
+   did not belong among them. */
+.plain {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--sl-text-overline);
+  letter-spacing: var(--sl-primitive-letter-spacing-wider);
+  text-transform: uppercase;
+}
+
+.plain .glyph {
+  width: 12px;
+  height: 12px;
+}
+
 .task {
   --tb-accent: var(--sl-color-border-strong);
   --tb-accent-bg: var(--sl-color-background-tertiary);

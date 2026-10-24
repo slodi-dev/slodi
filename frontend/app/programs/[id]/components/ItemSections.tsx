@@ -33,41 +33,6 @@ function docKind(name: string, contentType?: string | null): string {
   return "SKJAL";
 }
 
-/**
- * Turn free-text instructions into steps.
- *
- * A leader writing steps either uses line breaks or types them inline — „1. …
- * 2. … 3. …" in one paragraph is just as common, and splitting only on
- * newlines rendered that as a wall of prose with the numbers buried in it. So
- * fall back to splitting on the inline markers, and strip the marker from each
- * step because the `<ol>` supplies the number itself.
- *
- * A single block with no markers stays prose — one numbered item is worse than
- * a paragraph.
- */
-export function splitSteps(instructions: string | null | undefined): string[] {
-  const text = (instructions ?? "").trim();
-  if (!text) return [];
-
-  const lines = text
-    .split(/\r?\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length > 1) return lines.map(stripMarker);
-
-  const inline = text
-    .split(/(?=\b\d{1,2}[.)]\s)/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (inline.length > 1) return inline.map(stripMarker);
-
-  return [text];
-}
-
-function stripMarker(step: string): string {
-  return step.replace(/^\d{1,2}[.)]\s*/, "").trim();
-}
-
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className={styles.empty}>{children}</p>;
 }
@@ -119,7 +84,7 @@ export default function ItemSections({
   const documents = program.media?.documents ?? [];
   const tags = program.tags ?? [];
 
-  const steps = splitSteps(program.instructions);
+  const instructions = program.instructions?.trim();
 
   return (
     <div className={styles.sections}>
@@ -152,14 +117,13 @@ export default function ItemSections({
         <h2 className={styles.secTitle} id="h-leidbeiningar">
           Leiðbeiningar
         </h2>
-        {steps.length > 1 ? (
-          <ol className={styles.steps}>
-            {steps.map((step, i) => (
-              <li key={i}>{step}</li>
-            ))}
-          </ol>
-        ) : steps.length === 1 ? (
-          <p>{steps[0]}</p>
+        {/* As the author typed it: a line per paragraph, a blank line as a
+            gap. Not numbered — pressing Enter to space text out does not make
+            it a list of steps. */}
+        {instructions ? (
+          instructions
+            .split("\n")
+            .map((line, i) => (line.trim() ? <p key={i}>{line}</p> : <br key={i} />))
         ) : (
           <Empty>Engar leiðbeiningar fylgja.</Empty>
         )}

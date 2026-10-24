@@ -6,6 +6,7 @@ import {
   formatDurationLabel,
   formatPrepTime,
   formatPrepTimeLabel,
+  formatParticipantRange,
   formatParticipants,
   formatParticipantsLabel,
   formatIcelandicNumber,
@@ -158,6 +159,25 @@ describe("formatPrepTimeLabel", () => {
 
   it("handles single defined value", () => {
     expect(formatPrepTimeLabel(undefined, 60)).toBe("Undirbúningstími: 1 klukkustund");
+  });
+});
+
+// ── formatParticipantRange ──────────────────────────────────────────────────────
+
+describe("formatParticipantRange", () => {
+  it("gives just the numbers, for a card where the icon says what they count", () => {
+    expect(formatParticipantRange(10, 30)).toBe("10–30");
+    expect(formatParticipantRange(12, 12)).toBe("12");
+    expect(formatParticipantRange(undefined, 8)).toBe("8");
+    expect(formatParticipantRange(5, undefined)).toBe("5");
+  });
+
+  it("writes large numbers the Icelandic way", () => {
+    expect(formatParticipantRange(1000, 2000)).toBe("1.000–2.000");
+  });
+
+  it("is empty when there is nothing to say", () => {
+    expect(formatParticipantRange(undefined, undefined)).toBe("");
   });
 });
 

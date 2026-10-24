@@ -57,13 +57,13 @@ export const WithImagesAndDocuments: Story = {
   },
 };
 
-export const InlineNumberedInstructions: Story = {
-  name: "Instructions typed inline („1. … 2. …“)",
+export const InstructionsOnSeveralLines: Story = {
+  name: "Instructions on several lines, with a gap",
   args: {
     program: {
       ...programKotturinn,
       instructions:
-        "1. Skiptið hópnum í tvö lið. 2. Hvort lið fær fána. 3. Liðið sem nær fána hins vinnur.",
+        "Skiptið hópnum í tvö lið.\nHvort lið fær fána.\n\nLiðið sem nær fána hins vinnur.",
     },
   },
 };
