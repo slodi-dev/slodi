@@ -4,7 +4,7 @@ import styles from "./TypeBadge.module.css";
 
 export type BadgeContentType = "task" | "event" | "program";
 
-const LABEL: Record<BadgeContentType, string> = {
+export const TYPE_LABEL: Record<BadgeContentType, string> = {
   task: "Verkefni",
   event: "Viðburður",
   program: "Dagskrá",
@@ -23,7 +23,7 @@ const ACCENT: Record<BadgeContentType, string> = {
  * A tent was rejected for viðburður: a triangle with a bar through it is the
  * shape of a hazard sign, which is the wrong thing to say about an outing.
  */
-function Glyph({ type }: { type: BadgeContentType }) {
+export function TypeGlyph({ type }: { type: BadgeContentType }) {
   const common = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -69,16 +69,27 @@ function Glyph({ type }: { type: BadgeContentType }) {
 export default function TypeBadge({
   type,
   size = "sm",
+  variant = "pill",
   className,
 }: {
   type: BadgeContentType;
   size?: "sm" | "md";
+  /** `plain` drops the box, for a card that already carries chips and tags. */
+  variant?: "pill" | "plain";
   className?: string;
 }) {
   return (
-    <span className={cn(styles.badge, ACCENT[type], size === "md" && styles.md, className)}>
-      <Glyph type={type} />
-      {LABEL[type]}
+    <span
+      className={cn(
+        styles.badge,
+        ACCENT[type],
+        size === "md" && styles.md,
+        variant === "plain" && styles.plain,
+        className
+      )}
+    >
+      <TypeGlyph type={type} />
+      {TYPE_LABEL[type]}
     </span>
   );
 }

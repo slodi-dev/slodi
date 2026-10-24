@@ -13,6 +13,7 @@ import {
 } from "@/lib/format";
 import { cn } from "@/lib/util";
 import type { Program } from "@/services/programs.service";
+import { TYPE_LABEL, TypeGlyph, type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
 
 import styles from "../efnissida.module.css";
 
@@ -166,7 +167,12 @@ export default function ItemFacts({
   );
   const ages = program.age ?? [];
 
-  const facts: ReactNode[] = [];
+  // What it is comes first, as a fact like the others — not as a pill by the
+  // title, where it sat apart from everything else on the page.
+  const type = (program.content_type ?? "task") as BadgeContentType;
+  const facts: ReactNode[] = [
+    <Fact key="type" icon={<TypeGlyph type={type} />} label="Tegund" value={TYPE_LABEL[type]} />,
+  ];
   if (duration) {
     facts.push(
       <Fact key="duration" icon={Icon.clock} label="Lengd, að lágmarki" value={duration} />

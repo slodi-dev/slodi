@@ -9,7 +9,7 @@ import { FAVOURITES_ENABLED } from "@/lib/feature-flags";
 import {
   formatDuration,
   formatDurationLabel,
-  formatParticipants,
+  formatParticipantRange,
   formatParticipantsLabel,
   formatPrice,
   formatPriceLabel,
@@ -20,6 +20,7 @@ import {
   formatIcelandicNumber,
 } from "@/lib/format";
 import { HiddenChip, hiddenDimClass } from "@/components/HiddenMark/HiddenMark";
+import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
 import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import { cn } from "@/lib/util";
 import styles from "./ProgramCard.module.css";
@@ -47,6 +48,8 @@ export interface ProgramCardProps {
   like_count?: number;
   liked_by_me?: boolean;
   comment_count?: number;
+  /** Verkefni, Viðburður or Dagskrá, shown as a badge above the title. */
+  content_type?: BadgeContentType;
   className?: string;
   /** Show an edit option in the card action menu. */
   canEdit?: boolean;
@@ -96,6 +99,7 @@ export default function ProgramCard({
   like_count,
   liked_by_me,
   comment_count = 0,
+  content_type,
   className,
   canEdit,
   canDelete,
@@ -200,7 +204,8 @@ export default function ProgramCard({
     duration_min ?? undefined,
     duration_max ?? undefined
   );
-  const participantsStr = formatParticipants(count_min ?? undefined, count_max ?? undefined);
+  // Numbers only: the people icon says what they count, and the label reads it out.
+  const participantsStr = formatParticipantRange(count_min ?? undefined, count_max ?? undefined);
   const participantsLabelStr = formatParticipantsLabel(
     count_min ?? undefined,
     count_max ?? undefined
@@ -265,7 +270,14 @@ export default function ProgramCard({
 
       {/* ── Content body ────────────────────────────────────────── */}
       <div className={styles.body}>
-        {hidden && <HiddenChip className={styles.hiddenChip} />}
+        {/* What it is, and whether it is hidden — the same pair the item page
+            shows above its title. */}
+        {(content_type || hidden) && (
+          <div className={styles.badges}>
+            {content_type && <TypeBadge type={content_type} variant="plain" />}
+            {hidden && <HiddenChip />}
+          </div>
+        )}
 
         {/* Title */}
         <h2 className={cn(styles.title, hidden && hiddenDimClass)}>{name}</h2>

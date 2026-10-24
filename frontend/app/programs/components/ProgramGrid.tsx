@@ -146,6 +146,7 @@ export default function ProgramGrid({
               like_count={program.like_count}
               liked_by_me={program.liked_by_me}
               comment_count={program.comment_count}
+              content_type={program.content_type}
               created_at={program.created_at}
               hidden_at={program.hidden_at}
               duration_min={program.duration_min}

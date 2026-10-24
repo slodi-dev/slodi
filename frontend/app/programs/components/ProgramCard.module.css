@@ -59,8 +59,11 @@
   border-color: hsl(var(--sl-color-border-strong));
 }
 
-.hiddenChip {
-  align-self: flex-start;
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
 }
 
 .media {
@@ -353,9 +356,12 @@
   border-color: hsl(var(--sl-color-error) / var(--sl-primitive-opacity-60));
 }
 
+/* Room for two digits, so 9 → 10 does not nudge the button beside it; a third
+   digit grows the button, since this is only the floor. 1.5em held nearly three
+   and left a gap on the right of every count. */
 .likeCount {
   font-variant-numeric: tabular-nums;
-  min-width: 1.5em;
+  min-width: 2ch;
   text-align: left;
 }
 

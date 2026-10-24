@@ -339,28 +339,6 @@
   color: hsl(var(--sl-color-text-primary));
 }
 
-/* Instructions are prose, not a dashboard: an ordinary numbered list with
-   plain numerals. Chips here read as buttons and pulled harder than the text
-   they numbered. */
-.steps {
-  margin: 0;
-  padding-left: 1.55em;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.steps li {
-  max-width: 66ch;
-  padding-left: 2px;
-  color: hsl(var(--sl-color-text-secondary));
-}
-
-.steps li::marker {
-  color: hsl(var(--sl-color-text-tertiary));
-  font-variant-numeric: tabular-nums;
-}
-
 /* Kit list on its own card, so the page has a second texture. Quantity is the
    thing being scanned, so it is right-aligned and tabular. */
 .kit {
