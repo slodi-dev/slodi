@@ -29,6 +29,7 @@ from app.schemas.moderation import (
     ReviewDetail,
     ReviewFilters,
     ReviewQueueItem,
+    UnreviewedCount,
 )
 from app.schemas.posting_suspension import (
     AuthorStanding,
@@ -48,6 +49,21 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 # Dagskrárstjórnarteymið. Admins outrank moderators, so they pass this for free.
 ModeratorDep = Depends(require_permission(Permissions.moderator))
+
+
+@router.get("/unreviewed-count", response_model=UnreviewedCount)
+async def unreviewed_count(
+    session: SessionDep,
+    current_user: UserOut = ModeratorDep,
+) -> UnreviewedCount:
+    """The sidebar badge, without fetching the board.
+
+    `/queue` reports the same number in `X-Unreviewed-Total`, which is the
+    right shape for the Yfirferð page: it already has the response in hand and
+    can move the badge after a review without asking again. The sidebar has no
+    such response, renders on every authenticated page, and wants one number.
+    """
+    return UnreviewedCount(count=await ModerationService(session).count_unreviewed())
 
 
 @router.get("/queue", response_model=list[ReviewQueueItem])

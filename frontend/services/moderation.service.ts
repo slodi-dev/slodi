@@ -222,6 +222,24 @@ export async function fetchAuthorStrikes(authorId: string, getToken: GetToken): 
   return r.strikes;
 }
 
+/**
+ * How much is waiting on the board — the sidebar badge.
+ *
+ * `/moderation/queue` reports the same number in `X-Unreviewed-Total`, and the
+ * Yfirferð page should keep reading it from there: it already has the response
+ * and can move the badge after a review without another round trip. The sidebar
+ * renders on every authenticated page and has no such response, so it asks for
+ * the number on its own rather than pulling a page of rows to count them.
+ */
+export async function fetchUnreviewedCount(getToken: GetToken): Promise<number> {
+  const r = await fetchWithAuth<{ count: number }>(
+    buildApiUrl("/moderation/unreviewed-count"),
+    {},
+    getToken
+  );
+  return r.count;
+}
+
 export async function resolveReport(
   reportId: string,
   status: "resolved" | "dismissed",
