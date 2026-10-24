@@ -1,9 +1,11 @@
 """Item pages are signed-in only (user decision 2026-10-11).
 
 Nothing about a bank item — the item itself, its comments, likes or tags — is
-served to an anonymous caller. `GET /content/{id}` and `GET /programs/{id}` are
-cached for a minute, so they must also say `private`: a `public` response to an
-authenticated request could be handed to the next caller by a shared cache.
+served to an anonymous caller. `GET /content/{id}` and `GET /programs/{id}` say
+`private`: a `public` response to an authenticated request could be handed to
+the next caller by a shared cache. And `no-cache`, not `max-age`: with a minute
+of caching the browser reused the item it had fetched before a change, so a new
+comment vanished on refresh and came back a minute later.
 """
 
 from unittest.mock import AsyncMock, patch
@@ -89,4 +91,4 @@ def test_item_responses_are_cached_privately(client, sample_workspace):
         for path in (f"/content/{program.id}", f"/programs/{program.id}"):
             response = client.get(path)
             assert response.status_code == 200, path
-            assert response.headers["cache-control"] == "private, max-age=60", path
+            assert response.headers["cache-control"] == "private, no-cache", path
