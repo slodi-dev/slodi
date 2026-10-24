@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Calendar } from "lucide-react";
 import styles from "./dashboard.module.css";
 
 export default function DashboardPage() {
@@ -13,11 +13,8 @@ export default function DashboardPage() {
 
       <Link href="/programs" className={styles.programBankCard}>
         <div className={styles.cardContent}>
-          <Sparkles className={styles.sparkleIcon} aria-hidden="true" />
-          <div className={styles.cardText}>
-            <h2 className={styles.cardTitle}>Dagskrárbankinn</h2>
-            <p className={styles.cardDescription}>Skoðaðu dagsrkárhugmyndir héðan og þaðan</p>
-          </div>
+          <Calendar className={styles.cardIcon} aria-hidden="true" />
+          <h2 className={styles.cardTitle}>Dagskrárbankinn</h2>
           <ArrowRight className={styles.arrowIcon} aria-hidden="true" />
         </div>
       </Link>

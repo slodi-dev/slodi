@@ -1,21 +1,8 @@
 "use client";
 
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
+import { AGE_GROUPS, getAgeGroupPatrol } from "@/lib/format";
 import styles from "./filters.module.css";
-
-/**
- * All seven AgeGroup enum values from the backend.
- * Values match `backend/app/domain/enums.py` exactly.
- */
-const AGE_GROUPS = [
-  "Hrefnuskátar",
-  "Drekaskátar",
-  "Fálkaskátar",
-  "Dróttskátar",
-  "Rekkaskátar",
-  "Róverskátar",
-  "Vættaskátar",
-] as const;
 
 interface AgeGroupFilterProps {
   selected: string[];
@@ -49,6 +36,12 @@ export default function AgeGroupFilter({
             <label
               key={ageGroup}
               className={`${styles.checkboxLabel} ${isSelected ? styles.checkboxLabelSelected : ""}`}
+              // Ticks in the band's own colour, as in the create form.
+              style={
+                {
+                  "--patrol": `var(--sl-color-patrol-${getAgeGroupPatrol(ageGroup) ?? "adrir"})`,
+                } as React.CSSProperties
+              }
             >
               <input
                 type="checkbox"
