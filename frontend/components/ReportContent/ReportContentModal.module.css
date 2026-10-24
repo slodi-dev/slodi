@@ -17,6 +17,33 @@
   gap: var(--sl-spacing-xs);
 }
 
+/* The comment being reported, so there is no doubt which thing this is. */
+.quoted {
+  margin: 0;
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-left: 3px solid hsl(var(--sl-color-border));
+  background: hsl(var(--sl-color-background-secondary));
+  border-radius: var(--sl-radius-sm);
+}
+
+.quoted p {
+  margin: 0;
+  color: hsl(var(--sl-color-text-primary));
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* A long comment is quoted, not reprinted. */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.quoted footer {
+  margin-top: var(--sl-spacing-xs);
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-text-secondary));
+}
+
 .legend {
   padding: 0;
   margin-bottom: var(--sl-spacing-sm);

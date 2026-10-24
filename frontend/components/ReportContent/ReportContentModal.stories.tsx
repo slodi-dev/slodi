@@ -68,7 +68,14 @@ export const ErrorState: Story = {
 };
 
 export const ReportingAComment: Story = {
-  args: { commentId: "c-1", contentName: "athugasemd frá Aroni" },
+  args: {
+    contentName: "Kötturinn og músin",
+    comment: {
+      id: "c-1",
+      author_name: "Aron Freyr Kristjánsson",
+      body: "Prófuðum þetta með Drekaskátum í gær, þau elskuðu þetta!",
+    },
+  },
 };
 
 export const LongName: Story = {

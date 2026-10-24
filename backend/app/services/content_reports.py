@@ -108,8 +108,9 @@ class ContentReportService:
                 content_author_name=author,
                 comment_body=comment_body,
                 comment_author_name=comment_author,
+                comment_created_at=comment_created_at,
             )
-            for r, name, author, comment_body, comment_author in rows
+            for r, name, author, comment_body, comment_author, comment_created_at in rows
         ]
 
     async def count_open(self) -> int:

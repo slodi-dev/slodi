@@ -247,3 +247,4 @@ class ReportQueueItem(ContentReportOut):
     #: because "a comment was reported" without the words is not reviewable.
     comment_body: str | None = None
     comment_author_name: str | None = None
+    comment_created_at: dt.datetime | None = None

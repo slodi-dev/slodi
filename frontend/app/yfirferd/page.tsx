@@ -22,7 +22,9 @@ import {
   reviewContent,
   setContentHidden,
 } from "@/services/moderation.service";
-import { REPORT_REASON_LABEL } from "@/services/reports.service";
+import { reportReasonLabel } from "@/services/reports.service";
+import { deleteComment } from "@/services/comments.service";
+import CommentReportPane from "./CommentReportPane";
 import ReviewDetailPane from "./ReviewDetailPane";
 import QueueProgress from "./QueueProgress";
 import QueueEmpty from "./QueueEmpty";
@@ -150,10 +152,17 @@ export default function YfirferdPage() {
   // on the new last row, not jump to the top of a fifty-item sweep.
   const index = Math.min(cursor, Math.max(rows.length - 1, 0));
   const active = rows[index];
+  // A comment report is judged on its own pane, so it loads no item.
+  const activeCommentReport =
+    tab === "reports" && (active as ReportQueueItem | undefined)?.comment_id
+      ? (active as ReportQueueItem)
+      : null;
   const cursorContentId =
     tab === "content"
       ? (active as ReviewQueueItem | undefined)?.id
-      : (active as ReportQueueItem | undefined)?.content_id;
+      : activeCommentReport
+        ? undefined
+        : (active as ReportQueueItem | undefined)?.content_id;
   const activeContentId = linkedId ?? cursorContentId;
 
   useEffect(() => {
@@ -342,6 +351,35 @@ export default function YfirferdPage() {
       }
     },
     [getToken]
+  );
+
+  /* Takes the comment down and closes the report in one step. Removing is a
+     soft delete, so the report would otherwise stay open on a comment nobody
+     can see. Every loaded report on the same comment closes with it — three
+     people flagging one remark is one decision, not three. */
+  const removeReportedComment = useCallback(
+    async (report: ReportQueueItem) => {
+      if (!report.comment_id) return;
+      if (!window.confirm("Fjarlægja athugasemdina? Það er ekki hægt að afturkalla það héðan.")) {
+        return;
+      }
+      setBusyId(report.id);
+      try {
+        await deleteComment(report.comment_id, getToken);
+        const same = reports.filter((r) => r.comment_id === report.comment_id);
+        await Promise.all(
+          same.map((r) => resolveReport(r.id, "resolved", "Athugasemd fjarlægð", getToken))
+        );
+        const closed = new Set(same.map((r) => r.id));
+        setReports((rs) => rs.filter((x) => !closed.has(x.id)));
+        setAnnouncement("Athugasemd fjarlægð og tilkynning afgreidd.");
+      } catch {
+        setAnnouncement("Ekki tókst að fjarlægja athugasemdina.");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [getToken, reports]
   );
 
   const onKeyDown = useCallback(
@@ -635,11 +673,25 @@ export default function YfirferdPage() {
                       setLinkedId(null);
                       setCursor(i);
                     }}
-                    label={`Tilkynning um ${report.content_name}`}
-                    title={report.content_name}
-                    line={REPORT_REASON_LABEL[report.reason]}
+                    // A comment report names the comment, not the item: titled
+                    // with the item, it read as a complaint about the item.
+                    label={
+                      report.comment_id
+                        ? `Tilkynning um athugasemd frá ${report.comment_author_name ?? "óþekktum"} við ${report.content_name}`
+                        : `Tilkynning um ${report.content_name}`
+                    }
+                    title={
+                      report.comment_id
+                        ? `Athugasemd frá ${report.comment_author_name ?? "óþekktum"}`
+                        : report.content_name
+                    }
+                    line={reportReasonLabel(report)}
                     stamp={formatIcelandicDateShort(report.created_at)}
-                    flags={[report.content_author_name]}
+                    flags={
+                      report.comment_id
+                        ? [`við „${report.content_name}“`]
+                        : [report.content_author_name]
+                    }
                   />
                 ))}
           </ul>
@@ -666,23 +718,32 @@ export default function YfirferdPage() {
         </div>
 
         <div className={styles.detailPane}>
-          <ReviewDetailPane
-            detail={detail}
-            loading={detailLoading}
-            failed={detailError}
-            busy={busyId !== null}
-            onComment={comment}
-            shareUrl={
-              activeContentId && typeof window !== "undefined"
-                ? `${window.location.origin}${window.location.pathname}?efni=${activeContentId}`
-                : null
-            }
-            onAct={(action) => {
-              if (!detail) return;
-              void act(detail as ReviewQueueItem, action);
-            }}
-          />
-          {tab === "reports" && active && (
+          {activeCommentReport ? (
+            <CommentReportPane
+              report={activeCommentReport}
+              busy={busyId !== null}
+              onRemove={() => void removeReportedComment(activeCommentReport)}
+              onDismiss={() => void closeReport(activeCommentReport, "dismissed")}
+            />
+          ) : (
+            <ReviewDetailPane
+              detail={detail}
+              loading={detailLoading}
+              failed={detailError}
+              busy={busyId !== null}
+              onComment={comment}
+              shareUrl={
+                activeContentId && typeof window !== "undefined"
+                  ? `${window.location.origin}${window.location.pathname}?efni=${activeContentId}`
+                  : null
+              }
+              onAct={(action) => {
+                if (!detail) return;
+                void act(detail as ReviewQueueItem, action);
+              }}
+            />
+          )}
+          {tab === "reports" && active && !activeCommentReport && (
             <div className={styles.reportActions}>
               {/* Labelled, because two unlabelled action rows leave a reviewer
                   guessing which one closes the report and which one judges the

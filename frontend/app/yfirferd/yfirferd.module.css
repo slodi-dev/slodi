@@ -780,6 +780,19 @@
 .reasonUrgent {
   color: hsl(var(--sl-color-error-text));
 }
+/* The reported comment's own words — the thing being judged. */
+.commentQuote {
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  border-left: 3px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-background-secondary));
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .reviewNote {
   margin: 0;
   padding: 10px 13px;

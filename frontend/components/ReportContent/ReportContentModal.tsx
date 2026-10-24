@@ -4,6 +4,9 @@ import React, { useEffect, useId, useRef, useState } from "react";
 import Modal from "@/components/Modal/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  COMMENT_REPORT_REASONS,
+  COMMENT_REPORT_REASON_LABEL,
+  type CommentReportReason,
   REPORT_NOTE_MAX,
   REPORT_REASONS,
   REPORT_REASON_LABEL,
@@ -11,6 +14,7 @@ import {
   reportComment,
   reportContent,
 } from "@/services/reports.service";
+import type { ContentComment } from "@/services/programs.service";
 import styles from "./ReportContentModal.module.css";
 
 type Props = {
@@ -19,10 +23,12 @@ type Props = {
   contentId: string;
   contentName: string;
   /**
-   * Set to flag a comment under the item rather than the item itself. Same
-   * reasons, same confirmation — one component, so the two cannot drift apart.
+   * Set to flag a comment under the item rather than the item itself. The
+   * dialog then says whose comment it is, quotes it, and offers the reasons
+   * that fit a comment — titled with the item's name, it read as a report of
+   * the item. The note and the confirmation stay shared.
    */
-  commentId?: string;
+  comment?: Pick<ContentComment, "id" | "author_name" | "body">;
 };
 
 /**
@@ -39,7 +45,7 @@ export default function ReportContentModal({
   onClose,
   contentId,
   contentName,
-  commentId,
+  comment,
 }: Props) {
   const { getToken } = useAuth();
   const groupId = useId();
@@ -59,13 +65,20 @@ export default function ReportContentModal({
     return () => window.clearTimeout(id);
   }, [open]);
 
+  const reasons: ReportReason[] = comment ? COMMENT_REPORT_REASONS : REPORT_REASONS;
+  const label = (value: ReportReason) =>
+    comment
+      ? COMMENT_REPORT_REASON_LABEL[value as CommentReportReason]
+      : REPORT_REASON_LABEL[value];
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!reason || state === "sending") return;
     setState("sending");
     try {
-      await (commentId
-        ? reportComment(commentId, reason, note, getToken)
+      await (comment
+        ? // Only comment reasons are offered when there is a comment.
+          reportComment(comment.id, reason as CommentReportReason, note, getToken)
         : reportContent(contentId, reason, note, getToken));
       setState("sent");
       // Long enough to read the confirmation, short enough not to trap anyone.
@@ -76,11 +89,23 @@ export default function ReportContentModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={`Tilkynna „${contentName}“`}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        comment ? `Tilkynna athugasemd frá ${comment.author_name}` : `Tilkynna „${contentName}“`
+      }
+    >
       <form className={styles.form} onSubmit={submit}>
+        {comment && (
+          <blockquote className={styles.quoted}>
+            <p>{comment.body}</p>
+            <footer>við „{contentName}“</footer>
+          </blockquote>
+        )}
         <fieldset className={styles.fieldset}>
           <legend className={styles.legend}>Hvað er að?</legend>
-          {REPORT_REASONS.map((value, index) => (
+          {reasons.map((value, index) => (
             <label key={value} className={styles.option}>
               <input
                 ref={index === 0 ? firstOptionRef : undefined}
@@ -91,7 +116,7 @@ export default function ReportContentModal({
                 onChange={() => setReason(value)}
                 disabled={state === "sending" || state === "sent"}
               />
-              <span>{REPORT_REASON_LABEL[value]}</span>
+              <span>{label(value)}</span>
             </label>
           ))}
         </fieldset>

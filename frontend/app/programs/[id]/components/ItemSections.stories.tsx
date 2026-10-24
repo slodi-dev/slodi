@@ -31,6 +31,9 @@ const meta = {
     onOpenDocument: fn(),
     onReportComment: fn(),
     onRemoveComment: fn(),
+    onEditComment: fn(async () => {}),
+    canEditComment: (): boolean => false,
+    canRemoveComment: (): boolean => true,
   },
   decorators: [
     (Story) => (
@@ -83,6 +86,24 @@ export const Empty: Story = {
 export const ReadOnlyVisitor: Story = {
   name: "Visitor who cannot comment",
   args: { canComment: false, currentUserName: null },
+};
+
+export const OwnComments: Story = {
+  name: "Reader wrote the comments — edit and remove",
+  args: { canEditComment: () => true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Hover a comment and press the pencil: the text becomes a field. Ctrl+Enter saves, Escape backs out.",
+      },
+    },
+  },
+};
+
+export const OthersComments: Story = {
+  name: "Someone else's comments — report only",
+  args: { canRemoveComment: () => false },
 };
 
 export const CommentFails: Story = {

@@ -609,6 +609,58 @@
   opacity: 1;
 }
 
+/* No hover on a touch screen, so the actions cannot wait for one. */
+@media (hover: none) {
+  .commentActs {
+    opacity: 1;
+  }
+}
+
+/* `display: flex` above would otherwise win over the attribute. */
+.commentActs[hidden] {
+  display: none;
+}
+
+/* Editing in place: the text becomes a field with its own two buttons. */
+.commentEdit {
+  grid-column: 2;
+  margin-top: 6px;
+}
+
+.commentEdit textarea {
+  display: block;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--sl-input-border));
+  border-radius: var(--sl-radius-input);
+  background: hsl(var(--sl-input-background));
+  color: hsl(var(--sl-color-text-primary));
+  font: inherit;
+  font-size: var(--sl-text-body-sm);
+  line-height: var(--sl-line-height-body);
+  resize: vertical;
+}
+
+.commentEdit textarea:focus-visible {
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 1px;
+  border-color: hsl(var(--sl-color-border-focus));
+}
+
+.commentEditError {
+  margin: 6px 0 0;
+  font-size: var(--sl-text-body-sm);
+  color: hsl(var(--sl-color-error));
+}
+
+.commentEditActs {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sl-spacing-gap-sm);
+  margin-top: 8px;
+}
+
 .commentAct {
   display: grid;
   place-items: center;
