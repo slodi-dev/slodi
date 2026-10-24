@@ -359,6 +359,12 @@
   text-align: left;
 }
 
+/* ── Comment count ────────────────────────────────────────── */
+
+.commentLink {
+  text-decoration: none;
+}
+
 /* ── Favorite button ──────────────────────────────────────── */
 
 .favoriteButton {

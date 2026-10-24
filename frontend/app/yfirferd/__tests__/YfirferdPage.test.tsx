@@ -128,6 +128,36 @@ describe("the rail and the pane", () => {
     await waitFor(() => expect(pane().getByText(/Of hættulegt/)).toBeInTheDocument());
   });
 
+  it("names a reported comment, and shows its words, rather than the item", async () => {
+    // Titled with the item, a comment report read as a complaint about the item.
+    fetchOpenReports.mockResolvedValue({
+      items: [
+        {
+          id: "r9",
+          content_id: "c1",
+          comment_id: "k1",
+          reporter_id: "u2",
+          reason: "inappropriate",
+          note: null,
+          status: "open",
+          created_at: "2026-09-01T10:00:00Z",
+          content_name: "Kveikjuleikur",
+          content_author_name: "Foringi",
+          comment_body: "Þú ert asni",
+          comment_author_name: "Aron",
+        },
+      ],
+      total: 1,
+    });
+    render(<YfirferdPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: /Tilkynningar/ }));
+
+    expect(await screen.findByText("Athugasemd frá Aron")).toBeInTheDocument();
+    // The comment's own wording for the reason, not "Á ekki heima í bankanum".
+    expect(screen.getAllByText(/Dónalegt eða særandi/).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Þú ert asni")).toBeInTheDocument();
+  });
+
   it("shows the full text, not the two truncated lines a rail can afford", async () => {
     render(<YfirferdPage />);
     await waitFor(() => expect(pane().getByText("Leiðbeiningar")).toBeInTheDocument());

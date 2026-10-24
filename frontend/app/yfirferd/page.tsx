@@ -22,7 +22,7 @@ import {
   reviewContent,
   setContentHidden,
 } from "@/services/moderation.service";
-import { REPORT_REASON_LABEL } from "@/services/reports.service";
+import { reportReasonLabel } from "@/services/reports.service";
 import ReviewDetailPane from "./ReviewDetailPane";
 import QueueProgress from "./QueueProgress";
 import QueueEmpty from "./QueueEmpty";
@@ -635,11 +635,25 @@ export default function YfirferdPage() {
                       setLinkedId(null);
                       setCursor(i);
                     }}
-                    label={`Tilkynning um ${report.content_name}`}
-                    title={report.content_name}
-                    line={REPORT_REASON_LABEL[report.reason]}
+                    // A comment report names the comment, not the item: titled
+                    // with the item, it read as a complaint about the item.
+                    label={
+                      report.comment_id
+                        ? `Tilkynning um athugasemd frá ${report.comment_author_name ?? "óþekktum"} við ${report.content_name}`
+                        : `Tilkynning um ${report.content_name}`
+                    }
+                    title={
+                      report.comment_id
+                        ? `Athugasemd frá ${report.comment_author_name ?? "óþekktum"}`
+                        : report.content_name
+                    }
+                    line={reportReasonLabel(report)}
                     stamp={formatIcelandicDateShort(report.created_at)}
-                    flags={[report.content_author_name]}
+                    flags={
+                      report.comment_id
+                        ? [`við „${report.content_name}“`]
+                        : [report.content_author_name]
+                    }
                   />
                 ))}
           </ul>
@@ -688,6 +702,17 @@ export default function YfirferdPage() {
                   guessing which one closes the report and which one judges the
                   content. They are different decisions. */}
               <span className={styles.actionsLabel}>Tilkynningin</span>
+              {(active as ReportQueueItem).comment_id && (
+                <blockquote className={cn(styles.reportedComment, styles.reportedCommentWide)}>
+                  <span className={styles.reportedCommentWho}>
+                    Athugasemd frá {(active as ReportQueueItem).comment_author_name ?? "óþekktum"} ·{" "}
+                    {reportReasonLabel(active as ReportQueueItem)}
+                  </span>
+                  {(active as ReportQueueItem).comment_body ?? (
+                    <em>athugasemdin hefur verið fjarlægð</em>
+                  )}
+                </blockquote>
+              )}
               <button
                 className={cn(styles.btn, styles.btnPrimary)}
                 disabled={busyId !== null}

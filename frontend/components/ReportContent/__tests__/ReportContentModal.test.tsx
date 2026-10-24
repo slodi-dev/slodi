@@ -4,10 +4,12 @@ import userEvent from "@testing-library/user-event";
 import ReportContentModal from "../ReportContentModal";
 
 const reportContent = vi.fn();
+const reportComment = vi.fn();
 
 vi.mock("@/services/reports.service", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/services/reports.service")>()),
   reportContent: (...args: unknown[]) => reportContent(...args),
+  reportComment: (...args: unknown[]) => reportComment(...args),
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -23,6 +25,8 @@ function open() {
 beforeEach(() => {
   reportContent.mockReset();
   reportContent.mockResolvedValue({ id: "r-1" });
+  reportComment.mockReset();
+  reportComment.mockResolvedValue({ id: "r-2" });
 });
 
 describe("reporting an item", () => {
@@ -69,5 +73,50 @@ describe("reporting an item", () => {
     open();
     const values = screen.getAllByRole("radio").map((o) => (o as HTMLInputElement).value);
     expect(values.indexOf("unsafe")).toBeLessThan(2);
+  });
+});
+
+describe("reporting a comment", () => {
+  const comment = { id: "k-1", author_name: "Aron", body: "Þetta er athugasemdin." };
+
+  function openForComment() {
+    return render(
+      <ReportContentModal
+        open
+        onClose={vi.fn()}
+        contentId="c-1"
+        contentName="Kveikjuleikur"
+        comment={comment}
+      />
+    );
+  }
+
+  it("says whose comment it is and quotes it, rather than naming the item", () => {
+    // Titled with the item's name, a comment report read as a report of the item.
+    openForComment();
+    expect(
+      screen.getByRole("dialog", { name: "Tilkynna athugasemd frá Aron" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Þetta er athugasemdin.")).toBeInTheDocument();
+  });
+
+  it("offers only the reasons that fit a comment, in a comment's words", () => {
+    openForComment();
+    const values = screen.getAllByRole("radio").map((o) => (o as HTMLInputElement).value);
+    // Mirrors COMMENT_REPORT_REASONS on the backend, which refuses the rest.
+    expect(values).toEqual(["inappropriate", "unsafe", "spam", "other"]);
+    expect(screen.getByLabelText("Dónalegt eða særandi")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Til nú þegar")).not.toBeInTheDocument();
+  });
+
+  it("files it against the comment, not the item", async () => {
+    openForComment();
+    await userEvent.click(screen.getByLabelText("Dónalegt eða særandi"));
+    await userEvent.click(screen.getByRole("button", { name: "Senda tilkynningu" }));
+
+    await waitFor(() =>
+      expect(reportComment).toHaveBeenCalledWith("k-1", "inappropriate", "", expect.anything())
+    );
+    expect(reportContent).not.toHaveBeenCalled();
   });
 });

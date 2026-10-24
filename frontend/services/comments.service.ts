@@ -29,6 +29,25 @@ export async function createComment(
 }
 
 /**
+ * Change the text of a comment. Its author only; anyone else gets a 403.
+ */
+export async function updateComment(
+  commentId: string,
+  body: string,
+  getToken: GetToken
+): Promise<ContentComment> {
+  return fetchWithAuth<ContentComment>(
+    buildApiUrl(`/comments/${commentId}`),
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    },
+    getToken
+  );
+}
+
+/**
  * Remove a comment.
  *
  * Allowed for its author, the author of the item it hangs under, a workspace

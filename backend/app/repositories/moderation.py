@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
 from app.domain.enums import ReportStatus, ReviewState
+from app.models.comment import Comment
 from app.models.content import Content
 from app.models.content_report import ContentReport
 from app.models.posting_suspension import PostingSuspension
@@ -236,6 +237,17 @@ class ModerationRepository(Repository):
             .options(selectinload(Content.author))
             .where(Content.id == content_id, Content.deleted_at.is_(None))
         )
+
+    async def comment_texts(self, comment_ids: list[UUID]) -> dict[UUID, tuple[str, str]]:
+        """Body and author name of each comment, for the reports that name one."""
+        if not comment_ids:
+            return {}
+        rows = await self.session.execute(
+            select(Comment.id, Comment.body, User.name)
+            .join(User, User.id == Comment.user_id)
+            .where(Comment.id.in_(comment_ids))
+        )
+        return {cid: (body, name) for cid, body, name in rows.all()}
 
     async def count_suspensions(self, author_id: UUID) -> int:
         return (

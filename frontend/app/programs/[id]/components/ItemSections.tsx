@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import Button from "@/components/Button/Button";
 import { formatIcelandicDate } from "@/lib/format";
 import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import { cn } from "@/lib/util";
@@ -92,6 +93,9 @@ export default function ItemSections({
   onOpenDocument,
   onReportComment,
   onRemoveComment,
+  onEditComment,
+  canEditComment,
+  canRemoveComment,
 }: {
   program: Program;
   images: HeroImage[];
@@ -105,6 +109,9 @@ export default function ItemSections({
   onOpenDocument: (doc: ViewableDocument) => void;
   onReportComment: (c: ContentComment) => void;
   onRemoveComment: (c: ContentComment) => void;
+  onEditComment: (c: ContentComment, body: string) => Promise<void>;
+  canEditComment: (c: ContentComment) => boolean;
+  canRemoveComment: (c: ContentComment) => boolean;
 }) {
   const copy = kindCopy(program.content_type);
 
@@ -232,6 +239,9 @@ export default function ItemSections({
         currentUserName={currentUserName}
         onReportComment={onReportComment}
         onRemoveComment={onRemoveComment}
+        onEditComment={onEditComment}
+        canEditComment={canEditComment}
+        canRemoveComment={canRemoveComment}
       />
     </div>
   );
@@ -244,6 +254,9 @@ function CommentSection({
   currentUserName,
   onReportComment,
   onRemoveComment,
+  onEditComment,
+  canEditComment,
+  canRemoveComment,
 }: {
   comments: ContentComment[];
   canComment: boolean;
@@ -251,11 +264,56 @@ function CommentSection({
   currentUserName: string | null;
   onReportComment: (c: ContentComment) => void;
   onRemoveComment: (c: ContentComment) => void;
+  onEditComment: (c: ContentComment, body: string) => Promise<void>;
+  canEditComment: (c: ContentComment) => boolean;
+  canRemoveComment: (c: ContentComment) => boolean;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
+
+  // One comment is edited at a time, in place.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  function startEdit(c: ContentComment) {
+    // Moving to another comment discards this edit, so it asks the same way.
+    const current = comments.find((x) => x.id === editingId);
+    if (current && editDraft.trim() !== current.body && !window.confirm("Henda breytingum?")) {
+      return;
+    }
+    setEditingId(c.id);
+    setEditDraft(c.body);
+    setEditError(null);
+  }
+
+  function cancelEdit(c: ContentComment) {
+    if (editDraft.trim() !== c.body && !window.confirm("Henda breytingum?")) return;
+    setEditingId(null);
+  }
+
+  async function saveEdit(c: ContentComment) {
+    const body = editDraft.trim();
+    if (!body || editSaving) return;
+    if (body === c.body) {
+      setEditingId(null);
+      return;
+    }
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await onEditComment(c, body);
+      setEditingId(null);
+    } catch (e) {
+      // The box stays open so the rewritten text is not lost.
+      setEditError(e instanceof Error ? e.message : "Ekki tókst að vista breytinguna.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
 
   /* Autogrow: reset to auto first so the field can shrink again on delete,
      then take scrollHeight. The CSS max-height caps it and hands scrolling
@@ -302,56 +360,126 @@ function CommentSection({
               <span className={styles.commentName}>{c.author_name}</span>
               <span className={styles.commentWhen}>{formatIcelandicDate(c.created_at)}</span>
             </div>
-            <p className={styles.commentText}>{c.body}</p>
+            {editingId === c.id ? (
+              <form
+                className={styles.commentEdit}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void saveEdit(c);
+                }}
+              >
+                <label className={styles.srOnly} htmlFor={`ef-edit-${c.id}`}>
+                  Breyta athugasemd
+                </label>
+                <textarea
+                  id={`ef-edit-${c.id}`}
+                  value={editDraft}
+                  rows={3}
+                  autoFocus
+                  onChange={(e) => setEditDraft(e.target.value)}
+                  // Same keys as the reply box, plus Escape to back out.
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      void saveEdit(c);
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelEdit(c);
+                    }
+                  }}
+                />
+                {editError && (
+                  <p className={styles.commentEditError} role="alert">
+                    {editError}
+                  </p>
+                )}
+                <div className={styles.commentEditActs}>
+                  <Button variant="ghost" onClick={() => cancelEdit(c)} disabled={editSaving}>
+                    Hætta við
+                  </Button>
+                  <Button type="submit" disabled={editSaving || !editDraft.trim()}>
+                    {editSaving ? "Vista…" : "Vista"}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <p className={styles.commentText}>{c.body}</p>
+            )}
             {/*
-              Every comment carries its own two actions. This is the one place
-              a stranger writes free text under someone else's idea, so it needs
-              a way to raise a hand and a way to clear it — the server decides
-              who may remove, and says so with a 403.
+              Edit and remove show only to those the server allows
+              (lib/permissions.ts), so a click never ends in a 403 nobody sees.
+              Report shows on everyone else's comments: this is the one place a
+              stranger writes free text under someone else's idea.
             */}
-            <div className={styles.commentActs}>
-              <button
-                type="button"
-                className={styles.commentAct}
-                onClick={() => onReportComment(c)}
-                aria-label={`Tilkynna athugasemd frá ${c.author_name}`}
-                title="Tilkynna"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+            <div className={styles.commentActs} hidden={editingId === c.id}>
+              {canEditComment(c) && (
+                <button
+                  type="button"
+                  className={styles.commentAct}
+                  onClick={() => startEdit(c)}
+                  aria-label="Breyta athugasemdinni þinni"
+                  title="Breyta"
                 >
-                  <path d="M6 21V4" />
-                  <path d="M6 4.5h12l-2.8 4.2L18 13H6z" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                className={styles.commentAct}
-                onClick={() => onRemoveComment(c)}
-                aria-label={`Fjarlægja athugasemd frá ${c.author_name}`}
-                title="Fjarlægja"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+                  </svg>
+                </button>
+              )}
+              {!canEditComment(c) && (
+                <button
+                  type="button"
+                  className={styles.commentAct}
+                  onClick={() => onReportComment(c)}
+                  aria-label={`Tilkynna athugasemd frá ${c.author_name}`}
+                  title="Tilkynna"
                 >
-                  <path d="M4 7h16" />
-                  <path d="M10 11v6M14 11v6" />
-                  <path d="M6 7l1 13h10l1-13" />
-                  <path d="M9 7V4h6v3" />
-                </svg>
-              </button>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 21V4" />
+                    <path d="M6 4.5h12l-2.8 4.2L18 13H6z" />
+                  </svg>
+                </button>
+              )}
+              {canRemoveComment(c) && (
+                <button
+                  type="button"
+                  className={styles.commentAct}
+                  onClick={() => onRemoveComment(c)}
+                  aria-label={`Fjarlægja athugasemd frá ${c.author_name}`}
+                  title="Fjarlægja"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 7h16" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M6 7l1 13h10l1-13" />
+                    <path d="M9 7V4h6v3" />
+                  </svg>
+                </button>
+              )}
             </div>
           </article>
         ))}

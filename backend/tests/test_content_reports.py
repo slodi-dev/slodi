@@ -247,6 +247,43 @@ async def test_reporting_an_item_does_not_block_reporting_a_comment_under_it(db)
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_the_detail_pane_shows_which_comment_was_reported(db):
+    """Listed among the item's reports without its words, a comment report
+    reads as a complaint about the item."""
+    from app.services.moderation import ModerationService
+
+    user, task = await _content(db)
+    comment = m.Comment(
+        body="Þetta á ekki heima hér",
+        user_id=user.id,
+        content_id=task.id,
+        created_at=get_current_datetime(),
+    )
+    db.add(comment)
+    await db.flush()
+    for comment_id, reason in ((None, ReportReason.spam), (comment.id, ReportReason.unsafe)):
+        db.add(
+            m.ContentReport(
+                content_id=task.id,
+                comment_id=comment_id,
+                reporter_id=user.id,
+                reason=reason,
+                status=ReportStatus.open,
+                created_at=get_current_datetime(),
+            )
+        )
+    await db.flush()
+
+    detail = await ModerationService(db).detail(task.id)
+
+    by_comment = {r.comment_id: r for r in detail.reports}
+    assert by_comment[comment.id].comment_body == "Þetta á ekki heima hér"
+    assert by_comment[comment.id].comment_author_name == "Foringi"
+    assert by_comment[None].comment_body is None
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_a_closed_report_must_say_when_it_was_closed(db):
     user, task = await _content(db)
     db.add(
@@ -419,6 +456,20 @@ def test_a_comment_can_be_reported(member_client, viewer_user):
     # The item is recorded too, so the board can name it without a second join.
     assert report.await_args.args[0] == content_id
     assert report.await_args.kwargs["comment_id"] == comment_id
+
+
+@pytest.mark.parametrize("reason", ["duplicate", "wrong_type"])
+def test_a_comment_cannot_be_reported_for_an_item_only_reason(member_client, reason):
+    """`duplicate` and `wrong_type` describe an item in the bank, not a comment.
+
+    Refused before anything is looked up, so the answer says nothing about
+    whether the comment exists.
+    """
+    with patch("app.services.comments.CommentService.get_model", new_callable=AsyncMock) as get_c:
+        response = member_client.post(f"/comments/{uuid4()}/reports", json={"reason": reason})
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    get_c.assert_not_awaited()
 
 
 def test_reporting_a_comment_you_cannot_reach_is_hidden(member_client):

@@ -123,6 +123,12 @@ class ReportSummary(BaseModel):
     reason: ReportReason
     note: str | None = None
     created_at: dt.datetime
+    #: Set when the objection is to a comment under the item, not the item.
+    #: Carries the words, as the queue does: listed among the item's reports
+    #: without them, a comment report reads as a complaint about the item.
+    comment_id: UUID | None = None
+    comment_body: str | None = None
+    comment_author_name: str | None = None
 
 
 class ReviewCommentCreate(BaseModel):

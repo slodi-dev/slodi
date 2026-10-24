@@ -13,6 +13,7 @@ from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
 from app.domain.enums import Permissions
 from app.schemas.content_report import (
+    CommentReportCreate,
     ContentReportCreate,
     ContentReportOut,
     ContentReportResolve,
@@ -64,7 +65,7 @@ async def report_content(
 async def report_comment(
     session: SessionDep,
     comment_id: UUID,
-    body: ContentReportCreate,
+    body: CommentReportCreate,
     background_tasks: BackgroundTasks,
     current_user: UserOut = Depends(get_current_user),
     _: None = Depends(user_rate_limit(20, 60)),

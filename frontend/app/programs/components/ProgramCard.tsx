@@ -46,6 +46,7 @@ export interface ProgramCardProps {
   tags?: Array<{ id: string; name: string }>;
   like_count?: number;
   liked_by_me?: boolean;
+  comment_count?: number;
   className?: string;
   /** Show an edit option in the card action menu. */
   canEdit?: boolean;
@@ -94,6 +95,7 @@ export default function ProgramCard({
   tags = [],
   like_count,
   liked_by_me,
+  comment_count = 0,
   className,
   canEdit,
   canDelete,
@@ -441,6 +443,26 @@ export default function ProgramCard({
           </svg>
           <span className={styles.likeCount}>{formatIcelandicNumber(likeCount)}</span>
         </button>
+
+        {/* Comment count — a way in to the thread, not just a number */}
+        <Link
+          href={`/programs/${id}#ef-athugasemdir`}
+          className={`${styles.actionButton} ${styles.commentLink}`}
+          aria-label={`${countIs(comment_count, "athugasemd", "athugasemdir")} við ${name}`}
+        >
+          <svg
+            className={styles.actionIcon}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
+          </svg>
+          <span className={styles.likeCount}>{formatIcelandicNumber(comment_count)}</span>
+        </Link>
 
         {/* Favorite button (hidden behind FAVOURITES_ENABLED, UX-01) */}
         {showFavourite && (
