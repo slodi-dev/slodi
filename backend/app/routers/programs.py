@@ -426,7 +426,10 @@ async def get_content(
 
     assert_hidden_item_readable(item, current_user)
 
-    response.headers["Cache-Control"] = "private, max-age=60"
+    # no-cache, not max-age: the browser cannot be told to drop a copy it is
+    # allowed to keep, so a comment, like or edit vanished on the next load and
+    # came back a minute later.
+    response.headers["Cache-Control"] = "private, no-cache"
     return apply_review_visibility(item, current_user)
 
 
@@ -453,7 +456,8 @@ async def get_program(
     )
     assert_hidden_item_readable(program, current_user)
 
-    response.headers["Cache-Control"] = "private, max-age=60"
+    # Same reason as `get_content`.
+    response.headers["Cache-Control"] = "private, no-cache"
     return apply_review_visibility(program, current_user)
 
 
