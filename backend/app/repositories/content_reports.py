@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 from uuid import UUID
 
 from sqlalchemy import select
@@ -47,7 +48,7 @@ class ContentReportRepository(Repository):
 
     async def list_open_with_content(
         self, limit: int, offset: int
-    ) -> list[tuple[ContentReport, str, str, str | None, str | None]]:
+    ) -> list[tuple[ContentReport, str, str, str | None, str | None, dt.datetime | None]]:
         """Open reports, each with what it is about.
 
         The comment is an **outer** join: most reports are about the item, and
@@ -56,7 +57,14 @@ class ContentReportRepository(Repository):
         unsafe_first = (ContentReport.reason == ReportReason.unsafe).desc()
         commenter = aliased(User)
         stmt = (
-            select(ContentReport, Content.name, User.name, Comment.body, commenter.name)
+            select(
+                ContentReport,
+                Content.name,
+                User.name,
+                Comment.body,
+                commenter.name,
+                Comment.created_at,
+            )
             .join(Content, Content.id == ContentReport.content_id)
             .join(User, User.id == Content.author_id)
             .outerjoin(Comment, Comment.id == ContentReport.comment_id)

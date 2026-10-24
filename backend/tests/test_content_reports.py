@@ -247,9 +247,14 @@ async def test_reporting_an_item_does_not_block_reporting_a_comment_under_it(db)
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_the_detail_pane_shows_which_comment_was_reported(db):
-    """Listed among the item's reports without its words, a comment report
-    reads as a complaint about the item."""
+async def test_a_comment_report_is_judged_apart_from_the_item(db):
+    """Moderating a comment is not moderating the item it hangs under.
+
+    The item's detail lists only its own reports; a comment report goes to the
+    board with the comment's words, author and date, so it can be judged on its
+    own pane rather than read as a complaint about the item.
+    """
+    from app.services.content_reports import ContentReportService
     from app.services.moderation import ModerationService
 
     user, task = await _content(db)
@@ -275,11 +280,13 @@ async def test_the_detail_pane_shows_which_comment_was_reported(db):
     await db.flush()
 
     detail = await ModerationService(db).detail(task.id)
+    assert [r.reason for r in detail.reports] == ["spam"]
 
-    by_comment = {r.comment_id: r for r in detail.reports}
-    assert by_comment[comment.id].comment_body == "Þetta á ekki heima hér"
-    assert by_comment[comment.id].comment_author_name == "Foringi"
-    assert by_comment[None].comment_body is None
+    queue = await ContentReportService(db).list_open(limit=10, offset=0)
+    on_comment = next(r for r in queue if r.comment_id == comment.id)
+    assert on_comment.comment_body == "Þetta á ekki heima hér"
+    assert on_comment.comment_author_name == "Foringi"
+    assert on_comment.comment_created_at == comment.created_at
 
 
 @pytest.mark.integration

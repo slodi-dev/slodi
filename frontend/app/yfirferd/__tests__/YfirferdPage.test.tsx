@@ -9,7 +9,13 @@ const fetchOpenReports = vi.fn();
 const addReviewComment = vi.fn();
 const reviewContent = vi.fn();
 const setContentHidden = vi.fn();
+const resolveReport = vi.fn();
+const deleteComment = vi.fn();
 const replace = vi.fn();
+
+vi.mock("@/services/comments.service", () => ({
+  deleteComment: (...a: unknown[]) => deleteComment(...a),
+}));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 
@@ -21,7 +27,7 @@ vi.mock("@/services/moderation.service", async (importOriginal) => ({
   addReviewComment: (...a: unknown[]) => addReviewComment(...a),
   reviewContent: (...a: unknown[]) => reviewContent(...a),
   setContentHidden: (...a: unknown[]) => setContentHidden(...a),
-  resolveReport: vi.fn(),
+  resolveReport: (...a: unknown[]) => resolveReport(...a),
   fetchAuthorStrikes: vi.fn(),
 }));
 
@@ -97,6 +103,8 @@ beforeEach(() => {
   reviewContent.mockResolvedValue(item({ review_state: "approved" }));
   setContentHidden.mockResolvedValue(item({ hidden_at: "2026-09-02T10:00:00Z" }));
   addReviewComment.mockResolvedValue({ id: "n1" });
+  resolveReport.mockResolvedValue({ id: "r9" });
+  deleteComment.mockResolvedValue(undefined);
 });
 
 describe("who can open the board", () => {
@@ -128,34 +136,54 @@ describe("the rail and the pane", () => {
     await waitFor(() => expect(pane().getByText(/Of hættulegt/)).toBeInTheDocument());
   });
 
-  it("names a reported comment, and shows its words, rather than the item", async () => {
-    // Titled with the item, a comment report read as a complaint about the item.
-    fetchOpenReports.mockResolvedValue({
-      items: [
-        {
-          id: "r9",
-          content_id: "c1",
-          comment_id: "k1",
-          reporter_id: "u2",
-          reason: "inappropriate",
-          note: null,
-          status: "open",
-          created_at: "2026-09-01T10:00:00Z",
-          content_name: "Kveikjuleikur",
-          content_author_name: "Foringi",
-          comment_body: "Þú ert asni",
-          comment_author_name: "Aron",
-        },
-      ],
-      total: 1,
-    });
+  const commentReport = {
+    id: "r9",
+    content_id: "c1",
+    comment_id: "k1",
+    reporter_id: "u2",
+    reason: "inappropriate",
+    note: null,
+    status: "open",
+    created_at: "2026-09-01T10:00:00Z",
+    content_name: "Kveikjuleikur",
+    content_author_name: "Foringi",
+    comment_body: "Þú ert asni",
+    comment_author_name: "Aron",
+    comment_created_at: "2026-08-31T10:00:00Z",
+  };
+
+  it("judges a reported comment as a comment, not as the item", async () => {
+    // Moderating a comment is not moderating the item it hangs under.
+    fetchOpenReports.mockResolvedValue({ items: [commentReport], total: 1 });
     render(<YfirferdPage />);
     await userEvent.click(await screen.findByRole("tab", { name: /Tilkynningar/ }));
 
     expect(await screen.findByText("Athugasemd frá Aron")).toBeInTheDocument();
+    expect(pane().getByText("Tilkynnt athugasemd")).toBeInTheDocument();
+    expect(pane().getByText("Þú ert asni")).toBeInTheDocument();
     // The comment's own wording for the reason, not "Á ekki heima í bankanum".
-    expect(screen.getAllByText(/Dónalegt eða særandi/).length).toBeGreaterThan(0);
-    expect(await screen.findByText("Þú ert asni")).toBeInTheDocument();
+    expect(pane().getByText("Dónalegt eða særandi")).toBeInTheDocument();
+    // No content decisions on a comment.
+    expect(pane().queryByRole("button", { name: /Samþykkja/ })).not.toBeInTheDocument();
+  });
+
+  it("takes the comment down and closes the report in one step", async () => {
+    fetchOpenReports.mockResolvedValue({ items: [commentReport], total: 1 });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<YfirferdPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: /Tilkynningar/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Fjarlægja athugasemd" }));
+
+    await waitFor(() => expect(deleteComment).toHaveBeenCalledWith("k1", expect.anything()));
+    expect(resolveReport).toHaveBeenCalledWith(
+      "r9",
+      "resolved",
+      "Athugasemd fjarlægð",
+      expect.anything()
+    );
+    expect(
+      await screen.findByText("Athugasemd fjarlægð og tilkynning afgreidd.")
+    ).toBeInTheDocument();
   });
 
   it("shows the full text, not the two truncated lines a rail can afford", async () => {

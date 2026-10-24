@@ -53,16 +53,7 @@ export type ReviewDetail = ReviewQueueItem & {
   image: string | null;
   tags: string[];
   workspace_id: string;
-  reports: {
-    id: string;
-    reason: ReportReason;
-    note: string | null;
-    created_at: string;
-    /** Set, with the comment's words, when the objection is to a comment. */
-    comment_id?: string | null;
-    comment_body?: string | null;
-    comment_author_name?: string | null;
-  }[];
+  reports: { id: string; reason: ReportReason; note: string | null; created_at: string }[];
   /** The team's own notes. Named `review_comments`, not `comments`: content
    * already has public comments between leaders, and these are not those. */
   review_comments: ReviewComment[];
@@ -177,6 +168,7 @@ export type ReportQueueItem = ContentReport & {
   /** Set when the report is about a comment: the board shows its words. */
   comment_body?: string | null;
   comment_author_name?: string | null;
+  comment_created_at?: string | null;
 };
 
 export async function fetchOpenReports(

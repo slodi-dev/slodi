@@ -64,27 +64,18 @@ class ModerationService:
         if row is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
         content, reviewer = row
-        open_reports = [r for r in content.reports if r.status == ReportStatus.open]
-        texts = await self.repo.comment_texts(
-            [r.comment_id for r in open_reports if r.comment_id is not None]
-        )
         return ReviewDetail.model_validate(content).model_copy(
             update={
                 "reviewed_by_name": reviewer,
                 # `tags` is handled by ReviewDetail's own validator — correcting
                 # it here was too late, because validation had already raised.
+                # The item's own objections. A report on a comment under it is
+                # judged on its own pane in Yfirferð — moderating a comment is
+                # not moderating the item.
                 "reports": [
-                    ReportSummary.model_validate(r).model_copy(
-                        update=(
-                            {
-                                "comment_body": texts[r.comment_id][0],
-                                "comment_author_name": texts[r.comment_id][1],
-                            }
-                            if r.comment_id in texts
-                            else {}
-                        )
-                    )
-                    for r in open_reports
+                    ReportSummary.model_validate(r)
+                    for r in content.reports
+                    if r.status == ReportStatus.open and r.comment_id is None
                 ],
                 "review_comments": await self.comments(content_id),
                 "documents": _documents_from(content.media),

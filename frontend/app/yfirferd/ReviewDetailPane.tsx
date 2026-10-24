@@ -12,7 +12,7 @@ import {
   type ReviewCommentVisibility,
   type ReviewDetail,
 } from "@/services/moderation.service";
-import { reportReasonLabel } from "@/services/reports.service";
+import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import styles from "./yfirferd.module.css";
 import { cn } from "@/lib/util";
 import { countIs, formatIcelandicDate } from "@/lib/format";
@@ -162,18 +162,9 @@ export default function ReviewDetailPane({
             {reports.map((r) => (
               <li key={r.id}>
                 <span className={r.reason === "unsafe" ? styles.reasonUrgent : styles.reason}>
-                  {reportReasonLabel(r)}
+                  {REPORT_REASON_LABEL[r.reason]}
                 </span>{" "}
                 {r.note ? `„${r.note}“` : <em>engin skýring gefin</em>}
-                {/* A comment report is about these words, not about the item. */}
-                {r.comment_id && (
-                  <blockquote className={styles.reportedComment}>
-                    <span className={styles.reportedCommentWho}>
-                      Athugasemd frá {r.comment_author_name ?? "óþekktum"}
-                    </span>
-                    {r.comment_body ?? <em>athugasemdin hefur verið fjarlægð</em>}
-                  </blockquote>
-                )}
               </li>
             ))}
           </ul>

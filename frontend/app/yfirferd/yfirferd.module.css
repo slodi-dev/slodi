@@ -777,32 +777,21 @@
 .reason {
   font-weight: var(--sl-font-weight-emphasis);
 }
-/* The words a comment report is about, set apart from the reporter's note. */
-.reportedComment {
-  margin: 6px 0 4px;
-  padding: 6px 10px;
-  border-left: 3px solid hsl(var(--sl-color-warning) / 0.6);
-  background: hsl(var(--sl-color-surface));
+.reasonUrgent {
+  color: hsl(var(--sl-color-error-text));
+}
+/* The reported comment's own words — the thing being judged. */
+.commentQuote {
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  border-left: 3px solid hsl(var(--sl-color-border));
   border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-background-secondary));
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
   color: hsl(var(--sl-color-text-primary));
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-/* In the report actions row it takes a line of its own above the buttons. */
-.reportedCommentWide {
-  flex-basis: 100%;
-  margin: 0;
-  border-left-color: hsl(var(--sl-color-border));
-  background: hsl(var(--sl-color-background-secondary));
-}
-.reportedCommentWho {
-  display: block;
-  font-size: var(--sl-text-caption);
-  font-weight: var(--sl-font-weight-emphasis);
-  color: hsl(var(--sl-color-text-secondary));
-}
-.reasonUrgent {
-  color: hsl(var(--sl-color-error-text));
 }
 .reviewNote {
   margin: 0;

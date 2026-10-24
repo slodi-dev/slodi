@@ -23,6 +23,8 @@ import {
   setContentHidden,
 } from "@/services/moderation.service";
 import { reportReasonLabel } from "@/services/reports.service";
+import { deleteComment } from "@/services/comments.service";
+import CommentReportPane from "./CommentReportPane";
 import ReviewDetailPane from "./ReviewDetailPane";
 import QueueProgress from "./QueueProgress";
 import QueueEmpty from "./QueueEmpty";
@@ -150,10 +152,17 @@ export default function YfirferdPage() {
   // on the new last row, not jump to the top of a fifty-item sweep.
   const index = Math.min(cursor, Math.max(rows.length - 1, 0));
   const active = rows[index];
+  // A comment report is judged on its own pane, so it loads no item.
+  const activeCommentReport =
+    tab === "reports" && (active as ReportQueueItem | undefined)?.comment_id
+      ? (active as ReportQueueItem)
+      : null;
   const cursorContentId =
     tab === "content"
       ? (active as ReviewQueueItem | undefined)?.id
-      : (active as ReportQueueItem | undefined)?.content_id;
+      : activeCommentReport
+        ? undefined
+        : (active as ReportQueueItem | undefined)?.content_id;
   const activeContentId = linkedId ?? cursorContentId;
 
   useEffect(() => {
@@ -342,6 +351,35 @@ export default function YfirferdPage() {
       }
     },
     [getToken]
+  );
+
+  /* Takes the comment down and closes the report in one step. Removing is a
+     soft delete, so the report would otherwise stay open on a comment nobody
+     can see. Every loaded report on the same comment closes with it — three
+     people flagging one remark is one decision, not three. */
+  const removeReportedComment = useCallback(
+    async (report: ReportQueueItem) => {
+      if (!report.comment_id) return;
+      if (!window.confirm("Fjarlægja athugasemdina? Það er ekki hægt að afturkalla það héðan.")) {
+        return;
+      }
+      setBusyId(report.id);
+      try {
+        await deleteComment(report.comment_id, getToken);
+        const same = reports.filter((r) => r.comment_id === report.comment_id);
+        await Promise.all(
+          same.map((r) => resolveReport(r.id, "resolved", "Athugasemd fjarlægð", getToken))
+        );
+        const closed = new Set(same.map((r) => r.id));
+        setReports((rs) => rs.filter((x) => !closed.has(x.id)));
+        setAnnouncement("Athugasemd fjarlægð og tilkynning afgreidd.");
+      } catch {
+        setAnnouncement("Ekki tókst að fjarlægja athugasemdina.");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [getToken, reports]
   );
 
   const onKeyDown = useCallback(
@@ -680,39 +718,37 @@ export default function YfirferdPage() {
         </div>
 
         <div className={styles.detailPane}>
-          <ReviewDetailPane
-            detail={detail}
-            loading={detailLoading}
-            failed={detailError}
-            busy={busyId !== null}
-            onComment={comment}
-            shareUrl={
-              activeContentId && typeof window !== "undefined"
-                ? `${window.location.origin}${window.location.pathname}?efni=${activeContentId}`
-                : null
-            }
-            onAct={(action) => {
-              if (!detail) return;
-              void act(detail as ReviewQueueItem, action);
-            }}
-          />
-          {tab === "reports" && active && (
+          {activeCommentReport ? (
+            <CommentReportPane
+              report={activeCommentReport}
+              busy={busyId !== null}
+              onRemove={() => void removeReportedComment(activeCommentReport)}
+              onDismiss={() => void closeReport(activeCommentReport, "dismissed")}
+            />
+          ) : (
+            <ReviewDetailPane
+              detail={detail}
+              loading={detailLoading}
+              failed={detailError}
+              busy={busyId !== null}
+              onComment={comment}
+              shareUrl={
+                activeContentId && typeof window !== "undefined"
+                  ? `${window.location.origin}${window.location.pathname}?efni=${activeContentId}`
+                  : null
+              }
+              onAct={(action) => {
+                if (!detail) return;
+                void act(detail as ReviewQueueItem, action);
+              }}
+            />
+          )}
+          {tab === "reports" && active && !activeCommentReport && (
             <div className={styles.reportActions}>
               {/* Labelled, because two unlabelled action rows leave a reviewer
                   guessing which one closes the report and which one judges the
                   content. They are different decisions. */}
               <span className={styles.actionsLabel}>Tilkynningin</span>
-              {(active as ReportQueueItem).comment_id && (
-                <blockquote className={cn(styles.reportedComment, styles.reportedCommentWide)}>
-                  <span className={styles.reportedCommentWho}>
-                    Athugasemd frá {(active as ReportQueueItem).comment_author_name ?? "óþekktum"} ·{" "}
-                    {reportReasonLabel(active as ReportQueueItem)}
-                  </span>
-                  {(active as ReportQueueItem).comment_body ?? (
-                    <em>athugasemdin hefur verið fjarlægð</em>
-                  )}
-                </blockquote>
-              )}
               <button
                 className={cn(styles.btn, styles.btnPrimary)}
                 disabled={busyId !== null}
