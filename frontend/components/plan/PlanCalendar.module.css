@@ -14,6 +14,10 @@
 
 .root {
   container: plancal / inline-size;
+  /* Inline-size containment means the box can't take its width from its content.
+     Inside PlanShell's flex column, `margin: auto` stops it stretching, so without
+     an explicit width it collapses to 0. */
+  width: 100%;
   max-width: 1080px;
   margin: 0 auto;
   font-family: var(--sl-font-family-body);
