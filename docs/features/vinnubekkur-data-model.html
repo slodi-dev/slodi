@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinnubekkurinn — gagnalíkanið sem þarf</title>
+<style>
+  :root { --ink:#1f2933; --muted:#52606d; --line:#d9e2ec; --soft:#f5f7fa;
+          --have:#e3f5e8; --have-b:#2f8f4e; --part:#fff4d6; --part-b:#b7791f;
+          --miss:#fde8e8; --miss-b:#c53030; --local:#eef1f5; --local-b:#7b8794; }
+  body { font-family: system-ui, sans-serif; color: var(--ink); margin: 2rem auto; max-width: 1280px; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.5rem; margin-bottom: .2rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.5rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+  p.lede, .muted { color: var(--muted); }
+  code { background: var(--soft); padding: 0 .3em; border-radius: 3px; font-size: .92em; }
+  .diagram { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; padding: 1rem; background: #fff; }
+  .legend { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: .75rem 0; font-size: .92rem; }
+  .legend span::before { content: ""; display: inline-block; width: .9em; height: .9em; margin-right: .4em; vertical-align: -.1em; border-radius: 2px; border: 2px solid; }
+  .l-have::before { background: var(--have); border-color: var(--have-b) !important; }
+  .l-part::before { background: var(--part); border-color: var(--part-b) !important; }
+  .l-miss::before { background: var(--miss); border-color: var(--miss-b) !important; }
+  .l-local::before { background: var(--local); border-color: var(--local-b) !important; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; margin-top: .75rem; }
+  th, td { border: 1px solid var(--line); padding: .4rem .55rem; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  td.s { white-space: nowrap; font-weight: 600; }
+  .have { color: var(--have-b); } .part { color: var(--part-b); } .miss { color: var(--miss-b); } .local { color: var(--local-b); }
+  ol li, ul li { margin-bottom: .35rem; }
+  .meta { font-size: .85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Vinnubekkurinn: the data model it needs</h1>
+<p class="lede">A proposal: the smallest set of tables and fields that would let Season, the Rist, the Dagatal, the Bekkur and the bank rail run on real data. It starts from the backend on <code>origin/main</code>. A liður is a <strong>Task</strong>: Content is already a Program, an Event or a Task, and a Program holds Events and Tasks while an Event holds Tasks. So the bench needs new fields on Task rather than a new table. This is the follow-up to <a href="vinnubekkur-backend-gaps.html">vinnubekkur-backend-gaps.html</a>.</p>
+<p class="meta">Sources: <code>frontend/services/plan.service.ts</code> and <code>components/plan/bench/benchState.ts</code> on <code>feature/sc-426-vinnubekkur-storybook</code>; <code>docs/frontend/plan-api-contract.md</code> on <code>release/vinnubekkur-v1</code>; <code>backend/app/models/*</code> and <code>repositories/moderation.py</code> on <code>origin/main</code>. Written 14. nóvember 2026. Draft for discussion.</p>
+
+<h2>1. Class diagram</h2>
+<div class="legend">
+  <span class="l-have">Exists, no change</span>
+  <span class="l-part">Exists, fields change (✚ added, ✖ moved out)</span>
+  <span class="l-miss">New table or enum</span>
+  <span class="l-local">Computed when read, never stored</span>
+</div>
+<div class="diagram">
+<pre class="mermaid">
+classDiagram
+    direction TB
+
+    class Workspace {
+        id: UUID
+        name: str
+        group_id: UUID null, parked
+        settings: json null
+        ✖ season_start
+        ✖ default_meeting_weekday
+        ✖ default_start_time
+        ✖ default_end_time
+        ✖ default_interval
+    }
+
+
+    class Season {
+        id: UUID
+        workspace_id: UUID
+        unit_id: UUID
+        name: str
+        starts_on: date null
+        ends_on: date null
+        meeting_weekday: Weekday null
+        meeting_start_time: time null
+        meeting_end_time: time null
+        meeting_interval: EventInterval null
+        created_at: datetime
+        deleted_at: datetime null
+    }
+
+
+    class Unit {
+        id: UUID
+        unit_type: UnitType
+        workspace_id: UUID
+        name: str
+        position: int
+        color: hex str null
+        created_at: datetime
+        deleted_at: datetime null
+    }
+
+    class Division {
+        deild
+        id: UUID
+        is_default: bool
+    }
+
+    class Troop {
+        sveit
+        id: UUID
+        ✚ division_id: UUID
+        ✖ workspace_id moves to Unit
+        ✖ name moves to Unit
+    }
+
+    class Patrol {
+        flokkur
+        id: UUID
+        troop_id: UUID
+    }
+
+    class UnitParticipation {
+        unit_id: UUID
+        content_id: UUID
+        ✖ was troop_participation
+    }
+
+    class ContentType {
+        &lt;&lt;enumeration&gt;&gt;
+        program
+        event
+        task
+    }
+
+    class UnitType {
+        &lt;&lt;enumeration&gt;&gt;
+        division
+        troop
+        patrol
+    }
+
+
+    class Content {
+        id: UUID
+        content_type: ContentType
+        workspace_id: UUID
+        name: str
+        equipment: list str
+        duration_min: int
+        location: str
+        review_state: ReviewState
+        hidden_at: datetime null
+        ✚ copied_from_id: UUID null
+    }
+
+    class Program {
+        ✚ season_id: UUID null
+    }
+
+    class Event {
+        start_dt: datetime null
+        end_dt: datetime null
+        program_id: UUID null
+        ✚ season_id: UUID null
+        ✚ week_index: int null
+        ✚ span_weeks: int
+        ✚ planned_minutes: int null
+        ✚ theme: str null
+    }
+
+    class Task {
+        event_id: UUID null
+        ✚ program_id: UUID null
+        ✚ start_time: time null
+        ✚ theme: str null
+    }
+
+    class Tag {
+        id: UUID
+        name: str
+        deleted_at: datetime null
+    }
+
+    class ContentTag {
+        content_id: UUID
+        tag_id: UUID
+    }
+
+
+    class Comment {
+        id: UUID
+        content_id: UUID
+        user_id: UUID
+        body: str
+        created_at: datetime
+        deleted_at: datetime null
+    }
+
+
+    class PlanGridView {
+        season_id
+        patrols = Patrol units under Season.unit by position
+        weeks = from Season dates
+        scope = troop_wide if a troop or division takes part, per_patrol if a patrol does
+        bands = Event with troop_wide scope
+        cells = Event + its patrol participant
+        actual_minutes = sum Task.duration_min
+        item_count = count Task
+        needs = Task.equipment
+        segments = Task minutes by tag
+    }
+
+    class BankBlockView {
+        Content fields
+        folder = workspace · bank · merki
+        times_used = count Content by copied_from_id
+    }
+
+
+    Workspace "1" --> "*" Season
+    Workspace "1" --> "*" Unit
+    Unit <|-- Division
+    Unit <|-- Troop
+    Unit <|-- Patrol
+    Division "1" --> "*" Troop : deild holds sveitir
+    Troop "1" --> "1..*" Patrol : sveit holds flokkar
+    Unit ..> UnitType
+    Content ..> ContentType
+    Unit "1" --> "*" Season : starfsár
+    Workspace "1" --> "*" Content
+    Season "0..1" --> "*" Program
+    Season "0..1" --> "*" Event
+    Content <|-- Program
+    Content <|-- Event
+    Content <|-- Task
+    Content "0..1" <-- "*" Content : copied_from
+    Program "0..1" --> "*" Event : holds
+    Program "0..1" --> "*" Task : holds directly
+    Event "1" --> "*" Task : fundur holds liðir
+    Content "1" --> "*" UnitParticipation : who it is for
+    Unit "1" --> "*" UnitParticipation
+    Content "1" --> "*" ContentTag
+    Tag "1" --> "*" ContentTag
+    Content "1" --> "*" Comment : endurmat on a Task
+
+    PlanGridView ..> Season : reads
+    PlanGridView ..> Event : reads
+    BankBlockView ..> Content : reads
+
+    style Workspace fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Unit fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style UnitType fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style ContentType fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style Division fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style Troop fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Patrol fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style UnitParticipation fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Content fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Program fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Event fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Task fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Season fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style Tag fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style ContentTag fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style Comment fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style PlanGridView fill:#eef1f5,stroke:#7b8794,color:#1f2933,stroke-dasharray:4 3
+    style BankBlockView fill:#eef1f5,stroke:#7b8794,color:#1f2933,stroke-dasharray:4 3
+</pre>
+</div>
+
+<h2>2. A liður on the bench, as a Task</h2>
+<table>
+<thead><tr><th>Liður field (frontend)</th><th>Task column</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td><code>Content.name</code></td><td class="s have">Exists</td></tr>
+<tr><td><code>minutes</code></td><td><code>Content.duration_min</code></td><td class="s have">Exists</td></tr>
+<tr><td><code>venue</code></td><td><code>Content.location</code></td><td class="s have">Exists</td></tr>
+<tr><td>which fundur</td><td><code>Task.event_id</code></td><td class="s have">Exists</td></tr>
+<tr><td><code>kind</code>, and which part of the fundur</td><td>Ordinary tags through <code>ContentTag</code>: <strong>Setning</strong>, <strong>Verkefni</strong>, <strong>Slit</strong>, <em>Leikur</em> or anything else. A block copied from the bank brings its tags with it.</td><td class="s have">Exists</td></tr>
+<tr><td><code>theme</code></td><td>✚ <code>Task.theme</code></td><td class="s part">New field</td></tr>
+<tr><td>when it starts, and so the order in the fundur</td><td>✚ <code>Task.start_time</code>: the clock time, e.g. 18:10. The date comes from the fundur. The end is <code>start_time + duration_min</code>.</td><td class="s part">New field</td></tr>
+<tr><td>a liður for one flokkur only</td><td>A <code>UnitParticipation</code> row on the Task pointing at that patrol. With none, the liður is for everyone at the fundur.</td><td class="s part">Via participation</td></tr>
+<tr><td>pulled from the bank</td><td>✚ <code>Content.copied_from_id</code></td><td class="s part">New field</td></tr>
+<tr><td>a task in a program, not in a fundur</td><td>✚ <code>Task.program_id</code></td><td class="s part">New field</td></tr>
+<tr><td><code>endurmat</code></td><td>A <code>Comment</code> on the Task. The bench shows the newest comments from an earlier Task with the same <code>copied_from_id</code>.</td><td class="s have">Exists</td></tr>
+</tbody>
+</table>
+<p class="muted">The bench intents then map onto existing routes: <code>add</code> and <code>duplicate</code> go to <code>POST /events/{id}/tasks</code>; <code>patch</code>, <code>duration</code> and <code>moveToFundur</code> to <code>PATCH /tasks/{id}</code>; <code>remove</code> to <code>DELETE /tasks/{id}</code>. Tagging goes through the existing <code>PUT</code> and <code>DELETE /content/{id}/tags/{tag_id}</code>. Moving a liður (<code>move</code>) changes the start times of the liðir after it, so it either becomes several <code>PATCH</code> calls or one new route that shifts them in one transaction. The band and lane intents (<code>splitBand</code>, <code>mergeBand</code>, <code>lane*</code>) go away once the bench becomes a single column, and so does <code>status</code>.</p>
+
+<h2>3. Everything else that changes</h2>
+<table>
+<thead><tr><th>Table</th><th>Change</th><th>Why the frontend needs it</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>Season</code></td><td>New. No <code>kind</code> and no scratchpad type: a leader makes a season and names it whatever they like. A season with neither <code>starts_on</code> nor <code>ends_on</code> is what the frontend calls a krassblað, and that is all a krassblað is. It owns the meeting schedule: <code>meeting_weekday</code>, <code>meeting_start_time</code>, <code>meeting_end_time</code>, <code>meeting_interval</code>.</td><td>Every view hangs off the selected season. A sveit can meet on Tuesdays one starfsár and Thursdays the next, so the schedule belongs to the season, not the workspace.</td><td class="s miss">New</td></tr>
+<tr><td><code>Workspace</code></td><td>✖ <code>season_start</code> becomes <code>Season.starts_on</code>. ✖ <code>default_meeting_weekday</code>, <code>default_start_time</code>, <code>default_end_time</code> and <code>default_interval</code> move to Season.</td><td>Nothing on the backend reads them; only the frontend workspace type declares them. The migration creates one Season per workspace from the current values, then drops the columns.</td><td class="s part">Fields move</td></tr>
+<tr><td><code>Unit</code></td><td>New: the generic table for a group of people, the way <code>Content</code> is the generic table for programme. It uses joined-table inheritance, exactly like Content: a <code>units</code> table with the shared fields and <code>unit_type</code> (<code>division</code>, <code>troop</code> or <code>patrol</code>), and one table per subtype sharing its <code>id</code>. <code>position</code> orders siblings and <code>color</code> is a hex value such as <code>#2f8f4e</code>, so a deild, a sveit and a flokkur can all have one. The base has no parent column; nesting lives on the subtypes, the way <code>Event.program_id</code> and <code>Task.event_id</code> do.</td><td>One table means one participation table, one way to say „this season belongs to …“ and one access check, whatever level a group is at. It's called <code>Unit</code> because <code>Group</code> is already the félag.</td><td class="s miss">New</td></tr>
+<tr><td><code>Division</code> (deild)</td><td>New subtype with <code>is_default</code>. No parent.</td><td>A deild holds sveitir. Every workspace gets one default deild with <code>is_default = true</code> that the UI never shows, so a félag without deildir never meets the word.</td><td class="s miss">New</td></tr>
+<tr><td><code>Troop</code> (sveit)</td><td>Becomes a subtype of Unit. ✚ <code>division_id</code>, a foreign key to <code>divisions</code>: the default deild unless the félag uses deildir. ✖ <code>workspace_id</code> and <code>name</code> move up to Unit.</td><td>A sveit holds flokkar. Each existing <code>troops</code> row gets a <code>units</code> row with the same id and <code>unit_type = troop</code>, and its <code>division_id</code> is set to the workspace's default deild.</td><td class="s part">Restructured</td></tr>
+<tr><td><code>Patrol</code> (flokkur)</td><td>New subtype with <code>troop_id</code>, a foreign key to <code>troops</code>. Its colour comes from Unit.</td><td>The Rist's columns, the Dagatal's patrol picker, and a liður meant for one flokkur. A small sveit has a single flokkur, so the Rist shows one column.</td><td class="s miss">New</td></tr>
+<tr><td><code>UnitParticipation</code></td><td>Replaces <code>troop_participation</code>: <code>(unit_id, content_id)</code>, pointing at any Content rather than only an Event.</td><td>Which deildir, sveitir or flokkar a Program, an Event or a Task is for. Existing rows carry over: <code>event_id</code> becomes <code>content_id</code> with the same value, because an event's id is its content id.</td><td class="s part">Renamed</td></tr>
+<tr><td><code>Program</code></td><td>✚ <code>season_id</code>, nullable</td><td>A season optionally groups programs, so today's bank is unaffected</td><td class="s part">Fields</td></tr>
+<tr><td><code>Event</code></td><td>✚ <code>season_id</code>, <code>week_index</code>, <code>span_weeks</code>, <code>planned_minutes</code>, <code>theme</code></td><td>No stored <code>scope</code>: it is read from who takes part, so it can't disagree with the participation. No <code>event_type</code>: what kind of event it is (útilega, mót, flokksfundur…) can be a tag, the same way Setning, Verkefni and Slit are. <code>week_index</code> places an event before it has a date.</td><td class="s part">Fields</td></tr>
+<tr><td><code>Tag</code>, <code>ContentTag</code></td><td>None</td><td>Already link any Content (Program, Event or Task) to its tags. Setning, Verkefni, Slit and event types are ordinary tags.</td><td class="s have">As is</td></tr>
+<tr><td><code>Comment</code></td><td>None</td><td>Endurmat (D2/D3) is a comment on a Task written after the fundur. The existing routes and access checks carry it: <code>POST /content/{id}/comments</code>, readable only by members of the task's workspace.</td><td class="s have">As is</td></tr>
+<tr><td><code>PlanGridView</code>, <code>BankBlockView</code></td><td>Computed in the endpoint, never stored</td><td><code>actual_minutes</code>, <code>item_count</code>, <code>needs</code>, <code>segments</code>, <code>times_used</code></td><td class="s local">Computed</td></tr>
+</tbody>
+</table>
+
+<h2>4. Rules the model has to enforce</h2>
+<ol>
+  <li><strong>Planned tasks stay out of Yfirferð.</strong> The bank lists only the bank workspace's content, so a sveit's tasks never appear there. But the Yfirferð queue (<code>ModerationRepository._apply_filters</code>) reads Content from <em>every</em> workspace. Without a workspace filter, every liður a leader adds would land in front of Dagskrárstjórnarteymið. The queue needs <code>Content.workspace_id = bank workspace</code>, and that change has to ship before or with the bench.</li>
+  <li><strong>A liður dies with its fundur.</strong> <code>Task.event_id</code> is <code>ON DELETE SET NULL</code> today, so deleting a fundur would leave its liðir as loose tasks. Deleting an event in a season should soft-delete its tasks too.</li>
+  <li><strong>A task has one parent.</strong> It has <code>event_id</code>, <code>program_id</code>, or neither (a bank block), never both. A task in an event belongs to the event's program through the event.</li>
+  <li><strong><code>start_time</code> only on a task in a fundur.</strong> A bank block has none, and copying a block into a fundur sets it.</li>
+  <li><strong>Start times fall inside the fundur.</strong> A liður starts no earlier than the event's <code>start_dt</code>, and the bench warns rather than refuses when one runs past <code>end_dt</code>. Gaps between liðir are allowed: a break is just time with nothing in it.</li>
+  <li><strong>Overlap only for different flokkar.</strong> Two liðir may run at the same time when each has a different patrol participant; that is how „each flokkur does its own verkefni“ works without lanes. Overlap otherwise gets a warning.</li>
+  <li><strong>Tags describe, they don't order.</strong> The bench draws liðir in <code>start_time</code> order and colours them by tag. It doesn't force Setning first or Slit last, and a liður with no tag is valid.</li>
+  <li><strong>The schema holds the three levels.</strong> <code>Troop.division_id</code> can only point at a division and <code>Patrol.troop_id</code> only at a troop, so the database itself refuses a flokkur under a deild. The service still checks that a parent is in the same workspace.</li>
+  <li><strong>Every workspace has exactly one default division,</strong> created with the workspace. The UI never shows it. A new sveit goes under it unless the félag has made deildir of its own.</li>
+  <li><strong>A sveit has at least one flokkur.</strong> Creating a sveit creates one flokkur with the sveit's name, so a small sveit is a sveit with a single flokkur. Deleting a sveit's last flokkur is refused.</li>
+  <li><strong>Scope is read, not stored.</strong> If a troop or division takes part, the event is <code>troop_wide</code> and fills the whole row. If a single patrol takes part, it's <code>per_patrol</code> and becomes a cell in that column. A per-patrol event has exactly one patrol participant.</li>
+  <li><strong>Participation narrows down the tree.</strong> A Task's participants must be at its Event, and an Event's at its Program, either directly or through their sveit or deild. With no rows of its own, Content is for whoever its parent is for.</li>
+  <li><strong>A unit colour is a validated hex.</strong> <code>#rrggbb</code> only, checked on write. A unit with no colour uses its parent's: a flokkur falls back to its sveit, a sveit to its deild. If none has one, the frontend picks by column position, as it does today. The bench has to keep text on it readable in both themes, so it picks white or dark text from the colour's lightness rather than trusting the colour to contrast.</li>
+  <li><strong>A unit belongs to one parent.</strong> Moving a flokkur to another sveit makes a new unit, so its history stays where it happened. This also avoids the troop bug where <code>workspace_id</code> can be changed without checking the target.</li>
+  <li><strong>A troop-wide event and a per-patrol cell can't share a week,</strong> unless the team confirms they can, in which case the grid needs an overflow affordance.</li>
+  <li><strong><code>copied_from_id</code> is a copy, not a link.</strong> Editing the task never changes the bank block, and hiding or deleting the block never empties a fundur (<code>ON DELETE SET NULL</code>).</li>
+  <li><strong>A new starfsár inherits the schedule.</strong> Creating a season copies the meeting weekday, times and interval from the workspace's latest season, so nobody types „þriðjudagar 18:00–19:30“ every autumn. A season with no dates leaves them null.</li>
+  <li><strong>The frontend contract drops <code>kind</code>, <code>status</code> and <code>type</code>.</strong> <code>plan-api-contract.md</code> and <code>plan.service.ts</code> still have <code>Season.kind</code>, <code>status: PlanStatus</code> on grid entries and liðir, and <code>type: EventType</code> on grid entries. The frontend should tell a krassblað by its missing dates and read an event's type from its tags. The status chips and the „?“ marker in PlanEntryChip, LidurRow and LidurEditor go away. <code>Patrol.accent</code> (a name mapped to the <code>--sl-color-patrol-*</code> ramps) becomes <code>color</code>, a hex string, and a sveit can carry one too. <code>PlanWeek.note</code> is never sent, so the Rist's ATH column stays empty; it is optional in the contract, so nothing breaks.</li>
+  <li><strong>Endurmat stays in the sveit.</strong> A sveit's endurmat is a comment on its own task, so only its members can read it. Showing it on the bank block it came from, or to other sveitir, would be a separate decision to publish it.</li>
+  <li><strong>Who can edit:</strong> workspace <code>editor</code> or above for Season, Event and Task, the same as programs. Creating, renaming and deleting units needs workspace admin, which would also fix the viewer-can-create bug on troops.</li>
+</ol>
+
+<h2>5. Still to decide</h2>
+<ul>
+  <li><strong>What are today's <code>troops</code> rows?</strong> The migration assumes they are sveitir. If some were entered as flokkar, they have to become patrol units under a sveit instead. Check production before writing it.</li>
+  <li><strong>Whose starfsár is a season?</strong> <code>Season.unit_id</code> can point at a sveit (its flokkar are the Rist's columns) or at a deild, including the hidden default one (every sveit's flokkar). The default deild is what makes a workspace-wide heildardagskrá possible without a nullable column.</li>
+  <li><strong>Season on Event, or only through Program?</strong> A direct <code>Event.season_id</code> keeps the grid query to one join, at the cost of two paths that could disagree.</li>
+  <li><strong>Where <code>theme</code> lives.</strong> It's on both Event and Task. Moving it up to Content would put it on Program too, and on every bank block.</li>
+  <li><strong>The Færnimerki folder</strong> could also be tags, one per merki, instead of a new badge entity. That works if a merki needs nothing beyond its name.</li>
+  <li><strong>Who may change Setning, Verkefni and Slit?</strong> Tags are global, and today any platform <code>member</code> can rename or delete any tag. Deleting „Setning“ would untag it on every fundur in every sveit. That may be acceptable, or tag editing may need to move to admins.</li>
+  <li><strong>Should <code>theme</code> be a tag too?</strong> It's free text on Event and Task today, but if themes repeat (Útilíf, Hreyfing…), tags would make them filterable for free.</li>
+  <li><strong>Saving:</strong> one <code>PUT</code> per fundur (the whole sheet) or one call per intent. Per fundur fits autosave (A3); per intent works better when co-leaders edit at once.</li>
+</ul>
+
+<h2>6. Parked</h2>
+<ul>
+  <li><strong>A group owning a workspace.</strong> <code>Workspace.group_id</code> and the <code>groups</code> table stay as they are on <code>origin/main</code>, but this model doesn't build on them. Later this can become a <strong>GroupUser</strong> that owns a workspace. Until then the bank rail has no Félagið folder, only the workspace's own content and the bank.</li>
+</ul>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: false, theme: "neutral", class: { hideEmptyMembersBox: true } });
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+</body>
+</html>

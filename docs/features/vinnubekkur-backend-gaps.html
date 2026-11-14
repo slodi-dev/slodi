@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinnubekkurinn — aðgerðir og bakendinn</title>
+<style>
+  :root { --ink:#1f2933; --muted:#52606d; --line:#d9e2ec; --soft:#f5f7fa;
+          --have:#e3f5e8; --have-b:#2f8f4e; --part:#fff4d6; --part-b:#b7791f;
+          --miss:#fde8e8; --miss-b:#c53030; --local:#eef1f5; --local-b:#7b8794; }
+  body { font-family: system-ui, sans-serif; color: var(--ink); margin: 2rem auto; max-width: 1240px; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.5rem; margin-bottom: .2rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.5rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+  p.lede, .muted { color: var(--muted); }
+  code { background: var(--soft); padding: 0 .3em; border-radius: 3px; font-size: .92em; }
+  .diagram { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; padding: 1rem; background: #fff; }
+  .legend { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: .75rem 0; font-size: .92rem; }
+  .legend span::before { content: ""; display: inline-block; width: .9em; height: .9em; margin-right: .4em; vertical-align: -.1em; border-radius: 2px; border: 2px solid; }
+  .l-have::before { background: var(--have); border-color: var(--have-b) !important; }
+  .l-part::before { background: var(--part); border-color: var(--part-b) !important; }
+  .l-miss::before { background: var(--miss); border-color: var(--miss-b) !important; }
+  .l-local::before { background: var(--local); border-color: var(--local-b) !important; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; margin-top: .75rem; }
+  th, td { border: 1px solid var(--line); padding: .4rem .55rem; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  td.s { white-space: nowrap; font-weight: 600; }
+  .have { color: var(--have-b); } .part { color: var(--part-b); } .miss { color: var(--miss-b); } .local { color: var(--local-b); }
+  ol li, ul li { margin-bottom: .35rem; }
+  .meta { font-size: .85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Vinnubekkurinn: what the frontend does, and what the backend can do now</h1>
+<p class="lede">Every action in the Vinnubekkur stories, matched against the backend on <code>origin/main</code>. The goal is to find what the frontend wants that the backend doesn't have yet.</p>
+<p class="meta">Frontend: <code>feature/sc-426-vinnubekkur-storybook</code> (<code>frontend/components/plan/**</code>, <code>services/plan.service.ts</code>, <code>hooks/usePlan.ts</code>, <code>components/plan/bench/benchState.ts</code>). Contract: <code>docs/frontend/plan-api-contract.md</code> on <code>release/vinnubekkur-v1</code>. Backend: <code>origin/main</code> routers and models. Written 14. nóvember 2026.</p>
+
+<h2>1. Every action, coloured by backend support</h2>
+<div class="legend">
+  <span class="l-have">Backend has it</span>
+  <span class="l-part">Partial: a related entity or endpoint exists, but fields or behaviour are missing</span>
+  <span class="l-miss">Missing: no endpoint and no model</span>
+  <span class="l-local">Frontend only: needs no backend</span>
+</div>
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  classDef have fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+  classDef part fill:#fff4d6,stroke:#b7791f,color:#1f2933
+  classDef miss fill:#fde8e8,stroke:#c53030,color:#1f2933
+  classDef local fill:#eef1f5,stroke:#7b8794,color:#1f2933
+
+  subgraph SHELL["PlanShell (rammi)"]
+    direction TB
+    S0["Finna vinnusvæði<br/>GET /users/me/workspaces"]:::have
+    S1["Sjá starfsár<br/>GET /workspaces/{id}/seasons"]:::miss
+    S2["Búa til starfsár / krassblað<br/>POST /workspaces/{id}/seasons<br/>(hook til, enginn hnappur)"]:::miss
+    S3["Skipta um sýn<br/>Bekkur · Rist · Dagatal"]:::local
+  end
+
+  subgraph RIST["Rist (vikur × flokkar)"]
+    direction TB
+    R1["Sækja ristina<br/>GET /seasons/{id}/grid"]:::miss
+    R2["Flokkar sem dálkar<br/>GET /workspaces/{id}/troops"]:::part
+    R3["Innkaup (needs) · ATH (week note)"]:::miss
+    R4["Velja viðburð → opna fund<br/>(onSelectEvent ekki tengt)"]:::local
+    R5["Búa til / færa / endurnefna<br/>viðburð í reit (A3, sc-38)"]:::part
+  end
+
+  subgraph DAG["Dagatal · Tímalína · Gluggi"]
+    direction TB
+    D1["Fletta mánuðum · velja flokk"]:::local
+    D2["Viðburður á réttum degi<br/>(starts_at)"]:::part
+  end
+
+  subgraph BANK["Dagskrárbankinn (vinstri rein)"]
+    direction TB
+    L1["Sækja blokkir<br/>(fixtures í dag)"]:::part
+    L2["Möppur: Sveitin · Félagið · Færnimerki"]:::miss
+    L3["Leita · sía eftir tegund"]:::local
+    L4["„Notað N sinnum“"]:::miss
+  end
+
+  subgraph BENCH["Bekkurinn (fundur og liðir)"]
+    direction TB
+    B0["Sækja fundi tímabils<br/>(enginn samningur til)"]:::miss
+    B1["Velja · virkja · grípa · opna ritil"]:::local
+    B2["Bæta við lið / draga úr banka (add)"]:::part
+    B3["Breyta heiti · stað (patch)"]:::part
+    B4["Breyta tegund · þema (patch)"]:::miss
+    B5["Lengd (duration)"]:::part
+    B6["Staða: Óákveðið…Staðfest (status)"]:::miss
+    B7["Færa innan fundar (move)"]:::miss
+    B8["Færa í annan fund (moveToFundur)"]:::part
+    B9["Afrita lið (duplicate)"]:::part
+    B10["Fjarlægja lið (remove)"]:::part
+    B11["Skipta á flokka / sameina<br/>(splitBand · mergeBand)"]:::miss
+    B12["Brautir: lane add · remove · move ·<br/>patch · moveAcross"]:::miss
+    B13["Endurmat frá síðasta skipti"]:::miss
+    B14["Vista breytingar<br/>(useReducer, tapast við endurhleðslu)"]:::miss
+  end
+
+  S1 --> RIST
+  S1 --> DAG
+  S1 --> BENCH
+  L1 -- "draga" --> B2
+  R4 -.-> BENCH
+</pre>
+</div>
+
+<h2>2. What happens when Vinnubekkurinn loads today</h2>
+<p class="muted">With mock mode on <code>auto</code> (dev). In production mock mode is forced <code>off</code>, so every red branch below renders empty.</p>
+<div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor F as Foringi
+    participant Sh as PlanShell
+    participant H as usePlan hooks
+    participant Mk as lib/mock/*
+    participant API as FastAPI (origin/main)
+
+    F->>Sh: Opnar Vinnubekkinn
+    Sh->>API: GET /users/me/workspaces
+    API-->>Sh: 200 (sjálfgefið vinnusvæði)
+
+    Sh->>H: useSeasons(workspaceId)
+    H->>API: GET /workspaces/{id}/seasons
+    API-->>H: 404 Not Found (engin slóð)
+    H->>Mk: mockSeasons()
+    Mk-->>Sh: Gervistarfsár + GERVIGÖGN borði
+
+    Sh->>H: usePlanGrid(seasonId)
+    H->>API: GET /seasons/{id}/grid
+    API-->>H: 404 Not Found
+    H->>Mk: mockGrid(seasonId)
+    Mk-->>Sh: Rist og Dagatal úr fixtures
+
+    Sh->>H: usePlanBench(seasonId)
+    Note over H,API: Ekkert kall. Engin slóð og enginn samningur til.
+    H->>Mk: mockBench(seasonId)
+    Mk-->>Sh: Fundir og liðir
+
+    Sh->>H: useBlockLibrary()
+    Note over H,API: Ekkert kall, þótt GET /workspaces/{id}/content sé til.
+    H->>Mk: LIBRARY
+    Mk-->>Sh: Bankablokkir
+
+    F->>Sh: Dregur blokk, breytir lengd, skiptir á flokka…
+    Sh->>Sh: benchReducer (aðeins í minni)
+    Note over Sh,API: Ekkert er vistað. Endurhleðsla hendir öllu.
+</pre>
+</div>
+
+<h2>3. Frontend model vs backend model</h2>
+<p class="muted">What each frontend type would map to on the backend as it stands. Lines are the closest existing match. Fields marked <code>✗</code> have no backend column.</p>
+<div class="diagram">
+<pre class="mermaid">
+classDiagram
+    direction LR
+
+    namespace Frontend {
+        class Season {
+            id
+            workspace_id
+            name
+            kind ✗ starfsar|scratchpad
+            starts_on ✗
+            ends_on ✗
+        }
+        class Patrol {
+            id
+            name
+            accent ✗
+        }
+        class Fundur {
+            event_id
+            title
+            starts_at
+            planned_minutes ✗
+            venue
+            theme ✗
+            scope ✗ troop-wide|per-flokkur
+            week_index ✗
+            split ✗ lanes per band
+        }
+        class Lidur {
+            id
+            name
+            kind ✗ SlotKind
+            minutes
+            status ✗ PlanStatus
+            theme ✗
+            venue
+            endurmat ✗
+            position ✗
+        }
+        class LibraryBlock {
+            id
+            name
+            kind ✗
+            minutes
+            folder ✗
+            timesUsed ✗
+            needs
+        }
+    }
+
+    namespace Backend_origin_main {
+        class Workspace {
+            id
+            name
+            season_start
+            default_meeting_weekday
+            default_start_time
+        }
+        class Troop {
+            id
+            name
+            workspace_id
+        }
+        class Event {
+            id
+            name
+            start_dt
+            end_dt
+            location
+            program_id
+        }
+        class Task {
+            id
+            name
+            event_id
+            duration_min
+            duration_max
+            location
+            review_state
+        }
+        class Content {
+            name
+            equipment
+            duration_min
+            review_state
+            hidden_at
+        }
+    }
+
+    Season ..> Workspace : no table (season_start only)
+    Patrol ..> Troop : name only
+    Fundur ..> Event : start_dt, location
+    Lidur ..> Task : name, duration_min, location
+    LibraryBlock ..> Content : GET /workspaces/{id}/content
+    Event "1" --> "*" Task
+    Event "*" --> "*" Troop : TroopParticipation
+</pre>
+</div>
+
+<h2>4. The gaps, one row each</h2>
+<table>
+<thead><tr><th>Frontend wants</th><th>Where</th><th>Backend today</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>List seasons in a workspace</td><td><code>getSeasons</code>, SeasonSwitcher</td><td>No <code>Season</code> model or route. The workspace has only <code>season_start</code>.</td><td class="s miss">Missing</td></tr>
+<tr><td>Create a starfsár or krassblað</td><td><code>createSeason</code>, <code>useCreateSeason</code> (not used in the UI yet)</td><td>Same as above</td><td class="s miss">Missing</td></tr>
+<tr><td>Read the season grid (weeks, patrols, bands, cells)</td><td><code>getSeasonGrid</code>, PlanGrid, PlanCalendar, PlanTimeline, PlanWindow</td><td>No route. Event has no <code>scope</code>, <code>type</code>, <code>status</code> or week. Troops exist, and participation links an event to troops.</td><td class="s miss">Missing</td></tr>
+<tr><td>Optional grid fields: <code>planned_minutes</code>, <code>actual_minutes</code>, <code>theme</code>, <code>item_count</code>, <code>needs</code>, <code>segments</code>, week <code>note</code>, patrol <code>accent</code></td><td>v5 hi-fi section of the contract</td><td><code>starts_at</code> could come from <code>Event.start_dt</code>, <code>venue</code> from <code>location</code>, <code>needs</code> from task <code>equipment</code>. The rest have no column.</td><td class="s part">Partial</td></tr>
+<tr><td>Load the fundir and liðir for a season</td><td><code>usePlanBench</code></td><td>Nothing. There isn't even a contract for this endpoint yet.</td><td class="s miss">Missing</td></tr>
+<tr><td>Add, rename, delete or duplicate a liður, or change its length</td><td><code>add</code>, <code>patch</code>, <code>remove</code>, <code>duplicate</code>, <code>duration</code> intents</td><td><code>POST /events/{id}/tasks</code>, <code>PATCH</code> and <code>DELETE /tasks/{id}</code> exist, as do <code>duration_min</code> and <code>location</code>. <strong>But Task is Content:</strong> every liður would show up in the dagskrárbanki and in the Yfirferð queue.</td><td class="s part">Partial</td></tr>
+<tr><td>Move a liður to another fundur</td><td><code>moveToFundur</code></td><td><code>TaskUpdate.event_id</code> exists</td><td class="s part">Partial</td></tr>
+<tr><td>Liður kind, status, theme and endurmat</td><td>LidurEditor, LidurRow</td><td>No columns</td><td class="s miss">Missing</td></tr>
+<tr><td>Order of liðir within a fundur</td><td><code>move</code> intent, ↑ ↓ and keyboard grab</td><td>Task has no position, and there is no reorder endpoint</td><td class="s miss">Missing</td></tr>
+<tr><td>Split a band across patrols and back; patrol lanes</td><td><code>splitBand</code>, <code>mergeBand</code>, <code>lane*</code> intents, SplitGrid</td><td>Nothing models a band, a lane, or a task belonging to one patrol</td><td class="s miss">Missing</td></tr>
+<tr><td>Create, move or rename an event in a grid cell (A3)</td><td>Not in the contract yet</td><td>Event CRUD and troop participation exist, but there's no week, scope or status to set</td><td class="s part">Partial</td></tr>
+<tr><td>Bank rail: real blocks</td><td><code>useBlockLibrary</code> (fixtures only)</td><td><code>GET /workspaces/{id}/content</code> exists, but the hook doesn't call it</td><td class="s part">Partial</td></tr>
+<tr><td>Bank folders (Sveitin mín, Félagið, Færnimerki) and use counts</td><td>BlockPalette</td><td>No folder, sharing scope or badge link, and no usage count</td><td class="s miss">Missing</td></tr>
+<tr><td>Save what was done on the bench</td><td>BenchProvider (<code>useReducer</code>)</td><td>No endpoint, and the frontend never tries</td><td class="s miss">Missing</td></tr>
+<tr><td>Switch views, flip through months, pick a patrol, search and filter the bank, select and grab</td><td>Shell, Calendar, Timeline, Palette, Row</td><td>Not needed</td><td class="s local">Frontend only</td></tr>
+</tbody>
+</table>
+
+<h2>5. What stands out</h2>
+<ol>
+  <li><strong>Season is the root of everything, and it doesn't exist.</strong> Every view hangs off <code>selectedId</code>. Until <code>Season</code> and its two routes are built, the whole route runs on fixtures. This is the first backend task.</li>
+  <li><strong>The bench has no contract.</strong> The grid at least has a spec in <code>plan-api-contract.md</code>. The 21 bench intents have only a TypeScript type, <code>PlanBenchData</code>, so they need a contract before anyone writes a backend for them.</li>
+  <li><strong>A liður can't simply be a Task.</strong> Task is a subtype of <code>Content</code>, so every liður a leader adds would become a public bank item and land in the Yfirferð queue. A liður probably needs its own table that references a Content block, which also gives it the missing position, status, kind and patrol-lane columns.</li>
+  <li><strong>The Rist already has half its data.</strong> Event, Troop and TroopParticipation cover "which patrol is at which event" and <code>start_dt</code>. What's missing is <code>scope</code>, <code>type</code>, <code>status</code> (including <code>unknown</code>, the „?“ mark) and the link to a season.</li>
+  <li><strong>One quick win on the frontend.</strong> The bank rail could read <code>GET /workspaces/{id}/content</code> today, without folders and use counts, instead of fixtures.</li>
+  <li><strong>Nothing is saved.</strong> Even with fixtures replaced, the bench has no write path, so the edit and autosave work in A3 depends on items 2 and 3.</li>
+  <li><strong>Small wiring gaps on the frontend.</strong> <code>PlanGrid</code> accepts <code>onSelectEvent</code> but PlanShell doesn't pass it, so clicking a Rist entry does nothing. <code>useCreateSeason</code> has no button.</li>
+</ol>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: false, theme: "neutral", flowchart: { htmlLabels: true }, sequence: { mirrorActors: false } });
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+</body>
+</html>
