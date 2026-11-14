@@ -69,7 +69,7 @@ def create_app() -> FastAPI:
         # Without this the browser receives the pagination headers and refuses
         # to let JavaScript read them — they are not on the CORS safelist. Every
         # paginated endpoint sends them; nothing could see them until now.
-        expose_headers=["X-Total-Count", "X-Limit", "X-Offset", "Link"],
+        expose_headers=["X-Total-Count", "X-Limit", "X-Offset", "Link", "X-Unreviewed-Total"],
     )
 
     app.include_router(email_list_router.router)

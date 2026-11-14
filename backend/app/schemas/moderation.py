@@ -125,6 +125,17 @@ class ReportSummary(BaseModel):
     created_at: dt.datetime
 
 
+class UnreviewedCount(BaseModel):
+    """How much is waiting on the review board, for the sidebar badge.
+
+    A count of its own rather than a page of the queue: the sidebar renders on
+    every authenticated page, and asking for a page to learn a number costs two
+    extra queries and a row nobody reads.
+    """
+
+    count: int
+
+
 class ReviewCommentCreate(BaseModel):
     """A reviewer writing a note."""
 

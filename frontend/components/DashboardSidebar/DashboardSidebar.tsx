@@ -40,6 +40,7 @@ import {
   type UserPermissions,
   hasPermission as hasPlatformPermission,
 } from "@/services/users.service";
+import { useUnreviewedCount } from "@/hooks/useUnreviewedCount";
 
 /**
  * Navigation item configuration
@@ -205,6 +206,8 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps & { "data-open"?: string }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
+  // Gated on `moderator` inside the hook: for anyone else this never fetches.
+  const unreviewedCount = useUnreviewedCount(userPermissions);
 
   /*
    * Permissions arrive from an async fetch, so the server renders the sidebar
@@ -275,16 +278,22 @@ export default function DashboardSidebar({
     const active = isActive(item.path);
     const isDisabled = item.disabled || false;
 
-    // Apply badge count to "Merkin mín" item
-    const badge = item.path === "/badges" ? badgeCount : item.badge;
-    const showBadge = badge && badge > 0;
+    // "Merkin mín" carries the caller's count; Yfirferð carries the review
+    // queue's. Everything else uses whatever the item declares statically.
+    let badge = item.badge;
+    if (item.path === "/badges") badge = badgeCount;
+    else if (item.path === "/yfirferd") badge = unreviewedCount;
+    const showBadge = badge !== undefined && badge > 0;
+    // "Ólesnar" is about messages; what sits on the review board is waiting to
+    // be read through, not unread mail.
+    const badgeLabel = item.path === "/yfirferd" ? `${badge} bíða yfirferðar` : `${badge} ólesnar`;
 
     const content = (
       <>
         <Icon className={styles.navIcon} aria-hidden="true" />
         {!isCollapsed && <span className={styles.navLabel}>{item.label}</span>}
         {showBadge && (
-          <span className={styles.navBadge} aria-label={`${badge} ólesnar`}>
+          <span className={styles.navBadge} aria-label={badgeLabel}>
             {badge}
           </span>
         )}
