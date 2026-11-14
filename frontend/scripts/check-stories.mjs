@@ -26,6 +26,15 @@ const ALLOWED = {
   "components/ThemeProvider/index.tsx": "every story renders inside it (.storybook/preview.tsx)",
   "components/leikir/arnor-clicker/icons.tsx":
     "icon set, rendered by the ArnorClickerGame and OrbitField stories",
+  "components/UserManagement/ConfirmDialog.tsx":
+    "part of UserManagement, shown by its PromotionConfirms and Delete stories",
+  "components/UserManagement/UndoToast.tsx": "part of UserManagement, shown by its Delete story",
+  "components/UserManagement/UserDetail.tsx":
+    "part of UserManagement, shown by its Default and PhonePanel stories",
+  "components/UserManagement/UserSplit.tsx":
+    "part of UserManagement, shown by its Default and Phone stories",
+  "components/UserManagement/UserStates.tsx":
+    "part of UserManagement, shown by its Loading, LoadError, NoUsers and NoMatch stories",
 };
 
 /** Next.js App Router special files: routes, not components. */
