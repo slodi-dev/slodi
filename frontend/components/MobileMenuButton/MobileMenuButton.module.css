@@ -1,40 +1,44 @@
+/* The phone's menu button: floats top left above AppShell's drawer, and closes it again. */
 .button {
   position: fixed;
-  top: var(--sl-spacing-element);
-  left: var(--sl-spacing-element);
-  width: 40px;
-  height: 40px;
+  top: var(--sl-spacing-sm);
+  left: var(--sl-spacing-sm);
+  z-index: var(--sl-z-popover);
   display: none;
   align-items: center;
   justify-content: center;
-  background: hsl(var(--sl-color-primary));
-  color: hsl(var(--sl-color-text-inverse));
+  width: var(--sl-touch-target);
+  height: var(--sl-touch-target);
+  padding: 0;
   border: none;
   border-radius: var(--sl-radius-button);
-  cursor: pointer;
-  z-index: calc(var(--sl-z-fixed) + 1);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
   box-shadow: var(--sl-shadow-card);
-  transition: var(--sl-transition-fast);
+  cursor: pointer;
+  transition:
+    background-color var(--sl-transition-fast),
+    box-shadow var(--sl-transition-fast);
 }
 
 .button:hover {
-  background: hsl(var(--sl-color-primary-hover));
   box-shadow: var(--sl-shadow-card-hover);
 }
 
 .button:focus-visible {
-  outline: none;
+  /* The transparent outline shows up in forced-colours mode, where box-shadow is dropped. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: var(--sl-shadow-focus);
 }
 
-@media (max-width: 767px) {
-  .button {
-    display: flex;
-  }
+.button svg {
+  width: var(--sl-size-icon-md);
+  height: var(--sl-size-icon-md);
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 767.98px) {
   .button {
-    transition: none;
+    display: flex;
   }
 }

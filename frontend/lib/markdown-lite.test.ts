@@ -128,3 +128,13 @@ describe("mdToHtmlLite — new features", () => {
     expect(out).toContain(">a &amp; b</a>");
   });
 });
+
+describe("mdToHtmlLite — inline code", () => {
+  it("drops the backticks around a code span", () => {
+    expect(mdToHtmlLite("Run `npm test` now")).toContain("Run <code>npm test</code> now");
+    expect(mdToHtmlLite("Run `npm test` now")).not.toContain("`");
+  });
+  it("handles double-backtick spans holding a backtick", () => {
+    expect(mdToHtmlLite("a ``x ` y`` b")).toContain("a <code>x ` y</code> b");
+  });
+});

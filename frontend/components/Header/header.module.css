@@ -1,178 +1,339 @@
-/* Header shell */
-.headerRoot {
+/* Public-page header: a quiet bar with the Slóði mark and a large wordmark, grey links, the
+   current page underlined in green. Every colour goes through a token, so it works in light,
+   dark and the patrol themes. */
+
+.header {
   position: sticky;
   top: 0;
-  z-index: var(--sl-primitive-z-sticky);
+  z-index: var(--sl-z-sticky);
   background: hsl(var(--sl-color-background));
   color: hsl(var(--sl-color-text-primary));
-  border-bottom: 1px solid hsl(var(--sl-color-border) / 0.3);
-  transition:
-    background-color var(--sl-transition-base),
-    color var(--sl-transition-base),
-    border-color var(--sl-transition-base);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  font-family: var(--sl-font-family-body);
+  line-height: var(--sl-line-height-tight);
 }
 
-/* Inner layout */
-.headerContent {
-  max-width: var(--sl-primitive-width-6xl);
+/* Every control gets the same ring. The transparent outline keeps a ring in forced colours. */
+.header a:focus-visible,
+.header button:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Off screen until focused; the first Tab on any public page lands here. */
+.skipLink {
+  position: absolute;
+  top: var(--sl-spacing-sm);
+  left: var(--sl-spacing-md);
+  z-index: var(--sl-z-toast);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skipLink:focus {
+  transform: none;
+}
+
+.inner {
+  position: relative;
+  max-width: var(--sl-content-max-width);
+  min-height: var(--sl-primitive-space-20);
   margin: 0 auto;
-  padding: var(--sl-primitive-space-4) var(--sl-primitive-space-8);
+  padding: 0 var(--sl-spacing-md);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sl-primitive-space-6);
+  gap: var(--sl-spacing-md);
 }
 
-/* Brand / logo */
-.brandLink {
-  font-weight: var(--sl-primitive-font-weight-bold);
-  text-decoration: none;
-  color: hsl(var(--sl-color-text-primary));
-  font-size: var(--sl-primitive-font-size-lg);
-  letter-spacing: var(--sl-primitive-letter-spacing-tight);
-}
+/* ── Brand: the mark and the wordmark, both sized from the font size on .brand ── */
 
-/* Primary navigation (desktop) */
-.primaryNav {
-  display: flex;
-  gap: var(--sl-primitive-space-6);
+.brand {
+  display: inline-flex;
   align-items: center;
+  gap: var(--sl-spacing-sm);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-xs);
+  border-radius: var(--sl-radius-sm);
+  color: hsl(var(--sl-color-text-primary));
+  text-decoration: none;
+  font-size: var(--sl-text-heading-3);
+}
+.brandName {
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: 1em;
+  letter-spacing: var(--sl-primitive-letter-spacing-tighter);
+}
+.logo {
+  display: block;
+  flex: none;
+  width: auto;
+  /* As tall as the wordmark's capitals: the cap height of Roboto Condensed, the heading font. */
+  height: 0.71em;
+}
+/* Dark is `class="dark"` on <html> (ThemeProvider) or a `data-theme="dark"` wrapper, the same
+   pair the token file matches. */
+.logoForDark {
+  display: none;
+}
+:global(:root.dark) .logoForLight,
+:global([data-theme="dark"]) .logoForLight {
+  display: none;
+}
+:global(:root.dark) .logoForDark,
+:global([data-theme="dark"]) .logoForDark {
+  display: block;
 }
 
-.primaryNavLink {
+/* ── Desktop navigation ── */
+
+.nav {
+  display: none;
+}
+.links {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-spacing-xs);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-sm);
+  border-radius: var(--sl-radius-sm);
+  color: hsl(var(--sl-color-text-secondary));
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-medium);
   text-decoration: none;
-  color: hsl(var(--sl-color-text-primary));
-  font-weight: var(--sl-primitive-font-weight-medium);
-  font-size: var(--sl-primitive-font-size-sm);
-  padding: var(--sl-primitive-space-1) var(--sl-primitive-space-2);
-  border-radius: var(--sl-primitive-radius-sm);
   transition:
     background-color var(--sl-transition-fast),
     color var(--sl-transition-fast);
 }
-
-.primaryNavLink:hover {
-  background: hsl(var(--sl-color-primary) / 0.1);
+.link:hover {
+  color: hsl(var(--sl-color-text-primary));
+  background: hsl(var(--sl-color-surface-secondary));
+}
+.link[aria-current="page"] {
+  color: hsl(var(--sl-color-text-primary));
+  text-decoration: underline;
+  text-decoration-color: hsl(var(--sl-color-primary));
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.45em;
+}
+.externalIcon {
+  width: 0.85em;
+  height: 0.85em;
 }
 
-/* Mobile menu toggle button */
-.menuToggleButton {
+.account {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--sl-primitive-space-10);
-  height: var(--sl-primitive-space-10);
-  background: none;
-  border: 1px solid hsl(var(--sl-color-border) / 0.4);
-  font-size: var(--sl-primitive-font-size-2xl);
-  cursor: pointer;
-  border-radius: var(--sl-primitive-radius-md);
+  gap: var(--sl-spacing-xs);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-color-border-strong));
+  border-radius: var(--sl-radius-pill);
   color: hsl(var(--sl-color-text-primary));
+  font-size: var(--sl-text-body);
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
   transition:
     background-color var(--sl-transition-fast),
     border-color var(--sl-transition-fast);
 }
-.menuToggleButton:hover {
-  background: hsl(var(--sl-color-surface-secondary) / 0.6);
-  border-color: hsl(var(--sl-color-border));
+.account:hover {
+  border-color: hsl(var(--sl-color-border-strong-hover));
+  background: hsl(var(--sl-color-surface-secondary));
+}
+.accountIcon {
+  width: 1em;
+  height: 1em;
+  transition: transform var(--sl-transition-fast);
+}
+.account:hover .accountIcon {
+  transform: translateX(2px);
 }
 
-/* Drawer overlay (covers full viewport) */
-.drawerOverlay {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: var(--sl-primitive-z-modal-backdrop);
-}
+/* ── Phone: the menu button and the drawer ── */
 
-/* Drawer panel (slides in from the right on mobile) */
-.drawerPanel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 80%;
-  max-width: 20rem;
-  height: 100%;
-  background: hsl(var(--sl-color-background));
-  box-shadow: var(--sl-primitive-shadow-lg);
-  transform: translateX(100%);
-  transition: transform var(--sl-transition-base) var(--sl-primitive-ease-out);
-  z-index: var(--sl-primitive-z-modal);
-  display: flex;
-  flex-direction: column;
-  padding: var(--sl-primitive-space-4);
-  gap: var(--sl-primitive-space-4);
-}
-
-/* Active state for the drawer */
-.drawerPanelOpen {
-  transform: translateX(0);
-}
-
-/* Close button, top right of the open drawer */
-.drawerCloseButton {
-  align-self: flex-end;
+.menuButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--sl-primitive-space-10);
-  height: var(--sl-primitive-space-10);
-  background: none;
-  border: 1px solid hsl(var(--sl-color-border) / 0.4);
-  border-radius: var(--sl-primitive-radius-md);
+  gap: var(--sl-spacing-xs);
+  margin-left: auto;
+  min-width: var(--sl-primitive-height-lg);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-pill);
+  background: transparent;
   color: hsl(var(--sl-color-text-primary));
-  font-size: var(--sl-primitive-font-size-lg);
+  font: inherit;
+  font-weight: var(--sl-font-weight-medium);
   cursor: pointer;
 }
-.drawerCloseButton:hover {
-  background: hsl(var(--sl-color-surface-secondary) / 0.6);
+.menuButton:hover {
+  background: hsl(var(--sl-color-surface-secondary));
+}
+.menuIcon {
+  width: 1.25em;
+  height: 1.25em;
 }
 
-/* Drawer navigation layout */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sl-z-overlay);
+  background: hsl(var(--sl-color-overlay-backdrop));
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--sl-z-drawer);
+  width: min(20rem, 85%);
+  height: 100dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sl-spacing-md);
+  padding: var(--sl-spacing-md);
+  padding-bottom: calc(var(--sl-spacing-md) + env(safe-area-inset-bottom));
+  background: hsl(var(--sl-color-surface));
+  color: hsl(var(--sl-color-text-primary));
+  transform: translateX(100%);
+  transition: transform var(--sl-transition-base);
+}
+/* Only the open panel casts a shadow: closed, it sits just off screen and the shadow would
+   still fall on the page's right edge. */
+.drawerOpen {
+  transform: none;
+  box-shadow: var(--sl-shadow-modal);
+}
+.drawerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sl-spacing-sm);
+}
+.drawerTitle {
+  font-family: var(--sl-font-family-heading);
+  font-weight: var(--sl-font-weight-heading);
+  font-size: var(--sl-text-body-lg);
+}
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sl-primitive-height-lg);
+  height: var(--sl-primitive-height-lg);
+  border: 1px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.closeButton:hover {
+  background: hsl(var(--sl-color-surface-secondary));
+}
 .drawerNav {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--sl-spacing-lg);
 }
-
-/* Drawer links */
-.drawerNavLink {
-  text-decoration: none;
+.drawerLinks {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.drawerLink {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-spacing-sm);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-sm);
+  border-bottom: 1px solid hsl(var(--sl-color-border-subtle));
+  border-radius: var(--sl-radius-xs);
   color: hsl(var(--sl-color-text-primary));
-  font-size: var(--sl-primitive-font-size-xl);
-  padding: var(--sl-primitive-space-2) 0;
-  border-bottom: 1px solid hsl(var(--sl-color-border) / 0.2);
-  transition:
-    background-color var(--sl-transition-fast),
-    color var(--sl-transition-fast);
-  border-radius: var(--sl-primitive-radius-sm);
+  font-size: var(--sl-text-body-lg);
+  text-decoration: none;
+}
+.drawerLink:hover {
+  background: hsl(var(--sl-color-surface-secondary));
+}
+.drawerLink[aria-current="page"] {
+  color: hsl(var(--sl-color-primary-text));
+  font-weight: var(--sl-font-weight-semibold);
+  box-shadow: inset 3px 0 0 hsl(var(--sl-color-primary));
+}
+.drawerAccount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sl-spacing-sm);
+  min-height: var(--sl-primitive-height-lg);
+  padding: 0 var(--sl-spacing-md);
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary));
+  color: hsl(var(--sl-color-text-inverse));
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+}
+.drawerAccount:hover {
+  background: hsl(var(--sl-color-primary-hover));
 }
 
-.drawerNavLink:hover {
-  background: hsl(var(--sl-color-surface-secondary) / 0.4);
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .accountIcon {
+    transition: none;
+  }
 }
 
-/* Responsive behavior */
-.primaryNavDesktop {
-  display: none;
-}
-
-/* On medium and larger screens:
-   - show desktop nav
-   - hide mobile toggle and drawer
-*/
 @media (min-width: 768px) {
-  .primaryNavDesktop {
+  .inner {
+    padding: 0 var(--sl-spacing-xl);
+  }
+  .brand {
+    font-size: var(--sl-text-heading-2);
+  }
+  .nav {
     display: flex;
+    align-items: center;
+    gap: var(--sl-spacing-md);
+    margin-left: auto;
   }
-
-  .menuToggleButton {
-    display: none;
-  }
-
-  .drawerPanel {
+  .menuButton,
+  .drawer,
+  .scrim {
     display: none;
   }
 }

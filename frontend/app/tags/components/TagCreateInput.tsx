@@ -3,87 +3,61 @@
 import { useState } from "react";
 import { createTag, type Tag } from "@/services/tags.service";
 import { useAuth } from "@/contexts/AuthContext";
-import styles from "./TagCreateInput.module.css";
+import { tagErrorMessage, validateTagName } from "../tagRules";
+import TagNameField from "./TagNameField";
 
 interface TagCreateInputProps {
+  /** Every tag, so a name that exists is refused before it is sent. */
+  tags?: Tag[];
+  /** The text in the field, when the page also searches with it. */
+  value?: string;
+  onValueChange?: (value: string) => void;
   onCreated: (tag: Tag) => void;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+  /** Lets the empty state's "Búa til" button submit this field. */
+  formId?: string;
 }
 
-export default function TagCreateInput({ onCreated }: TagCreateInputProps) {
+/**
+ * The page's one field: typing searches the list, Enter creates the name if
+ * no tag has it yet. A name that exists is refused inline, without a request.
+ */
+export default function TagCreateInput({
+  tags = [],
+  value,
+  onValueChange,
+  onCreated,
+  inputRef,
+  formId,
+}: TagCreateInputProps) {
   const { getToken } = useAuth();
-  const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Holds the text when the page doesn't (the component on its own).
+  const [ownValue, setOwnValue] = useState("");
 
-  const trimmed = name.trim();
-
-  const handleSubmit = async () => {
-    setError(null);
-
-    if (trimmed.length === 0) {
-      setError("Nafn má ekki vera tómt");
-      return;
-    }
-    if (trimmed.length > 50) {
-      setError("Nafn má mest vera 50 stafir");
-      return;
-    }
-
-    setIsLoading(true);
+  const create = async (name: string): Promise<string | null> => {
     try {
-      const tag = await createTag({ name: trimmed }, getToken);
-      setName("");
+      const tag = await createTag({ name: name.trim() }, getToken);
       onCreated(tag);
+      return null;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg.toLowerCase().includes("already exists") || msg.includes("409")) {
-        setError("Flokkur með þessu nafni er þegar til");
-      } else {
-        setError("Villa kom upp við að búa til flokk");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSubmit();
+      return tagErrorMessage(err, "create");
     }
   };
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.inputRow}>
-        <input
-          type="text"
-          className={styles.input}
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setError(null);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Nýr flokkur..."
-          aria-label="Nafn nýs flokks"
-          maxLength={50}
-          disabled={isLoading}
-        />
-        <button
-          type="button"
-          className={styles.submitBtn}
-          onClick={handleSubmit}
-          disabled={isLoading || trimmed.length === 0}
-        >
-          {isLoading ? "..." : "Bæta við"}
-        </button>
-      </div>
-      {error && (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      )}
-    </div>
+    <TagNameField
+      label="Leita eða búa til merkimiða"
+      type="search"
+      hint="Skrifaðu til að leita. Enter býr til merkimiðann ef enginn heitir þetta."
+      submitLabel="Búa til"
+      busyLabel="Bý til…"
+      value={value ?? ownValue}
+      onValueChange={onValueChange ?? setOwnValue}
+      clearOnSuccess
+      inputRef={inputRef}
+      formId={formId}
+      validate={(name) => validateTagName(name, tags)}
+      onSubmit={create}
+    />
   );
 }

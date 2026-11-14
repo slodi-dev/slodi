@@ -172,16 +172,29 @@ function matches(route: MockRoute, url: URL, method: string) {
   return typeof route.match === "string" ? target.includes(route.match) : route.match.test(target);
 }
 
-type BodyFn = (url: URL) => unknown;
+/** Gets the request URL and its JSON body (undefined when there is none), e.g. to echo a PATCH. */
+type BodyFn = (url: URL, requestBody: unknown) => unknown;
 
-async function respond(route: MockRoute, url: URL): Promise<Response> {
+function readRequestBody(init?: RequestInit): unknown {
+  if (typeof init?.body !== "string") return undefined;
+  try {
+    return JSON.parse(init.body);
+  } catch {
+    return init.body;
+  }
+}
+
+async function respond(route: MockRoute, url: URL, init?: RequestInit): Promise<Response> {
   if (route.delay) {
     await new Promise((resolve) => {
       if (Number.isFinite(route.delay)) setTimeout(resolve, route.delay);
     });
   }
   const status = route.status ?? 200;
-  const body = typeof route.body === "function" ? (route.body as BodyFn)(url) : route.body;
+  const body =
+    typeof route.body === "function"
+      ? (route.body as BodyFn)(url, readRequestBody(init))
+      : route.body;
   if (status === 204 || body === undefined) {
     return new Response(null, { status: status === 200 ? 204 : status, headers: route.headers });
   }
@@ -215,7 +228,7 @@ export function installMockFetch() {
     if (url.protocol === "data:" || url.protocol === "blob:") return realFetch(input, init);
 
     const route = [...storyRoutes, ...defaultRoutes()].find((r) => matches(r, url, method));
-    if (route) return respond(route, url);
+    if (route) return respond(route, url, init);
 
     if (url.origin !== window.location.origin) {
       console.warn(`[storybook mock fetch] blocked ${method} ${url.href} — add a mockApi route`);

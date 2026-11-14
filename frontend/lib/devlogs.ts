@@ -9,6 +9,8 @@ export type DevlogMeta = {
   author?: string;
   tags?: string[];
   summary?: string;
+  /** Cover image for the list card: a path under public/ or an image URL. */
+  cover?: string;
 };
 
 // Store devlogs under content/devlogs so they can be read at build time and on the server (runtime=nodejs)
@@ -65,12 +67,13 @@ export function listAllDevlogs(): DevlogMeta[] {
     const author = fm.author ? String(fm.author) : undefined;
     const tags = Array.isArray(fm.tags) ? (fm.tags as string[]) : undefined;
     const summary = fm.summary ? String(fm.summary) : undefined;
+    const cover = fm.cover ? String(fm.cover).trim() || undefined : undefined;
 
     // slug from filename without extension
     const slug = file.replace(/\.md$/, "");
 
     if (!title || !date) continue; // must-have fields
-    items.push({ slug, title, date, author, tags, summary });
+    items.push({ slug, title, date, author, tags, summary, cover });
   }
 
   // newest → oldest

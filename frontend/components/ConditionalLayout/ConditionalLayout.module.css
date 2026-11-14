@@ -1,0 +1,5 @@
+/* <main> takes focus only from the header's skip link. It is a landmark, not a control, so it
+   draws no focus ring; the next Tab goes on to the first control inside it. */
+.main:focus {
+  outline: none;
+}

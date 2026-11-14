@@ -21,7 +21,7 @@ export function MobileMenuButton({ isOpen, onClick, controls, ref }: MobileMenuB
       aria-expanded={isOpen}
       aria-controls={controls}
     >
-      {isOpen ? <X size={24} /> : <Menu size={24} />}
+      {isOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
     </button>
   );
 }

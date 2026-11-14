@@ -73,8 +73,8 @@ export default function DurationFilter({
         onMaxChange={handleMaxChange}
         step={5}
         min={0}
-        minPlaceholder="Frá"
-        maxPlaceholder="Til"
+        max={180}
+        unit="mín"
         minLabel="Lágmark: mínútur"
         maxLabel="Hámark: mínútur"
         hint={hint}

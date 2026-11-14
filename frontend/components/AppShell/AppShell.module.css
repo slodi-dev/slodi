@@ -1,0 +1,136 @@
+/* The frame around every signed-in page: the side nav and the page. The page scrolls with the
+   window; the nav stays put beside it. On a phone the nav is a drawer behind the menu button.
+   Every colour and layer is a token. */
+
+.shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+/* Off screen until focused. Above the drawer and the menu button, so it is seen first. */
+.skipLink {
+  position: fixed;
+  top: var(--sl-spacing-sm);
+  left: var(--sl-spacing-sm);
+  z-index: var(--sl-z-toast);
+  padding: var(--sl-spacing-inset-sm) var(--sl-spacing-inset-md);
+  border-radius: var(--sl-radius-button);
+  background: hsl(var(--sl-color-primary-text));
+  color: hsl(var(--sl-color-text-inverse));
+  font-weight: var(--sl-font-weight-semibold);
+  text-decoration: none;
+  transform: translateY(-300%);
+}
+.skipLink:focus {
+  transform: none;
+  outline: 2px solid transparent;
+  box-shadow: var(--sl-shadow-focus);
+}
+
+/* ── The nav column: as tall as the screen, pinned while the page scrolls ── */
+.drawer {
+  position: sticky;
+  top: 0;
+  z-index: var(--sl-z-sticky);
+  height: 100dvh;
+}
+
+.backdrop {
+  display: none;
+}
+
+.main {
+  min-width: 0;
+}
+.main:focus {
+  outline: none;
+}
+
+/* ── Phone: the nav is a drawer ── */
+@media (max-width: 767.98px) {
+  .shell {
+    display: block;
+  }
+
+  .drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--sl-z-drawer);
+    box-sizing: border-box;
+    width: min(18rem, 85vw);
+    height: auto;
+    /* Room for the menu button, which floats above the drawer and closes it. */
+    padding-top: calc(var(--sl-touch-target) + 2 * var(--sl-spacing-sm));
+    background: hsl(var(--sl-color-surface-secondary));
+    /* Closed, it is also hidden, which takes its links out of the tab order and the
+       accessibility tree. Visibility flips after the slide-out, so the animation shows. */
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition:
+      transform var(--sl-transition-base),
+      visibility 0s linear var(--sl-primitive-duration-base);
+  }
+
+  .drawer[data-open="true"] {
+    visibility: visible;
+    transform: none;
+    box-shadow: var(--sl-shadow-modal);
+    transition: transform var(--sl-transition-base);
+    /* Opening, it slides a touch past its edge and settles back. */
+    animation: drawer-in var(--sl-primitive-duration-slow) var(--sl-primitive-ease-out);
+  }
+  /* Fills the sliver left of the drawer while it overshoots. */
+  .drawer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 100%;
+    bottom: 0;
+    width: var(--sl-spacing-md);
+    background: inherit;
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: var(--sl-z-overlay);
+    background: hsl(var(--sl-color-overlay-base));
+    animation: backdrop-in var(--sl-transition-base);
+  }
+
+  /* Clears the floating menu button. */
+  .main {
+    padding-top: calc(var(--sl-touch-target) + 2 * var(--sl-spacing-sm));
+  }
+}
+
+@keyframes drawer-in {
+  0% {
+    transform: translateX(-100%);
+  }
+  70% {
+    transform: translateX(0.5rem);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .backdrop {
+    animation: none !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+  }
+}
