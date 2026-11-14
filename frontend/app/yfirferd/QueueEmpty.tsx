@@ -12,7 +12,7 @@ import { countIs, formatIcelandicNumber } from "@/lib/format";
  * Reaching an empty list by filtering and being told "vel gert" is how a
  * moderator concludes the board is broken.
  *
- * The reward is the number, not the praise — `Þú afgreiddir 37 einingar` is
+ * The reward is the number, not the praise — `Þú afgreiddir 37 hugmyndir` is
  * something the reader did; `Vel gert` is something the software says.
  */
 export default function QueueEmpty({
@@ -66,7 +66,7 @@ export default function QueueEmpty({
       </p>
       <p className={styles.emptySub}>
         {done > 0
-          ? `Þú afgreiddir ${countIs(done, "einingu", "einingar")} í þessari lotu.`
+          ? `Þú afgreiddir ${countIs(done, "hugmynd", "hugmyndir")} í þessari lotu.`
           : filtered
             ? "Prófaðu að víkka síuna."
             : "Ekkert efni bíður yfirferðar."}

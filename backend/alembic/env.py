@@ -37,6 +37,15 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+# Written by migrations, with no model: autogenerate would propose dropping them.
+MIGRATION_ONLY_TABLES = {"reclassified_programs"}
+
+
+def include_object(
+    obj: object, name: str | None, type_: str, reflected: bool, compare_to: object
+) -> bool:
+    return not (type_ == "table" and name in MIGRATION_ONLY_TABLES)
+
 
 def get_url() -> str:
     return settings.db_url
@@ -50,13 +59,18 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

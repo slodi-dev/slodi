@@ -4,7 +4,7 @@
  */
 
 import { type User, hasPermission } from "@/services/users.service";
-import type { Program } from "@/services/programs.service";
+import type { ContentComment, Program } from "@/services/programs.service";
 import { type WorkspaceRole, hasWorkspaceRole } from "@/services/workspaces.service";
 
 /**
@@ -80,6 +80,31 @@ export function canDeleteProgram(
   workspaceRole: WorkspaceRole | null | undefined = null
 ): boolean {
   return canChangeContent(user, program, workspaceRole);
+}
+
+/**
+ * Can the current user edit this comment?
+ *
+ * Backend: `PATCH /comments/{id}` — its author only, moderators included.
+ * Removing words is moderation; rewriting them puts words in someone's mouth.
+ */
+export function canEditComment(user: User | null, comment: ContentComment): boolean {
+  return !!user && user.id === comment.user_id;
+}
+
+/**
+ * Can the current user remove this comment?
+ *
+ * Backend: `DELETE /comments/{id}` — its author, or anyone who can change the
+ * item it hangs under (`check_content_edit_access` with the item's author).
+ */
+export function canDeleteComment(
+  user: User | null,
+  comment: ContentComment,
+  content: Program,
+  workspaceRole: WorkspaceRole | null | undefined = null
+): boolean {
+  return canEditComment(user, comment) || canChangeContent(user, content, workspaceRole);
 }
 
 /**

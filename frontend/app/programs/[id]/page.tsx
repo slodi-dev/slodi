@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useState } from "react";
-import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
+import type { BadgeContentType } from "@/components/TypeBadge/TypeBadge";
 import DocumentViewer, { type ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
 import ContentCreateModal from "@/components/ContentCreateModal/ContentCreateModal";
 import {
@@ -20,9 +20,15 @@ import { useProgram } from "@/hooks/useProgram";
 import { useProgramActions } from "@/hooks/useProgramActions";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
 import { formatIcelandicNumber } from "@/lib/format";
-import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
+import {
+  canDeleteComment,
+  canDeleteProgram,
+  canEditComment,
+  canEditProgram,
+  isOwner,
+} from "@/lib/permissions";
 import { cn } from "@/lib/util";
-import { createComment, deleteComment } from "@/services/comments.service";
+import { createComment, deleteComment, updateComment } from "@/services/comments.service";
 import { deleteBankContent, type ContentComment } from "@/services/programs.service";
 import ItemFacts from "./components/ItemFacts";
 import ItemHero, { type HeroImage } from "./components/ItemHero";
@@ -55,8 +61,11 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [showReport, setShowReport] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [extraComments, setExtraComments] = useState<ContentComment[]>([]);
-  const [openDoc, setOpenDoc] = useState<ViewableDocument | null>(null);
+  /* Comments edited in this session, by id, so an edit shows in place without
+     a refetch of the whole item. */
+  const [editedComments, setEditedComments] = useState<Record<string, ContentComment>>({});
   const [reportingComment, setReportingComment] = useState<ContentComment | null>(null);
+  const [openDoc, setOpenDoc] = useState<ViewableDocument | null>(null);
   /* Comments removed in this session, so the list reflects the removal
      without a refetch of the whole item. */
   const [removedComments, setRemovedComments] = useState<string[]>([]);
@@ -77,6 +86,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     },
     [id, getToken]
   );
+  const handleEditComment = useCallback(
+    async (c: ContentComment, body: string) => {
+      const updated = await updateComment(c.id, body, getToken);
+      setEditedComments((prev) => ({ ...prev, [c.id]: updated }));
+    },
+    [getToken]
+  );
   const images: HeroImage[] = useMemo(() => {
     /* `media.images` is the ordered list and its first entry is the hero.
        Items created before the list have only `image`, which is the same thing
@@ -92,9 +108,9 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const canDelete = canDeleteProgram(user, program, workspaceRole);
   const type = (program.content_type ?? "task") as BadgeContentType;
   const copy = kindCopy(type);
-  const comments = [...(program.comments ?? []), ...extraComments].filter(
-    (c) => !removedComments.includes(c.id)
-  );
+  const comments = [...(program.comments ?? []), ...extraComments]
+    .filter((c) => !removedComments.includes(c.id))
+    .map((c) => editedComments[c.id] ?? c);
   const handleRemoveComment = async (c: ContentComment) => {
     try {
       await deleteComment(c.id, getToken);
@@ -137,11 +153,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         </span>
       </nav>
       <div className={styles.titleblock}>
-        <div className={styles.badges}>
-          <TypeBadge type={type} size="md" />
-          {/* Only moderators and the author are ever sent a hidden item. */}
-          {isHidden(program) && <HiddenChip />}
-        </div>
+        {/* Only moderators and the author are ever sent a hidden item. The
+            type is in the Upplýsingar box with the other facts. */}
+        {isHidden(program) && (
+          <div className={styles.badges}>
+            <HiddenChip />
+          </div>
+        )}
         <h1 className={cn(styles.title, isHidden(program) && hiddenDimClass)}>{program.name}</h1>
       </div>
       <div className={styles.actions}>
@@ -217,6 +235,9 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             onOpenDocument={setOpenDoc}
             onReportComment={setReportingComment}
             onRemoveComment={(c) => void handleRemoveComment(c)}
+            onEditComment={handleEditComment}
+            canEditComment={(c) => canEditComment(user, c)}
+            canRemoveComment={(c) => canDeleteComment(user, c, program, workspaceRole)}
           />
         )}
         {!isEditMode && (
@@ -225,20 +246,24 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
               program={program}
               typeLabel={copy.definite}
               onPrint={() => window.print()}
-              onReport={isAuthenticated ? () => setShowReport(true) : undefined}
+              // Not on your own item, as with your own comments.
+              onReport={
+                isAuthenticated && !isOwner(user, program) ? () => setShowReport(true) : undefined
+              }
             />
           </aside>
         )}
       </div>
       <DocumentViewer doc={openDoc} open={openDoc !== null} onClose={() => setOpenDoc(null)} />
 
-      {/* Same modal as the item's own report, pointed at a comment. */}
+      {/* The item's report dialog, pointed at a comment: its own title, a
+          quote of the comment, and the reasons that fit a comment. */}
       <ReportContentModal
         open={reportingComment !== null}
         onClose={() => setReportingComment(null)}
         contentId={program.id}
         contentName={program.name}
-        commentId={reportingComment?.id}
+        comment={reportingComment ?? undefined}
       />
       <ReportContentModal
         open={showReport}

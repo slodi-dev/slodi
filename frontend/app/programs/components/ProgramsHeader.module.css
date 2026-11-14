@@ -13,7 +13,8 @@
   .fabAnchor {
     left: 16px;
     right: 16px;
-    bottom: 16px;
+    /* Clear of the home bar on phones that have one. */
+    bottom: calc(16px + env(safe-area-inset-bottom));
   }
 }
 

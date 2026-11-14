@@ -44,7 +44,9 @@
   height: 18px;
   margin: 0;
   cursor: pointer;
-  accent-color: hsl(var(--sl-color-primary, hsl(142 50% 32%)));
+  /* `--patrol` is set per label by the age filter; every other group ticks in
+     primary. */
+  accent-color: hsl(var(--patrol, var(--sl-color-primary, 142 50% 32%)));
   flex-shrink: 0;
 }
 

@@ -165,6 +165,10 @@ export async function fetchReviewDetail(
 export type ReportQueueItem = ContentReport & {
   content_name: string;
   content_author_name: string;
+  /** Set when the report is about a comment: the board shows its words. */
+  comment_body?: string | null;
+  comment_author_name?: string | null;
+  comment_created_at?: string | null;
 };
 
 export async function fetchOpenReports(

@@ -31,7 +31,9 @@
   flex-direction: column;
   /* Matches the button it frames, so the ring reads as one component. */
   border: 1px solid hsl(var(--sl-color-primary));
-  border-radius: 999px;
+  /* Half the height, not 999px: the ball and the stretched pill share it, and
+     it animates into the card radius on open instead of snapping. */
+  border-radius: calc(var(--db-ball) / 2);
   background: hsl(var(--sl-color-surface));
   box-shadow: var(--sl-shadow-card);
   overflow: hidden;
@@ -51,10 +53,10 @@
   }
 }
 
+/* Stretching keeps the pill. Only the open sheet is a card. */
 .launcher:hover,
 .launcher:focus-within {
   width: var(--db-fab-w);
-  border-radius: var(--sl-radius-card);
   transition-duration: calc(var(--db-dur-hover) * 1.2);
   transition-timing-function: var(--db-ease-glide);
 }
@@ -220,8 +222,13 @@
    mode — so on a dark card it painted a near-white rule straight across the
    component. The border token belongs to whichever theme is on. */
 .seam {
-  height: 1px;
+  height: 0;
   background: hsl(var(--sl-color-border));
+}
+/* Only when there is a sheet to divide from: closed, it drew a dark rule
+   across the top of the button. */
+.launcher.open .seam {
+  height: 1px;
 }
 .sheetTitle {
   margin: 0;

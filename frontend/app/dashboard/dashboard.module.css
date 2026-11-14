@@ -38,27 +38,26 @@
 .programBankCard {
   display: block;
   text-decoration: none;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--sl-color-primary-subtle)) 0%,
-    hsl(var(--sl-color-surface)) 100%
-  );
-  border: 2px solid hsl(var(--sl-color-primary) / 0.2);
+  background: hsl(var(--sl-color-surface));
+  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-40));
   border-radius: var(--sl-radius-card);
-  padding: var(--sl-spacing-component);
-  transition: all var(--sl-transition-base);
+  padding: var(--sl-card-padding);
   box-shadow: var(--sl-shadow-card);
+  transition:
+    box-shadow var(--sl-card-transition),
+    transform var(--sl-card-transition),
+    border-color var(--sl-card-transition);
 }
 
 .programBankCard:hover {
-  border-color: hsl(var(--sl-color-primary));
   box-shadow: var(--sl-shadow-card-hover);
   transform: translateY(-2px);
+  border-color: hsl(var(--sl-color-border-hover) / var(--sl-primitive-opacity-60));
 }
 
 .programBankCard:focus-visible {
-  outline: none;
-  box-shadow: var(--sl-shadow-focus), var(--sl-shadow-card-hover);
+  outline: 2px solid hsl(var(--sl-color-border-focus));
+  outline-offset: 2px;
 }
 
 .cardContent {
@@ -67,40 +66,18 @@
   gap: var(--sl-spacing-gap-lg);
 }
 
-.sparkleIcon {
+.cardIcon {
   width: 32px;
   height: 32px;
   color: hsl(var(--sl-color-primary));
   flex-shrink: 0;
-  animation: sparkle 2s ease-in-out infinite;
-}
-
-@keyframes sparkle {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.1) rotate(5deg);
-  }
-}
-
-.cardText {
-  flex: 1;
 }
 
 .cardTitle {
+  flex: 1;
   font-size: var(--sl-text-heading-3);
   font-weight: var(--sl-font-weight-semibold);
   color: hsl(var(--sl-color-text-primary));
-  margin: 0 0 var(--sl-spacing-gap-xs) 0;
-}
-
-.cardDescription {
-  font-size: var(--sl-text-body);
-  color: hsl(var(--sl-color-text-secondary));
   margin: 0;
 }
 

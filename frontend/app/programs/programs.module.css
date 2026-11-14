@@ -149,6 +149,10 @@
 
   .page {
     padding: var(--sl-spacing-inset-md, 12px) var(--sl-spacing-inset-sm, 8px);
+    /* The "Bæta við" button is fixed full-width along the bottom here
+       (ProgramsHeader's .fabAnchor): 56px tall, 16px off the edge. Without
+       room to scroll past it, it sat on top of the page buttons. */
+    padding-bottom: calc(56px + 16px + 24px + env(safe-area-inset-bottom));
   }
 }
 

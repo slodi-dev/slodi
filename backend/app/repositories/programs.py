@@ -237,13 +237,15 @@ class ProgramRepository(Repository):
         )
 
         # `equipment` is a JSONB array, so the distinct values live one level
-        # down — unnest before collecting them.
+        # down — unnest before collecting them. Check the type, not IS NOT
+        # NULL: an explicit None is stored as JSON `null`, which is not SQL
+        # NULL, and unnesting it raises and takes every facet down with it.
         item = func.jsonb_array_elements_text(Content.equipment).table_valued("value")
         equipment = await self.session.scalars(
             select(item.c.value)
             .select_from(Content)
             .join(item, true())
-            .where(*base, Content.equipment.is_not(None))
+            .where(*base, func.jsonb_typeof(Content.equipment) == "array")
             .distinct()
             .order_by(item.c.value)
         )

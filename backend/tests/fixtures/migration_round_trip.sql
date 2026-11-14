@@ -50,10 +50,17 @@ INSERT INTO content (id, content_type, name, description, instructions, created_
    'rejected', NULL, ARRAY['Dróttskátar']::age_group_enum[], 4, 12, 180, 300, 30, 60, '["Nesti", "Regnföt"]', 500, 'Esja'),
   ('00000000-0000-4000-8000-000000000503', 'task', 'Kveikjuleikur', 'Hlaupaleikur', 'Myndið hring',
    now(), '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000201',
-   'unreviewed', now(), ARRAY['Hrefnuskátar']::age_group_enum[], 6, 40, 15, 25, 0, 5, '["Spottar"]', 0, NULL);
+   'unreviewed', now(), ARRAY['Hrefnuskátar']::age_group_enum[], 6, 40, 15, 25, 0, 5, '["Spottar"]', 0, NULL),
+  ('00000000-0000-4000-8000-000000000504', 'task', 'Nafnaleikur', 'Kynningarleikur', NULL,
+   now(), '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000201',
+   'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO programs (id) VALUES ('00000000-0000-4000-8000-000000000501');
 INSERT INTO events (id, program_id) VALUES ('00000000-0000-4000-8000-000000000502', '00000000-0000-4000-8000-000000000501');
-INSERT INTO tasks (id, event_id) VALUES ('00000000-0000-4000-8000-000000000503', '00000000-0000-4000-8000-000000000502');
+INSERT INTO tasks (id, event_id) VALUES
+  ('00000000-0000-4000-8000-000000000503', '00000000-0000-4000-8000-000000000502'),
+  ('00000000-0000-4000-8000-000000000504', NULL);
+-- A bank item the sc-129 migration filed as a task; its downgrade turns it back.
+INSERT INTO reclassified_programs (content_id) VALUES ('00000000-0000-4000-8000-000000000504');
 INSERT INTO troop_participation (troop_id, event_id) VALUES
   ('00000000-0000-4000-8000-000000000301', '00000000-0000-4000-8000-000000000502');
 

@@ -163,7 +163,7 @@ export default function AuthorStandingPanel({
           // An absence stated in a sentence is a finding; an empty box is an
           // ambiguity, and the reader cannot tell it from a failed fetch.
           <p className={styles.bodyMuted}>
-            Ekkert hefur komið upp. Engin eining eftir {authorName} hefur verið tilkynnt.
+            Ekkert hefur komið upp. Engin hugmynd eftir {authorName} hefur verið tilkynnt.
           </p>
         ) : (
           <>

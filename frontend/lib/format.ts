@@ -174,6 +174,17 @@ export function formatParticipants(min: number | undefined, max: number | undefi
 }
 
 /**
+ * Just the numbers — `"10–30"`, `"12"` — for a card, where the people icon
+ * already says what they count. Read out with `formatParticipantsLabel`.
+ */
+export function formatParticipantRange(min: number | undefined, max: number | undefined): string {
+  if (min === undefined && max === undefined) return "";
+  if (min === undefined) return formatIcelandicNumber(max!);
+  if (max === undefined || min === max) return formatIcelandicNumber(min);
+  return `${formatIcelandicNumber(min)}–${formatIcelandicNumber(max)}`;
+}
+
+/**
  * Screen-reader-friendly participant count label.
  */
 export function formatParticipantsLabel(min: number | undefined, max: number | undefined): string {

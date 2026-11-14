@@ -250,7 +250,7 @@ function ProgramsPageInner() {
 
   // The server counts with the filters applied, so this is the honest total
   // whether or not anything is narrowed — no more "200 of 10.004" hedging.
-  const countLabel = countIs(totalItems, "eining", "einingar");
+  const countLabel = countIs(totalItems, "hugmynd", "hugmyndir");
 
   return (
     <div className={styles.page}>
@@ -340,7 +340,7 @@ function ProgramsPageInner() {
 
           {/* Result count */}
           <p className={styles.resultCount} aria-live="polite">
-            {/* „einingar", not „dagskrár": the bank holds verkefni, viðburðir
+            {/* „hugmyndir", not „dagskrár": the bank holds verkefni, viðburðir
                 and dagskrár, and naming it after one of the three was only
                 accurate while everything was filed as that one. And the count
                 has to be the bank's, not the page's — fetching 200 of 10.004

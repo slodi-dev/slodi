@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import styles from "./TeamSection.module.css";
 
 interface Contributor {
@@ -102,6 +103,7 @@ export default function TeamSection() {
                     className={styles.avatar}
                     width={80}
                     height={80}
+                    unoptimized={!isOptimisableImageUrl(contributor.avatar_url)}
                   />
                   <div className={styles.contributorInfo}>
                     <div className={styles.contributorName}>@{contributor.login}</div>
