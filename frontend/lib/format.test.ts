@@ -16,6 +16,8 @@ import {
   formatAgeGroups,
   formatIcelandicDate,
   formatIcelandicDateShort,
+  formatIcelandicDayMonth,
+  formatIcelandicMonthYear,
   formatIcelandicDateTime,
   formatIcelandicDecimal,
   formatFileSize,
@@ -338,6 +340,17 @@ describe("formatIcelandicDate", () => {
 
   it("shortens for a rail, where the year is noise", () => {
     expect(formatIcelandicDateShort("2026-09-14T10:00:00Z")).toBe("14. sept.");
+  });
+
+  it("writes a day and month in Icelandic, lowercase, for a fundur heading", () => {
+    expect(formatIcelandicDayMonth(new Date(2026, 9, 21))).toBe("21. október");
+    expect(formatIcelandicDayMonth(null)).toBe("");
+  });
+
+  it("writes a month heading in Icelandic, never the English fallback", () => {
+    expect(formatIcelandicMonthYear(new Date(2026, 9, 1))).toBe("október 2026");
+    expect(formatIcelandicMonthYear(new Date(2026, 10, 1))).toBe("nóvember 2026");
+    expect(formatIcelandicMonthYear(undefined)).toBe("");
   });
 
   it("shows nothing rather than 'Invalid Date'", () => {

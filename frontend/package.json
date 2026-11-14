@@ -25,7 +25,11 @@
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.14.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.104.5",
     "audit": "^0.0.6",
     "clsx": "^2.1.1",
     "lucide-react": "^0.555.0",
