@@ -205,14 +205,7 @@ def test_the_guard_is_on_writes_and_not_on_reads():
     withdrawals = {"/programs/{program_id}", "/events/{event_id}", "/tasks/{task_id}"}
     assert not [p for ms, p in guarded if "DELETE" in ms and p in withdrawals]
 
-    # The verb is not the principle, though. Detaching a tag is editing an item,
-    # not withdrawing it, so it is guarded like every other edit — and guarding
-    # only the attach half would let a suspended leader strip an item bare and
-    # be unable to put it back.
-    assert (("DELETE",), "/content/{content_id}/tags/{tag_id}") in guarded
-    assert (("PUT",), "/content/{content_id}/tags/{tag_id}") in guarded
-
-    assert len(guarded) >= 10
+    assert len(guarded) >= 8
 
 
 # ── The record ───────────────────────────────────────────────────────────────

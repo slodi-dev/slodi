@@ -108,7 +108,7 @@ def test_list_tags(client):
     ]
 
     with (
-        patch("app.services.tags.TagService.list", new_callable=AsyncMock) as mock_list,
+        patch("app.services.tags.TagService.list_all", new_callable=AsyncMock) as mock_list,
         patch("app.services.tags.TagService.count", new_callable=AsyncMock) as mock_count,
     ):
         mock_list.return_value = [type("Tag", (), tag)() for tag in sample_tags]

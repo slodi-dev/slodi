@@ -15,9 +15,9 @@ from sqlalchemy.orm import selectinload
 from app import models as m
 from app import schemas as s
 from app.repositories.programs import ProgramRepository
-from app.repositories.tags import TagRepository
 from app.schemas.program import ProgramFilters
 from app.schemas.tag import TagCreate
+from app.services.content import set_tags
 from app.services.tags import TagService
 from app.utils import get_current_datetime
 
@@ -58,7 +58,6 @@ async def _assert_tag_gone(db, ws, task, tag_name):
     facets = await programs.facets_for_workspace(ws.id)
     assert tag_name not in facets["tags"]
     assert await programs.count_content_for_workspace(ws.id, ProgramFilters(tags=[tag_name])) == 0
-    assert await TagRepository(db).count_content_tags(task.id) == 0
 
     loaded = (
         await db.execute(
@@ -133,6 +132,26 @@ async def test_a_deleted_tag_cannot_be_attached(db):
     await db.flush()
 
     with pytest.raises(HTTPException) as exc:
-        await TagService(db).add_content_tag(task.id, other.id)
+        await set_tags(db, task.id, ["Annað"])
 
-    assert exc.value.status_code == 404
+    assert exc.value.status_code == 422
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_setting_tags_ignores_a_repeated_name(db):
+    _, task, _ = await _tagged_task(db, "Útivera")
+    db.add(m.Tag(name="Leikir"))
+    await db.flush()
+
+    await set_tags(db, task.id, ["Leikir", "Útivera", "Leikir"])
+    await db.flush()
+
+    names = (
+        await db.scalars(
+            select(m.Tag.name)
+            .join(m.ContentTag, m.ContentTag.tag_id == m.Tag.id)
+            .where(m.ContentTag.content_id == task.id)
+        )
+    ).all()
+    assert sorted(names) == ["Leikir", "Útivera"]

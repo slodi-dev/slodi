@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { createTag, deleteTag, fetchContentTags, fetchTagById, updateTag } from "../tags.service";
+import { createTag, deleteTag, updateTag } from "../tags.service";
 
 const getToken = async () => "fake-token";
 
@@ -36,10 +36,8 @@ describe("tag management sends the bearer token", () => {
   // and the /tags admin page could not create, rename or delete anything.
   it.each([
     ["createTag", () => createTag({ name: " Útivist " }, getToken), "POST", /\/tags$/],
-    ["fetchTagById", () => fetchTagById("t-1", getToken), "GET", /\/tags\/t-1$/],
     ["updateTag", () => updateTag("t-1", "Útivera", getToken), "PATCH", /\/tags\/t-1$/],
     ["deleteTag", () => deleteTag("t-1", getToken), "DELETE", /\/tags\/t-1$/],
-    ["fetchContentTags", () => fetchContentTags("c-1", getToken), "GET", /\/content\/c-1\/tags$/],
   ] as const)("%s", async (_name, call, method, urlPattern) => {
     await call();
 

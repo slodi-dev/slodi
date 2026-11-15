@@ -25,9 +25,7 @@ ITEM_PATHS = [
     f"/content/{ITEM}",
     f"/content/{ITEM}/comments",
     f"/content/{ITEM}/likes",
-    f"/content/{ITEM}/tags",
     f"/workspaces/{ITEM}/content",
-    f"/tags/{ITEM}/content",
 ]
 
 # GET endpoints that answer without a signed-in user, and why. None serves item
