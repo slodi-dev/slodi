@@ -1,10 +1,9 @@
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# The only ENV values under which AUTH_TEST_JWKS_FILE may be set. An allowlist
-# rather than a check for "production": a new environment name (staging, a
-# typo) must fail closed, not open.
-E2E_AUTH_ENVS: frozenset[str] = frozenset({"e2e"})
+
+def _split_emails(raw: str) -> list[str]:
+    return [e.strip().lower() for e in raw.split(",") if e.strip()]
 
 
 class Settings(BaseSettings):
@@ -29,46 +28,19 @@ class Settings(BaseSettings):
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
     auth_debug: bool = Field(False, alias="AUTH0_DEBUG")
 
-    # Journey tests only (docs/journey-testing-in-ci.md). Path to a JWKS file
-    # whose keys replace Auth0's. Tokens are still verified in full (signature,
-    # expiry, audience, issuer), but against keys the e2e run generated for
-    # itself. Settings refuses to load if this is set and ENV is not in
-    # E2E_AUTH_ENVS. See tests/test_auth_test_jwks.py.
+    # Journey tests only: replaces Auth0's signing keys, allowed only when ENV is e2e
     auth_test_jwks_file: str | None = Field(None, alias="AUTH_TEST_JWKS_FILE")
 
-    # Seed: emails that are always promoted to admin on `make seed`
+    # Seed: emails promoted to admin / moderator on `make seed`
     admin_emails: str = Field("", alias="ADMIN_EMAILS")
-    # Where an `unsafe` report is escalated to. Falls back to ADMIN_EMAILS when
-    # unset, because a safeguarding report with nowhere to go is the one failure
-    # mode this must not have.
-    moderation_emails: str = Field("", alias="MODERATION_EMAILS")
-    # Seed: emails promoted to `moderator` on `make seed` — Dagskrárstjórnarteymið.
     moderator_emails: str = Field("", alias="MODERATOR_EMAILS")
+    # Unsafe-report escalation; falls back to ADMIN_EMAILS
+    moderation_emails: str = Field("", alias="MODERATION_EMAILS")
 
-    # HMAC key for signed game run tokens. REQUIRED outside development —
-    # run_tokens._secret() raises when it is unset and ENV is not a dev value.
-    #
-    # It is deliberately NOT derived from another credential. An earlier version
-    # derived it from DB_PASSWORD, which made every token handed out by the
-    # unauthenticated /games/{slug}/runs endpoint a free offline oracle for
-    # brute-forcing the database password. See run_tokens._secret().
-    #
-    # Production sets itself: deploy-backend.yml generates a value into
-    # backend/.env when that file has none, and never overwrites one.
-    #
-    # Changing it invalidates every run token still parked in a player's
-    # sessionStorage, up to the 12h TTL. Those runs come back as a rejected
-    # signature and are retried rather than lost, but the players affected will
-    # see an error. The same applies mid-rolling-deploy if one worker has the
-    # variable and another does not, so set it everywhere in the same release.
+    # Game run token signing key, required outside development
     game_token_secret: str = Field("", alias="GAME_TOKEN_SECRET")
 
-    # Heiðursorðla (the Skátaþing word game) is hidden from the site by user
-    # decision 2026-10-11: its code, models, migrations and tables stay, but its
-    # router is not registered unless this is true (see app/main.py), so every
-    # /leikir/heidursordla/* endpoint is a 404. Re-enable with
-    # HEIDURSORDLA_ENABLED=true here and NEXT_PUBLIC_HEIDURSORDLA_ENABLED=true on
-    # the frontend (frontend/lib/feature-flags.ts).
+    # Feature flags
     heidursordla_enabled: bool = Field(False, alias="HEIDURSORDLA_ENABLED")
 
     # CORS configuration
@@ -79,9 +51,7 @@ class Settings(BaseSettings):
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
     resend_max_recipients: int = Field(50, alias="RESEND_MAX_RECIPIENTS")
 
-    # Public base URLs used to build links in outgoing email. The unsubscribe
-    # page lives on the site; the RFC 8058 one-click List-Unsubscribe POST goes
-    # straight to the API, because mail providers POST to it server-to-server.
+    # Public base URLs for links in outgoing email
     public_site_url: str = Field("https://slodi.is", alias="PUBLIC_SITE_URL")
     public_api_url: str = Field("https://api.slodi.is", alias="PUBLIC_API_URL")
 
@@ -104,30 +74,21 @@ class Settings(BaseSettings):
 
     @property
     def admin_email_list(self) -> list[str]:
-        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
+        return _split_emails(self.admin_emails)
 
     @property
     def moderator_email_list(self) -> list[str]:
-        return [e.strip().lower() for e in self.moderator_emails.split(",") if e.strip()]
+        return _split_emails(self.moderator_emails)
 
     @property
     def moderation_email_list(self) -> list[str]:
-        """Who hears about an `unsafe` report, within the day.
-
-        Falls back to the admins rather than to nothing: an escalation that
-        silently goes nowhere is worse than one that reaches the wrong inbox.
-        """
-        addresses = [e.strip().lower() for e in self.moderation_emails.split(",") if e.strip()]
-        return addresses or self.admin_email_list
+        return _split_emails(self.moderation_emails) or self.admin_email_list
 
     @model_validator(mode="after")
     def _test_jwks_only_in_e2e(self) -> "Settings":
-        """Refuse to start with test signing keys outside the e2e environment."""
-        if self.auth_test_jwks_file and self.env.strip().lower() not in E2E_AUTH_ENVS:
+        if self.auth_test_jwks_file and self.env != "e2e":
             raise ValueError(
-                f"AUTH_TEST_JWKS_FILE is set but ENV is {self.env!r}. Test signing keys "
-                f"are only accepted when ENV is one of {sorted(E2E_AUTH_ENVS)}. "
-                "Unset AUTH_TEST_JWKS_FILE."
+                f"AUTH_TEST_JWKS_FILE is only accepted when ENV is 'e2e' (ENV is {self.env!r})"
             )
         return self
 

@@ -306,7 +306,7 @@ def test_the_signing_key_is_not_derived_from_the_database_password(monkeypatch):
     import app.core.run_tokens as rt
 
     monkeypatch.setattr(rt.settings, "game_token_secret", "", raising=False)
-    monkeypatch.setattr(rt.settings, "env", "dev", raising=False)
+    monkeypatch.setattr(rt.settings, "env", "development", raising=False)
     monkeypatch.setattr(rt.settings, "db_password", "hunter2", raising=False)
     before = rt._secret()
 
@@ -314,11 +314,12 @@ def test_the_signing_key_is_not_derived_from_the_database_password(monkeypatch):
     assert rt._secret() == before, "signing key must not depend on DB_PASSWORD"
 
 
-def test_production_refuses_to_sign_with_a_guessable_key(monkeypatch):
+@pytest.mark.parametrize("env", ["production", "Production", "ci", "dev", "Development"])
+def test_production_refuses_to_sign_with_a_guessable_key(monkeypatch, env):
     import app.core.run_tokens as rt
 
     monkeypatch.setattr(rt.settings, "game_token_secret", "", raising=False)
-    monkeypatch.setattr(rt.settings, "env", "production", raising=False)
+    monkeypatch.setattr(rt.settings, "env", env, raising=False)
     with pytest.raises(RuntimeError, match="GAME_TOKEN_SECRET"):
         rt._secret()
 

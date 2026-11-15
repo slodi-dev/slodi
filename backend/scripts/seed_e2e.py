@@ -172,7 +172,7 @@ def _task(
 
 
 async def main() -> None:
-    if settings.env.strip().lower() != "e2e":
+    if settings.env != "e2e":
         sys.exit(f"seed_e2e.py only runs with ENV=e2e (ENV is {settings.env!r}).")
 
     session_maker = get_session_maker()
