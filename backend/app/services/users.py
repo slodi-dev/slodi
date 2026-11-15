@@ -10,15 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.enums import Permissions
 from app.models.user import User
 from app.repositories.users import UserRepository
-from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
+from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin, UserUpdateSelf
 
 
 # Platform admin comes only from ADMIN_EMAILS (scripts/seed.py), never through
-# the API, so one admin cannot mint another or demote a peer.
+# the API, so one admin cannot mint, demote or delete another.
 def _admin_not_grantable() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Platform admin is granted through ADMIN_EMAILS, not through the API",
+        detail="Platform admin is granted and removed through ADMIN_EMAILS, not through the API",
     )
 
 
@@ -34,22 +34,7 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         return UserOut.model_validate(row)
 
-    async def get(self, user_id: UUID) -> UserOutLimited:
-        row = await self.repo.get(user_id)
-        if not row:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-        return UserOutLimited.model_validate(row)
-
     async def get_by_auth0_id(self, auth0_id: str) -> UserOut | None:
-        """
-        Get user by Auth0 ID.
-
-        Args:
-            auth0_id: The Auth0 ID (sub claim from JWT token)
-
-        Returns:
-            User model instance if found, None otherwise
-        """
         user = await self.repo.get_by_auth0_id(auth0_id)
         if user:
             return UserOut.model_validate(user)
@@ -57,12 +42,6 @@ class UserService:
 
     async def count(self, *, q: str | None) -> int:
         return await self.repo.count(q=q)
-
-    async def list(
-        self, *, q: str | None, limit: int = 50, offset: int = 0
-    ) -> list[UserOutLimited]:
-        rows = await self.repo.list(q=q, limit=limit, offset=offset)
-        return [UserOutLimited.model_validate(r) for r in rows]
 
     async def list_full(
         self, *, q: str | None, limit: int = 50, offset: int = 0
@@ -120,3 +99,11 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         await self.repo.delete(user_id)
         await self.session.commit()
+
+    async def delete_by_admin(self, user_id: UUID) -> str:
+        """Delete someone else's account; returns their auth0_id. Never another admin."""
+        user = await self.get_full(user_id)
+        if user.permissions == Permissions.admin:
+            raise _admin_not_grantable()
+        await self.delete(user_id)
+        return user.auth0_id

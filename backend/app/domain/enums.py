@@ -47,6 +47,14 @@ class WorkspaceRole(str, Enum):
     viewer = "viewer"
 
 
+WORKSPACE_ROLE_RANK: dict[WorkspaceRole, int] = {
+    WorkspaceRole.viewer: 0,
+    WorkspaceRole.editor: 1,
+    WorkspaceRole.admin: 2,
+    WorkspaceRole.owner: 3,
+}
+
+
 class GroupRole(str, Enum):
     owner = "owner"
     admin = "admin"

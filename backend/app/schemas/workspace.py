@@ -45,19 +45,6 @@ class WorkspaceCreate(WorkspaceBase):
     pass
 
 
-class WorkspaceUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    name: NameStr | None = None
-    default_meeting_weekday: Weekday | None = None
-    default_start_time: dt.time | None = None
-    default_end_time: dt.time | None = None
-    default_interval: EventInterval | None = None
-    season_start: dt.date | None = None
-    settings: dict[str, Any] | None = None
-    group_id: UUID | None = None
-
-
 class WorkspaceOut(WorkspaceBase):
     model_config = ConfigDict(from_attributes=True)
 

@@ -41,12 +41,9 @@ export type UserUpdateInput = {
   preferences?: Record<string, unknown> | null;
 };
 
+/** An admin may change only someone's permission (see the backend's UserUpdateAdmin). */
 export type AdminUserUpdateInput = {
-  name?: string;
-  pronouns?: string | null;
-  permissions?: UserPermissions;
-  preferences?: Record<string, unknown> | null;
-  email?: string;
+  permissions: UserPermissions;
 };
 
 export type PaginatedUsersResult = {

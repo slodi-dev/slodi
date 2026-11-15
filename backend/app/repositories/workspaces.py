@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-import datetime as dt
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, insert, literal, select, update
+from sqlalchemy import Select, func, insert, literal, select
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.domain.enums import WorkspaceRole
-from app.models.content import Content
-from app.models.troop import Troop
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMembership
 
@@ -65,33 +61,6 @@ class WorkspaceRepository(Repository):
         membership = WorkspaceMembership(user_id=user_id, workspace=ws, role=WorkspaceRole.owner)
         await self.add(membership)
         return ws, membership
-
-    async def delete(self, workspace_id: UUID) -> int:
-        now = dt.datetime.now(dt.timezone.utc)
-
-        # Cascade: soft-delete all content items (programs, events, tasks) in the workspace.
-        # workspace_id is on the content table so one query covers all content types.
-        await self.session.execute(
-            update(Content)
-            .where(Content.workspace_id == workspace_id, Content.deleted_at.is_(None))
-            .values(deleted_at=now)
-        )
-
-        # Cascade: soft-delete troops (separate table with its own deleted_at)
-        await self.session.execute(
-            update(Troop)
-            .where(Troop.workspace_id == workspace_id, Troop.deleted_at.is_(None))
-            .values(deleted_at=now)
-        )
-
-        # Soft-delete the workspace itself
-        res = await self.session.execute(
-            update(Workspace)
-            .where(Workspace.id == workspace_id, Workspace.deleted_at.is_(None))
-            .values(deleted_at=now)
-        )
-        assert isinstance(res, CursorResult)
-        return res.rowcount or 0
 
     async def get_workspace_owner(self, workspace_id: UUID) -> WorkspaceMembership | None:
         stmt = select(WorkspaceMembership).where(

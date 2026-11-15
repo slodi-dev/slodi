@@ -79,29 +79,6 @@ def test_delete_program_not_found_returns_404(client, content_access):
 # ── Workspace delete ───────────────────────────────────────────────────────────
 
 
-def test_delete_workspace_returns_204(client):
-    ws_id = uuid4()
-
-    with patch(
-        "app.services.workspaces.WorkspaceService.delete", new_callable=AsyncMock
-    ) as mock_del:
-        mock_del.return_value = None
-
-        resp = client.delete(f"/workspaces/{ws_id}")
-        assert resp.status_code == status.HTTP_204_NO_CONTENT
-        mock_del.assert_called_once_with(ws_id)
-
-
-def test_delete_workspace_not_found_returns_404(client):
-    with patch(
-        "app.services.workspaces.WorkspaceService.delete", new_callable=AsyncMock
-    ) as mock_del:
-        mock_del.side_effect = HTTPException(status_code=404, detail="Not found")
-
-        resp = client.delete(f"/workspaces/{uuid4()}")
-        assert resp.status_code == status.HTTP_404_NOT_FOUND
-
-
 # ── Group delete ───────────────────────────────────────────────────────────────
 
 
@@ -280,91 +257,6 @@ async def test_soft_delete_sets_deleted_at_not_hard_delete(db):
         select(m.Program).where(m.Program.id == program_id, m.Program.deleted_at.is_(None))
     )
     assert filtered is None, "Filtered query must exclude soft-deleted rows"
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_workspace_soft_delete_cascade(db):
-    """Soft-deleting a workspace must cascade deleted_at to Programs, Events, Tasks, Troops."""
-    from app.repositories.workspaces import WorkspaceRepository
-
-    user = m.User(name="Cascade User", auth0_id="auth0|casc1", email="casc@test.com")
-    ws = m.Workspace(
-        name="Cascade WS",
-        default_meeting_weekday=m.Weekday.monday,
-        default_start_time=dt.time(20, 0),
-        default_end_time=dt.time(21, 0),
-        default_interval=m.EventInterval.weekly,
-        season_start=dt.date.today(),
-    )
-    db.add_all([user, ws])
-    await db.flush()
-
-    program = m.Program(
-        name="Cascade Prog",
-        created_at=get_current_datetime(),
-        author_id=user.id,
-        workspace_id=ws.id,
-        content_type=m.ContentType.program,
-    )
-    event = m.Event(
-        name="Cascade Event",
-        created_at=get_current_datetime(),
-        author_id=user.id,
-        workspace_id=ws.id,
-        content_type=m.ContentType.event,
-        start_dt=get_current_datetime(),
-        end_dt=None,
-    )
-    troop = m.Troop(name="Cascade Troop", workspace_id=ws.id)
-    db.add_all([program, event, troop])
-    await db.flush()
-
-    task = m.Task(
-        name="Cascade Task",
-        created_at=get_current_datetime(),
-        author_id=user.id,
-        workspace_id=ws.id,
-        event_id=event.id,
-        content_type=m.ContentType.task,
-    )
-    db.add(task)
-    await db.flush()
-
-    prog_id, event_id, task_id, troop_id, ws_id = (
-        program.id,
-        event.id,
-        task.id,
-        troop.id,
-        ws.id,
-    )
-
-    # Soft-delete via repository
-    repo = WorkspaceRepository(db)
-    rows_affected = await repo.delete(ws_id)
-    await db.commit()
-
-    assert rows_affected == 1, "Workspace delete should report 1 affected row"
-
-    # Workspace row still in DB with deleted_at set
-    raw_ws = await db.scalar(select(m.Workspace).where(m.Workspace.id == ws_id))
-    assert raw_ws is not None and raw_ws.deleted_at is not None
-
-    # Program row still in DB with deleted_at set
-    raw_prog = await db.scalar(select(m.Program).where(m.Program.id == prog_id))
-    assert raw_prog is not None and raw_prog.deleted_at is not None
-
-    # Event row still in DB with deleted_at set
-    raw_event = await db.scalar(select(m.Event).where(m.Event.id == event_id))
-    assert raw_event is not None and raw_event.deleted_at is not None
-
-    # Task row still in DB with deleted_at set
-    raw_task = await db.scalar(select(m.Task).where(m.Task.id == task_id))
-    assert raw_task is not None and raw_task.deleted_at is not None
-
-    # Troop row still in DB with deleted_at set
-    raw_troop = await db.scalar(select(m.Troop).where(m.Troop.id == troop_id))
-    assert raw_troop is not None and raw_troop.deleted_at is not None
 
 
 @pytest.mark.integration
