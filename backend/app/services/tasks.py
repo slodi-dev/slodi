@@ -51,9 +51,7 @@ class TaskService:
         return [TaskListOut.from_row(task, stats) for task, stats in rows]
 
     async def create_under_event(self, event_id: UUID, data: TaskCreate) -> TaskOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         workspace_id = await self.session.scalar(
@@ -86,9 +84,7 @@ class TaskService:
         return TaskOut.from_row(t, stats)
 
     async def create_under_workspace(self, workspace_id: UUID, data: TaskCreate) -> TaskOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         tag_names = data.tag_names or []
@@ -140,9 +136,7 @@ class TaskService:
     async def update(
         self, task_id: UUID, data: TaskUpdate, current_user_id: UUID | None = None
     ) -> TaskOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         row = await self.repo.get(task_id, include_hidden=True)

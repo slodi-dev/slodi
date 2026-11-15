@@ -21,19 +21,10 @@ if TYPE_CHECKING:
 
 
 class ReviewComment(Base):
-    """A note a reviewer leaves on a piece of content.
-
-    Distinct from `Comment`, which is public discussion between leaders. This is
-    Dagskrárstjórnarteymið's own record: either kept between themselves, or
-    addressed to the author as a suggestion.
-
-    Not soft-deletable. A note that was sent to an author cannot be unsent, and
-    an internal note is the reasoning behind a decision — both are the record.
-    """
+    """A moderator's note on an item: internal, or sent to the author."""
 
     __tablename__ = "review_comments"
     __table_args__ = (
-        # The pane reads one item's notes, oldest first.
         Index("ix_review_comments_content_id_created_at", "content_id", "created_at"),
     )
 
@@ -46,9 +37,6 @@ class ReviewComment(Base):
     author_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    """The reviewer. Nullable so removing a person does not erase what they
-    decided — the note survives them, credited to nobody."""
-
     body: Mapped[str] = mapped_column(String(BODY_MAX), nullable=False)
     visibility: Mapped[ReviewCommentVisibility] = mapped_column(
         SAEnum(

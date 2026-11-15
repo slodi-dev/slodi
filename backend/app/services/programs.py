@@ -82,9 +82,7 @@ class ProgramService:
         return ProgramOut.from_row(prog, stats)
 
     async def create_under_workspace(self, workspace_id: UUID, data: ProgramCreate) -> ProgramOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         try:
@@ -148,9 +146,7 @@ class ProgramService:
     async def update(
         self, program_id: UUID, data: ProgramUpdate, current_user_id: UUID | None = None
     ) -> ProgramOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         row = await self.repo.get(program_id, include_hidden=True)

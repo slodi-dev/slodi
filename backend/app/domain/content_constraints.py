@@ -7,5 +7,4 @@ INSTRUCTIONS_MAX: Final[int] = 5000
 LOCATION_MAX: Final[int] = 255
 IMG_MAX: Final[int] = 255
 
-REVIEW_NOTE_MAX = 500
-"""What a reviewer writes back to the author when rejecting."""
+REVIEW_NOTE_MAX: Final[int] = 500

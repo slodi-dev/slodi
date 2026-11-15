@@ -60,11 +60,5 @@ class Comment(SoftDeleteMixin, Base):
     # Properties for serialization
     @property
     def author_name(self) -> str:
-        """Mirrors `Content.author_name`.
-
-        A comment rendered without a name is an anonymous remark on someone
-        else's work, which is not what a leader writing it intends. Every query
-        that serialises a comment must eager-load `user` — a lazy load here
-        raises under async.
-        """
+        # Needs `user` eager-loaded; a lazy load raises under async.
         return self.user.name

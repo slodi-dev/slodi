@@ -90,9 +90,7 @@ class EventService:
     # ----- creation under workspace/program -----
 
     async def create_under_workspace(self, workspace_id: UUID, data: EventCreate) -> EventOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         tag_names = data.tag_names or []
@@ -120,9 +118,7 @@ class EventService:
         return EventOut.from_row(ev, stats)
 
     async def create_under_program(self, program_id: UUID, data: EventCreate) -> EventOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         prog_row = await self.program_repo.get(program_id)
@@ -192,9 +188,7 @@ class EventService:
     async def update(
         self, event_id: UUID, data: EventUpdate, current_user_id: UUID | None = None
     ) -> EventOut:
-        # A SAS cannot cap an upload, so the ceiling is enforced here, before
-        # the row is allowed to reference the blob. See AttachmentVerifier.
-        AttachmentVerifier().check_content(
+        await AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
         row = await self.repo.get(event_id, include_hidden=True)

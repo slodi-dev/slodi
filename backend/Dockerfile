@@ -23,17 +23,6 @@ COPY alembic ./alembic
 COPY app ./app
 COPY scripts ./scripts
 
-# ── Stage: test ──────────────────────────────────────────
-# Includes dev/test dependencies, runs pytest
-FROM base AS test
-
-RUN uv sync --locked
-# ^ installs ALL dependencies including dev/test
-
-COPY tests ./tests
-
-CMD ["uv", "run", "pytest", "-v", "--tb=short"]
-
 # ── Stage: production ────────────────────────────────────
 # Clean runtime image — no test deps, no test files
 FROM base AS production
