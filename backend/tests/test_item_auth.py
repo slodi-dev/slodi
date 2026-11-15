@@ -74,6 +74,7 @@ def test_every_get_requires_a_user_unless_listed():
     assert unauthenticated == set(PUBLIC_GETS)
 
 
+@pytest.mark.usefixtures("content_access")
 def test_item_responses_are_cached_privately(client, sample_workspace):
     program = _make_program(sample_workspace.id)
     with (

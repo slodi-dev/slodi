@@ -5,12 +5,15 @@ from datetime import timezone
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
+import pytest
 from fastapi import HTTPException, status
 
 from app.schemas.event import EventOut
 from app.schemas.task import TaskListOut, TaskOut
 from app.schemas.user import UserOutLimited
 from app.schemas.workspace import WorkspaceNested
+
+pytestmark = pytest.mark.usefixtures("content_access")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -256,12 +259,8 @@ def test_delete_task(client, sample_workspace):
         mock_delete.assert_called_once_with(task.id)
 
 
-def test_delete_task_not_found(client):
-    with patch(
-        "app.services.tasks.TaskService.get",
-        new_callable=AsyncMock,
-    ) as mock_get:
-        mock_get.side_effect = HTTPException(status_code=404, detail="Task not found")
+def test_delete_task_not_found(client, content_access):
+    content_access.return_value = None
 
-        response = client.delete(f"/tasks/{uuid4()}")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    response = client.delete(f"/tasks/{uuid4()}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND

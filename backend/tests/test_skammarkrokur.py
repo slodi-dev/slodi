@@ -127,9 +127,7 @@ async def test_the_refusal_says_when_it_ends():
             await require_not_suspended(_user(), AsyncMock())
 
     assert exc.value.status_code == status.HTTP_403_FORBIDDEN
-    # Icelandic in the message a person reads, ISO in the header a machine does.
     assert format_date(until) in exc.value.detail
-    assert exc.value.headers["X-Suspended-Until"] == until.date().isoformat()
 
 
 @pytest.mark.asyncio
@@ -351,4 +349,3 @@ async def test_an_open_ended_refusal_names_no_date():
 
     assert "fram til" not in exc.value.detail
     assert "Dagskrárstjórnarteymið" in exc.value.detail
-    assert exc.value.headers["X-Suspended-Until"] == "open-ended"

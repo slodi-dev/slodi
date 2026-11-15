@@ -14,7 +14,10 @@ from fastapi.testclient import TestClient
 from app.core.auth import get_current_user
 from app.core.db import get_session
 from app.main import create_app
+from app.repositories.content import ContentAccess
 from app.schemas.workspace import WorkspaceRole
+
+ACCESS = "app.repositories.content.ContentRepository.get_access"
 
 
 def _client_as(user, session):
@@ -32,15 +35,16 @@ def _client_as(user, session):
 
 
 def _retag(user, session, *, author_id, workspace_role=WorkspaceRole.viewer):
-    content_id, tag_id = uuid4(), uuid4()
+    content_id, tag_id, bank_id = uuid4(), uuid4(), uuid4()
     with (
-        patch("app.services.content.ContentService.get_author_id", new_callable=AsyncMock) as ga,
-        patch("app.services.content.ContentService.get_workspace_id", new_callable=AsyncMock) as gw,
+        patch(ACCESS, new_callable=AsyncMock) as access,
+        patch("app.core.auth._DEFAULT_WORKSPACE_ID", bank_id),
         patch("app.core.auth._get_workspace_role", new_callable=AsyncMock) as role,
         patch("app.services.tags.TagService.add_content_tag", new_callable=AsyncMock) as add,
     ):
-        ga.return_value = author_id
-        gw.return_value = uuid4()
+        access.return_value = ContentAccess(
+            workspace_id=bank_id, author_id=author_id, hidden_at=None
+        )
         role.return_value = workspace_role
         add.return_value = (True, {"content_id": str(content_id), "tag_id": str(tag_id)})
 
@@ -101,13 +105,14 @@ def test_a_suspended_leader_cannot_retag(mock_db_session, viewer_user, method):
     app.dependency_overrides[require_not_suspended] = _suspended
 
     with (
-        patch("app.services.content.ContentService.get_author_id", new_callable=AsyncMock) as ga,
-        patch("app.services.content.ContentService.get_workspace_id", new_callable=AsyncMock) as gw,
+        patch(ACCESS, new_callable=AsyncMock) as access,
         patch("app.services.tags.TagService.add_content_tag", new_callable=AsyncMock) as add,
         patch("app.services.tags.TagService.remove_content_tag", new_callable=AsyncMock),
     ):
-        ga.return_value = viewer_user.id  # their own item
-        gw.return_value = uuid4()
+        # their own item
+        access.return_value = ContentAccess(
+            workspace_id=uuid4(), author_id=viewer_user.id, hidden_at=None
+        )
         add.return_value = (True, {"content_id": str(content_id), "tag_id": str(tag_id)})
 
         res = getattr(TestClient(app), method)(f"/content/{content_id}/tags/{tag_id}")

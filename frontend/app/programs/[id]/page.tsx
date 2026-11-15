@@ -16,6 +16,7 @@ import { HiddenChip, hiddenDimClass, isHidden } from "@/components/HiddenMark/Hi
 import { ROUTES } from "@/constants/routes";
 import { useLikes } from "@/contexts/LikesContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramActions } from "@/hooks/useProgramActions";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
@@ -78,6 +79,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   );
   const { handleShare, handleAddToWorkspace } = useProgramActions(program);
   const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
+  const defaultWorkspaceId = useDefaultWorkspaceId();
   const handleSubmitComment = useCallback(
     async (body: string) => {
       const created = await createComment(id, body, getToken);
@@ -104,8 +106,8 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   if (error) return <ProgramDetailError error={error} />;
   if (isLoading) return <ProgramDetailSkeleton />;
   if (!program) notFound();
-  const canEdit = canEditProgram(user, program, workspaceRole);
-  const canDelete = canDeleteProgram(user, program, workspaceRole);
+  const canEdit = canEditProgram(user, program, workspaceRole, defaultWorkspaceId);
+  const canDelete = canDeleteProgram(user, program, workspaceRole, defaultWorkspaceId);
   const type = (program.content_type ?? "task") as BadgeContentType;
   const copy = kindCopy(type);
   const comments = [...(program.comments ?? []), ...extraComments]
@@ -237,7 +239,9 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             onRemoveComment={(c) => void handleRemoveComment(c)}
             onEditComment={handleEditComment}
             canEditComment={(c) => canEditComment(user, c)}
-            canRemoveComment={(c) => canDeleteComment(user, c, program, workspaceRole)}
+            canRemoveComment={(c) =>
+              canDeleteComment(user, c, program, workspaceRole, defaultWorkspaceId)
+            }
           />
         )}
         {!isEditMode && (

@@ -5,11 +5,14 @@ from datetime import timezone
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
+import pytest
 from fastapi import HTTPException, status
 
 from app.schemas.event import EventListOut, EventOut
 from app.schemas.user import UserOutLimited
 from app.schemas.workspace import WorkspaceNested
+
+pytestmark = pytest.mark.usefixtures("content_access")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -277,12 +280,8 @@ def test_delete_event(client, sample_workspace):
         mock_delete.assert_called_once_with(event.id)
 
 
-def test_delete_event_not_found(client):
-    with patch(
-        "app.services.events.EventService.get",
-        new_callable=AsyncMock,
-    ) as mock_get:
-        mock_get.side_effect = HTTPException(status_code=404, detail="Event not found")
+def test_delete_event_not_found(client, content_access):
+    content_access.return_value = None
 
-        response = client.delete(f"/events/{uuid4()}")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    response = client.delete(f"/events/{uuid4()}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND

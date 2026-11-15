@@ -18,9 +18,9 @@ export function isOwner(user: User | null, program: Program): boolean {
 /**
  * Can the current user change this bank item — edit it or delete it?
  *
- * Mirrors `check_content_edit_access` in `backend/app/core/auth.py`. Allowed when
- * the user is a platform admin, a workspace admin (or above), or the item's own
- * author at any workspace role.
+ * Mirrors `check_content_edit` in `backend/app/core/auth.py`. Allowed when
+ * the user is a platform admin, a moderator (bank items only), a workspace admin
+ * (or above), or the item's own author at any workspace role.
  *
  * **The author clause deliberately does not require `editor`.** The bank takes
  * submissions from anyone with an account, so its authors are plain viewers —
@@ -35,18 +35,17 @@ export function isOwner(user: User | null, program: Program): boolean {
 function canChangeContent(
   user: User | null,
   content: Program,
-  workspaceRole: WorkspaceRole | null | undefined
+  workspaceRole: WorkspaceRole | null | undefined,
+  defaultWorkspaceId: string | null | undefined
 ): boolean {
   if (!user || !content) return false;
   // Platform admins bypass workspace membership entirely. Ranked rather than
   // compared for equality: `=== "admin"` is how the backend's tags router ended
   // up refusing moderators (sc-486), and `hasPermission` is right here.
   if (hasPermission(user.permissions, "admin")) return true;
-  // Dagskrárstjórnarteymið, matching the server's fourth clause. This was
-  // missing, so the moderation team was offered neither action on anybody's
-  // item while the API allowed both — the mirror claimed a match it did not
-  // have, which is how the next divergence gets written "following the pattern".
-  if (hasPermission(user.permissions, "moderator")) return true;
+  // Dagskrárstjórnarteymið, in the bank only
+  const inBank = Boolean(content.workspace_id) && content.workspace_id === defaultWorkspaceId;
+  if (inBank && hasPermission(user.permissions, "moderator")) return true;
   // Everyone else must at least be a member of the workspace
   if (!hasWorkspaceRole(workspaceRole, "viewer")) return false;
   return isOwner(user, content) || hasWorkspaceRole(workspaceRole, "admin");
@@ -55,20 +54,21 @@ function canChangeContent(
 /**
  * Check if the current user can edit (update) a bank item.
  *
- * Backend: `PATCH /programs|events|tasks/{id}` → `check_content_edit_access`.
+ * Backend: `PATCH /programs|events|tasks/{id}` → `check_content_edit`.
  */
 export function canEditProgram(
   user: User | null,
   program: Program,
-  workspaceRole: WorkspaceRole | null | undefined = null
+  workspaceRole: WorkspaceRole | null | undefined = null,
+  defaultWorkspaceId: string | null | undefined = null
 ): boolean {
-  return canChangeContent(user, program, workspaceRole);
+  return canChangeContent(user, program, workspaceRole, defaultWorkspaceId);
 }
 
 /**
  * Check if the current user can delete a bank item.
  *
- * Backend: `DELETE /programs|events|tasks/{id}` → `check_content_edit_access`.
+ * Backend: `DELETE /programs|events|tasks/{id}` → `check_content_edit`.
  *
  * This used to require workspace `admin`, which meant a leader could file an idea
  * into the open bank and then have no way to take it back. An author can now
@@ -77,9 +77,10 @@ export function canEditProgram(
 export function canDeleteProgram(
   user: User | null,
   program: Program,
-  workspaceRole: WorkspaceRole | null | undefined = null
+  workspaceRole: WorkspaceRole | null | undefined = null,
+  defaultWorkspaceId: string | null | undefined = null
 ): boolean {
-  return canChangeContent(user, program, workspaceRole);
+  return canChangeContent(user, program, workspaceRole, defaultWorkspaceId);
 }
 
 /**
@@ -96,21 +97,25 @@ export function canEditComment(user: User | null, comment: ContentComment): bool
  * Can the current user remove this comment?
  *
  * Backend: `DELETE /comments/{id}` — its author, or anyone who can change the
- * item it hangs under (`check_content_edit_access` with the item's author).
+ * item it hangs under (`check_content_edit` with the item's author).
  */
 export function canDeleteComment(
   user: User | null,
   comment: ContentComment,
   content: Program,
-  workspaceRole: WorkspaceRole | null | undefined = null
+  workspaceRole: WorkspaceRole | null | undefined = null,
+  defaultWorkspaceId: string | null | undefined = null
 ): boolean {
-  return canEditComment(user, comment) || canChangeContent(user, content, workspaceRole);
+  return (
+    canEditComment(user, comment) ||
+    canChangeContent(user, content, workspaceRole, defaultWorkspaceId)
+  );
 }
 
 /**
  * Check if the current user can add content to a workspace.
  *
- * Mirrors `check_content_create_access` in `backend/app/core/auth.py`.
+ * Mirrors `check_content_create` in `backend/app/core/auth.py`.
  *
  * **The open bank is the exception, not the new rule.** It takes submissions
  * from anyone with an account — and every account is auto-joined to it as a

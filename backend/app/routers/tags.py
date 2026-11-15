@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
-    check_content_edit_access,
-    check_content_workspace_access,
+    check_content_edit,
+    check_content_read,
     get_current_user,
     is_content_moderator,
     require_not_suspended,
@@ -26,7 +26,6 @@ from app.schemas.tag import (
     TagUpdate,
 )
 from app.schemas.user import Permissions, UserOut
-from app.services.content import ContentService
 from app.services.tags import TagService
 
 router = APIRouter(tags=["tags"])
@@ -142,7 +141,7 @@ async def list_content_tags(
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[TagOut]:
-    await check_content_workspace_access(content_id, current_user, session)
+    await check_content_read(content_id, current_user, session)
     svc = TagService(session)
     total = await svc.count_content_tags(content_id)
     items = await svc.list_content_tags(content_id, limit=limit, offset=offset)
@@ -192,28 +191,6 @@ async def list_tagged_content(
     return items
 
 
-async def _assert_may_retag(content_id: UUID, current_user: UserOut, session: AsyncSession) -> None:
-    """
-    Changing an item's tags is changing the item, so it uses the item's rule.
-
-    This used to be `author or platform admin`, spelled out here and nowhere
-    else. It disagreed with `check_content_edit_access` in both directions that
-    mattered: a **moderator** was refused, because the check compared
-    `permissions != Permissions.admin` and a moderator is a rank below — so
-    Dagskrárstjórnarteymið could hide an item and suspend its author but not fix
-    a mis-tag, which is the curation the rank exists for — and a **workspace
-    admin** was refused on content in their own workspace.
-    """
-    svc = ContentService(session)
-    await check_content_edit_access(
-        await svc.get_workspace_id(content_id),
-        await svc.get_author_id(content_id),
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
-
-
 @router.put(
     "/content/{content_id}/tags/{tag_id}",
     response_model=ContentTagOut,
@@ -227,7 +204,7 @@ async def add_content_tag(
     current_user: UserOut = Depends(get_current_user),
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> ContentTagOut:
-    await _assert_may_retag(content_id, current_user, session)
+    await check_content_edit(content_id, current_user, session)
 
     svc = TagService(session)
     created, tag = await svc.add_content_tag(content_id, tag_id)
@@ -245,7 +222,7 @@ async def remove_content_tag(
     current_user: UserOut = Depends(get_current_user),
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> None:
-    await _assert_may_retag(content_id, current_user, session)
+    await check_content_edit(content_id, current_user, session)
 
     svc = TagService(session)
     await svc.remove_content_tag(content_id, tag_id)

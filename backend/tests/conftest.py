@@ -1,7 +1,7 @@
 """Test configuration and fixtures."""
 
 from collections.abc import AsyncGenerator
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -15,6 +15,7 @@ from app.core.db import get_session
 from app.domain.enums import Permissions
 from app.main import create_app
 from app.models.base import Base
+from app.repositories.content import ContentAccess
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceOut
 
@@ -34,6 +35,16 @@ def mock_db_session():
     session = AsyncMock()
     session.scalar.return_value = None
     return session
+
+
+@pytest.fixture
+def content_access():
+    """Stub the lookup behind check_content_read/edit; set return_value to shape the item."""
+    with patch(
+        "app.repositories.content.ContentRepository.get_access", new_callable=AsyncMock
+    ) as access:
+        access.return_value = ContentAccess(workspace_id=uuid4(), author_id=uuid4(), hidden_at=None)
+        yield access
 
 
 @pytest.fixture

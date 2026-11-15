@@ -52,6 +52,7 @@ def _not_found():
 # ── Program delete ─────────────────────────────────────────────────────────────
 
 
+@pytest.mark.usefixtures("content_access")
 def test_delete_program_returns_204(client):
     program_id = uuid4()
     sample = _prog()
@@ -68,12 +69,11 @@ def test_delete_program_returns_204(client):
         mock_del.assert_called_once_with(program_id)
 
 
-def test_delete_program_not_found_returns_404(client):
-    with patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get:
-        mock_get.side_effect = _not_found()
+def test_delete_program_not_found_returns_404(client, content_access):
+    content_access.return_value = None
 
-        resp = client.delete(f"/programs/{uuid4()}")
-        assert resp.status_code == status.HTTP_404_NOT_FOUND
+    resp = client.delete(f"/programs/{uuid4()}")
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ── Workspace delete ───────────────────────────────────────────────────────────
@@ -227,6 +227,7 @@ def test_delete_user_not_found_returns_404(client):
 # ── GET after soft-delete returns 404 (router level) ──────────────────────────
 
 
+@pytest.mark.usefixtures("content_access")
 def test_get_program_returns_404_after_soft_delete(client):
     """Once soft-deleted, the service raises 404 on GET (repo filters deleted_at IS NULL)."""
     with patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get:

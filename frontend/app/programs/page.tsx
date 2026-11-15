@@ -363,8 +363,8 @@ function ProgramsPageInner() {
             onEdit={(p) => void openEditor(p)}
             loadingEditId={loadingEditId}
             onDelete={(p) => setPendingDeleteProgram(p)}
-            canEdit={(p) => canEditProgram(user, p, role)}
-            canDelete={(p) => canDeleteProgram(user, p, role)}
+            canEdit={(p) => canEditProgram(user, p, role, defaultWorkspaceId)}
+            canDelete={(p) => canDeleteProgram(user, p, role, defaultWorkspaceId)}
           />
 
           {/* Pagination */}

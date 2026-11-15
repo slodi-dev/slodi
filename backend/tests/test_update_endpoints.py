@@ -5,6 +5,7 @@ from datetime import timezone
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
+import pytest
 from fastapi import status
 
 from app.schemas.comment import CommentOut
@@ -37,6 +38,7 @@ def _make_program(workspace_id, name="Test Program"):
 # ── Program update ────────────────────────────────────────────────────────────
 
 
+@pytest.mark.usefixtures("content_access")
 def test_update_program(client, sample_workspace):
     program = _make_program(sample_workspace.id)
     updated = _make_program(sample_workspace.id, name="Updated Program")
@@ -60,17 +62,11 @@ def test_update_program(client, sample_workspace):
         assert response.json()["name"] == "Updated Program"
 
 
-def test_update_program_not_found(client):
-    from fastapi import HTTPException
+def test_update_program_not_found(client, content_access):
+    content_access.return_value = None
 
-    with patch(
-        "app.services.programs.ProgramService.get",
-        new_callable=AsyncMock,
-    ) as mock_get:
-        mock_get.side_effect = HTTPException(status_code=404, detail="Program not found")
-
-        response = client.patch(f"/programs/{uuid4()}", json={"name": "X"})
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    response = client.patch(f"/programs/{uuid4()}", json={"name": "X"})
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ── Workspace update ──────────────────────────────────────────────────────────

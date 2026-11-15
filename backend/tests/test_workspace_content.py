@@ -13,6 +13,8 @@ from app.schemas.task import TaskOut
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceNested
 
+pytestmark = pytest.mark.usefixtures("content_access")
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -170,12 +172,11 @@ def test_delete_program_returns_204(client, sample_workspace):
         mock_del.assert_called_once_with(sample_program.id)
 
 
-def test_delete_program_not_found(client):
-    with patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get:
-        mock_get.side_effect = HTTPException(status_code=404, detail="Program not found")
+def test_delete_program_not_found(client, content_access):
+    content_access.return_value = None
 
-        response = client.delete(f"/programs/{uuid4()}")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    response = client.delete(f"/programs/{uuid4()}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_delete_group_returns_204(client):
@@ -483,7 +484,7 @@ def test_no_endpoint_hands_a_reviewers_note_to_a_stranger(
 
     Every endpoint returning a `ContentOut` subclass carries the field, so every
     one of them has to answer this. `/content/{id}` did and `/tasks/{id}` did
-    not, which is the whole reason `apply_review_visibility` exists — this is
+    not, which is the whole reason `strip_review_fields` exists — this is
     parametrised so a new read path is a line here rather than a silent hole.
     """
     from app.domain.enums import ReviewState
@@ -513,16 +514,21 @@ def test_no_endpoint_hands_a_reviewers_note_to_a_stranger(
     assert body["review_note"] is None, f"{path} leaked review_note"
 
 
-def test_the_author_can_still_open_their_own_hidden_item(client, sample_workspace, admin_user):
+def test_the_author_can_still_open_their_own_hidden_item(
+    client, sample_workspace, admin_user, content_access
+):
     """
     Hiding sends the author a mail saying the item is no longer listed. If the
     item then 404s for them, that mail points at a dead link — and the review
     state on the page, added so a leader could find out what happened, is
     unreadable in the one case where the item actually disappeared.
     """
+    from app.repositories.content import ContentAccess
+
     task = _make_task(sample_workspace.id)
     task.author_id = admin_user.id
     task.hidden_at = datetime(2026, 9, 13, tzinfo=UTC)
+    content_access.return_value = ContentAccess(sample_workspace.id, task.author_id, task.hidden_at)
 
     with (
         patch(
@@ -541,14 +547,16 @@ def test_the_author_can_still_open_their_own_hidden_item(client, sample_workspac
 
 
 def test_a_hidden_item_is_not_found_for_anybody_else(
-    mock_db_session, viewer_user, sample_workspace
+    mock_db_session, viewer_user, sample_workspace, content_access
 ):
     """404 rather than 403: a 403 confirms an item exists at that id, which is
     the thing hiding is trying to stop."""
+    from app.repositories.content import ContentAccess
     from app.schemas.workspace import WorkspaceRole
 
     task = _make_task(sample_workspace.id)  # written by somebody else
     task.hidden_at = datetime(2026, 9, 13, tzinfo=UTC)
+    content_access.return_value = ContentAccess(sample_workspace.id, task.author_id, task.hidden_at)
 
     reader = _reader_client(mock_db_session, viewer_user)
 

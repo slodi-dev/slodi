@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import check_content_workspace_access, get_current_user, require_permission
+from app.core.auth import check_content_read, get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
@@ -50,7 +50,7 @@ async def report_content(
     skammarkrókur. Taking the ability to flag genuinely unsafe content away from
     someone who is themselves under review helps nobody.
     """
-    await check_content_workspace_access(content_id, current_user, session)
+    await check_content_read(content_id, current_user, session)
     content = await ContentService(session).get_name(content_id)
     return await ContentReportService(session).report(
         content_id, current_user.id, body, background_tasks, content
@@ -83,7 +83,7 @@ async def report_comment(
     comment = await CommentService(session).get_model(comment_id)
     content_id = comment.content_id
 
-    await check_content_workspace_access(content_id, current_user, session)
+    await check_content_read(content_id, current_user, session)
     content = await ContentService(session).get_name(content_id)
 
     return await ContentReportService(session).report(
