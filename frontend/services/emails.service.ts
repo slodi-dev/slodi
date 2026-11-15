@@ -15,8 +15,8 @@ export type EmailDraft = {
   subject: string;
   preheader: string | null;
   template: string;
-  blocks: Record<string, unknown>[] | null;
-  recipient_list_id: string | null;
+  /** Newsletter: a list of blocks. Other templates: their fields as one object. */
+  blocks: Record<string, unknown>[] | Record<string, unknown> | null;
   manual_recipients: string[] | null;
   status: "draft" | "scheduled" | "processing" | "sent" | "failed";
   scheduled_at: string | null;
@@ -30,52 +30,12 @@ export type DraftCreateInput = {
   subject: string;
   preheader?: string | null;
   template: string;
-  blocks?: Record<string, unknown>[] | null;
-  recipient_list_id?: string | null;
+  blocks?: EmailDraft["blocks"];
   manual_recipients?: string[] | null;
   scheduled_at?: string | null;
 };
 
 export type DraftUpdateInput = Partial<DraftCreateInput>;
-
-export type TemplateTextConfig = Record<string, Record<string, string>>;
-
-// ---------------------------------------------------------------------------
-// Template text config (editable copy in email templates)
-// ---------------------------------------------------------------------------
-
-export async function getTemplateText(token: string): Promise<TemplateTextConfig> {
-  const url = buildApiUrl("/emails/templates/text");
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-    credentials: "include",
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to get template text: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function updateTemplateText(
-  token: string,
-  config: TemplateTextConfig
-): Promise<TemplateTextConfig> {
-  const url = buildApiUrl("/emails/templates/text");
-  const response = await fetch(url, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(config),
-    credentials: "include",
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to update template text: ${response.status}`);
-  }
-  return response.json();
-}
 
 // ---------------------------------------------------------------------------
 // Templates

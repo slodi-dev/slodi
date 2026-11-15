@@ -49,7 +49,6 @@ class Settings(BaseSettings):
     # Resend (email) configuration
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
-    resend_max_recipients: int = Field(50, alias="RESEND_MAX_RECIPIENTS")
 
     # Public base URLs for links in outgoing email
     public_site_url: str = Field("https://slodi.is", alias="PUBLIC_SITE_URL")

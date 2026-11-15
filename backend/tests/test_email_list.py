@@ -8,7 +8,12 @@ from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 
 from app.core.db import get_session
-from app.core.email import _send_batch, one_click_unsubscribe_url, unsubscribe_page_url
+from app.core.email import (
+    OutgoingEmail,
+    one_click_unsubscribe_url,
+    send_batch,
+    unsubscribe_page_url,
+)
 from app.main import create_app
 from app.schemas.email_list import EmailListOut, SubscriptionStatusOut
 
@@ -209,10 +214,10 @@ def test_batch_sets_one_click_headers_to_backend_url():
         patch("app.core.email.settings.resend_api_key", "test-key"),
         patch("app.core.email.resend.Batch.send") as mock_send,
     ):
-        _send_batch(
+        send_batch(
             [
-                ("a@example.com", "Subject", "<p>hi</p>", one_click),
-                ("b@example.com", "Subject", "<p>hi</p>", None),
+                OutgoingEmail("a@example.com", "Subject", "<p>hi</p>", one_click),
+                OutgoingEmail("b@example.com", "Subject", "<p>hi</p>"),
             ]
         )
 
@@ -222,30 +227,6 @@ def test_batch_sets_one_click_headers_to_backend_url():
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     }
     assert "headers" not in params[1]
-
-
-def test_broadcast_links_body_to_page_and_header_to_api(client):
-    entry = _make_entry("sub@example.com")
-
-    with (
-        patch(
-            "app.services.email_list.EmailListService.list",
-            new_callable=AsyncMock,
-            return_value=[entry],
-        ),
-        patch("app.routers.email_router.send_batch_background") as mock_send,
-    ):
-        response = client.post(
-            "/emails/broadcast",
-            json={"subject": "Fréttir", "html": '<a href="{unsubscribe_url}">Afskrá</a>'},
-        )
-
-    assert response.status_code == status.HTTP_202_ACCEPTED
-    messages = mock_send.call_args.args[1]
-    recipient, _subject, html, header_url = messages[0]
-    assert recipient == "sub@example.com"
-    assert unsubscribe_page_url(entry.unsubscribe_token) in html
-    assert header_url == one_click_unsubscribe_url(entry.unsubscribe_token)
 
 
 # ── Delete (admin-only) ───────────────────────────────────────────────────────
@@ -272,3 +253,17 @@ def test_delete_email_not_found(client):
 
         response = client.delete("/emaillist/missing@example.com")
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_a_failed_batch_does_not_stop_the_rest_but_is_reported():
+    messages = [OutgoingEmail(f"{i}@example.com", "S", "<p>hi</p>") for i in range(250)]
+    with (
+        patch("app.core.email.settings.resend_api_key", "test-key"),
+        patch(
+            "app.core.email.resend.Batch.send", side_effect=[None, RuntimeError("429"), None]
+        ) as send,
+        pytest.raises(RuntimeError, match="100 of 250"),
+    ):
+        send_batch(messages)
+
+    assert send.call_count == 3

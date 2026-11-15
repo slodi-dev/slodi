@@ -23,7 +23,6 @@ const base: Omit<EmailDraft, "id" | "subject" | "status"> = {
   preheader: null,
   template: "newsletter",
   blocks: [],
-  recipient_list_id: null,
   manual_recipients: null,
   scheduled_at: null,
   sent_at: null,

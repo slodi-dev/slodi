@@ -201,7 +201,11 @@ export default function EmailManagement() {
     if (usesBlockEditor(draft.template) && Array.isArray(draft.blocks)) {
       setBlocks(draft.blocks as Block[]);
       setTemplateVars({});
-    } else if (draft.blocks && Array.isArray(draft.blocks) && draft.blocks.length === 1) {
+    } else if (draft.blocks && !Array.isArray(draft.blocks)) {
+      setTemplateVars(draft.blocks as Record<string, string>);
+      setBlocks([]);
+    } else if (Array.isArray(draft.blocks) && draft.blocks.length === 1) {
+      // Drafts saved before the fields were sent as a plain object.
       setTemplateVars(draft.blocks[0] as Record<string, string>);
       setBlocks([]);
     } else {
@@ -281,12 +285,12 @@ export default function EmailManagement() {
         .map((e) => e.trim())
         .filter(Boolean);
       // Newsletter uses block array; other templates use flat key/value dict
-      const blocksData: Record<string, unknown>[] | null = usesBlockEditor(form.template)
+      const blocksData: EmailDraft["blocks"] = usesBlockEditor(form.template)
         ? blocks.length > 0
           ? blocks
           : null
         : Object.keys(templateVars).length > 0
-          ? [templateVars as Record<string, unknown>]
+          ? templateVars
           : null;
       const payload = {
         subject: form.subject,

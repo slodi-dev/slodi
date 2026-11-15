@@ -44,23 +44,15 @@ def test_viewer_cannot_list_admin_users(viewer_client):
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_viewer_cannot_send_email(viewer_client):
+def test_viewer_cannot_create_an_email_draft(viewer_client):
     response = viewer_client.post(
-        "/emails/send",
-        json={
-            "recipients": ["someone@example.com"],
-            "subject": "Hello",
-            "html": "<p>Hi</p>",
-        },
+        "/emails/drafts", json={"subject": "Halló", "template": "newsletter"}
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_viewer_cannot_broadcast(viewer_client):
-    response = viewer_client.post(
-        "/emails/broadcast",
-        json={"subject": "Newsletter", "html": "<p>Content</p>"},
-    )
+def test_viewer_cannot_send_an_email_draft(viewer_client):
+    response = viewer_client.post(f"/emails/drafts/{uuid4()}/send")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 

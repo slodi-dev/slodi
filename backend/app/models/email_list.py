@@ -7,9 +7,7 @@ from sqlalchemy import DateTime, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.user_constraints import (
-    EMAIL_MAX,
-)
+from app.domain.user_constraints import EMAIL_MAX
 
 from .base import Base
 
@@ -29,11 +27,7 @@ class EmailList(Base):
         nullable=False,
         default=uuid4,
     )
-    #: Set when the address unsubscribes. The row is kept rather than deleted
-    #: so the token keeps working: a second click, or a mail provider retrying
-    #: its one-click POST, is told "already unsubscribed" instead of 404, and
-    #: the address can resubscribe from the same link. Every send reads only
-    #: rows where this is null.
+    # The row is kept on unsubscribe so the same link keeps working (and can resubscribe).
     unsubscribed_at: Mapped[dt.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

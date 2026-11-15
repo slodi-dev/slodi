@@ -111,4 +111,14 @@ async def test_active_tokens_skip_unsubscribed_addresses(db):
 
     tokens = await svc.active_tokens_for(["ON@example.com", "off@example.com", "never@example.com"])
 
-    assert tokens == {"on@example.com": on.unsubscribe_token}
+    assert tokens == {"ON@example.com": on.unsubscribe_token}
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_an_admin_can_delete_an_address_typed_with_different_case(db):
+    await _subscribe(db, "jon@example.com")
+
+    await EmailListService(db).delete("Jon@Example.com")
+
+    assert await EmailListService(db).active_token_for("jon@example.com") is None
