@@ -53,6 +53,9 @@ class EmailListService:
     async def active_tokens_for(self, emails: Iterable[str]) -> dict[str, UUID]:
         return await self.repo.active_tokens_for(emails)
 
+    async def active_token_for(self, email: str) -> UUID | None:
+        return (await self.repo.active_tokens_for([email])).get(email)
+
     async def _by_token(self, token: UUID) -> EmailList:
         entry = await self.repo.get_by_token(token)
         if entry is None:

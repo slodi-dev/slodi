@@ -1,5 +1,4 @@
 import EmailManagement from "@/components/EmailManagement/EmailManagement";
-import TemplateTextEditor from "@/components/EmailManagement/TemplateTextEditor";
 import styles from "../admin.module.css";
 
 export default function AdminEmailsPage() {
@@ -11,11 +10,6 @@ export default function AdminEmailsPage() {
       </div>
 
       <EmailManagement />
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Breyta texta í sniðmátum</h2>
-        <TemplateTextEditor />
-      </section>
     </main>
   );
 }

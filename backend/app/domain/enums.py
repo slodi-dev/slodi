@@ -32,6 +32,14 @@ class ReviewState(str, Enum):
 HIDDEN_REVIEW_STATES = frozenset({ReviewState.needs_changes, ReviewState.rejected})
 
 
+class DraftStatus(str, Enum):
+    draft = "draft"
+    scheduled = "scheduled"
+    processing = "processing"
+    sent = "sent"
+    failed = "failed"
+
+
 class WorkspaceRole(str, Enum):
     owner = "owner"
     admin = "admin"

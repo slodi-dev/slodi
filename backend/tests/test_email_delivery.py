@@ -17,7 +17,7 @@ from app.core.email import (
 )
 from app.models.email_draft import EmailDraft
 from app.schemas.email_list import EmailListOut
-from app.services.email_delivery import build_test_message, draft_messages
+from app.services.email_delivery import build_test_message, draft_messages, render_draft
 
 SVC = "app.services.email_list.EmailListService"
 
@@ -58,7 +58,7 @@ async def test_list_send_gives_each_subscriber_their_own_link_and_header():
 @pytest.mark.asyncio
 async def test_manual_recipient_on_the_list_gets_their_real_token():
     token = uuid4()
-    with patch(f"{SVC}.active_tokens_for", new_callable=AsyncMock, return_value={"on@x.is": token}):
+    with patch(f"{SVC}.active_tokens_for", new_callable=AsyncMock, return_value={"On@x.is": token}):
         [message] = await draft_messages(AsyncMock(), _draft(["On@x.is"]))
 
     recipient, _subject, html, header = message
@@ -87,9 +87,7 @@ async def test_manual_recipient_not_on_the_list_gets_no_link_and_no_header():
 @pytest.mark.asyncio
 async def test_test_send_to_a_subscriber_uses_their_real_token():
     token = uuid4()
-    with patch(
-        f"{SVC}.active_tokens_for", new_callable=AsyncMock, return_value={"admin@x.is": token}
-    ):
+    with patch(f"{SVC}.active_token_for", new_callable=AsyncMock, return_value=token):
         recipient, subject, html, header = await build_test_message(
             AsyncMock(), _draft(), "admin@x.is"
         )
@@ -102,7 +100,7 @@ async def test_test_send_to_a_subscriber_uses_their_real_token():
 @pytest.mark.asyncio
 async def test_test_send_to_a_non_subscriber_shows_the_sample_link_without_subscribing():
     with (
-        patch(f"{SVC}.active_tokens_for", new_callable=AsyncMock, return_value={}),
+        patch(f"{SVC}.active_token_for", new_callable=AsyncMock, return_value=None),
         patch(f"{SVC}.create", new_callable=AsyncMock) as create,
     ):
         _recipient, _subject, html, header = await build_test_message(
@@ -120,16 +118,22 @@ def test_test_send_route_goes_through_the_batch_sender(client, mock_db_session):
     token = uuid4()
     mock_db_session.get = AsyncMock(return_value=_draft())
     with (
-        patch(
-            f"{SVC}.active_tokens_for",
-            new_callable=AsyncMock,
-            return_value={"admin@test.com": token},
-        ),
+        patch(f"{SVC}.active_token_for", new_callable=AsyncMock, return_value=token),
         patch("app.routers.email_router.send_batch_background") as send,
     ):
         response = client.post(f"/emails/drafts/{uuid4()}/test")
 
     assert response.status_code == 202
     [message] = send.call_args.args[1]
-    assert message[0] == "admin@test.com"
-    assert message[3] == one_click_unsubscribe_url(token)
+    assert message.recipient == "admin@test.com"
+    assert message.one_click_url == one_click_unsubscribe_url(token)
+
+
+def test_template_fields_saved_as_a_one_item_list_still_reach_the_template():
+    draft = _draft(template="workspace_invite")
+    draft.blocks = [{"inviter_name": "Signý", "workspace_name": "Úlfar", "accept_url": "x"}]
+
+    html = render_draft(draft)
+
+    assert "{inviter_name}" not in html
+    assert "<strong>Úlfar</strong>" in html

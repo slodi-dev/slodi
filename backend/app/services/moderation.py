@@ -165,22 +165,21 @@ class _AuthorEmail:
 
 
 _SUGGESTION_EMAIL = _AuthorEmail(
-    subject="Slóði — ábending um „{name}“",
+    subject="Ábending um „{name}“",
     intro="Dagskrárstjórnarteymið skildi eftir ábendingu um efnið þitt <strong>{name}</strong>:",
     outro="Þú getur lagað efnið í dagskrárbankanum þegar þér hentar.",
 )
 
 _DECISION_EMAILS = {
     ReviewState.needs_changes: _AuthorEmail(
-        subject="Slóði — efnið þitt „{name}“ þarfnast lagfæringar",
+        subject="Efnið þitt „{name}“ þarfnast lagfæringar",
         intro=(
-            "Dagskrárstjórnarteymið tók efnið þitt <strong>{name}</strong> úr "
-            "dagskrárbankanum þar til það hefur verið lagað."
+            "Dagskrárstjórnarteymið faldi efnið þitt <strong>{name}</strong> úr dagskrárbankanum."
         ),
         outro="Þegar þú hefur lagað efnið fer það aftur í bankann og í yfirferð.",
     ),
     ReviewState.rejected: _AuthorEmail(
-        subject="Slóði — efninu þínu „{name}“ var hafnað",
+        subject="Efninu þínu „{name}“ var hafnað",
         intro=(
             "Dagskrárstjórnarteymið fór yfir efnið þitt <strong>{name}</strong> og hafnaði "
             "því. Það hefur verið tekið úr dagskrárbankanum."
