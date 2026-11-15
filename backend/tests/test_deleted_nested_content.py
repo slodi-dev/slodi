@@ -169,11 +169,11 @@ async def test_a_program_hides_deleted_comments_and_deleted_or_hidden_events(db)
     await _with_comments(db, user, program.id)
 
     repo = ProgramRepository(db)
-    for row in (await repo.get(program.id), await repo.get_in_workspace(program.id, ws.id)):
-        assert row is not None
-        loaded, _ = row
-        assert [c.body for c in loaded.comments] == ["Stendur"]
-        assert [e.name for e in loaded.events] == ["Sýnilegur"]
+    row = await repo.get(program.id)
+    assert row is not None
+    loaded, _ = row
+    assert [c.body for c in loaded.comments] == ["Stendur"]
+    assert [e.name for e in loaded.events] == ["Sýnilegur"]
 
 
 # ── Moderators see hidden children, marked ───────────────────────────────────
@@ -228,20 +228,14 @@ async def _program_with_children(db):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_a_moderator_sees_hidden_events_flagged_but_not_deleted_ones(db):
-    program_id, ws_id = await _program_with_children(db)
-    repo = ProgramRepository(db)
-
-    for row in (
-        await repo.get(program_id, include_hidden_children=True),
-        await repo.get_in_workspace(program_id, ws_id, include_hidden_children=True),
-    ):
-        assert row is not None
-        out = ProgramOut.from_row(*row)
-        by_name = {e.name: e for e in out.events}
-        assert set(by_name) == {"Sýnilegur", "Falinn"}
-        assert by_name["Falinn"].hidden_at is not None
-        assert by_name["Sýnilegur"].hidden_at is None
-        db.expunge_all()
+    program_id, _ = await _program_with_children(db)
+    row = await ProgramRepository(db).get(program_id, include_hidden_children=True)
+    assert row is not None
+    out = ProgramOut.from_row(*row)
+    by_name = {e.name: e for e in out.events}
+    assert set(by_name) == {"Sýnilegur", "Falinn"}
+    assert by_name["Falinn"].hidden_at is not None
+    assert by_name["Sýnilegur"].hidden_at is None
 
 
 @pytest.mark.integration

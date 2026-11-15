@@ -228,15 +228,6 @@ def test_delete_user_not_found_returns_404(client):
 
 
 @pytest.mark.usefixtures("content_access")
-def test_get_program_returns_404_after_soft_delete(client):
-    """Once soft-deleted, the service raises 404 on GET (repo filters deleted_at IS NULL)."""
-    with patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get:
-        mock_get.side_effect = _not_found()
-
-        resp = client.get(f"/programs/{uuid4()}")
-        assert resp.status_code == status.HTTP_404_NOT_FOUND
-
-
 def test_get_workspace_returns_404_after_soft_delete(client):
     with patch("app.services.workspaces.WorkspaceService.get", new_callable=AsyncMock) as mock_get:
         mock_get.side_effect = _not_found()
@@ -552,7 +543,7 @@ async def test_soft_deleted_rows_excluded_from_list_queries(db):
     repo = ProgramRepository(db)
 
     # Both show up before deletion
-    count_before = await repo.count_programs_for_workspace(ws.id)
+    count_before = await repo.count_content_for_workspace(ws.id)
     assert count_before == 2
 
     # Soft-delete p2
@@ -560,10 +551,10 @@ async def test_soft_deleted_rows_excluded_from_list_queries(db):
     await db.commit()
 
     # Only p1 should appear now
-    count_after = await repo.count_programs_for_workspace(ws.id)
+    count_after = await repo.count_content_for_workspace(ws.id)
     assert count_after == 1
 
-    listed = await repo.list_by_workspace(ws.id)
+    listed = await repo.list_content_by_workspace(ws.id)
     assert len(listed) == 1
     prog, _ = listed[0]
     assert prog.id == p1.id

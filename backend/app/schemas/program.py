@@ -3,30 +3,39 @@ from __future__ import annotations
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Field
 
 from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
 
-from .content import ContentCreate, ContentListOut, ContentOut, ContentUpdate
+from .content import ContentCreate, ContentOut, ContentUpdate
 from .event import EventListOut
 
 
 class ProgramFilters(BaseModel):
-    search: str | None = None
+    """The bank's query parameters. Ranges match items that overlap them; lists are OR."""
+
+    search: str | None = Field(default=None, description="Name or description contains, any case")
     age: list[AgeGroup] | None = None
-    duration_min: int | None = None
-    duration_max: int | None = None
-    prep_time_min: int | None = None
-    prep_time_max: int | None = None
-    count_min: int | None = None
-    count_max: int | None = None
-    price_max: int | None = None
-    location: str | None = None
+    duration_min: int | None = Field(default=None, ge=0, description="Minutes")
+    duration_max: int | None = Field(default=None, ge=0, description="Minutes")
+    prep_time_min: int | None = Field(default=None, ge=0, description="Minutes")
+    prep_time_max: int | None = Field(default=None, ge=0, description="Minutes")
+    count_min: int | None = Field(default=None, ge=0)
+    count_max: int | None = Field(default=None, ge=0)
+    price_max: int | None = Field(default=None, ge=0, description="ISK; 0 means free only")
+    location: str | None = Field(default=None, description="Contains, any case")
     equipment: list[str] | None = None
-    tags: list[str] | None = None
+    tags: list[str] | None = Field(default=None, description="Tag names, any case")
     author_id: UUID | None = None
-    author_name: str | None = None
-    sort_by: ProgramSortBy | None = None
+    author: str | None = Field(default=None, description="Author name contains, any case")
+    sort_by: ProgramSortBy | None = Field(default=None, description="Default: by name")
+
+
+class BankQuery(ProgramFilters):
+    """One model for every query parameter: FastAPI only expands a query model that is alone."""
+
+    limit: int = Field(default=50, ge=1, le=200)
+    offset: int = Field(default=0, ge=0)
 
 
 class ProgramCreate(ContentCreate):
@@ -37,11 +46,5 @@ class ProgramUpdate(ContentUpdate):
     pass
 
 
-class ProgramListOut(ContentListOut):
-    model_config = ConfigDict(from_attributes=True)
-    pass
-
-
 class ProgramOut(ContentOut):
-    model_config = ConfigDict(from_attributes=True)
     events: list[EventListOut] = []

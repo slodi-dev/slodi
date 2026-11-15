@@ -56,29 +56,6 @@ def test_create_program(client, sample_workspace):
         assert response.json()["name"] == program_data["name"]
 
 
-def test_list_workspace_programs(client, sample_workspace):
-    sample_program = _make_program(sample_workspace.id)
-
-    with (
-        patch(
-            "app.services.programs.ProgramService.list_for_workspace",
-            new_callable=AsyncMock,
-        ) as mock_list,
-        patch(
-            "app.services.programs.ProgramService.count_programs_for_workspace",
-            new_callable=AsyncMock,
-        ) as mock_count,
-    ):
-        mock_list.return_value = [sample_program]
-        mock_count.return_value = 1
-
-        response = client.get(f"/workspaces/{sample_workspace.id}/programs")
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["name"] == sample_program.name
-
-
 # ── Groups ────────────────────────────────────────────────────────────────────
 
 
@@ -193,39 +170,12 @@ def test_delete_group_returns_204(client):
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_get_program_not_found(client):
-    with patch("app.services.programs.ProgramService.get", new_callable=AsyncMock) as mock_get:
-        mock_get.side_effect = HTTPException(status_code=404, detail="Program not found")
-
-        response = client.get(f"/programs/{uuid4()}")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
 def test_get_group_not_found(client):
     with patch("app.services.groups.GroupService.get", new_callable=AsyncMock) as mock_get:
         mock_get.side_effect = HTTPException(status_code=404, detail="Group not found")
 
         response = client.get(f"/groups/{uuid4()}")
         assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_list_workspace_programs_empty(client, sample_workspace):
-    with (
-        patch(
-            "app.services.programs.ProgramService.list_for_workspace",
-            new_callable=AsyncMock,
-        ) as mock_list,
-        patch(
-            "app.services.programs.ProgramService.count_programs_for_workspace",
-            new_callable=AsyncMock,
-        ) as mock_count,
-    ):
-        mock_list.return_value = []
-        mock_count.return_value = 0
-
-        response = client.get(f"/workspaces/{sample_workspace.id}/programs")
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
 
 
 # ── GET /content/{id} — read one item of any kind ─────────────────────────────
@@ -311,12 +261,6 @@ def test_get_content_unknown_id_is_404(client):
 
 
 def test_content_list_passes_tags_and_author_to_the_service(client, sample_workspace):
-    """Both filters exist because the sidebar offers them.
-
-    Neither had a server-side equivalent while the bank filtered in the
-    browser, so moving filtering to the server would silently have dropped
-    them — the two most-used narrowings in the sidebar.
-    """
     with (
         patch(
             "app.services.programs.ProgramService.list_content_for_workspace",
@@ -338,7 +282,7 @@ def test_content_list_passes_tags_and_author_to_the_service(client, sample_works
         assert response.status_code == status.HTTP_200_OK
         filters = mock_list.call_args.kwargs["filters"]
         assert filters.tags == ["Útivist", "Leikir"]
-        assert filters.author_name == "Halld"
+        assert filters.author == "Halld"
         # The count must see the same filters, or the pager reports a total for
         # a different query than the one on screen.
         assert mock_count.call_args.kwargs["filters"].tags == ["Útivist", "Leikir"]
