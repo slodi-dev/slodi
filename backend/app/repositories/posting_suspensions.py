@@ -17,13 +17,13 @@ class PostingSuspensionRepository(Repository):
         super().__init__(session)
 
     async def active_for(self, user_id: UUID, now: dt.datetime) -> PostingSuspension | None:
-        """The suspension in force right now, if any.
-
-        Asked on every write attempt, which is why `(user_id, expires_at)` is
-        indexed and why this returns at most one row rather than a history.
-        """
+        """The suspension in force right now, if any; asked on every write attempt."""
         stmt = (
             select(PostingSuspension)
+            .options(
+                selectinload(PostingSuspension.issued_by),
+                selectinload(PostingSuspension.lifted_by),
+            )
             .where(
                 PostingSuspension.user_id == user_id,
                 PostingSuspension.lifted_at.is_(None),
@@ -38,7 +38,7 @@ class PostingSuspensionRepository(Repository):
         return await self.session.scalar(stmt)
 
     async def history_for(self, user_id: UUID) -> list[PostingSuspension]:
-        """Every spell, newest first. "Third time this year" is the point."""
+        """Every suspension, newest first."""
         stmt = (
             select(PostingSuspension)
             .options(
@@ -51,6 +51,13 @@ class PostingSuspensionRepository(Repository):
         return list(await self.session.scalars(stmt))
 
     async def get(self, suspension_id: UUID) -> PostingSuspension | None:
+        """With who issued and lifted it; re-read after a change so both are current."""
         return await self.session.scalar(
-            select(PostingSuspension).where(PostingSuspension.id == suspension_id)
+            select(PostingSuspension)
+            .options(
+                selectinload(PostingSuspension.issued_by),
+                selectinload(PostingSuspension.lifted_by),
+            )
+            .where(PostingSuspension.id == suspension_id)
+            .execution_options(populate_existing=True)
         )

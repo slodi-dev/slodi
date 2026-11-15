@@ -125,7 +125,7 @@ async def suspend_author(
     background_tasks: BackgroundTasks,
     current_user: UserOut = ModeratorDep,
 ) -> SuspensionOut:
-    """Pause someone's submitting (skammarkrókur); over 90 days needs an admin."""
+    """Pause someone's submitting (skammarkrókur)."""
     return await PostingSuspensionService(session).suspend(
         author_id, current_user, body, background_tasks
     )
