@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 import logging
 import re
@@ -253,14 +254,14 @@ class AttachmentVerifier:
                 logger.warning("Oversized blob %s could not be deleted", blob_name)
             raise AttachmentTooLarge(size=size, limit=limit)
 
-    def check_content(self, image: str | None, media: dict[str, Any] | None) -> None:
+    async def check_content(self, image: str | None, media: dict[str, Any] | None) -> None:
         """Check every blob a piece of content is about to reference.
 
-        `image` is the hero and is also the first entry of `media.images`, so
-        it is checked twice on a normal submit. That is deliberate: the two can
-        be set independently over the wire, and a ceiling that only holds when
-        the client keeps them in step is not a ceiling.
-        """
+        The Azure client is synchronous, so the checks run in a worker thread."""
+        await asyncio.to_thread(self._check_all, image, media)
+
+    def _check_all(self, image: str | None, media: dict[str, Any] | None) -> None:
+        # `image` is usually also in `media.images`, but the client can send them apart.
         if image:
             self.check(image)
         if isinstance(media, dict):

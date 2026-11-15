@@ -284,7 +284,7 @@ async def main() -> None:
                 HIDDEN_TASK_ID,
                 "Falin hugmynd",
                 MEMBER_ID,
-                ReviewState.approved,
+                ReviewState.needs_changes,
                 hidden_at=CREATED_AT,
             )
         )

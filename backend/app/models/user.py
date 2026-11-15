@@ -86,11 +86,7 @@ class User(SoftDeleteMixin, Base):
     ws_memberships: Mapped[list[WorkspaceMembership]] = relationship(back_populates="user")
     group_memberships: Mapped[list[GroupMembership]] = relationship(back_populates="user")
     authored_content: Mapped[list[Content]] = relationship(
-        back_populates="author",
-        # Content points at users twice now — as author and as reviewer — so the
-        # join has to say which one it means.
-        foreign_keys="Content.author_id",
-        primaryjoin="Content.author_id == User.id",
+        back_populates="author", foreign_keys="Content.author_id"
     )
     comments: Mapped[list[Comment]] = relationship(back_populates="user")
 
