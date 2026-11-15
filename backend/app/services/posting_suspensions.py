@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import html
 import logging
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from fastapi import BackgroundTasks, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.email import send_email_background
+from app.domain.enums import Permissions
 from app.domain.icelandic_dates import format_date
 from app.models.posting_suspension import PostingSuspension
 from app.repositories.posting_suspensions import PostingSuspensionRepository
@@ -42,14 +44,11 @@ class PostingSuspensionService:
         data: SuspensionCreate,
         background_tasks: BackgroundTasks,
     ) -> SuspensionOut:
-        """Put someone in skammarkrókur.
+        """Put someone in skammarkrókur, for `days` or open-ended (`days=None`).
 
-        Any length, including open-ended (`days=None`). Dagskrárstjórnarteymið
-        owns this decision: every one is recorded, attributed and reversible,
-        which is what makes it safe to leave with them rather than escalating.
-        """
+        Moderators may suspend members only; an admin may also suspend a moderator.
+        Nobody suspends an admin or themselves."""
         if user_id == issuer.id:
-            # Not a real risk, but the error is clearer than the confusion.
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Þú getur ekki sett sjálfan þig í skammarkrók.",
@@ -58,6 +57,13 @@ class PostingSuspensionService:
         target = await UserRepository(self.session).get(user_id)
         if target is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        if target.permissions == Permissions.admin or (
+            target.permissions == Permissions.moderator and issuer.permissions != Permissions.admin
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Þú getur ekki sett þennan notanda í skammarkrók.",
+            )
 
         now = get_current_datetime()
         if await self.repo.active_for(user_id, now):
@@ -78,13 +84,12 @@ class PostingSuspensionService:
         await self.session.commit()
 
         self._notify(background_tasks, target.email, suspension)
-        return self._out(suspension, now)
+        return await self._reread(suspension.id, now)
 
     async def lift(
         self, suspension_id: UUID, lifter: UserOut, data: SuspensionLift
     ) -> SuspensionOut:
-        """End one early. A reconsidered suspension is not the same as one that
-        ran its course, so both facts are kept."""
+        """End one early; the record keeps that it was lifted, by whom and why."""
         suspension = await self.repo.get(suspension_id)
         if suspension is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -98,6 +103,12 @@ class PostingSuspensionService:
         suspension.lifted_by_id = lifter.id
         suspension.lift_reason = data.reason
         await self.session.commit()
+        return await self._reread(suspension_id, now)
+
+    async def _reread(self, suspension_id: UUID, now: dt.datetime) -> SuspensionOut:
+        # Loads issued_by/lifted_by; reading them off the new row would lazy-load under async.
+        suspension = await self.repo.get(suspension_id)
+        assert suspension is not None
         return self._out(suspension, now)
 
     def _notify(
@@ -117,7 +128,7 @@ class PostingSuspensionService:
             "Slóði — þú getur ekki sent inn efni um sinn",
             (
                 f"<p>Þú getur ekki sent inn efni í dagskrárbankann {when}.</p>"
-                f"<p><strong>Ástæða:</strong> {suspension.reason}</p>"
+                f"<p><strong>Ástæða:</strong> {html.escape(suspension.reason)}</p>"
                 f"<p>Þú getur áfram lesið bankann og notað dagskrár. "
                 f"Hafðu samband við Dagskrárstjórnarteymið ef þú vilt ræða þetta.</p>"
             ),

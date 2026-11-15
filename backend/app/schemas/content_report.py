@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
@@ -50,7 +50,7 @@ class ContentReportResolve(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
-    status: ReportStatus
+    status: Literal[ReportStatus.resolved, ReportStatus.dismissed]
     resolution_note: ResolutionStr | None = None
 
 

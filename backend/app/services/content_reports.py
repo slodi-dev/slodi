@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import logging
 from uuid import UUID
 
@@ -39,8 +40,7 @@ class ContentReportService:
     ) -> ContentReportOut:
         existing = await self.repo.find_by_reporter(content_id, reporter_id, comment_id)
         if existing is not None:
-            # Idempotent rather than an error. The person has already said this;
-            # a 409 here would read as "your report failed" and invite a retry.
+            # The same answer again, not a 409: a second click is not a failure.
             return ContentReportOut.model_validate(existing)
 
         report = ContentReport(
@@ -56,9 +56,7 @@ class ContentReportService:
         try:
             await self.session.commit()
         except IntegrityError:
-            # Two reports from the same person racing each other. The unique
-            # constraint is the real guard; this just turns it back into the
-            # same answer the first branch gives.
+            # Two clicks racing: the unique index decides, and both get the one report.
             await self.session.rollback()
             existing = await self.repo.find_by_reporter(content_id, reporter_id, comment_id)
             if existing is None:
@@ -73,12 +71,7 @@ class ContentReportService:
     def _escalate(
         self, background_tasks: BackgroundTasks, report: ContentReport, content_name: str
     ) -> None:
-        """An `unsafe` report is escalated, not queued.
-
-        Everything else waits for the next sweep of the review board. This one
-        does not: it is the safeguarding case, and a queue the team reads weekly
-        is not a response time for it.
-        """
+        """An `unsafe` report is emailed to the moderators at once, not left in the queue."""
         recipients = settings.moderation_email_list
         if not recipients:
             logger.error(
@@ -93,8 +86,8 @@ class ContentReportService:
             "Slóði — efni tilkynnt sem óöruggt",
             (
                 f"<p>Efni í dagskrárbankanum var tilkynnt sem <strong>óöruggt</strong>.</p>"
-                f"<p><strong>Heiti:</strong> {content_name}</p>"
-                f"<p><strong>Skýring:</strong> {note}</p>"
+                f"<p><strong>Heiti:</strong> {html.escape(content_name)}</p>"
+                f"<p><strong>Skýring:</strong> {html.escape(note)}</p>"
                 f"<p>Farðu yfir það í Yfirferð.</p>"
             ),
         )
@@ -119,14 +112,6 @@ class ContentReportService:
     async def resolve(
         self, report_id: UUID, resolver_id: UUID, data: ContentReportResolve
     ) -> ContentReportOut:
-        # Checked before the lookup: a nonsensical request does not deserve a
-        # database round trip, and the answer is the same whether the report
-        # exists or not.
-        if data.status == ReportStatus.open:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Use 'resolved' or 'dismissed' to close a report.",
-            )
         report = await self.repo.get(report_id)
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")

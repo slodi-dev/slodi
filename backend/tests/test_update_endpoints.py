@@ -8,7 +8,6 @@ from uuid import uuid4
 import pytest
 from fastapi import status
 
-from app.schemas.comment import CommentOut
 from app.schemas.group import GroupOut
 from app.schemas.program import ProgramOut
 from app.schemas.tag import TagOut
@@ -109,31 +108,6 @@ def test_update_tag(client):
 
 
 # ── Comment update (admin endpoint) ──────────────────────────────────────────
-
-
-def test_update_comment_admin(client):
-    comment = CommentOut(
-        id=uuid4(),
-        body="Original body",
-        user_id=uuid4(),
-        content_id=uuid4(),
-        created_at=_NOW,
-        author_name="Test User",
-    )
-    updated = comment.model_copy(update={"body": "Updated body"})
-
-    with patch(
-        "app.services.comments.CommentService.update",
-        new_callable=AsyncMock,
-    ) as mock_update:
-        mock_update.return_value = updated
-
-        response = client.patch(
-            f"/admin/comments/{comment.id}",
-            json={"body": "Updated body"},
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json()["body"] == "Updated body"
 
 
 # ── User /me update ───────────────────────────────────────────────────────────

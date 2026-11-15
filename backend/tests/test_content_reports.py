@@ -141,16 +141,13 @@ def test_only_a_moderator_can_close_a_report(member_client):
 
 
 def test_a_report_cannot_be_closed_as_open(admin_client):
-    """ "Closing" a report by setting it back to open would leave `resolved_at`
-    null against a non-open status, which the table forbids anyway."""
+    """Only `resolved` or `dismissed` close a report; the schema refuses `open`."""
     with patch(
         "app.repositories.content_reports.ContentReportRepository.get", new_callable=AsyncMock
     ) as get:
         response = admin_client.patch(f"/moderation/reports/{uuid4()}", json={"status": "open"})
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    # Rejected before the lookup — a nonsensical request does not deserve a
-    # database round trip.
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     get.assert_not_awaited()
 
 
@@ -512,3 +509,22 @@ def test_reporting_a_comment_is_separate_from_reporting_its_item():
     src = inspect.getsource(ContentReportRepository.find_by_reporter)
     assert "comment_id" in src
     assert "is_(None)" in src
+
+
+def test_the_escalation_email_escapes_what_users_wrote():
+    """The item name and the note are written by users; neither may become markup."""
+    from fastapi import BackgroundTasks
+
+    from app.services.content_reports import ContentReportService
+
+    report = m.ContentReport(id=uuid4(), note='<a href="https://x.is">smelltu</a>')
+    with (
+        patch("app.services.content_reports.settings") as cfg,
+        patch("app.services.content_reports.send_email_background") as send,
+    ):
+        cfg.moderation_email_list = ["dagskra@slodi.is"]
+        ContentReportService(AsyncMock())._escalate(BackgroundTasks(), report, "<b>Heiti</b>")
+
+    html = send.call_args.args[3]
+    assert "<b>Heiti</b>" not in html and "&lt;b&gt;Heiti&lt;/b&gt;" in html
+    assert "<a href" not in html

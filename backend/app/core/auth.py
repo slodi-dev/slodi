@@ -559,7 +559,7 @@ async def require_not_suspended(
     if suspension.expires_at is None:
         detail = "Þú hefur ekki leyfi til að senda inn efni í bankann. Hafðu samband við Dagskrárstjórnarteymið."
     else:
-        detail = f"Þú hefur ekki leyfir til að senda inn efni í bankann fram til {format_date(suspension.expires_at)}."
+        detail = f"Þú hefur ekki leyfi til að senda inn efni í bankann fram til {format_date(suspension.expires_at)}."
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 

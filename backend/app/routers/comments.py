@@ -12,18 +12,15 @@ from app.core.auth import (
     check_content_read,
     get_current_user,
     require_not_suspended,
-    require_permission,
 )
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.schemas.comment import CommentCreate, CommentOut, CommentUpdate
-from app.schemas.user import Permissions, UserOut
+from app.schemas.user import UserOut
 from app.services.comments import CommentService
 
 router = APIRouter(tags=["comments"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-
-# ----- collection: by content -----
 
 
 @router.get("/content/{content_id}/comments", response_model=list[CommentOut])
@@ -50,7 +47,6 @@ async def list_content_comments(
     return items
 
 
-# create under content (user_id is taken from the authenticated user)
 @router.post(
     "/content/{content_id}/comments",
     response_model=CommentOut,
@@ -72,22 +68,6 @@ async def create_comment_under_content(
     return comment
 
 
-# ----- item endpoints -----
-
-
-@router.get("/comments/{comment_id}", response_model=CommentOut)
-async def get_comment(
-    session: SessionDep,
-    comment_id: UUID,
-    current_user: UserOut = Depends(get_current_user),
-) -> CommentOut:
-    svc = CommentService(session)
-    comment = await svc.get(comment_id)
-    # Same rule as listing the thread: the content has to be reachable.
-    await check_content_read(comment.content_id, current_user, session)
-    return comment
-
-
 @router.patch("/comments/{comment_id}", response_model=CommentOut)
 async def update_comment(
     session: SessionDep,
@@ -106,17 +86,6 @@ async def update_comment(
     return await svc.update(comment_id, body)
 
 
-@router.patch("/admin/comments/{comment_id}", response_model=CommentOut)
-async def update_comment_admin(
-    session: SessionDep,
-    comment_id: UUID,
-    body: CommentUpdate,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
-) -> CommentOut:
-    svc = CommentService(session)
-    return await svc.update(comment_id, body)
-
-
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_comment(
     session: SessionDep,
@@ -130,16 +99,5 @@ async def delete_comment(
     if comment.user_id != current_user.id:
         await check_content_edit(comment.content_id, current_user, session, deleting=True)
 
-    await svc.delete(comment_id)
-    return None
-
-
-@router.delete("/admin/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_comment_admin(
-    session: SessionDep,
-    comment_id: UUID,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
-) -> None:
-    svc = CommentService(session)
     await svc.delete(comment_id)
     return None

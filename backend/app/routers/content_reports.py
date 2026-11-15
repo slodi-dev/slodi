@@ -27,7 +27,6 @@ from app.services.content_reports import ContentReportService
 router = APIRouter(tags=["moderation"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
-# Dagskrárstjórnarteymið. Admins outrank moderators, so they pass this for free.
 ModeratorDep = Depends(require_permission(Permissions.moderator))
 
 
@@ -44,12 +43,7 @@ async def report_content(
     current_user: UserOut = Depends(get_current_user),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ContentReportOut:
-    """Flag something that does not belong.
-
-    Open to any member who can see the item — including someone currently in
-    skammarkrókur. Taking the ability to flag genuinely unsafe content away from
-    someone who is themselves under review helps nobody.
-    """
+    """Report an item. Open to anyone who can read it, even while suspended."""
     await check_content_read(content_id, current_user, session)
     content = await ContentService(session).get_name(content_id)
     return await ContentReportService(session).report(
@@ -70,16 +64,7 @@ async def report_comment(
     current_user: UserOut = Depends(get_current_user),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ContentReportOut:
-    """Flag a comment.
-
-    Comments are the bank's only public text surface and could not be flagged at
-    all: reports keyed on the item alone, so the one place a stranger can write
-    free text under someone else's idea had no way to raise a hand.
-
-    The item the comment hangs under is recorded too, so the review board can
-    name it without a second join, and so an `unsafe` comment escalates by the
-    same path an `unsafe` item does.
-    """
+    """Report a comment; the report also records the item it is under."""
     comment = await CommentService(session).get_model(comment_id)
     content_id = comment.content_id
 
@@ -105,11 +90,7 @@ async def list_open_reports(
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[ReportQueueItem]:
-    """The open queue — `unsafe` pinned first, then newest.
-
-    Pinned in the query rather than in the board, so the ordering survives
-    paging: an escalation on page two is an escalation nobody sees.
-    """
+    """Open reports, `unsafe` first (in the query, so it holds across pages), then newest."""
     svc = ContentReportService(session)
     total = await svc.count_open()
     items = await svc.list_open(limit=limit, offset=offset)
