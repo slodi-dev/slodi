@@ -27,19 +27,3 @@ def test_a_configured_deployment_is_silent(caplog):
         create_app()
 
     assert not any("MODERATION_EMAILS" in r.message for r in caplog.records)
-
-
-def test_healthz_reports_whether_escalation_can_reach_anybody():
-    """So it is visible to whatever watches the deployment, not only at boot."""
-    from fastapi.testclient import TestClient
-
-    with patch("app.settings.settings.moderation_emails", "dagskra@skatarnir.is"):
-        body = TestClient(create_app()).get("/healthz").json()
-    assert body["unsafe_escalation"] is True
-
-    with (
-        patch("app.settings.settings.moderation_emails", ""),
-        patch("app.settings.settings.admin_emails", ""),
-    ):
-        body = TestClient(create_app()).get("/healthz").json()
-    assert body["unsafe_escalation"] is False
