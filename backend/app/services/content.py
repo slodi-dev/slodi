@@ -10,10 +10,11 @@ from app.models.content import Content
 from app.repositories.content import ContentRepository
 
 
-def requeue_if_author_fixed_hidden(item: Content, editor_id: UUID | None) -> None:
-    """A hidden item edited by its author goes back into the review queue."""
-    if item.hidden_at is not None and item.author_id == editor_id:
+def requeue_if_author_fixed(item: Content, editor_id: UUID | None) -> None:
+    """An item sent back for changes returns to the bank and the queue once its author edits it."""
+    if item.review_state == ReviewState.needs_changes and item.author_id == editor_id:
         item.review_state = ReviewState.unreviewed
+        item.hidden_at = None
 
 
 class ContentService:

@@ -52,6 +52,12 @@ describe("who may change a bank item", () => {
     expect(canDeleteProgram(admin, item(AUTHOR_ID), null)).toBe(true);
   });
 
+  it("lets the author delete, but not edit, a rejected item", () => {
+    const rejected = { ...item(AUTHOR_ID), review_state: "rejected" } as Program;
+    expect(canEditProgram(user(AUTHOR_ID), rejected, "viewer")).toBe(false);
+    expect(canDeleteProgram(user(AUTHOR_ID), rejected, "viewer")).toBe(true);
+  });
+
   it("refuses a signed-out visitor", () => {
     expect(canEditProgram(null, item(AUTHOR_ID), "admin")).toBe(false);
   });

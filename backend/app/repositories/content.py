@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.enums import ReviewState
 from app.models.comment import Comment
 from app.models.content import Content
 from app.models.like import UserLikedContent
@@ -16,11 +17,12 @@ from app.repositories.base import Repository
 
 @dataclass
 class ContentAccess:
-    """The three facts an access check needs about an item, in one query."""
+    """What an access check needs about an item, in one query."""
 
     workspace_id: UUID
     author_id: UUID
     hidden_at: dt.datetime | None
+    review_state: ReviewState = ReviewState.unreviewed
 
 
 @dataclass
@@ -108,9 +110,9 @@ class ContentRepository(Repository):
         """
         row = (
             await self.session.execute(
-                select(Content.workspace_id, Content.author_id, Content.hidden_at).where(
-                    Content.id == content_id, Content.deleted_at.is_(None)
-                )
+                select(
+                    Content.workspace_id, Content.author_id, Content.hidden_at, Content.review_state
+                ).where(Content.id == content_id, Content.deleted_at.is_(None))
             )
         ).first()
-        return ContentAccess(row[0], row[1], row[2]) if row else None
+        return ContentAccess(row[0], row[1], row[2], row[3]) if row else None

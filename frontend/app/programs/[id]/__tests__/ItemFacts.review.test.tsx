@@ -27,7 +27,7 @@ describe("ItemFacts review state", () => {
 
     expect(screen.queryByText("Bíður yfirferðar")).not.toBeInTheDocument();
     expect(screen.queryByText("Samþykkt")).not.toBeInTheDocument();
-    expect(screen.queryByText("Ekki samþykkt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hafnað")).not.toBeInTheDocument();
   });
 
   it("shows the author that their item is still waiting", () => {
@@ -38,21 +38,20 @@ describe("ItemFacts review state", () => {
     expect(screen.getByText("Bíður yfirferðar")).toBeInTheDocument();
   });
 
-  it("tells the author their item is hidden, since it is absent everywhere else", () => {
+  it("tells the author what to fix and that fixing it brings it back", () => {
     render(
       <ItemFacts
-        program={makeProgram({ hidden_at: "2026-09-13T00:00:00Z" })}
+        program={makeProgram({
+          review_state: "needs_changes",
+          review_note: "Vantar leiðbeiningar.",
+        })}
         typeLabel="verkefnið"
       />
     );
 
-    expect(screen.getByText("Falið")).toBeInTheDocument();
-  });
-
-  it("says nothing about hiding for an item that is not hidden", () => {
-    render(<ItemFacts program={makeProgram()} typeLabel="verkefnið" />);
-
-    expect(screen.queryByText("Falið")).not.toBeInTheDocument();
+    expect(screen.getByText("Þarfnast lagfæringar")).toBeInTheDocument();
+    expect(screen.getByText("Vantar leiðbeiningar.")).toBeInTheDocument();
+    expect(screen.getByText(/fer það aftur í bankann/)).toBeInTheDocument();
   });
 
   it("shows a rejection together with the reason it was rejected", () => {
@@ -66,7 +65,7 @@ describe("ItemFacts review state", () => {
       />
     );
 
-    expect(screen.getByText("Ekki samþykkt")).toBeInTheDocument();
+    expect(screen.getByText("Hafnað")).toBeInTheDocument();
     expect(screen.getByText("Vantar aldursbil.")).toBeInTheDocument();
   });
 });

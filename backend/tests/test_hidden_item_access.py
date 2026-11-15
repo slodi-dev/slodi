@@ -79,8 +79,9 @@ async def _seed_hidden(
     model: type[Content],
     content_type: ContentType,
     monkeypatch: pytest.MonkeyPatch | None = None,
+    state: ReviewState = ReviewState.needs_changes,
 ) -> UUID:
-    """A hidden, rejected item; with monkeypatch, its workspace is made the bank."""
+    """A hidden item sent back for changes; with monkeypatch, its workspace is made the bank."""
     ws = Workspace(
         name="Dagskrárbankinn",
         default_meeting_weekday=Weekday.monday,
@@ -108,7 +109,7 @@ async def _seed_hidden(
         workspace_id=ws.id,
         content_type=content_type,
         hidden_at=get_current_datetime(),
-        review_state=ReviewState.rejected,
+        review_state=state,
     )
     db.add(item)
     await db.commit()
@@ -130,8 +131,21 @@ async def test_the_author_can_fix_their_hidden_item(
     db.expire_all()
     stored = await db.get(Content, item_id)
     assert stored is not None
-    assert stored.hidden_at is not None
+    assert stored.hidden_at is None
     assert stored.review_state == ReviewState.unreviewed
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model,route,content_type", KINDS)
+async def test_the_author_can_only_delete_a_rejected_item(
+    db, people, as_user, model, route, content_type
+):
+    item_id = await _seed_hidden(db, people, model, content_type, state=ReviewState.rejected)
+    author = as_user(people["author"])
+
+    assert author.patch(f"/{route}/{item_id}", json={"name": "Lagað"}).status_code == 403
+    assert author.delete(f"/{route}/{item_id}").status_code == 204
 
 
 @pytest.mark.integration
@@ -148,7 +162,7 @@ async def test_a_moderator_edit_does_not_requeue_the_item(
     db.expire_all()
     stored = await db.get(Content, item_id)
     assert stored is not None
-    assert stored.review_state == ReviewState.rejected
+    assert stored.review_state == ReviewState.needs_changes
 
 
 @pytest.mark.integration

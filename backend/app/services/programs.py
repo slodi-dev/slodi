@@ -18,7 +18,7 @@ from app.schemas.program import (
     ProgramOut,
     ProgramUpdate,
 )
-from app.services.content import requeue_if_author_fixed_hidden
+from app.services.content import requeue_if_author_fixed
 from app.services.uploads import AttachmentVerifier
 
 logger = logging.getLogger(__name__)
@@ -171,7 +171,7 @@ class ProgramService:
             )
         for k, v in patch.items():
             setattr(prog, k, v)
-        requeue_if_author_fixed_hidden(prog, current_user_id)
+        requeue_if_author_fixed(prog, current_user_id)
         if "tag_names" in data.model_fields_set:
             tag_repo = TagRepository(self.session)
             not_found = await tag_repo.set_content_tags_by_names(program_id, data.tag_names or [])

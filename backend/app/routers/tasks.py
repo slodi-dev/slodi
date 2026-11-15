@@ -186,6 +186,6 @@ async def delete_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = TaskService(session)
-    await check_content_edit(task_id, current_user, session)
+    await check_content_edit(task_id, current_user, session, deleting=True)
     await svc.delete(task_id)
     return None

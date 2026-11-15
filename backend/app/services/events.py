@@ -11,7 +11,7 @@ from app.repositories.events import EventRepository
 from app.repositories.programs import ProgramRepository
 from app.repositories.tags import TagRepository
 from app.schemas.event import EventCreate, EventListOut, EventOut, EventUpdate
-from app.services.content import requeue_if_author_fixed_hidden
+from app.services.content import requeue_if_author_fixed
 from app.services.uploads import AttachmentVerifier
 
 
@@ -220,7 +220,7 @@ class EventService:
         patch = data.model_dump(exclude_unset=True, exclude={"program_id", "tag_names"})
         for k, v in patch.items():
             setattr(event, k, v)
-        requeue_if_author_fixed_hidden(event, current_user_id)
+        requeue_if_author_fixed(event, current_user_id)
         if "tag_names" in data.model_fields_set:
             tag_repo = TagRepository(self.session)
             not_found = await tag_repo.set_content_tags_by_names(event_id, data.tag_names or [])

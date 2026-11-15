@@ -18,7 +18,9 @@ const meta = {
     failed: false,
     busy: false,
     onAct: fn(),
-    onComment: fn(async () => {}),
+    note: "",
+    onNoteChange: fn(),
+    onSaveNote: fn(),
     shareUrl: "https://slodi.is/yfirferd?efni=p-2",
   },
   decorators: [

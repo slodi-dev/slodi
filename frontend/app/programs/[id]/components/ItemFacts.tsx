@@ -110,7 +110,14 @@ const Icon = {
 const REVIEW_LABEL: Record<string, string> = {
   unreviewed: "Bíður yfirferðar",
   approved: "Samþykkt",
-  rejected: "Ekki samþykkt",
+  needs_changes: "Þarfnast lagfæringar",
+  rejected: "Hafnað",
+};
+
+const HIDDEN_HINT: Record<string, string> = {
+  needs_changes:
+    "Efnið er ekki sýnilegt í bankanum. Þegar þú hefur lagað það fer það aftur í bankann og í yfirferð.",
+  rejected: "Efnið er ekki sýnilegt í bankanum. Þú getur eytt því.",
 };
 
 /**
@@ -242,31 +249,24 @@ export default function ItemFacts({
       {/*
         Present only for the item's own author and for moderators — the server
         strips it for everyone else. Without it a leader whose submission was
-        rejected or hidden has no way to find out: the item simply stops
+        taken out of the bank has no way to find out: the item simply stops
         appearing.
 
-        Only the rejection is coloured. Waiting is not a warning and approval is
-        not a prize; the rejection is the one the author has to act on.
+        Only the hidden states are coloured; those are the ones the author has
+        to act on.
       */}
-      {program.hidden_at && (
-        <div className={cn(styles.review, styles.reviewRejected)}>
-          <span className={styles.reviewState}>Falið</span>
-          <p className={styles.reviewNote}>
-            Efnið er ekki sýnilegt í bankanum. Hafðu samband við Dagskrárstjórnarteymið ef þú vilt
-            fá það skoðað aftur.
-          </p>
-        </div>
-      )}
-
       {program.review_state && (
         <div
           className={cn(
             styles.review,
-            program.review_state === "rejected" && styles.reviewRejected
+            program.review_state in HIDDEN_HINT && styles.reviewRejected
           )}
         >
           <span className={styles.reviewState}>{REVIEW_LABEL[program.review_state]}</span>
           {program.review_note && <p className={styles.reviewNote}>{program.review_note}</p>}
+          {program.review_state in HIDDEN_HINT && (
+            <p className={styles.reviewNote}>{HIDDEN_HINT[program.review_state]}</p>
+          )}
         </div>
       )}
 

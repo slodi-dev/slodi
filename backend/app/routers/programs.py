@@ -461,6 +461,6 @@ async def delete_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = ProgramService(session)
-    await check_content_edit(program_id, current_user, session)
+    await check_content_edit(program_id, current_user, session, deleting=True)
     await svc.delete(program_id)
     return None
