@@ -417,7 +417,6 @@ def test_another_reader_sees_no_review_state(mock_db_session, viewer_user, sampl
     ("path", "service_get"),
     [
         ("/content/{id}", "app.services.tasks.TaskService.get"),
-        ("/tasks/{id}", "app.services.tasks.TaskService.get"),
     ],
 )
 def test_no_endpoint_hands_a_reviewers_note_to_a_stranger(

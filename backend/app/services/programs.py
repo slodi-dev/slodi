@@ -7,10 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.program import Program
 from app.repositories.programs import ProgramRepository
-from app.repositories.tags import TagRepository
 from app.schemas.content import ContentListOut
 from app.schemas.program import ProgramCreate, ProgramFilters, ProgramOut, ProgramUpdate
-from app.services.content import requeue_if_author_fixed
+from app.services.content import requeue_if_author_fixed, set_tags
 from app.services.uploads import AttachmentVerifier
 
 
@@ -47,7 +46,7 @@ class ProgramService:
         await self.repo.create(program)
         await self.session.flush()
         if data.tag_names:
-            await self._set_tags(program.id, data.tag_names)
+            await set_tags(self.session, program.id, data.tag_names)
         await self.session.commit()
         return await self.get(program.id)
 
@@ -81,7 +80,7 @@ class ProgramService:
             setattr(prog, k, v)
         requeue_if_author_fixed(prog, current_user_id)
         if "tag_names" in data.model_fields_set:
-            await self._set_tags(program_id, data.tag_names or [])
+            await set_tags(self.session, program_id, data.tag_names or [])
         await self.session.commit()
         return await self.get(program_id, current_user_id, include_hidden=True)
 
@@ -90,13 +89,3 @@ class ProgramService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
         await self.repo.delete(program_id)
         await self.session.commit()
-
-    async def _set_tags(self, program_id: UUID, tag_names: list[str]) -> None:
-        not_found = await TagRepository(self.session).set_content_tags_by_names(
-            program_id, tag_names
-        )
-        if not_found:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Unknown tags: {not_found}",
-            )

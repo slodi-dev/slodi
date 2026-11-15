@@ -605,11 +605,16 @@ async def check_content_read(
 
 
 async def check_content_edit(
-    content_id: UUID, current_user: UserOut, session: AsyncSession, *, deleting: bool = False
+    content_id: UUID,
+    current_user: UserOut,
+    session: AsyncSession,
+    *,
+    deleting: bool = False,
+    attaching: bool = False,
 ) -> None:
     """Author, workspace admin, platform admin, or a moderator in the bank workspace; hidden
-    items only author or moderator; a rejected item its author may only delete; 404 for
-    anyone who may not read it."""
+    items only author or moderator; a rejected item its author may only delete; attaching
+    it under an event or program needs editor; 404 for anyone who may not read it."""
     access = await _content_access(content_id, session)
     if current_user.permissions == Permissions.admin:
         return
@@ -626,6 +631,11 @@ async def check_content_edit(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Rejected content can only be deleted",
+        )
+    if attaching and _WORKSPACE_ROLE_RANK[role] < _WORKSPACE_ROLE_RANK[WorkspaceRole.editor]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Attaching content to an event or program needs the editor role",
         )
     is_workspace_admin = _WORKSPACE_ROLE_RANK[role] >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
     if is_author or is_workspace_admin:

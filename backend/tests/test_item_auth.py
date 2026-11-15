@@ -23,8 +23,6 @@ ITEM = uuid4()
 
 ITEM_PATHS = [
     f"/content/{ITEM}",
-    f"/events/{ITEM}",
-    f"/tasks/{ITEM}",
     f"/content/{ITEM}/comments",
     f"/content/{ITEM}/likes",
     f"/content/{ITEM}/tags",

@@ -63,17 +63,6 @@ CASES = [
 ]
 
 
-@pytest.mark.parametrize("permissions,expected", CASES)
-def test_event_detail_includes_hidden_tasks_only_for_moderators(
-    mock_db_session, permissions, expected
-):
-    client = _client(mock_db_session, permissions)
-    with patch("app.routers.events.EventService.get", new_callable=AsyncMock) as get:
-        get.side_effect = _STOP
-        assert client.get(f"/events/{uuid4()}").status_code == 404
-    assert get.await_args.kwargs["include_hidden_children"] is expected
-
-
 @pytest.mark.parametrize(
     "content_type,target",
     [

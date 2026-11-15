@@ -5,8 +5,7 @@ import pytest
 
 from app import models as m
 from app import schemas as s
-from app.repositories.events import EventRepository
-from app.repositories.tasks import TaskRepository
+from app.repositories.programs import ProgramRepository
 from app.utils import get_current_datetime
 
 
@@ -54,11 +53,11 @@ async def test_a_hidden_task_is_absent_from_listings_and_counts(db):
     )
     await db.flush()
 
-    repo = TaskRepository(db)
-    names = [t.name for t, _ in await repo.list_for_workspace(ws.id, user.id)]
+    repo = ProgramRepository(db)
+    names = [t.name for t, _ in await repo.list_content_by_workspace(ws.id, user.id)]
 
     assert names == ["Sýnilegt"]
-    assert await repo.count_for_workspace(ws.id) == 1
+    assert await repo.count_content_for_workspace(ws.id) == 1
 
 
 @pytest.mark.integration
@@ -86,8 +85,8 @@ async def test_a_hidden_event_is_absent_from_listings_and_counts(db):
     )
     await db.flush()
 
-    repo = EventRepository(db)
-    names = [e.name for e, _ in await repo.list_for_workspace(ws.id, user.id)]
+    repo = ProgramRepository(db)
+    names = [e.name for e, _ in await repo.list_content_by_workspace(ws.id, user.id)]
 
     assert names == ["Sýnilegur"]
-    assert await repo.count_for_workspace(ws.id) == 1
+    assert await repo.count_content_for_workspace(ws.id) == 1

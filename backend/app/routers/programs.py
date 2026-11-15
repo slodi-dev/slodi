@@ -30,10 +30,10 @@ from app.schemas.program import (
 )
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
+from app.services.content import authored_by
 from app.services.events import EventService
 from app.services.programs import ProgramService
 from app.services.tasks import TaskService
-from app.utils import get_current_datetime
 
 router = APIRouter(tags=["programs"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -78,12 +78,10 @@ async def create_program_under_workspace(
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
     await check_content_create(workspace_id, current_user, session)
-    program_data = body.model_copy(
-        update={"author_id": current_user.id, "created_at": get_current_datetime()}
+    program = await ProgramService(session).create_under_workspace(
+        workspace_id, authored_by(body, current_user.id)
     )
-    svc = ProgramService(session)
-    program = await svc.create_under_workspace(workspace_id, program_data)
-    response.headers["Location"] = f"/programs/{program.id}"
+    response.headers["Location"] = f"/content/{program.id}"
     return program
 
 
