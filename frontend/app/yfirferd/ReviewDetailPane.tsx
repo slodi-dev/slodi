@@ -3,13 +3,11 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Modal from "@/components/Modal/Modal";
 import AuthorStandingPanel from "./AuthorStandingPanel";
 import {
   CONTENT_TYPE_LABEL,
   REVIEW_STATE_LABEL,
   VISIBILITY_LABEL,
-  type ReviewCommentVisibility,
   type ReviewDetail,
 } from "@/services/moderation.service";
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
@@ -71,8 +69,10 @@ export default function ReviewDetailPane({
   loading,
   failed = false,
   busy,
+  note,
+  onNoteChange,
+  onSaveNote,
   onAct,
-  onComment,
   shareUrl,
 }: {
   detail: ReviewDetail | null;
@@ -80,26 +80,15 @@ export default function ReviewDetailPane({
   /** The load failed, as distinct from nothing being selected. */
   failed?: boolean;
   busy: boolean;
-  onAct: (action: "approve" | "reject" | "hide" | "unhide") => void;
-  onComment: (body: string, visibility: ReviewCommentVisibility) => Promise<void>;
+  /** The one place a note is written; every action that emails the author sends it. */
+  note: string;
+  onNoteChange: (note: string) => void;
+  onSaveNote: () => void;
+  onAct: (action: "approve" | "needs_changes" | "reject" | "to_author") => void;
   shareUrl: string | null;
 }) {
-  const [note, setNote] = useState("");
-  const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-
-  async function submit(visibility: ReviewCommentVisibility) {
-    if (!note.trim() || sending) return;
-    setSending(true);
-    try {
-      await onComment(note, visibility);
-      setNote("");
-      setConfirming(false);
-    } finally {
-      setSending(false);
-    }
-  }
+  const hasNote = note.trim() !== "";
 
   async function copyLink() {
     if (!shareUrl) return;
@@ -286,7 +275,7 @@ export default function ReviewDetailPane({
               key={opener}
               type="button"
               className={styles.cannedBtn}
-              onClick={() => setNote((n) => (n ? `${n.trimEnd()} ${opener}` : opener))}
+              onClick={() => onNoteChange(note ? `${note.trimEnd()} ${opener}` : opener)}
             >
               {opener.trim()}
             </button>
@@ -301,61 +290,21 @@ export default function ReviewDetailPane({
             maxLength={2000}
             placeholder="Athugasemd eða ábending…"
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => onNoteChange(e.target.value)}
           />
         </label>
         <div className={styles.noteActions}>
-          {/* Two buttons rather than a dropdown and one: the choice of audience
-              is the decision, so it is the thing being clicked. */}
           <button
-            className={cn(styles.btn, styles.btnSecondary)}
-            disabled={!note.trim() || sending}
-            onClick={() => void submit("internal")}
+            className={cn(styles.btn, styles.btnGhost, styles.btnSm)}
+            disabled={!hasNote || busy}
+            onClick={onSaveNote}
           >
-            Vista innanhúss
-          </button>
-          <button
-            className={cn(styles.btn, styles.btnSend)}
-            disabled={!note.trim() || sending}
-            onClick={() => setConfirming(true)}
-          >
-            Senda höfundi
+            Vista
           </button>
         </div>
-
-        {/* A note to an author is the one thing on this screen that cannot be
-            taken back — it leaves as an email the moment it is saved. Everything
-            else here has an undo; this gets a question instead. */}
-        <Modal
-          open={confirming}
-          onClose={() => setConfirming(false)}
-          title="Senda ábendingu til höfundar?"
-        >
-          <p className={styles.confirmBody}>
-            {detail.author_name} fær tölvupóst með þessari athugasemd. Ekki er hægt að afturkalla
-            hana.
-          </p>
-          <blockquote className={styles.confirmQuote}>{note}</blockquote>
-          <div className={styles.noteActions}>
-            <button
-              className={cn(styles.btn, styles.btnSecondary)}
-              onClick={() => setConfirming(false)}
-            >
-              Hætta við
-            </button>
-            <button
-              className={cn(styles.btn, styles.btnSend)}
-              disabled={sending}
-              onClick={() => void submit("to_author")}
-            >
-              {sending ? "Sendi…" : "Já, senda höfundi"}
-            </button>
-          </div>
-        </Modal>
       </section>
 
       <footer className={styles.detailActions}>
-        <span className={styles.actionsLabel}>Efnið</span>
         {/* The shortcut is printed on the control rather than hidden in a help
             modal, so a reviewer who never reads help still learns the keyboard
             by using the mouse. */}
@@ -366,30 +315,32 @@ export default function ReviewDetailPane({
         >
           Samþykkja <kbd className={styles.key}>s</kbd>
         </button>
+        {/* These three email the note above to the author, so they need one. */}
+        <button
+          className={cn(styles.btn, styles.btnSecondary)}
+          disabled={busy || !hasNote}
+          title={hasNote ? undefined : "Skrifaðu athugasemd til höfundar fyrst"}
+          onClick={() => onAct("needs_changes")}
+        >
+          Þarfnast lagfæringar <kbd className={styles.key}>l</kbd>
+        </button>
         <button
           className={cn(styles.btn, styles.btnQuietDanger)}
-          disabled={busy}
+          disabled={busy || !hasNote}
+          title={hasNote ? undefined : "Skrifaðu athugasemd til höfundar fyrst"}
           onClick={() => onAct("reject")}
         >
           Hafna <kbd className={styles.key}>h</kbd>
         </button>
-        {detail.hidden_at ? (
-          <button
-            className={cn(styles.btn, styles.btnSecondary)}
-            disabled={busy}
-            onClick={() => onAct("unhide")}
-          >
-            Sýna aftur <kbd className={styles.key}>f</kbd>
-          </button>
-        ) : (
-          <button
-            className={cn(styles.btn, styles.btnSecondary)}
-            disabled={busy}
-            onClick={() => onAct("hide")}
-          >
-            Fela <kbd className={styles.key}>f</kbd>
-          </button>
-        )}
+        <button
+          className={cn(styles.btn, styles.btnSend, styles.btnStacked)}
+          disabled={busy || !hasNote}
+          title={hasNote ? undefined : "Skrifaðu athugasemd til höfundar fyrst"}
+          onClick={() => onAct("to_author")}
+        >
+          Senda höfundi
+          <small className={styles.btnSub}>án ákvörðunar</small>
+        </button>
         <button className={styles.shareBtn} onClick={() => void copyLink()} disabled={!shareUrl}>
           {copied ? "Hlekkur afritaður" : "Afrita hlekk"}
         </button>

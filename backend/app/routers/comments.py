@@ -128,7 +128,7 @@ async def delete_comment(
     comment = await svc.get_model(comment_id)
 
     if comment.user_id != current_user.id:
-        await check_content_edit(comment.content_id, current_user, session)
+        await check_content_edit(comment.content_id, current_user, session, deleting=True)
 
     await svc.delete(comment_id)
     return None

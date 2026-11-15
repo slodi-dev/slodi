@@ -8,7 +8,6 @@ const fetchReviewDetail = vi.fn();
 const fetchOpenReports = vi.fn();
 const addReviewComment = vi.fn();
 const reviewContent = vi.fn();
-const setContentHidden = vi.fn();
 const resolveReport = vi.fn();
 const deleteComment = vi.fn();
 const replace = vi.fn();
@@ -26,9 +25,7 @@ vi.mock("@/services/moderation.service", async (importOriginal) => ({
   fetchOpenReports: (...a: unknown[]) => fetchOpenReports(...a),
   addReviewComment: (...a: unknown[]) => addReviewComment(...a),
   reviewContent: (...a: unknown[]) => reviewContent(...a),
-  setContentHidden: (...a: unknown[]) => setContentHidden(...a),
   resolveReport: (...a: unknown[]) => resolveReport(...a),
-  fetchAuthorStrikes: vi.fn(),
 }));
 
 // The author panel fetches its own history. Left unmocked it made a real
@@ -39,10 +36,14 @@ vi.mock("@/services/suspensions.service", async (importOriginal) => ({
 }));
 
 let permissions = "moderator";
+const stableUsers: Record<string, { id: string; permissions: string }> = {};
+const stableGetToken = async () => "t";
 vi.mock("@/contexts/AuthContext", () => ({
+  // Stable between renders, like the real context; a fresh `getToken` each
+  // render reloads the queue and moves focus off whatever is being typed in.
   useAuth: () => ({
-    user: { id: "u1", permissions },
-    getToken: async () => "t",
+    user: (stableUsers[permissions] ??= { id: "u1", permissions }),
+    getToken: stableGetToken,
     isLoading: false,
   }),
 }));
@@ -101,7 +102,6 @@ beforeEach(() => {
   fetchReviewDetail.mockResolvedValue(detail());
   fetchOpenReports.mockResolvedValue({ items: [], total: 0 });
   reviewContent.mockResolvedValue(item({ review_state: "approved" }));
-  setContentHidden.mockResolvedValue(item({ hidden_at: "2026-09-02T10:00:00Z" }));
   addReviewComment.mockResolvedValue({ id: "n1" });
   resolveReport.mockResolvedValue({ id: "r9" });
   deleteComment.mockResolvedValue(undefined);
@@ -268,42 +268,64 @@ describe("sweeping the queue", () => {
     );
   });
 
-  it("cancelling the hide prompt hides nothing", async () => {
-    const prompt = vi.spyOn(window, "prompt").mockReturnValue(null);
+  it("sends the note in the composer back to the author for changes", async () => {
     render(<YfirferdPage />);
-    await screen.findByText("Hlaupaleikur");
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    await userEvent.type(
+      pane().getByPlaceholderText("Athugasemd eða ábending…"),
+      "Vantar leiðbeiningar"
+    );
 
-    await userEvent.keyboard("f");
+    await userEvent.click(pane().getByRole("button", { name: /Þarfnast lagfæringar/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Já, senda til lagfæringar" }));
 
-    expect(prompt).toHaveBeenCalled();
-    expect(setContentHidden).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: /Taka aftur/ })).not.toBeInTheDocument();
-    prompt.mockRestore();
+    await waitFor(() =>
+      expect(reviewContent).toHaveBeenCalledWith(
+        "c1",
+        "needs_changes",
+        "Vantar leiðbeiningar",
+        expect.anything()
+      )
+    );
   });
 
-  it("cancelling the reject prompt rejects nothing", async () => {
-    const prompt = vi.spyOn(window, "prompt").mockReturnValue(null);
+  it("rejects with the note in the composer", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    await userEvent.type(pane().getByPlaceholderText("Athugasemd eða ábending…"), "Of hættulegt");
+
+    await userEvent.click(pane().getByRole("button", { name: /Hafna/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Já, hafna efninu" }));
+
+    await waitFor(() =>
+      expect(reviewContent).toHaveBeenCalledWith(
+        "c1",
+        "rejected",
+        "Of hættulegt",
+        expect.anything()
+      )
+    );
+  });
+
+  it("cancelling the confirmation decides nothing", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    await userEvent.type(pane().getByPlaceholderText("Athugasemd eða ábending…"), "Laga");
+
+    await userEvent.click(pane().getByRole("button", { name: /Þarfnast lagfæringar/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Hætta við" }));
+
+    expect(reviewContent).not.toHaveBeenCalled();
+  });
+
+  it("will not take an item out of the bank without a note", async () => {
     render(<YfirferdPage />);
     await screen.findByText("Hlaupaleikur");
 
     await userEvent.keyboard("h");
 
-    expect(prompt).toHaveBeenCalled();
     expect(reviewContent).not.toHaveBeenCalled();
-    prompt.mockRestore();
-  });
-
-  it("hides without a reason when the prompt is confirmed empty", async () => {
-    const prompt = vi.spyOn(window, "prompt").mockReturnValue("");
-    render(<YfirferdPage />);
-    await screen.findByText("Hlaupaleikur");
-
-    await userEvent.keyboard("f");
-
-    await waitFor(() =>
-      expect(setContentHidden).toHaveBeenCalledWith("c1", true, undefined, expect.anything())
-    );
-    prompt.mockRestore();
+    expect(await screen.findByRole("status")).toHaveTextContent("Skrifaðu athugasemd");
   });
 
   it("says the queue is clear rather than showing nothing at all", async () => {
@@ -409,14 +431,14 @@ describe("reviewer notes", () => {
     render(<YfirferdPage />);
     await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
 
-    expect(pane().getByRole("button", { name: "Vista innanhúss" })).toBeDisabled();
-    expect(pane().getByRole("button", { name: "Senda höfundi" })).toBeDisabled();
+    expect(pane().getByRole("button", { name: "Vista" })).toBeDisabled();
+    expect(pane().getByRole("button", { name: /^Senda höfundi/ })).toBeDisabled();
 
     await userEvent.type(
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    expect(pane().getByRole("button", { name: "Senda höfundi" })).toBeEnabled();
+    expect(pane().getByRole("button", { name: /^Senda höfundi/ })).toBeEnabled();
   });
 
   it("asks before anything leaves the building", async () => {
@@ -429,7 +451,7 @@ describe("reviewer notes", () => {
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+    await userEvent.click(pane().getByRole("button", { name: /^Senda höfundi/ }));
 
     expect(await screen.findByText(/Ekki er hægt að afturkalla hana/)).toBeInTheDocument();
     expect(addReviewComment).not.toHaveBeenCalled();
@@ -442,7 +464,7 @@ describe("reviewer notes", () => {
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+    await userEvent.click(pane().getByRole("button", { name: /^Senda höfundi/ }));
 
     await userEvent.click(await screen.findByRole("button", { name: "Hætta við" }));
 
@@ -457,7 +479,7 @@ describe("reviewer notes", () => {
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+    await userEvent.click(pane().getByRole("button", { name: /^Senda höfundi/ }));
     await userEvent.click(await screen.findByRole("button", { name: "Já, senda höfundi" }));
 
     await waitFor(() =>
@@ -471,12 +493,29 @@ describe("reviewer notes", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Ábending send höfundi");
   });
 
+  it("clears the note when moving to another item, so it cannot reach the wrong author", async () => {
+    fetchReviewQueue.mockResolvedValue({
+      items: [item(), item({ id: "c2", name: "Feluleikur" })],
+      total: 2,
+    });
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    const box = pane().getByPlaceholderText("Athugasemd eða ábending…");
+    await userEvent.type(box, "Bættu við aldri");
+
+    await userEvent.click(screen.getByText("Feluleikur"));
+
+    await waitFor(() =>
+      expect(pane().getByPlaceholderText("Athugasemd eða ábending…")).toHaveValue("")
+    );
+  });
+
   it("saves an internal note with no ceremony, because it goes nowhere", async () => {
     render(<YfirferdPage />);
     await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
 
     await userEvent.type(pane().getByPlaceholderText("Athugasemd eða ábending…"), "Muna að spyrja");
-    await userEvent.click(pane().getByRole("button", { name: "Vista innanhúss" }));
+    await userEvent.click(pane().getByRole("button", { name: "Vista" }));
 
     await waitFor(() =>
       expect(addReviewComment).toHaveBeenCalledWith(

@@ -29,14 +29,15 @@ export function isOwner(user: User | null, program: Program): boolean {
  * else's* item; it used to be, which would have meant any member could rewrite
  * anything in an open bank.
  *
- * Editing and deleting are one rule because the backend makes them one rule. If
- * they ever diverge, split this — do not let the two drift apart silently.
+ * Editing and deleting are one rule, except that a rejected item can only be
+ * deleted (outside admins and bank moderators), as in the backend.
  */
 function canChangeContent(
   user: User | null,
   content: Program,
   workspaceRole: WorkspaceRole | null | undefined,
-  defaultWorkspaceId: string | null | undefined
+  defaultWorkspaceId: string | null | undefined,
+  deleting: boolean
 ): boolean {
   if (!user || !content) return false;
   // Platform admins bypass workspace membership entirely. Ranked rather than
@@ -48,6 +49,7 @@ function canChangeContent(
   if (inBank && hasPermission(user.permissions, "moderator")) return true;
   // Everyone else must at least be a member of the workspace
   if (!hasWorkspaceRole(workspaceRole, "viewer")) return false;
+  if (content.review_state === "rejected" && !deleting) return false;
   return isOwner(user, content) || hasWorkspaceRole(workspaceRole, "admin");
 }
 
@@ -62,7 +64,7 @@ export function canEditProgram(
   workspaceRole: WorkspaceRole | null | undefined = null,
   defaultWorkspaceId: string | null | undefined = null
 ): boolean {
-  return canChangeContent(user, program, workspaceRole, defaultWorkspaceId);
+  return canChangeContent(user, program, workspaceRole, defaultWorkspaceId, false);
 }
 
 /**
@@ -80,7 +82,7 @@ export function canDeleteProgram(
   workspaceRole: WorkspaceRole | null | undefined = null,
   defaultWorkspaceId: string | null | undefined = null
 ): boolean {
-  return canChangeContent(user, program, workspaceRole, defaultWorkspaceId);
+  return canChangeContent(user, program, workspaceRole, defaultWorkspaceId, true);
 }
 
 /**
@@ -108,7 +110,7 @@ export function canDeleteComment(
 ): boolean {
   return (
     canEditComment(user, comment) ||
-    canChangeContent(user, content, workspaceRole, defaultWorkspaceId)
+    canChangeContent(user, content, workspaceRole, defaultWorkspaceId, true)
   );
 }
 

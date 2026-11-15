@@ -55,7 +55,7 @@ export type Program = {
    * submission was looked at; nobody else needs to know how the team judged
    * somebody else's idea.
    */
-  review_state?: "unreviewed" | "approved" | "rejected" | null;
+  review_state?: "unreviewed" | "approved" | "needs_changes" | "rejected" | null;
   review_note?: string | null;
   /**
    * Set when a moderator has unlisted the item. Carried on the same terms as

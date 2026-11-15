@@ -4,14 +4,13 @@ import datetime as dt
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ScalarSelect, Select, String, cast, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import ColumnElement, ScalarSelect, Select, String, and_, cast, func, or_, select
 from sqlalchemy.orm import aliased, selectinload
 
 from app.domain.enums import ReportStatus, ReviewState
+from app.models.comment import Comment
 from app.models.content import Content
 from app.models.content_report import ContentReport
-from app.models.posting_suspension import PostingSuspension
 from app.models.review_comment import ReviewComment
 from app.models.tag import ContentTag
 from app.models.user import User
@@ -20,43 +19,38 @@ from app.schemas.moderation import ReviewFilters
 from .base import Repository
 
 
-def open_report_reasons_subq() -> ScalarSelect[Any]:
-    """The distinct reasons people gave, as an array.
+def _open_item_report() -> ColumnElement[bool]:
+    """An open report on the item itself; reports on its comments are judged separately."""
+    return and_(
+        ContentReport.content_id == Content.id,
+        ContentReport.status == ReportStatus.open,
+        ContentReport.comment_id.is_(None),
+    )
 
-    A count alone tells a reviewer that something is wrong but not what, so they
-    have to cross-reference the reports tab for every flagged row. In a sweep of
-    fifty that is the difference between minutes and an afternoon.
-    """
+
+def _is_strike(item: type[Content]) -> ColumnElement[bool]:
+    """A rejected item that is not deleted; derived, so a reversed rejection drops it."""
+    return and_(item.deleted_at.is_(None), item.review_state == ReviewState.rejected)
+
+
+def open_report_reasons_subq() -> ScalarSelect[Any]:
+    """The distinct reasons in the open reports on the item, as an array."""
     return (
-        # Cast to text before aggregating: psycopg hands back an array of a
-        # custom enum type as one raw string, which then parses as a string
-        # rather than a list.
+        # Cast to text first: psycopg returns an array of a custom enum as one string.
         select(func.array_agg(func.distinct(cast(ContentReport.reason, String))))
-        .where(
-            ContentReport.content_id == Content.id,
-            ContentReport.status == ReportStatus.open,
-        )
+        .where(_open_item_report())
         .correlate(Content)
         .scalar_subquery()
     )
 
 
 def author_strikes_subq() -> ScalarSelect[int]:
-    """How much of this author's work a moderator has already acted against.
-
-    Derived here rather than stored, so un-hiding something takes its strike
-    with it. Lets a reviewer tell a first-time contributor from a repeat one
-    without leaving the queue.
-    """
+    """The author's strikes, per queue row."""
     author = aliased(Content)
     return (
         select(func.count())
         .select_from(author)
-        .where(
-            author.author_id == Content.author_id,
-            author.deleted_at.is_(None),
-            (author.hidden_at.is_not(None)) | (author.review_state == ReviewState.rejected),
-        )
+        .where(author.author_id == Content.author_id, _is_strike(author))
         .correlate(Content)
         .scalar_subquery()
     )
@@ -66,59 +60,31 @@ def open_report_count_subq() -> ScalarSelect[int]:
     """Open reports against a piece of content, as a correlated scalar."""
     return (
         select(func.count(ContentReport.id))
-        .where(
-            ContentReport.content_id == Content.id,
-            ContentReport.status == ReportStatus.open,
-        )
+        .where(_open_item_report())
         .correlate(Content)
         .scalar_subquery()
     )
 
 
 class ModerationRepository(Repository):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(session)
-
     def _apply_filters(self, stmt: Select, filters: ReviewFilters) -> Select:
-        """Every WHERE the board can ask for.
-
-        Shared by the list and the count so the two can never disagree about
-        what is being looked at.
-        """
+        """Every WHERE the board can ask for; shared by the list and the count."""
         stmt = stmt.where(Content.deleted_at.is_(None))
 
         if filters.review_state is not None:
             stmt = stmt.where(Content.review_state == filters.review_state)
-        if filters.hidden is not None:
-            stmt = stmt.where(
-                Content.hidden_at.is_not(None) if filters.hidden else Content.hidden_at.is_(None)
-            )
         if filters.content_type is not None:
             stmt = stmt.where(Content.content_type == filters.content_type)
         if filters.reported:
-            # EXISTS rather than counting: it stops at the first match, and the
-            # count is not needed to answer "is there one?".
-            stmt = stmt.where(
-                select(ContentReport.id)
-                .where(
-                    ContentReport.content_id == Content.id,
-                    ContentReport.status == ReportStatus.open,
-                )
-                .exists()
-            )
+            stmt = stmt.where(select(ContentReport.id).where(_open_item_report()).exists())
         if filters.author:
             stmt = stmt.where(
-                Content.author_id.in_(
-                    select(User.id).where(User.name.ilike(f"%{filters.author.strip()}%"))
-                )
+                Content.author_id.in_(select(User.id).where(User.name.ilike(f"%{filters.author}%")))
             )
         if filters.search:
-            stmt = stmt.where(Content.name.ilike(f"%{filters.search.strip()}%"))
+            stmt = stmt.where(Content.name.ilike(f"%{filters.search}%"))
 
-        # The column a view sorts by is the column its date filter means.
-        # Filtering the record of decisions by submission date would answer a
-        # question nobody asked: "what was decided in June?" is about June's
-        # decisions, not June's submissions.
+        # The date range applies to the column the view is sorted by.
         date_col = (
             Content.created_at
             if filters.review_state == ReviewState.unreviewed
@@ -127,25 +93,13 @@ class ModerationRepository(Repository):
         if filters.date_from:
             stmt = stmt.where(date_col >= filters.date_from)
         if filters.date_to:
-            # Inclusive: a leader picking 30 June means the whole of that day,
-            # not the instant it began.
+            # Inclusive of the whole end day.
             stmt = stmt.where(date_col < filters.date_to + dt.timedelta(days=1))
 
         return stmt
 
     def _queue_stmt(self, filters: ReviewFilters) -> Select:
-        """The board's page.
-
-        **Ordering follows what the list is for.** The unreviewed queue is a
-        backlog, so it runs oldest-first: the thing that has waited longest is
-        the most overdue, and newest-first would let old submissions sink under
-        a trickle of new ones. Every other view is a record of what was done, so
-        it runs most-recently-decided first.
-
-        The three per-row subqueries are correlated, so they cost one lookup per
-        row **returned** — a page, not the table. That is why the count below
-        does not reuse this statement.
-        """
+        """One page of the board: the unreviewed queue oldest first, other views latest decision first."""
         reviewer = aliased(User)
         stmt = (
             select(
@@ -176,31 +130,12 @@ class ModerationRepository(Repository):
         ]
 
     async def count_queue(self, filters: ReviewFilters) -> int:
-        """How many match, without building a row for each.
-
-        Deliberately does **not** reuse `_queue_stmt`: that carries three
-        correlated subqueries and a join whose only purpose is filling a row.
-        Counting through them would run all three per matching row — fine for a
-        page of fifty, wasteful across ten thousand.
-        """
+        """How many match; skips `_queue_stmt`'s per-row subqueries, which only fill a row."""
         stmt = self._apply_filters(select(func.count()).select_from(Content), filters)
         return (await self.session.scalar(stmt)) or 0
 
-    async def count_unreviewed(self) -> int:
-        """The sidebar badge — how much is waiting, whatever the current view."""
-        return (
-            await self.session.scalar(
-                select(func.count())
-                .select_from(Content)
-                .where(
-                    Content.review_state == ReviewState.unreviewed,
-                    Content.deleted_at.is_(None),
-                )
-            )
-        ) or 0
-
     async def list_comments(self, content_id: UUID) -> list[ReviewComment]:
-        """One item's reviewer notes, oldest first — a thread reads forwards."""
+        """One item's reviewer notes, oldest first."""
         stmt = (
             select(ReviewComment)
             .options(selectinload(ReviewComment.author))
@@ -219,8 +154,6 @@ class ModerationRepository(Repository):
                     selectinload(Content.author),
                     selectinload(Content.content_tags).selectinload(ContentTag.tag),
                     selectinload(Content.reports),
-                    # Eager: ReviewDetail validates straight off the model, and a
-                    # lazy relationship raises MissingGreenlet under async.
                     selectinload(Content.review_comments).selectinload(ReviewComment.author),
                 )
                 .join(reviewer, reviewer.id == Content.reviewed_by_id, isouter=True)
@@ -237,51 +170,32 @@ class ModerationRepository(Repository):
             .where(Content.id == content_id, Content.deleted_at.is_(None))
         )
 
-    async def count_suspensions(self, author_id: UUID) -> int:
-        return (
-            await self.session.scalar(
-                select(func.count())
-                .select_from(PostingSuspension)
-                .where(PostingSuspension.user_id == author_id)
-            )
-        ) or 0
-
-    async def active_suspension_end(self, author_id: UUID, now: dt.datetime) -> dt.datetime | None:
-        return await self.session.scalar(
-            select(PostingSuspension.expires_at).where(
-                PostingSuspension.user_id == author_id,
-                PostingSuspension.lifted_at.is_(None),
-                PostingSuspension.starts_at <= now,
-                (PostingSuspension.expires_at.is_(None)) | (PostingSuspension.expires_at > now),
-            )
-        )
-
     async def count_reports_against_author(self, author_id: UUID) -> int:
+        """Reports on the person's items and on their comments, dismissed ones included."""
         return (
             await self.session.scalar(
                 select(func.count())
                 .select_from(ContentReport)
                 .join(Content, Content.id == ContentReport.content_id)
-                .where(Content.author_id == author_id, Content.deleted_at.is_(None))
+                .outerjoin(Comment, Comment.id == ContentReport.comment_id)
+                .where(
+                    or_(
+                        and_(
+                            ContentReport.comment_id.is_(None),
+                            Content.author_id == author_id,
+                            Content.deleted_at.is_(None),
+                        ),
+                        Comment.user_id == author_id,
+                    )
+                )
             )
         ) or 0
 
     async def count_strikes(self, author_id: UUID) -> int:
-        """Content of this author's that a moderator acted against.
-
-        Derived, never a stored counter: a moderator who un-hides something must
-        see the strike go with it, and an integer column drifts the first time
-        somebody changes their mind.
-        """
         return (
             await self.session.scalar(
                 select(func.count())
                 .select_from(Content)
-                .where(
-                    Content.author_id == author_id,
-                    Content.deleted_at.is_(None),
-                    (Content.hidden_at.is_not(None))
-                    | (Content.review_state == ReviewState.rejected),
-                )
+                .where(Content.author_id == author_id, _is_strike(Content))
             )
         ) or 0

@@ -11,7 +11,7 @@ from app.models.task import Task
 from app.repositories.tags import TagRepository
 from app.repositories.tasks import TaskRepository
 from app.schemas.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
-from app.services.content import requeue_if_author_fixed_hidden
+from app.services.content import requeue_if_author_fixed
 from app.services.uploads import AttachmentVerifier
 
 
@@ -166,7 +166,7 @@ class TaskService:
                 )
         for k, v in patch.items():
             setattr(task, k, v)
-        requeue_if_author_fixed_hidden(task, current_user_id)
+        requeue_if_author_fixed(task, current_user_id)
         if "tag_names" in data.model_fields_set:
             tag_repo = TagRepository(self.session)
             not_found = await tag_repo.set_content_tags_by_names(task_id, data.tag_names or [])

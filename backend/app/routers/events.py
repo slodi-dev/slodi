@@ -208,6 +208,6 @@ async def delete_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = EventService(session)
-    await check_content_edit(event_id, current_user, session)
+    await check_content_edit(event_id, current_user, session, deleting=True)
     await svc.delete(event_id)
     return None

@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
-from app.domain.enums import GroupRole, Permissions, WorkspaceRole
+from app.domain.enums import GroupRole, Permissions, ReviewState, WorkspaceRole
 from app.domain.icelandic_dates import format_date
 from app.repositories.content import ContentAccess, ContentRepository
 from app.repositories.posting_suspensions import PostingSuspensionRepository
@@ -605,10 +605,11 @@ async def check_content_read(
 
 
 async def check_content_edit(
-    content_id: UUID, current_user: UserOut, session: AsyncSession
+    content_id: UUID, current_user: UserOut, session: AsyncSession, *, deleting: bool = False
 ) -> None:
     """Author, workspace admin, platform admin, or a moderator in the bank workspace; hidden
-    items only author or moderator; 404 for anyone who may not read it."""
+    items only author or moderator; a rejected item its author may only delete; 404 for
+    anyone who may not read it."""
     access = await _content_access(content_id, session)
     if current_user.permissions == Permissions.admin:
         return
@@ -621,6 +622,11 @@ async def check_content_edit(
     is_author = access.author_id == current_user.id
     if access.hidden_at is not None and not is_author:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    if access.review_state == ReviewState.rejected and not deleting:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Rejected content can only be deleted",
+        )
     is_workspace_admin = _WORKSPACE_ROLE_RANK[role] >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
     if is_author or is_workspace_admin:
         return

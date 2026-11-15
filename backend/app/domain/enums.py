@@ -21,18 +21,15 @@ class Permissions(str, Enum):
 
 
 class ReviewState(str, Enum):
-    """Whether Dagskrárstjórnarteymið has looked at a piece of content.
-
-    **This does not gate visibility.** The bank publishes on submit and reviews
-    afterwards, so an `unreviewed` item is live. Hiding is a separate act with
-    its own column — conflating the two would mean the team could only make
-    something visible by approving it, which turns a 3-person queue into a
-    bottleneck on every single submission.
-    """
+    """Where an item is in review; `unreviewed` and `approved` are in the bank, the rest are hidden."""
 
     unreviewed = "unreviewed"
     approved = "approved"
+    needs_changes = "needs_changes"
     rejected = "rejected"
+
+
+HIDDEN_REVIEW_STATES = frozenset({ReviewState.needs_changes, ReviewState.rejected})
 
 
 class WorkspaceRole(str, Enum):
