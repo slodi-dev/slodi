@@ -3,8 +3,6 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: slodi-postgres
-    env_file:
-      - ./backend/.env.docker
     environment:
       POSTGRES_DB: slodi_db
       POSTGRES_USER: slodi_user
@@ -33,7 +31,7 @@ services:
       target: base
     container_name: slodi-migrations
     env_file:
-      - ./backend/.env.docker
+      - ./backend/.env
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -65,7 +63,7 @@ services:
       target: production
     container_name: slodi-backend
     env_file:
-      - ./backend/.env.docker
+      - ./backend/.env
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -111,8 +109,9 @@ services:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env (see .env.example)}
     container_name: slodi-frontend
     env_file:
-      - ./frontend/.env.docker
+      - ./frontend/.env
     environment:
+      API_BASE_URL: http://backend:8000
       SEED_OUTPUT_DIR: /app/seed_data
     volumes:
       - seed_data:/app/seed_data

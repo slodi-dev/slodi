@@ -8,9 +8,7 @@ E2E_AUTH_ENVS: frozenset[str] = frozenset({"e2e"})
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=(".env", ".env.docker"), env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Environment configuration
     env: str = Field(..., alias="ENV")
@@ -56,7 +54,7 @@ class Settings(BaseSettings):
     # brute-forcing the database password. See run_tokens._secret().
     #
     # Production sets itself: deploy-backend.yml generates a value into
-    # backend/.env.docker when that file has none, and never overwrites one.
+    # backend/.env when that file has none, and never overwrites one.
     #
     # Changing it invalidates every run token still parked in a player's
     # sessionStorage, up to the 12h TTL. Those runs come back as a rejected

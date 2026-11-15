@@ -30,7 +30,7 @@ export E2E_AUTH_DIR="$FRONTEND/e2e/.auth"
 # tests, and the SDK only talks to Auth0 on login, callback and refresh.
 export NEXT_PUBLIC_API_URL="http://localhost:$E2E_BACKEND_PORT"
 # Server-side route handlers (app/api/leikir, app/api/emails) reach the backend
-# through this one; in production it comes from frontend/.env.docker.
+# through this one; in production docker-compose.yml sets it.
 export API_BASE_URL="$NEXT_PUBLIC_API_URL"
 export APP_BASE_URL="http://localhost:$E2E_FRONTEND_PORT"
 export AUTH0_DOMAIN="e2e.slodi.invalid"

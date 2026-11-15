@@ -56,7 +56,7 @@ jobs:
 
             # ── GAME_TOKEN_SECRET: generate once, never rotate silently ──
             #
-            # backend/.env.docker is gitignored, so a checkout never creates or
+            # backend/.env is gitignored, so a checkout never creates or
             # updates it and a new required variable would otherwise have to be
             # added by hand on the box. This closes that gap.
             #
@@ -68,8 +68,11 @@ jobs:
             # Only ever generated when missing. Rotating it invalidates every
             # run token parked in a player's sessionStorage for up to the 12h
             # TTL, so a deploy must not do it as a side effect.
-            ENV_FILE=backend/.env.docker
-            touch "$ENV_FILE"
+            ENV_FILE=backend/.env
+            if [ ! -s "$ENV_FILE" ]; then
+              echo "$ENV_FILE is missing or empty (renamed from backend/.env.docker?)" >&2
+              exit 1
+            fi
             chmod 600 "$ENV_FILE"
 
             # Treat the .env.example placeholder as absent, not as a value.

@@ -53,6 +53,10 @@ jobs:
               exit 0
             fi
             git checkout --quiet --detach "$DEPLOY_SHA"
+            if [ ! -s frontend/.env ]; then
+              echo "frontend/.env is missing or empty (renamed from frontend/.env.docker?)" >&2
+              exit 1
+            fi
             docker compose -f docker-compose.yml up -d --build frontend
             docker image prune -f
             # Build cache is never used by a running container; it grew to 10 GB
