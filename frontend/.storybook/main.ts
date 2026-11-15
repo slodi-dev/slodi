@@ -13,7 +13,6 @@ const config: StorybookConfig = {
     name: "@storybook/nextjs-vite",
     options: {},
   },
-  staticDirs: ["../public"],
   core: {
     disableTelemetry: true,
   },
