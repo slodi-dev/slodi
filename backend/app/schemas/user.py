@@ -53,19 +53,12 @@ class UserCreate(UserBase):
 
 
 class UserUpdateAdmin(BaseModel):
-    """Payload for updating a user. All fields optional."""
+    """What a platform admin may change about someone else: their permission only.
 
-    name: NameStr | None = None
-    pronouns: Pronouns | None = None
-    permissions: Permissions | None = None
-    preferences: dict[str, Any] | None = None
-    email: EmailConstrained | None = None
-    auth0_id: Auth0Id | None = None
+    Not email or auth0_id: either would let one admin take over another's account
+    or reach ADMIN_EMAILS without going through it."""
 
-    @field_validator("email", mode="before")
-    @classmethod
-    def _normalize_email(cls, v: str | None) -> str | None:
-        return v.strip().lower() if isinstance(v, str) else v
+    permissions: Permissions
 
 
 class UserUpdateSelf(BaseModel):

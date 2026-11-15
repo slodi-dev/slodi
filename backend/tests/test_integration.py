@@ -1,199 +1,60 @@
-"""
-Integration tests — require a running Docker daemon.
-
-Run with:
-    make test-integration
-or:
-    PYTHONPATH=. uv run pytest -q -m integration
-
-These tests spin up a real Postgres container via testcontainers, apply the
-full SQLAlchemy schema, and exercise the FastAPI app end-to-end.
-Each test rolls back to a savepoint so tests are fully isolated.
-"""
+"""Users and personal workspaces against a real Postgres (testcontainers)."""
 
 from __future__ import annotations
 
-from uuid import uuid4
-
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user
 from app.core.db import get_session
-from app.domain.enums import Permissions
 from app.main import create_app
-from app.schemas.user import UserOut
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-_ADMIN_USER = UserOut(
-    id=uuid4(),
-    auth0_id="auth0|integration_admin",
-    email="admin@integration.example.com",
-    name="Integration Admin",
-    pronouns=None,
-    permissions=Permissions.admin,
-    preferences=None,
-)
+from app.schemas.user import UserCreate, UserOut
+from app.services.users import UserService
 
 
-def _make_client(db_session) -> TestClient:
-    """Build a TestClient that injects *db_session* as the DB dependency."""
+def _client_as(db, user: UserOut) -> TestClient:
     app = create_app()
 
     async def override_get_session():
-        yield db_session
+        yield db
 
     async def override_get_current_user():
-        return _ADMIN_USER
+        return user
 
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_current_user] = override_get_current_user
     return TestClient(app)
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
-
-
-@pytest.fixture
-def http(db):
-    """HTTP test client wired to the per-test real DB session."""
-    return _make_client(db)
-
-
-# ── Tests ─────────────────────────────────────────────────────────────────────
+async def _user(db, suffix: str) -> UserOut:
+    return await UserService(db).create(
+        UserCreate(auth0_id=f"auth0|{suffix}", email=f"{suffix}@example.com", name=suffix)
+    )
 
 
 @pytest.mark.integration
-class TestUserPersistence:
-    """Users are written to and retrieved from real Postgres rows."""
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field", ["auth0_id", "email"])
+async def test_a_second_user_with_the_same_auth0_id_or_email_is_a_409(db, field):
+    first = await _user(db, "first")
+    other = {"auth0_id": "auth0|second", "email": "second@example.com", "name": "second"}
+    other[field] = getattr(first, field)
 
-    def test_create_user_returns_201(self, http):
-        resp = http.post(
-            "/users",
-            json={"auth0_id": "auth0|int_001", "email": "int001@example.com", "name": "Int User"},
-        )
-        assert resp.status_code == 201
-        body = resp.json()
-        assert body["auth0_id"] == "auth0|int_001"
-        assert body["email"] == "int001@example.com"
-        assert "id" in body
-
-    def test_created_user_is_retrievable(self, http):
-        create = http.post(
-            "/users",
-            json={
-                "auth0_id": "auth0|int_002",
-                "email": "int002@example.com",
-                "name": "Retrieve Me",
-            },
-        )
-        user_id = create.json()["id"]
-
-        resp = http.get(f"/users/{user_id}")
-        assert resp.status_code == 200
-        assert resp.json()["id"] == user_id
-
-    def test_duplicate_auth0_id_returns_409(self, http):
-        payload = {"auth0_id": "auth0|dup", "email": "dup1@example.com", "name": "Dup"}
-        http.post("/users", json=payload)
-
-        payload2 = dict(payload, email="dup2@example.com")  # same auth0_id, different email
-        resp = http.post("/users", json=payload2)
-        assert resp.status_code == 409
-
-    def test_duplicate_email_returns_409(self, http):
-        payload = {"auth0_id": "auth0|dup_email_1", "email": "shared@example.com", "name": "First"}
-        http.post("/users", json=payload)
-
-        payload2 = dict(payload, auth0_id="auth0|dup_email_2")  # different auth0_id, same email
-        resp = http.post("/users", json=payload2)
-        assert resp.status_code == 409
-
-    def test_get_nonexistent_user_returns_404(self, http):
-        from uuid import uuid4
-
-        resp = http.get(f"/users/{uuid4()}")
-        assert resp.status_code == 404
-
-    def test_list_users_returns_created_user(self, http):
-        http.post(
-            "/users",
-            json={"auth0_id": "auth0|list_001", "email": "list001@example.com", "name": "Listed"},
-        )
-        resp = http.get("/users")
-        assert resp.status_code == 200
-        names = [u["name"] for u in resp.json()]
-        assert "Listed" in names
+    with pytest.raises(HTTPException) as exc:
+        await UserService(db).create(UserCreate(**other))
+    assert exc.value.status_code == 409
 
 
 @pytest.mark.integration
-class TestWorkspacePersistence:
-    """Workspaces are stored in the DB and linked to their owner."""
+@pytest.mark.asyncio
+async def test_my_new_workspaces_are_listed_for_me_only(db):
+    me, someone_else = await _user(db, "me"), await _user(db, "else")
+    mine = _client_as(db, me)
 
-    def _create_user(self, http, suffix: str) -> str:
-        resp = http.post(
-            "/users",
-            json={
-                "auth0_id": f"auth0|ws_{suffix}",
-                "email": f"ws_{suffix}@example.com",
-                "name": f"WS User {suffix}",
-            },
-        )
-        assert resp.status_code == 201
-        return resp.json()["id"]
+    for name in ("Alfa", "Beta"):
+        assert mine.post("/users/me/workspaces", json={"name": name}).status_code == 201
 
-    def test_create_workspace_returns_201(self, http):
-        user_id = self._create_user(http, "create")
-        resp = http.post(
-            f"/users/{user_id}/workspaces",
-            json={"name": "My Workspace"},
-        )
-        assert resp.status_code == 201
-        body = resp.json()
-        assert body["name"] == "My Workspace"
-        assert "id" in body
-
-    def test_workspace_appears_in_user_list(self, http):
-        user_id = self._create_user(http, "list")
-        http.post(f"/users/{user_id}/workspaces", json={"name": "Listed WS"})
-
-        resp = http.get(f"/users/{user_id}/workspaces")
-        assert resp.status_code == 200
-        names = [w["name"] for w in resp.json()]
-        assert "Listed WS" in names
-
-    def test_workspace_is_retrievable_by_id(self, http):
-        user_id = self._create_user(http, "get")
-        create_resp = http.post(f"/users/{user_id}/workspaces", json={"name": "Fetchable WS"})
-        ws_id = create_resp.json()["id"]
-
-        resp = http.get(f"/workspaces/{ws_id}")
-        assert resp.status_code == 200
-        assert resp.json()["id"] == ws_id
-
-    def test_get_nonexistent_workspace_returns_404(self, http):
-        from uuid import uuid4
-
-        resp = http.get(f"/workspaces/{uuid4()}")
-        assert resp.status_code == 404
-
-    def test_multiple_workspaces_per_user(self, http):
-        user_id = self._create_user(http, "multi")
-        http.post(f"/users/{user_id}/workspaces", json={"name": "WS Alpha"})
-        http.post(f"/users/{user_id}/workspaces", json={"name": "WS Beta"})
-
-        resp = http.get(f"/users/{user_id}/workspaces")
-        assert resp.status_code == 200
-        names = {w["name"] for w in resp.json()}
-        assert {"WS Alpha", "WS Beta"}.issubset(names)
-
-    def test_workspaces_are_isolated_between_users(self, http):
-        user_a = self._create_user(http, "iso_a")
-        user_b = self._create_user(http, "iso_b")
-        http.post(f"/users/{user_a}/workspaces", json={"name": "User A Only"})
-
-        resp = http.get(f"/users/{user_b}/workspaces")
-        assert resp.status_code == 200
-        names = [w["name"] for w in resp.json()]
-        assert "User A Only" not in names
+    assert {w["name"] for w in mine.get("/users/me/workspaces").json()} >= {"Alfa", "Beta"}
+    theirs = {w["name"] for w in _client_as(db, someone_else).get("/users/me/workspaces").json()}
+    assert not theirs & {"Alfa", "Beta"}

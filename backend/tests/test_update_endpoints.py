@@ -13,7 +13,7 @@ from app.schemas.group import GroupOut
 from app.schemas.program import ProgramOut
 from app.schemas.tag import TagOut
 from app.schemas.user import UserOut, UserOutLimited
-from app.schemas.workspace import WorkspaceNested, WorkspaceOut
+from app.schemas.workspace import WorkspaceNested
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -70,39 +70,6 @@ def test_update_program_not_found(client, content_access):
 
 
 # ── Workspace update ──────────────────────────────────────────────────────────
-
-
-def test_update_workspace(client, sample_workspace):
-    updated = WorkspaceOut(
-        id=sample_workspace.id,
-        name="Updated Workspace",
-    )
-
-    with patch(
-        "app.services.workspaces.WorkspaceService.update",
-        new_callable=AsyncMock,
-    ) as mock_update:
-        mock_update.return_value = updated
-
-        response = client.patch(
-            f"/workspaces/{sample_workspace.id}",
-            json={"name": "Updated Workspace"},
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json()["name"] == "Updated Workspace"
-
-
-def test_update_workspace_not_found(client):
-    from fastapi import HTTPException
-
-    with patch(
-        "app.services.workspaces.WorkspaceService.update",
-        new_callable=AsyncMock,
-    ) as mock_update:
-        mock_update.side_effect = HTTPException(status_code=404, detail="Workspace not found")
-
-        response = client.patch(f"/workspaces/{uuid4()}", json={"name": "X"})
-        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ── Group update ──────────────────────────────────────────────────────────────

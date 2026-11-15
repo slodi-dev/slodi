@@ -18,13 +18,13 @@ from app.schemas.workspace import (
     WorkspaceMembershipOut,
     WorkspaceMembershipUpdate,
     WorkspaceOut,
-    WorkspaceUpdate,
 )
 from app.services.workspaces import WorkspaceService
 
 router = APIRouter(tags=["workspaces"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+CurrentUser = Annotated[UserOut, Depends(get_current_user)]
 
 
 @router.get("/users/me/workspaces", response_model=list[WorkspaceOut])
@@ -32,7 +32,7 @@ async def list_my_workspaces(
     session: SessionDep,
     request: Request,
     response: Response,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: CurrentUser,
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[WorkspaceOut]:
@@ -40,137 +40,43 @@ async def list_my_workspaces(
     total = await svc.count_user_workspaces(current_user.id)
     items = await svc.list_user_workspaces(current_user.id, limit=limit, offset=offset)
     add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
-
-
-@router.get("/users/{user_id}/workspaces", response_model=list[WorkspaceOut])
-async def list_user_workspaces_admin(
-    session: SessionDep,
-    request: Request,
-    response: Response,
-    user_id: UUID,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[WorkspaceOut]:
-    svc = WorkspaceService(session)
-    total = await svc.count_user_workspaces(user_id)
-    items = await svc.list_user_workspaces(user_id, limit=limit, offset=offset)
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
+        response=response, request=request, total=total, limit=limit, offset=offset
     )
     return items
 
 
 @router.post(
-    "/users/me/workspaces",
-    response_model=WorkspaceOut,
-    status_code=status.HTTP_201_CREATED,
+    "/users/me/workspaces", response_model=WorkspaceOut, status_code=status.HTTP_201_CREATED
 )
 async def create_my_workspace(
-    session: SessionDep,
-    body: WorkspaceCreate,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
+    session: SessionDep, body: WorkspaceCreate, current_user: CurrentUser
 ) -> WorkspaceOut:
-    svc = WorkspaceService(session)
-    workspace = await svc.create_user_workspace(current_user.id, body)
-    response.headers["Location"] = f"/workspaces/{workspace.id}"
-    return workspace
-
-
-@router.post(
-    "/users/{user_id}/workspaces",
-    response_model=WorkspaceOut,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_user_workspace_admin(
-    session: SessionDep,
-    user_id: UUID,
-    body: WorkspaceCreate,
-    response: Response,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
-) -> WorkspaceOut:
-    svc = WorkspaceService(session)
-    workspace = await svc.create_user_workspace(user_id, body)
-    response.headers["Location"] = f"/workspaces/{workspace.id}"
-    return workspace
+    return await WorkspaceService(session).create_user_workspace(current_user.id, body)
 
 
 @router.get("/workspaces/{workspace_id}/my-role", response_model=WorkspaceMembershipOut)
 async def get_my_workspace_role(
-    session: SessionDep,
-    workspace_id: UUID,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
+    session: SessionDep, workspace_id: UUID, response: Response, current_user: CurrentUser
 ) -> WorkspaceMembershipOut:
-    """Return the current user's membership/role for a workspace, or 404 if not a member.
+    """Your role here, or 404 if you are not a member.
 
-    Platform admins bypass all workspace membership checks in the rest of the API, so
-    they may not have a membership row. Return a synthetic owner-level membership so the
-    frontend can correctly infer their edit / delete permissions.
-    """
-    if current_user.permissions == Permissions.admin:
-        response.headers["Cache-Control"] = "private, max-age=120"
-        return WorkspaceMembershipOut(
-            workspace_id=workspace_id,
-            user_id=current_user.id,
-            role=WorkspaceRole.owner,
-        )
-    svc = WorkspaceService(session)
-    result = await svc.get_user_membership(workspace_id, current_user.id)
+    Platform admins pass every workspace check without a membership row, so they
+    get an owner-level answer for the frontend to work from."""
     response.headers["Cache-Control"] = "private, max-age=120"
-    return result
+    if current_user.permissions == Permissions.admin:
+        return WorkspaceMembershipOut(
+            workspace_id=workspace_id, user_id=current_user.id, role=WorkspaceRole.owner
+        )
+    return await WorkspaceService(session).get_user_membership(workspace_id, current_user.id)
 
 
 @router.get("/workspaces/{workspace_id}/members", response_model=list[WorkspaceMembershipOut])
 async def list_workspace_members(
     session: SessionDep,
     workspace_id: UUID,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),
+    _admin: UserOut = Depends(require_permission(Permissions.admin)),
 ) -> list[WorkspaceMembershipOut]:
-    svc = WorkspaceService(session)
-    return await svc.list_members(workspace_id)
-
-
-@router.get("/workspaces/{workspace_id}", response_model=WorkspaceOut)
-async def get_workspace(
-    session: SessionDep,
-    workspace_id: UUID,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
-) -> WorkspaceOut:
-    await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
-    )
-    svc = WorkspaceService(session)
-    result = await svc.get(workspace_id)
-    response.headers["Cache-Control"] = "private, max-age=60"
-    return result
-
-
-@router.patch("/workspaces/{workspace_id}", response_model=WorkspaceOut)
-async def update_workspace(
-    session: SessionDep,
-    workspace_id: UUID,
-    body: WorkspaceUpdate,
-    current_user: UserOut = Depends(get_current_user),
-) -> WorkspaceOut:
-    await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
-    )
-    svc = WorkspaceService(session)
-    return await svc.update(workspace_id, body)
+    return await WorkspaceService(session).list_members(workspace_id)
 
 
 @router.put(
@@ -182,31 +88,15 @@ async def set_member_role(
     workspace_id: UUID,
     user_id: UUID,
     body: WorkspaceMembershipUpdate,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: CurrentUser,
 ) -> WorkspaceMembershipOut:
     await check_workspace_access(
         workspace_id, current_user, session, minimum_role=WorkspaceRole.admin
     )
-    svc = WorkspaceService(session)
-    result, displaced_owner_id = await svc.change_member_role(
+    result, displaced_owner_id = await WorkspaceService(session).change_member_role(
         workspace_id, user_id, body.role, current_user
     )
     await membership_cache.invalidate(user_id, workspace_id)
     if displaced_owner_id:
         await membership_cache.invalidate(displaced_owner_id, workspace_id)
     return result
-
-
-@router.delete("/workspaces/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_workspace(
-    session: SessionDep,
-    workspace_id: UUID,
-    current_user: UserOut = Depends(get_current_user),
-) -> None:
-    await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.owner
-    )
-    svc = WorkspaceService(session)
-    await svc.delete(workspace_id)
-    await membership_cache.clear_all()
-    return None

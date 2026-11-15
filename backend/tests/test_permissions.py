@@ -31,14 +31,6 @@ def viewer_client(mock_db_session, viewer_user):
 # ── Platform admin permission checks ─────────────────────────────────────────
 
 
-def test_viewer_cannot_create_user(viewer_client):
-    response = viewer_client.post(
-        "/users",
-        json={"auth0_id": "auth0|123", "email": "new@example.com", "name": "New User"},
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
 def test_viewer_cannot_list_admin_users(viewer_client):
     response = viewer_client.get("/users/admin/list")
     assert response.status_code == status.HTTP_403_FORBIDDEN

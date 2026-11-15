@@ -28,12 +28,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import CACHE_MISS, membership_cache, user_cache
 from app.core.db import get_session
 from app.core.default_workspace import get_default_workspace_id
-from app.domain.enums import GroupRole, Permissions, ReviewState, WorkspaceRole
+from app.domain.enums import (
+    WORKSPACE_ROLE_RANK,
+    GroupRole,
+    Permissions,
+    ReviewState,
+    WorkspaceRole,
+)
 from app.domain.icelandic_dates import format_date
 from app.repositories.content import ContentAccess, ContentRepository
 from app.repositories.posting_suspensions import PostingSuspensionRepository
 from app.schemas.content import ContentOut
-from app.schemas.user import UserCreate, UserOut, UserUpdateAdmin
+from app.schemas.user import UserCreate, UserOut, UserUpdateSelf
 from app.services.groups import GroupService
 from app.services.users import UserService
 from app.services.workspaces import WorkspaceService
@@ -53,13 +59,6 @@ _PERMISSION_RANK: dict[Permissions, int] = {
     Permissions.member: 1,
     Permissions.moderator: 2,
     Permissions.admin: 3,
-}
-
-_WORKSPACE_ROLE_RANK: dict[WorkspaceRole, int] = {
-    WorkspaceRole.viewer: 0,
-    WorkspaceRole.editor: 1,
-    WorkspaceRole.admin: 2,
-    WorkspaceRole.owner: 3,
 }
 
 _GROUP_ROLE_RANK: dict[GroupRole, int] = {
@@ -393,7 +392,7 @@ async def get_current_user(
         # already created in our DB.
         name_from_token: str | None = payload.name
         if name_from_token and name_from_token != user.name:
-            user = await user_service.update(user.id, UserUpdateAdmin(name=name_from_token))
+            user = await user_service.update(user.id, UserUpdateSelf(name=name_from_token))
         await _ensure_default_workspace_membership(session, user)
         await user_cache.set(auth0_id, user)
         return user
@@ -527,7 +526,7 @@ async def check_workspace_access(
 
     role = await _require_membership(workspace_id, current_user, session, hide_from_non_members)
 
-    if _WORKSPACE_ROLE_RANK[role] < _WORKSPACE_ROLE_RANK[minimum_role]:
+    if WORKSPACE_ROLE_RANK[role] < WORKSPACE_ROLE_RANK[minimum_role]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Requires {minimum_role.value} role or higher",
@@ -632,12 +631,12 @@ async def check_content_edit(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Rejected content can only be deleted",
         )
-    if attaching and _WORKSPACE_ROLE_RANK[role] < _WORKSPACE_ROLE_RANK[WorkspaceRole.editor]:
+    if attaching and WORKSPACE_ROLE_RANK[role] < WORKSPACE_ROLE_RANK[WorkspaceRole.editor]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Attaching content to an event or program needs the editor role",
         )
-    is_workspace_admin = _WORKSPACE_ROLE_RANK[role] >= _WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
+    is_workspace_admin = WORKSPACE_ROLE_RANK[role] >= WORKSPACE_ROLE_RANK[WorkspaceRole.admin]
     if is_author or is_workspace_admin:
         return
 

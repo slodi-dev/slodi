@@ -1,4 +1,4 @@
-## backend/app/routers/users.py
+# ruff: noqa: B008
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -14,76 +14,40 @@ from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.domain.enums import Permissions
 from app.schemas.posting_suspension import SuspensionOut
-from app.schemas.user import UserCreate, UserOut, UserOutLimited, UserUpdateAdmin, UserUpdateSelf
+from app.schemas.user import UserOut, UserUpdateAdmin, UserUpdateSelf
 from app.services.posting_suspensions import PostingSuspensionService
 from app.services.users import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 CurrentUser = Annotated[UserOut, Depends(get_current_user)]
-
-DEFAULT_Q = Query(None, min_length=2, description="Case-insensitive search in name/email/auth0_id")
-
-
-@router.get("/me/suspension", response_model=SuspensionOut | None)
-async def my_suspension(
-    session: SessionDep,
-    current_user: CurrentUser,
-) -> SuspensionOut | None:
-    """Am I in skammarkrókur, and until when?
-
-    Your own status, so the bank can say so on arrival rather than letting you
-    write something and refusing it afterwards. Returns null when there is
-    nothing to say.
-
-    Deliberately only your own: the moderator view lives behind
-    `/moderation/authors/{id}/standing`.
-    """
-    return await PostingSuspensionService(session).active(current_user.id)
-
-
-@router.get("", response_model=list[UserOutLimited])
-async def list_users(
-    session: SessionDep,
-    request: Request,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),  # noqa: B008
-    q: str | None = DEFAULT_Q,
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[UserOutLimited]:
-    svc = UserService(session)
-    total = await svc.count(q=q)
-    items = await svc.list(q=q, limit=limit, offset=offset)
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
-
-
-@router.post("", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def create_user(
-    session: SessionDep,
-    body: UserCreate,
-    response: Response,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
-) -> UserOut:
-    svc = UserService(session)
-    user = await svc.create(body)
-    response.headers["Location"] = f"/users/{user.id}"
-    return user
+PlatformAdmin = Annotated[UserOut, Depends(require_permission(Permissions.admin))]
 
 
 @router.get("/me", response_model=UserOut)
-async def get_current_user_info(
-    current_user: UserOut = Depends(get_current_user),  # noqa: B008
-) -> UserOut:
-    """Get the current user's own profile"""
+async def get_current_user_info(current_user: CurrentUser) -> UserOut:
     return current_user
+
+
+@router.get("/me/suspension", response_model=SuspensionOut | None)
+async def my_suspension(session: SessionDep, current_user: CurrentUser) -> SuspensionOut | None:
+    """Your own active suspension, if any, so the bank can say so before you write."""
+    return await PostingSuspensionService(session).active(current_user.id)
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_current_user(
+    session: SessionDep, body: UserUpdateSelf, current_user: CurrentUser
+) -> UserOut:
+    updated = await UserService(session).update(current_user.id, body)
+    await user_cache.invalidate(current_user.auth0_id)
+    return updated
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_current_user(session: SessionDep, current_user: CurrentUser) -> None:
+    await UserService(session).delete(current_user.id)
+    await user_cache.invalidate(current_user.auth0_id)
 
 
 @router.get("/admin/list", response_model=list[UserOut])
@@ -91,8 +55,8 @@ async def list_users_admin(
     session: SessionDep,
     request: Request,
     response: Response,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
-    q: str | None = DEFAULT_Q,
+    _admin: PlatformAdmin,
+    q: str | None = Query(None, min_length=2, description="Search name, email or auth0_id"),
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> Sequence[UserOut]:
@@ -100,70 +64,21 @@ async def list_users_admin(
     total = await svc.count(q=q)
     items = await svc.list_full(q=q, limit=limit, offset=offset)
     add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
+        response=response, request=request, total=total, limit=limit, offset=offset
     )
     return items
 
 
-@router.get("/{user_id}", response_model=UserOutLimited)
-async def get_user(
-    session: SessionDep,
-    user_id: UUID,
-    current_user: UserOut = Depends(get_current_user),  # noqa: B008
-) -> UserOutLimited:
-    """Get any user's public profile (if allowed)"""
-    svc = UserService(session)
-    return await svc.get(user_id)
-
-
-@router.patch("/me", response_model=UserOut)
-async def update_current_user(
-    session: SessionDep,
-    body: UserUpdateSelf,  # Restricted schema
-    current_user: UserOut = Depends(get_current_user),  # noqa: B008
-) -> UserOut:
-    svc = UserService(session)
-    updated = await svc.update(current_user.id, body)
-    await user_cache.invalidate(current_user.auth0_id)
-    return updated
-
-
 @router.patch("/{user_id}", response_model=UserOut)
 async def update_user(
-    session: SessionDep,
-    user_id: UUID,
-    body: UserUpdateAdmin,  # Full schema
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
+    session: SessionDep, user_id: UUID, body: UserUpdateAdmin, _admin: PlatformAdmin
 ) -> UserOut:
-    svc = UserService(session)
-    updated = await svc.update(user_id, body)
+    updated = await UserService(session).update(user_id, body)
     await user_cache.invalidate(updated.auth0_id)
     return updated
 
 
-@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_current_user(
-    session: SessionDep,
-    current_user: UserOut = Depends(get_current_user),  # noqa: B008
-) -> None:
-    svc = UserService(session)
-    await svc.delete(current_user.id)
-    await user_cache.invalidate(current_user.auth0_id)
-    return None
-
-
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(
-    session: SessionDep,
-    user_id: UUID,
-    current_user: UserOut = Depends(require_permission(Permissions.admin)),  # noqa: B008
-) -> None:
-    svc = UserService(session)
-    target = await svc.get_full(user_id)  # fetch auth0_id before deletion for cache invalidation
-    await svc.delete(user_id)
-    await user_cache.invalidate(target.auth0_id)
-    return None
+async def delete_user(session: SessionDep, user_id: UUID, _admin: PlatformAdmin) -> None:
+    auth0_id = await UserService(session).delete_by_admin(user_id)
+    await user_cache.invalidate(auth0_id)

@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.enums import Permissions, WorkspaceRole
+from app.domain.enums import WORKSPACE_ROLE_RANK, Permissions, WorkspaceRole
 from app.models.workspace import Workspace
 from app.repositories.workspaces import WorkspaceRepository
 from app.schemas.user import UserOut
@@ -13,16 +13,7 @@ from app.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceMembershipOut,
     WorkspaceOut,
-    WorkspaceUpdate,
 )
-
-# Mirrors `_WORKSPACE_ROLE_RANK` in app/core/auth.py, which imports this module.
-_ROLE_RANK: dict[WorkspaceRole, int] = {
-    WorkspaceRole.viewer: 0,
-    WorkspaceRole.editor: 1,
-    WorkspaceRole.admin: 2,
-    WorkspaceRole.owner: 3,
-}
 
 
 class WorkspaceService:
@@ -52,25 +43,6 @@ class WorkspaceService:
         await self.session.refresh(ws)
         return WorkspaceOut.model_validate(ws)
 
-    async def update(self, workspace_id: UUID, data: WorkspaceUpdate) -> WorkspaceOut:
-        ws = await self.repo.get(workspace_id)
-        if not ws:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
-
-        patch = data.model_dump(exclude_unset=True)
-        for k, v in patch.items():
-            setattr(ws, k, v)
-        await self.session.commit()
-        await self.session.refresh(ws)
-        return WorkspaceOut.model_validate(ws)
-
-    async def delete(self, workspace_id: UUID) -> None:
-        ws = await self.repo.get(workspace_id)
-        if not ws:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
-        await self.repo.delete(workspace_id)
-        await self.session.commit()
-
     async def list_members(self, workspace_id: UUID) -> list[WorkspaceMembershipOut]:
         rows = await self.repo.list_members(workspace_id)
         return [WorkspaceMembershipOut.model_validate(r) for r in rows]
@@ -78,17 +50,11 @@ class WorkspaceService:
     async def change_member_role(
         self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole, actor: UserOut
     ) -> tuple[WorkspaceMembershipOut, UUID | None]:
-        """Change a member's role on behalf of `actor`, enforcing who may do what.
+        """Change a member's role on behalf of `actor`.
 
-        - Platform admins may make any change, including transferring ownership.
-        - Only the current owner may transfer ownership (assign `owner`).
-        - Otherwise the actor may only change the role of members ranked strictly
-          below them, which rules out changing their own role, and may only grant
-          roles strictly below their own — so an admin cannot make another admin.
-
-        The router has already checked that the actor is at least a workspace
-        admin; this guards against an admin promoting themselves to owner (and
-        then deleting the workspace) or demoting a peer.
+        Platform admins may do anything. Only the owner may hand over ownership.
+        Anyone else may only change members ranked below them, to roles below their
+        own: so an admin cannot make another admin, demote a peer or promote themselves.
         """
         if actor.permissions != Permissions.admin:
             actor_membership = await self.repo.get_user_membership(workspace_id, actor.id)
@@ -96,7 +62,7 @@ class WorkspaceService:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="Not a workspace member"
                 )
-            actor_rank = _ROLE_RANK[actor_membership.role]
+            actor_rank = WORKSPACE_ROLE_RANK[actor_membership.role]
 
             if role == WorkspaceRole.owner:
                 if actor_membership.role != WorkspaceRole.owner:
@@ -107,13 +73,13 @@ class WorkspaceService:
             else:
                 target = await self.repo.get_user_membership(workspace_id, user_id)
                 if user_id == actor.id or (
-                    target is not None and _ROLE_RANK[target.role] >= actor_rank
+                    target is not None and WORKSPACE_ROLE_RANK[target.role] >= actor_rank
                 ):
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Cannot change the role of a member at or above your own role",
                     )
-                if _ROLE_RANK[role] >= actor_rank:
+                if WORKSPACE_ROLE_RANK[role] >= actor_rank:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Cannot grant a role at or above your own",
@@ -126,11 +92,7 @@ class WorkspaceService:
     ) -> tuple[WorkspaceMembershipOut, UUID | None]:
         """Set a role with no check on who is asking; callers must authorize.
 
-        Returns (updated membership, displaced_owner_id).
-
-        displaced_owner_id is set when ownership is transferred so the caller
-        can invalidate the former owner's cached role.
-        """
+        Also returns the former owner on a transfer, whose cached role is now stale."""
         current_owner = await self.repo.get_workspace_owner(workspace_id)
         displaced_owner_id: UUID | None = None
 
