@@ -146,6 +146,7 @@ def _comment_row(user_id, workspace_id=None, content_author_id=None):
     return SimpleNamespace(
         id=uuid4(),
         user_id=user_id,
+        content_id=uuid4(),
         content=SimpleNamespace(
             workspace_id=workspace_id or uuid4(),
             author_id=content_author_id or uuid4(),

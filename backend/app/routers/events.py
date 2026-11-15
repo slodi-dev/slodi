@@ -9,14 +9,14 @@ from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
-    apply_review_visibility,
-    assert_hidden_item_readable,
-    check_content_create_access,
-    check_content_edit_access,
+    check_content_create,
+    check_content_edit,
+    check_content_read,
     check_workspace_access,
     get_current_user,
     is_content_moderator,
     require_not_suspended,
+    strip_review_fields,
 )
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
@@ -127,7 +127,7 @@ async def create_workspace_event(
     _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> EventOut:
-    await check_content_create_access(workspace_id, current_user, session)
+    await check_content_create(workspace_id, current_user, session)
     svc = EventService(session)
     # author_id and created_at are server-owned — see ContentCreate.
     event_data = body.model_copy(
@@ -180,22 +180,14 @@ async def create_program_event(
 async def get_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> EventOut:
-    svc = EventService(session)
-    event = await svc.get(
+    await check_content_read(event_id, current_user, session)
+    event = await EventService(session).get(
         event_id,
         current_user.id,
         include_hidden=True,
         include_hidden_children=is_content_moderator(current_user),
     )
-    await check_workspace_access(
-        event.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.viewer,
-        hide_from_non_members=True,
-    )
-    assert_hidden_item_readable(event, current_user)
-    return apply_review_visibility(event, current_user)
+    return strip_review_fields(event, current_user)
 
 
 @router.patch("/events/{event_id}", response_model=EventOut)
@@ -207,15 +199,8 @@ async def update_event(
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> EventOut:
     svc = EventService(session)
-    event = await svc.get(event_id, current_user.id)
-    await check_content_edit_access(
-        event.workspace_id,
-        event.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
-    return apply_review_visibility(await svc.update(event_id, body, current_user.id), current_user)
+    await check_content_edit(event_id, current_user, session)
+    return strip_review_fields(await svc.update(event_id, body, current_user.id), current_user)
 
 
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -223,13 +208,6 @@ async def delete_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = EventService(session)
-    event = await svc.get(event_id, current_user.id)
-    await check_content_edit_access(
-        event.workspace_id,
-        event.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
+    await check_content_edit(event_id, current_user, session)
     await svc.delete(event_id)
     return None

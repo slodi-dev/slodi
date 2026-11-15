@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
-    check_content_edit_access,
-    check_content_workspace_access,
+    check_content_edit,
+    check_content_read,
     get_current_user,
     require_not_suspended,
     require_permission,
@@ -36,7 +36,7 @@ async def list_content_comments(
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[CommentOut]:
-    await check_content_workspace_access(content_id, current_user, session)
+    await check_content_read(content_id, current_user, session)
     svc = CommentService(session)
     total = await svc.count_content_comments(content_id)
     items = await svc.list_for_content(content_id, limit=limit, offset=offset)
@@ -64,7 +64,7 @@ async def create_comment_under_content(
     current_user: UserOut = Depends(get_current_user),
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> CommentOut:
-    await check_content_workspace_access(content_id, current_user, session)
+    await check_content_read(content_id, current_user, session)
     svc = CommentService(session)
     comment_data = CommentCreate(body=body.body, user_id=current_user.id)
     comment = await svc.create_under_content(content_id, comment_data)
@@ -84,7 +84,7 @@ async def get_comment(
     svc = CommentService(session)
     comment = await svc.get(comment_id)
     # Same rule as listing the thread: the content has to be reachable.
-    await check_content_workspace_access(comment.content_id, current_user, session)
+    await check_content_read(comment.content_id, current_user, session)
     return comment
 
 
@@ -123,36 +123,12 @@ async def delete_comment(
     comment_id: UUID,
     current_user: UserOut = Depends(get_current_user),
 ) -> None:
-    """Remove a comment.
-
-    Four people can: whoever wrote it, whoever wrote the item it hangs under, a
-    workspace admin, and a content moderator.
-
-    Expressed as "your own comment, or you can already act on the item itself",
-    which is why this defers to `check_content_edit_access` with the *content's*
-    author rather than restating a fourth rule about who may act on what. A
-    leader who puts an idea in the bank is responsible for what accumulates
-    under it, so they can clear a comment on their own item without waiting for
-    Dagskrárstjórnarteymið.
-
-    It used to be the comment's author alone. That left the bank's only public
-    text surface with no moderation path at all: the team holds `moderator`, and
-    the one other route that could remove a comment required platform `admin`.
-
-    Editing someone else's comment stays impossible for everyone but its author
-    — removing words is moderation, rewriting them puts words in their mouth.
-    """
+    """The comment's author, or anyone who may edit the item it is on."""
     svc = CommentService(session)
     comment = await svc.get_model(comment_id)
 
     if comment.user_id != current_user.id:
-        await check_content_edit_access(
-            comment.content.workspace_id,
-            comment.content.author_id,
-            current_user,
-            session,
-            hide_from_non_members=True,
-        )
+        await check_content_edit(comment.content_id, current_user, session)
 
     await svc.delete(comment_id)
     return None

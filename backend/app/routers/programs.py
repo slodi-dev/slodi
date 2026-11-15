@@ -8,14 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
-    apply_review_visibility,
-    assert_hidden_item_readable,
-    check_content_create_access,
-    check_content_edit_access,
+    check_content_create,
+    check_content_edit,
+    check_content_read,
     check_workspace_access,
     get_current_user,
     is_content_moderator,
     require_not_suspended,
+    strip_review_fields,
 )
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
@@ -282,7 +282,7 @@ async def create_program_under_workspace(
     _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
-    await check_content_create_access(workspace_id, current_user, session)
+    await check_content_create(workspace_id, current_user, session)
     # author_id and created_at are server-owned — see ContentCreate.
     program_data = body.model_copy(
         update={"author_id": current_user.id, "created_at": get_current_datetime()}
@@ -307,7 +307,7 @@ async def copy_program_to_workspace(
     _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ProgramOut:
-    await check_content_create_access(workspace_id, current_user, session)
+    await check_content_create(workspace_id, current_user, session)
     svc = ProgramService(session)
     original_program = await svc.get(program_id)
     # Copying is a read of the source. Without this a caller could lift a
@@ -391,13 +391,13 @@ async def get_content(
     the others do not have (`Program.events`, `Event.tasks`), so this resolves
     the discriminator first and then delegates.
     """
+    await check_content_read(content_id, current_user, session)
+
     svc = ProgramService(session)
     content_type = await svc.repo.get_content_type(content_id)
     if content_type is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
 
-    # Fetched including hidden, then gated on who is asking: the repository
-    # cannot answer "is this reader its author?" without first loading the row.
     item: ContentOut
     if content_type == ContentType.program:
         item = await svc.get(
@@ -416,21 +416,11 @@ async def get_content(
     else:
         item = await TaskService(session).get(content_id, current_user.id, include_hidden=True)
 
-    await check_workspace_access(
-        item.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.viewer,
-        hide_from_non_members=True,
-    )
-
-    assert_hidden_item_readable(item, current_user)
-
     # no-cache, not max-age: the browser cannot be told to drop a copy it is
     # allowed to keep, so a comment, like or edit vanished on the next load and
     # came back a minute later.
     response.headers["Cache-Control"] = "private, no-cache"
-    return apply_review_visibility(item, current_user)
+    return strip_review_fields(item, current_user)
 
 
 @router.get("/programs/{program_id}", response_model=ProgramOut)
@@ -440,25 +430,17 @@ async def get_program(
     response: Response,
     current_user: UserOut = Depends(get_current_user),
 ) -> ProgramOut:
-    svc = ProgramService(session)
-    program = await svc.get(
+    await check_content_read(program_id, current_user, session)
+    program = await ProgramService(session).get(
         program_id,
         current_user.id,
         include_hidden=True,
         include_hidden_children=is_content_moderator(current_user),
     )
-    await check_workspace_access(
-        program.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.viewer,
-        hide_from_non_members=True,
-    )
-    assert_hidden_item_readable(program, current_user)
 
     # Same reason as `get_content`.
     response.headers["Cache-Control"] = "private, no-cache"
-    return apply_review_visibility(program, current_user)
+    return strip_review_fields(program, current_user)
 
 
 @router.patch("/programs/{program_id}", response_model=ProgramOut)
@@ -470,17 +452,8 @@ async def update_program(
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> ProgramOut:
     svc = ProgramService(session)
-    program = await svc.get(program_id)
-    await check_content_edit_access(
-        program.workspace_id,
-        program.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
-    return apply_review_visibility(
-        await svc.update(program_id, body, current_user.id), current_user
-    )
+    await check_content_edit(program_id, current_user, session)
+    return strip_review_fields(await svc.update(program_id, body, current_user.id), current_user)
 
 
 @router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -488,13 +461,6 @@ async def delete_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = ProgramService(session)
-    program = await svc.get(program_id)
-    await check_content_edit_access(
-        program.workspace_id,
-        program.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
+    await check_content_edit(program_id, current_user, session)
     await svc.delete(program_id)
     return None

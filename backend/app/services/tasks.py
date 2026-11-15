@@ -11,6 +11,7 @@ from app.models.task import Task
 from app.repositories.tags import TagRepository
 from app.repositories.tasks import TaskRepository
 from app.schemas.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
+from app.services.content import requeue_if_author_fixed_hidden
 from app.services.uploads import AttachmentVerifier
 
 
@@ -144,7 +145,7 @@ class TaskService:
         AttachmentVerifier().check_content(
             getattr(data, "image", None), getattr(data, "media", None)
         )
-        row = await self.repo.get(task_id)
+        row = await self.repo.get(task_id, include_hidden=True)
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
         task, _ = row
@@ -165,6 +166,7 @@ class TaskService:
                 )
         for k, v in patch.items():
             setattr(task, k, v)
+        requeue_if_author_fixed_hidden(task, current_user_id)
         if "tag_names" in data.model_fields_set:
             tag_repo = TagRepository(self.session)
             not_found = await tag_repo.set_content_tags_by_names(task_id, data.tag_names or [])
@@ -174,7 +176,7 @@ class TaskService:
                     detail=f"Unknown tags: {not_found}",
                 )
         await self.session.commit()
-        updated = await self.repo.get(task_id, current_user_id)
+        updated = await self.repo.get(task_id, current_user_id, include_hidden=True)
         if not updated:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

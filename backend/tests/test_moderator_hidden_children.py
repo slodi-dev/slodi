@@ -15,9 +15,19 @@ from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user
 from app.core.db import get_session
-from app.domain.enums import ContentType, Permissions
+from app.domain.enums import ContentType, Permissions, WorkspaceRole
 from app.main import create_app
 from app.schemas.user import UserOut
+
+
+@pytest.fixture(autouse=True)
+def _reader_can_reach_the_item(content_access):
+    with patch(
+        "app.core.auth._get_workspace_role",
+        new_callable=AsyncMock,
+        return_value=WorkspaceRole.viewer,
+    ):
+        yield
 
 
 def _client(mock_db_session, permissions):

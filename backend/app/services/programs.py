@@ -18,6 +18,7 @@ from app.schemas.program import (
     ProgramOut,
     ProgramUpdate,
 )
+from app.services.content import requeue_if_author_fixed_hidden
 from app.services.uploads import AttachmentVerifier
 
 logger = logging.getLogger(__name__)
@@ -170,6 +171,7 @@ class ProgramService:
             )
         for k, v in patch.items():
             setattr(prog, k, v)
+        requeue_if_author_fixed_hidden(prog, current_user_id)
         if "tag_names" in data.model_fields_set:
             tag_repo = TagRepository(self.session)
             not_found = await tag_repo.set_content_tags_by_names(program_id, data.tag_names or [])
@@ -179,7 +181,7 @@ class ProgramService:
                     detail=f"Unknown tags: {not_found}",
                 )
         await self.session.commit()
-        updated = await self.repo.get(program_id, current_user_id)
+        updated = await self.repo.get(program_id, current_user_id, include_hidden=True)
         if not updated:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -189,7 +191,7 @@ class ProgramService:
         return ProgramOut.from_row(prog, stats)
 
     async def delete(self, program_id: UUID) -> None:
-        row = await self.repo.get(program_id)
+        row = await self.repo.get(program_id, include_hidden=True)
         if not row:
             logger.error(f"Program {program_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")

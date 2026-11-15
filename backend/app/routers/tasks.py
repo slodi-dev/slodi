@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
-    apply_review_visibility,
-    assert_hidden_item_readable,
-    check_content_create_access,
-    check_content_edit_access,
+    check_content_create,
+    check_content_edit,
+    check_content_read,
     check_workspace_access,
     get_current_user,
     require_not_suspended,
+    strip_review_fields,
 )
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
@@ -78,9 +78,7 @@ async def create_workspace_task(
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
     svc = TaskService(session)
-    await check_content_create_access(
-        workspace_id, current_user, session, hide_from_non_members=True
-    )
+    await check_content_create(workspace_id, current_user, session, hide_from_non_members=True)
     # author_id and created_at are server-owned — see ContentCreate.
     task_data = body.model_copy(
         update={"author_id": current_user.id, "created_at": get_current_datetime()}
@@ -165,17 +163,9 @@ async def create_event_task(
 async def get_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> TaskOut:
-    svc = TaskService(session)
-    task = await svc.get(task_id, current_user.id, include_hidden=True)
-    await check_workspace_access(
-        task.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.viewer,
-        hide_from_non_members=True,
-    )
-    assert_hidden_item_readable(task, current_user)
-    return apply_review_visibility(task, current_user)
+    await check_content_read(task_id, current_user, session)
+    task = await TaskService(session).get(task_id, current_user.id, include_hidden=True)
+    return strip_review_fields(task, current_user)
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskOut)
@@ -187,15 +177,8 @@ async def update_task(
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> TaskOut:
     svc = TaskService(session)
-    task = await svc.get(task_id, current_user.id)
-    await check_content_edit_access(
-        task.workspace_id,
-        task.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
-    return apply_review_visibility(await svc.update(task_id, body, current_user.id), current_user)
+    await check_content_edit(task_id, current_user, session)
+    return strip_review_fields(await svc.update(task_id, body, current_user.id), current_user)
 
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -203,13 +186,6 @@ async def delete_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
     svc = TaskService(session)
-    task = await svc.get(task_id, current_user.id)
-    await check_content_edit_access(
-        task.workspace_id,
-        task.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
+    await check_content_edit(task_id, current_user, session)
     await svc.delete(task_id)
     return None
