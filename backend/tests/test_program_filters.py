@@ -191,12 +191,12 @@ async def seed_data(db):
 @pytest.mark.integration
 @pytest.mark.asyncio
 class TestProgramFilters:
-    """Integration tests for GET /workspaces/{id}/programs with filter params."""
+    """Integration tests for GET /workspaces/{id}/content with filter params."""
 
     async def test_no_params_returns_all(self, http, seed_data):
         """No filter params returns all programs (backwards compatibility)."""
         sd = seed_data
-        resp = http.get(f"/workspaces/{sd['workspace_id']}/programs")
+        resp = http.get(f"/workspaces/{sd['workspace_id']}/content")
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) == 4
@@ -205,7 +205,7 @@ class TestProgramFilters:
         """search=outdoor matches program with 'Outdoor' in name."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"search": "outdoor"},
         )
         assert resp.status_code == 200
@@ -217,7 +217,7 @@ class TestProgramFilters:
         """search=test matches programs with 'test' in description."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"search": "test"},
         )
         assert resp.status_code == 200
@@ -229,7 +229,7 @@ class TestProgramFilters:
         """Search is case-insensitive."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"search": "WORKSHOP"},
         )
         assert resp.status_code == 200
@@ -241,7 +241,7 @@ class TestProgramFilters:
         """age=hrefnuskatar returns only programs for that age group."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"age": "Hrefnuskátar"},
         )
         assert resp.status_code == 200
@@ -253,7 +253,7 @@ class TestProgramFilters:
         """Multiple age params use OR logic."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"age": ["Hrefnuskátar", "Fálkaskátar"]},
         )
         assert resp.status_code == 200
@@ -267,7 +267,7 @@ class TestProgramFilters:
         """duration_min=61 excludes programs whose duration_max < 61 (no overlap)."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"duration_min": 61},
         )
         assert resp.status_code == 200
@@ -280,7 +280,7 @@ class TestProgramFilters:
         """duration_max=90 excludes programs with duration_max > 90."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"duration_max": 90},
         )
         assert resp.status_code == 200
@@ -293,7 +293,7 @@ class TestProgramFilters:
         """price_max=0 returns only free programs (price=0 or price=null)."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"price_max": 0},
         )
         assert resp.status_code == 200
@@ -307,7 +307,7 @@ class TestProgramFilters:
         """price_max=1500 includes programs with price <= 1500."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"price_max": 1500},
         )
         assert resp.status_code == 200
@@ -320,7 +320,7 @@ class TestProgramFilters:
         """location=reykjavik matches partial location strings case-insensitively."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"location": "reykjavik"},
         )
         assert resp.status_code == 200
@@ -332,7 +332,7 @@ class TestProgramFilters:
         """location=Skata matches 'Skatabudin'."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"location": "Skata"},
         )
         assert resp.status_code == 200
@@ -344,7 +344,7 @@ class TestProgramFilters:
         """equipment=rope matches programs containing 'rope' in equipment."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"equipment": "rope"},
         )
         assert resp.status_code == 200
@@ -356,7 +356,7 @@ class TestProgramFilters:
         """Multiple equipment values use OR logic."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"equipment": ["rope", "pots"]},
         )
         assert resp.status_code == 200
@@ -369,7 +369,7 @@ class TestProgramFilters:
         """author_id filters to a specific author."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"author_id": str(sd["other_user_id"])},
         )
         assert resp.status_code == 200
@@ -381,7 +381,7 @@ class TestProgramFilters:
         """count_min=11 excludes programs whose count_max < 11 (no overlap)."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"count_min": 11},
         )
         assert resp.status_code == 200
@@ -394,7 +394,7 @@ class TestProgramFilters:
         """count_max=9 excludes programs whose count_min > 9 (no overlap)."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"count_max": 9},
         )
         assert resp.status_code == 200
@@ -407,7 +407,7 @@ class TestProgramFilters:
         """prep_time_min=30 returns only programs with prep_time_min >= 30."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"prep_time_min": 30},
         )
         assert resp.status_code == 200
@@ -419,7 +419,7 @@ class TestProgramFilters:
         """sort_by=oldest returns programs ordered by created_at ASC."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"sort_by": "oldest"},
         )
         assert resp.status_code == 200
@@ -433,7 +433,7 @@ class TestProgramFilters:
         """sort_by=newest returns programs ordered by created_at DESC."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"sort_by": "newest"},
         )
         assert resp.status_code == 200
@@ -445,7 +445,7 @@ class TestProgramFilters:
         """sort_by=alpha returns programs ordered alphabetically by name."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"sort_by": "alpha"},
         )
         assert resp.status_code == 200
@@ -457,7 +457,7 @@ class TestProgramFilters:
         """Combining two filters returns the intersection."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"duration_min": 30, "price_max": 1500},
         )
         assert resp.status_code == 200
@@ -471,7 +471,7 @@ class TestProgramFilters:
         """Combining search and age filter returns intersection."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"search": "challenge", "age": "Drekaskátar"},
         )
         assert resp.status_code == 200
@@ -483,7 +483,7 @@ class TestProgramFilters:
         """Filters that match nothing return an empty list."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"search": "nonexistent_xyz"},
         )
         assert resp.status_code == 200
@@ -494,7 +494,7 @@ class TestProgramFilters:
         sd = seed_data
         # Get first page with limit=1 and sort_by=oldest
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"sort_by": "oldest", "limit": 1, "offset": 0},
         )
         assert resp.status_code == 200
@@ -508,7 +508,7 @@ class TestProgramFilters:
         """X-Total-Count reflects filtered count, not total."""
         sd = seed_data
         resp = http.get(
-            f"/workspaces/{sd['workspace_id']}/programs",
+            f"/workspaces/{sd['workspace_id']}/content",
             params={"search": "outdoor"},
         )
         assert resp.status_code == 200

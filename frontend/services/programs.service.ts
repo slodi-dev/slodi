@@ -364,28 +364,6 @@ export async function updateBankContent(
   );
 }
 
-/** @deprecated Pass the content type — use `updateBankContent`. */
-export async function updateProgram(
-  id: string,
-  input: ProgramUpdateInput,
-  getToken: () => Promise<string | null>
-): Promise<Program> {
-  const { tagNames, ...rest } = input;
-  const body = tagNames !== undefined ? { ...rest, tag_names: tagNames } : rest;
-  const url = buildApiUrl(`/programs/${id}`);
-  return fetchWithAuth<Program>(
-    url,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    },
-    getToken
-  );
-}
-
 /**
  * Delete a bank item of any kind.
  *

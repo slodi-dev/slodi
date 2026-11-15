@@ -36,6 +36,12 @@ KINDS = [
 ]
 
 
+def _read_paths(route: str, item_id: object) -> list[str]:
+    # Programs are read through /content only.
+    paths = [f"/content/{item_id}"]
+    return paths if route == "programs" else [*paths, f"/{route}/{item_id}"]
+
+
 def _user(name: str, permissions: Permissions) -> UserOut:
     return UserOut(
         id=uuid4(),
@@ -200,7 +206,7 @@ async def test_a_moderator_sees_the_hidden_item_marked_as_hidden(
     item_id = await _seed_hidden(db, people, model, content_type)
     moderator = as_user(people["moderator"])
 
-    for path in (f"/{route}/{item_id}", f"/content/{item_id}"):
+    for path in _read_paths(route, item_id):
         resp = moderator.get(path)
         assert resp.status_code == 200, f"{path}: {resp.text}"
         assert resp.json()["hidden_at"] is not None, path
@@ -215,7 +221,7 @@ async def test_another_member_cannot_read_or_change_the_hidden_item(
     item_id = await _seed_hidden(db, people, model, content_type)
     other = as_user(people["other"])
 
-    assert other.get(f"/{route}/{item_id}").status_code == 404
-    assert other.get(f"/content/{item_id}").status_code == 404
+    for path in _read_paths(route, item_id):
+        assert other.get(path).status_code == 404, path
     assert other.patch(f"/{route}/{item_id}", json={"name": "Nei"}).status_code == 404
     assert other.delete(f"/{route}/{item_id}").status_code == 404
