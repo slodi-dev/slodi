@@ -33,10 +33,3 @@ class TagOut(TagBase):
 
 
 # -------- ContentTag --------
-class ContentTagCreate(BaseModel):
-    tag_id: UUID
-
-
-class ContentTagOut(ContentTagCreate):
-    model_config = ConfigDict(from_attributes=True)
-    pass

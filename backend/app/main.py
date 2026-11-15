@@ -24,7 +24,6 @@ from app.routers import (
     programs_router,
     tags_router,
     tasks_router,
-    troops_router,
     uploads_router,
     users_router,
     workspaces_router,
@@ -64,7 +63,6 @@ def create_app() -> FastAPI:
     app.include_router(moderation_router.router)
     app.include_router(groups_router.router)
     app.include_router(workspaces_router.router)
-    app.include_router(troops_router.router)
     app.include_router(programs_router.router)
     app.include_router(events_router.router)
     app.include_router(tasks_router.router)

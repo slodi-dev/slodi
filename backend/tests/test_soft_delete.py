@@ -113,16 +113,9 @@ def test_delete_group_not_found_returns_404(client):
 
 
 def test_delete_tag_returns_204(client):
-    from app.schemas.tag import TagOut
-
     tag_id = uuid4()
-    sample_tag = TagOut(id=tag_id, name="nature")
 
-    with (
-        patch("app.services.tags.TagService.get", new_callable=AsyncMock) as mock_get,
-        patch("app.services.tags.TagService.delete", new_callable=AsyncMock) as mock_del,
-    ):
-        mock_get.return_value = sample_tag
+    with patch("app.services.tags.TagService.delete", new_callable=AsyncMock) as mock_del:
         mock_del.return_value = None
 
         resp = client.delete(f"/tags/{tag_id}")

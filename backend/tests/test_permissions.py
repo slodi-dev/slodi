@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user
 from app.core.db import get_session
+from app.domain.enums import Permissions
 from app.main import create_app
 
 
@@ -231,3 +232,26 @@ async def test_a_user_cannot_be_created_as_platform_admin():
 
     assert exc.value.status_code == status.HTTP_403_FORBIDDEN
     session.commit.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "method,path", [("post", "/tags"), ("patch", "/tags/{id}"), ("delete", "/tags/{id}")]
+)
+def test_only_moderators_change_the_shared_tag_vocabulary(
+    mock_db_session, viewer_user, method, path
+):
+    member = viewer_user.model_copy(update={"permissions": Permissions.member})
+    app = create_app()
+
+    async def override_get_session():
+        yield mock_db_session
+
+    async def override_get_current_user():
+        return member
+
+    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    call = getattr(TestClient(app), method)
+    kwargs = {} if method == "delete" else {"json": {"name": "Nýtt"}}
+    response = call(path.format(id=uuid4()), **kwargs)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
