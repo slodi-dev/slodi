@@ -1,24 +1,4 @@
-"""
-Single-use tracking for game run tokens.
-
-A token is only burned once a score has actually been stored. Burning it on
-receipt would break the parked-score flow: a player who finishes a run while
-signed out gets a 401, logs in, and replays the very same run — which has to
-present the very same token.
-
-## This is best-effort, by design
-
-The store is the shared cache, which is in-process memory unless CACHE_BACKEND
-is `redis`. Under memory, a second uvicorn worker — or a restart — does not see
-what the first burned, so a token can be redeemed more than once.
-
-That is tolerable because redeeming a token twice buys nothing: the upsert keeps
-only a player's best score, so a replay of the same run stores the same number,
-and the elapsed-time check and the per-game ceiling already bound what any
-single token can claim. Single-use is a tidiness measure on top of those two,
-not the thing holding the door shut. Set CACHE_BACKEND=redis for real
-enforcement across workers.
-"""
+"""Best-effort single-use tracking for run tokens (in-memory unless CACHE_BACKEND=redis)."""
 
 from __future__ import annotations
 

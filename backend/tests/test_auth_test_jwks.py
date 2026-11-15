@@ -47,7 +47,9 @@ def _settings(**overrides: str) -> Settings:
 # ── 1. The guard ──────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("env", ["production", "Production", "prod", "staging", "development", ""])
+@pytest.mark.parametrize(
+    "env", ["production", "Production", "prod", "staging", "development", "", "E2E", " e2e"]
+)
 def test_refuses_to_load_outside_e2e(env: str) -> None:
     with pytest.raises(ValidationError, match="AUTH_TEST_JWKS_FILE"):
         _settings(ENV=env, AUTH_TEST_JWKS_FILE="/tmp/jwks.json")
@@ -59,7 +61,7 @@ def test_refuses_to_load_in_production_via_environment(monkeypatch: pytest.Monke
         monkeypatch.setenv(key, value)
     monkeypatch.setenv("ENV", "production")
     monkeypatch.setenv("AUTH_TEST_JWKS_FILE", "/tmp/jwks.json")
-    with pytest.raises(ValidationError, match="only accepted when ENV is one of"):
+    with pytest.raises(ValidationError, match="only accepted when ENV is 'e2e'"):
         Settings(_env_file=None)  # type: ignore[call-arg]
 
 
