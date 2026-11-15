@@ -222,22 +222,20 @@ def test_non_member_cannot_create(member_client, bank):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_attaching_a_task_to_someone_elses_event_still_needs_editor(member_client, bank):
-    """Submitting to the bank is not the same as editing another leader's plan.
-
-    Every account is a `viewer` in the bank, so if the parent-scoped create
-    routes were open at `viewer` too, anyone could graft liðir onto anyone
-    else's fundur — and `check_content_edit` would then let only the
-    child's own author remove them again.
-    """
-    event = _make_task(bank, author_id=uuid4())
+@pytest.mark.parametrize(
+    "kind,field", [("tasks", "event_id"), ("events", "program_id")], ids=["task", "event"]
+)
+def test_attaching_to_an_event_or_program_needs_editor(member_client, viewer_user, kind, field):
+    """Every account is a `viewer` in the bank; attaching an item changes someone's plan."""
+    item = _make_task(uuid4(), author_id=viewer_user.id)
     with (
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
-        patch("app.services.events.EventService.get", new_callable=AsyncMock) as get,
+        patch(ACCESS, new_callable=AsyncMock) as access,
+        patch(f"app.services.{kind}.{kind[:-1].title()}Service.update", new_callable=AsyncMock),
     ):
         lookup.return_value = WorkspaceRole.viewer
-        get.return_value = event
-        response = member_client.post(f"/events/{event.id}/tasks", json={"name": "Nei"})
+        access.return_value = _access_for(item)
+        response = member_client.patch(f"/{kind}/{item.id}", json={field: str(uuid4())})
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 

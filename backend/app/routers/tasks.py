@@ -4,63 +4,25 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
     check_content_create,
     check_content_edit,
-    check_content_read,
-    check_workspace_access,
     get_current_user,
     require_not_suspended,
     strip_review_fields,
 )
 from app.core.db import get_session
-from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
-from app.schemas.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
+from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
 from app.schemas.user import UserOut
-from app.schemas.workspace import WorkspaceRole
-from app.services.events import EventService
+from app.services.content import authored_by
 from app.services.tasks import TaskService
-from app.utils import get_current_datetime
 
 router = APIRouter(tags=["tasks"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-
-
-# ----- collection under workspace -----
-
-
-@router.get("/workspaces/{workspace_id}/tasks", response_model=list[TaskListOut])
-async def list_workspace_tasks(
-    session: SessionDep,
-    request: Request,
-    response: Response,
-    workspace_id: UUID,
-    current_user: UserOut = Depends(get_current_user),
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[TaskListOut]:
-    svc = TaskService(session)
-    await check_workspace_access(
-        workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.viewer,
-        hide_from_non_members=True,
-    )
-    total = await svc.count_for_workspace(workspace_id)
-    items = await svc.list_for_workspace(workspace_id, current_user.id, limit=limit, offset=offset)
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
 
 
 @router.post(
@@ -77,95 +39,12 @@ async def create_workspace_task(
     _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> TaskOut:
-    svc = TaskService(session)
     await check_content_create(workspace_id, current_user, session, hide_from_non_members=True)
-    # author_id and created_at are server-owned — see ContentCreate.
-    task_data = body.model_copy(
-        update={"author_id": current_user.id, "created_at": get_current_datetime()}
+    task = await TaskService(session).create_under_workspace(
+        workspace_id, authored_by(body, current_user.id)
     )
-    task = await svc.create_under_workspace(workspace_id, task_data)
-    response.headers["Location"] = f"/tasks/{task.id}"
+    response.headers["Location"] = f"/content/{task.id}"
     return task
-
-
-# ----- collection under event -----
-
-
-@router.get("/events/{event_id}/tasks", response_model=list[TaskListOut])
-async def list_event_tasks(
-    session: SessionDep,
-    request: Request,
-    response: Response,
-    event_id: UUID,
-    current_user: UserOut = Depends(get_current_user),
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[TaskListOut]:
-    svc = TaskService(session)
-    event_svc = EventService(session)
-    event = await event_svc.get(event_id, current_user.id)
-    await check_workspace_access(
-        event.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.viewer,
-        hide_from_non_members=True,
-    )
-    total = await svc.count_tasks_for_event(event_id)
-    items = await svc.list_for_event(event_id, current_user.id, limit=limit, offset=offset)
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
-
-
-@router.post(
-    "/events/{event_id}/tasks",
-    response_model=TaskOut,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_event_task(
-    session: SessionDep,
-    event_id: UUID,
-    body: TaskCreate,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
-    _suspension: UserOut = Depends(require_not_suspended),
-    _: None = Depends(user_rate_limit(20, 60)),
-) -> TaskOut:
-    svc = TaskService(session)
-    event_svc = EventService(session)
-    event = await event_svc.get(event_id, current_user.id)
-    await check_workspace_access(
-        event.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.editor,
-        hide_from_non_members=True,
-    )
-    # author_id and created_at are server-owned — see ContentCreate.
-    task_data = body.model_copy(
-        update={"author_id": current_user.id, "created_at": get_current_datetime()}
-    )
-    task = await svc.create_under_event(event_id, task_data)
-    response.headers["Location"] = f"/tasks/{task.id}"
-    return task
-
-
-# ----- item endpoints -----
-
-
-@router.get("/tasks/{task_id}", response_model=TaskOut)
-async def get_task(
-    session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
-) -> TaskOut:
-    await check_content_read(task_id, current_user, session)
-    task = await TaskService(session).get(task_id, current_user.id, include_hidden=True)
-    return strip_review_fields(task, current_user)
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskOut)
@@ -176,16 +55,14 @@ async def update_task(
     current_user: UserOut = Depends(get_current_user),
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> TaskOut:
-    svc = TaskService(session)
-    await check_content_edit(task_id, current_user, session)
-    return strip_review_fields(await svc.update(task_id, body, current_user.id), current_user)
+    await check_content_edit(task_id, current_user, session, attaching=body.event_id is not None)
+    task = await TaskService(session).update(task_id, body, current_user.id)
+    return strip_review_fields(task, current_user)
 
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
-    svc = TaskService(session)
     await check_content_edit(task_id, current_user, session, deleting=True)
-    await svc.delete(task_id)
-    return None
+    await TaskService(session).delete(task_id)
