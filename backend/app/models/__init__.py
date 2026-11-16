@@ -11,11 +11,13 @@ from .game_score import GameScore
 from .group import Group, GroupMembership, GroupRole
 from .heidursordla import HeidursordlaAttempt, HeidursordlaPuzzle
 from .like import UserLikedContent
+from .placement import Placement
 from .posting_suspension import PostingSuspension
 from .program import Program
 from .review_comment import ReviewComment
 from .tag import ContentTag, Tag
 from .task import Task
 from .troop import Troop, TroopParticipation
+from .unit import Unit, UnitParticipation
 from .user import Pronouns, User
 from .workspace import EventInterval, Weekday, Workspace, WorkspaceMembership

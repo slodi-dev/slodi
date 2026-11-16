@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 
 # --------------------- #
 # Permissions and roles #
@@ -71,6 +71,13 @@ class ContentType(str, Enum):
     program = "program"
     event = "event"
     task = "task"
+
+
+class ContentLevel(IntEnum):
+    task = 0
+    event = 1
+    program = 2
+    season = 3
 
 
 class ReviewCommentVisibility(str, Enum):

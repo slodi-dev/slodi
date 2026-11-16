@@ -39,21 +39,22 @@ INSERT INTO tags (id, name, deleted_at) VALUES
   ('00000000-0000-4000-8000-000000000403', 'Útivera', now());
 
 -- One of each content type, across review states, with every range filled.
-INSERT INTO content (id, content_type, name, description, instructions, created_at, author_id, workspace_id,
+INSERT INTO content (id, content_type, level, name, description, instructions, created_at, author_id, workspace_id,
                      review_state, hidden_at, age, count_min, count_max, duration_min, duration_max,
-                     prep_time_min, prep_time_max, equipment, price, location) VALUES
-  ('00000000-0000-4000-8000-000000000501', 'program', 'Kvöldvaka', 'Söngur og leikir', 'Kveikið eld',
+                     prep_time_min, prep_time_max, equipment, price, location, copied_from_id) VALUES
+  ('00000000-0000-4000-8000-000000000501', 'program', 2, 'Kvöldvaka', 'Söngur og leikir', 'Kveikið eld',
    now(), '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000201',
-   'approved', NULL, ARRAY['Drekaskátar', 'Fálkaskátar']::age_group_enum[], 5, 30, 60, 90, 10, 20, '["Gítar"]', 0, 'Úlfljótsvatn'),
-  ('00000000-0000-4000-8000-000000000502', 'event', 'Fjallganga', 'Upp á Esju', NULL,
+   'approved', NULL, ARRAY['Drekaskátar', 'Fálkaskátar']::age_group_enum[], 5, 30, 60, 90, 10, 20, '["Gítar"]', 0, 'Úlfljótsvatn', NULL),
+  ('00000000-0000-4000-8000-000000000502', 'event', 1, 'Fjallganga', 'Upp á Esju', NULL,
    now(), '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000201',
-   'rejected', NULL, ARRAY['Dróttskátar']::age_group_enum[], 4, 12, 180, 300, 30, 60, '["Nesti", "Regnföt"]', 500, 'Esja'),
-  ('00000000-0000-4000-8000-000000000503', 'task', 'Kveikjuleikur', 'Hlaupaleikur', 'Myndið hring',
+   'rejected', NULL, ARRAY['Dróttskátar']::age_group_enum[], 4, 12, 180, 300, 30, 60, '["Nesti", "Regnföt"]', 500, 'Esja', NULL),
+  ('00000000-0000-4000-8000-000000000503', 'task', 0, 'Kveikjuleikur', 'Hlaupaleikur', 'Myndið hring',
    now(), '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000201',
-   'unreviewed', now(), ARRAY['Hrefnuskátar']::age_group_enum[], 6, 40, 15, 25, 0, 5, '["Spottar"]', 0, NULL),
-  ('00000000-0000-4000-8000-000000000504', 'task', 'Nafnaleikur', 'Kynningarleikur', NULL,
+   'unreviewed', now(), ARRAY['Hrefnuskátar']::age_group_enum[], 6, 40, 15, 25, 0, 5, '["Spottar"]', 0, NULL, NULL),
+  ('00000000-0000-4000-8000-000000000504', 'task', 0, 'Nafnaleikur', 'Kynningarleikur', NULL,
    now(), '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000201',
-   'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+   'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+   '00000000-0000-4000-8000-000000000503');
 INSERT INTO programs (id) VALUES ('00000000-0000-4000-8000-000000000501');
 INSERT INTO events (id, program_id) VALUES ('00000000-0000-4000-8000-000000000502', '00000000-0000-4000-8000-000000000501');
 INSERT INTO tasks (id, event_id) VALUES
@@ -63,6 +64,22 @@ INSERT INTO tasks (id, event_id) VALUES
 INSERT INTO reclassified_programs (content_id) VALUES ('00000000-0000-4000-8000-000000000504');
 INSERT INTO troop_participation (troop_id, event_id) VALUES
   ('00000000-0000-4000-8000-000000000301', '00000000-0000-4000-8000-000000000502');
+
+-- A sveit with a flokkur, and the event with a task placed in it, for that flokkur.
+INSERT INTO units (id, workspace_id, parent_id, name, color, created_at) VALUES
+  ('00000000-0000-4000-8000-000000000801', '00000000-0000-4000-8000-000000000201', NULL, 'Sveitin', '#2f8f4e', now()),
+  ('00000000-0000-4000-8000-000000000802', '00000000-0000-4000-8000-000000000201',
+   '00000000-0000-4000-8000-000000000801', 'Fálkar', '#c53030', now());
+INSERT INTO placements (id, workspace_id, content_id, content_level, parent_id, parent_level,
+                        starts_at, ends_at, time_set, created_at) VALUES
+  ('00000000-0000-4000-8000-000000000901', '00000000-0000-4000-8000-000000000201',
+   '00000000-0000-4000-8000-000000000502', 1, NULL, NULL,
+   '2026-10-14 18:00+00', '2026-10-14 19:30+00', true, now()),
+  ('00000000-0000-4000-8000-000000000902', '00000000-0000-4000-8000-000000000201',
+   '00000000-0000-4000-8000-000000000503', 0, '00000000-0000-4000-8000-000000000901', 1,
+   '2026-10-14 18:10+00', '2026-10-14 18:35+00', false, now());
+INSERT INTO unit_participation (unit_id, placement_id) VALUES
+  ('00000000-0000-4000-8000-000000000802', '00000000-0000-4000-8000-000000000902');
 
 INSERT INTO content_tags (content_id, tag_id) VALUES
   ('00000000-0000-4000-8000-000000000501', '00000000-0000-4000-8000-000000000401'),
