@@ -75,6 +75,8 @@ class ModerationRepository(Repository):
             stmt = stmt.where(Content.review_state == filters.review_state)
         if filters.content_type is not None:
             stmt = stmt.where(Content.content_type == filters.content_type)
+        if filters.workspace_id is not None:
+            stmt = stmt.where(Content.workspace_id == filters.workspace_id)
         if filters.reported:
             stmt = stmt.where(select(ContentReport.id).where(_open_item_report()).exists())
         if filters.author:

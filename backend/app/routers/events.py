@@ -29,6 +29,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     "/workspaces/{workspace_id}/events",
     response_model=EventOut,
     status_code=status.HTTP_201_CREATED,
+    deprecated=True,
 )
 async def create_workspace_event(
     session: SessionDep,
@@ -47,7 +48,7 @@ async def create_workspace_event(
     return event
 
 
-@router.patch("/events/{event_id}", response_model=EventOut)
+@router.patch("/events/{event_id}", response_model=EventOut, deprecated=True)
 async def update_event(
     session: SessionDep,
     event_id: UUID,
@@ -60,7 +61,7 @@ async def update_event(
     return strip_review_fields(event, current_user)
 
 
-@router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT, deprecated=True)
 async def delete_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:

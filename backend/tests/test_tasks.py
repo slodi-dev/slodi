@@ -24,6 +24,7 @@ def _make_task(workspace_id, event_id=None):
     author_id = uuid4()
     return TaskOut(
         content_type="task",
+        level=0,
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Task",
@@ -39,6 +40,7 @@ def _make_task(workspace_id, event_id=None):
 def _make_task_list_out(workspace_id, event_id=None):
     return TaskListOut(
         content_type="task",
+        level=0,
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Task",
@@ -54,6 +56,7 @@ def _make_event(workspace_id):
     author_id = uuid4()
     return EventOut(
         content_type="event",
+        level=1,
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Event",

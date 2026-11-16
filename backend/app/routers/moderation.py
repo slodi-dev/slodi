@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_permission
 from app.core.db import get_session
+from app.core.default_workspace import get_default_workspace_id
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.domain.enums import ContentType, Permissions, ReviewState
 from app.schemas.moderation import (
@@ -32,6 +33,8 @@ from app.services.posting_suspensions import PostingSuspensionService
 
 # Admins outrank moderators, so they pass too.
 ModeratorDep = Depends(require_permission(Permissions.moderator))
+# Only the bank is reviewed; content in plans and scratchpads never reaches the queue.
+_BANK_WORKSPACE_ID = get_default_workspace_id()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 router = APIRouter(prefix="/moderation", tags=["moderation"], dependencies=[ModeratorDep])
@@ -58,6 +61,7 @@ async def review_queue(
     filters = ReviewFilters(
         review_state=None if review_state == "all" else review_state,
         content_type=content_type,
+        workspace_id=_BANK_WORKSPACE_ID,
         reported=reported,
         search=search,
         author=author,
@@ -71,7 +75,7 @@ async def review_queue(
         response=response, request=request, total=total, limit=limit, offset=offset
     )
     # The sidebar badge counts what is waiting, not what this view shows.
-    response.headers["X-Unreviewed-Total"] = str(await svc.count_unreviewed())
+    response.headers["X-Unreviewed-Total"] = str(await svc.count_unreviewed(_BANK_WORKSPACE_ID))
     return items
 
 

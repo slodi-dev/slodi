@@ -48,6 +48,7 @@ _LEVEL_OF_TYPE = {
     ContentType.task: ContentLevel.task,
     ContentType.event: ContentLevel.event,
     ContentType.program: ContentLevel.program,
+    ContentType.season: ContentLevel.season,
 }
 
 

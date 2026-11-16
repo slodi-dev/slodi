@@ -58,8 +58,10 @@ class ModerationService:
     async def count(self, filters: ReviewFilters) -> int:
         return await self.repo.count_queue(filters)
 
-    async def count_unreviewed(self) -> int:
-        return await self.repo.count_queue(ReviewFilters(review_state=ReviewState.unreviewed))
+    async def count_unreviewed(self, workspace_id: UUID | None = None) -> int:
+        return await self.repo.count_queue(
+            ReviewFilters(review_state=ReviewState.unreviewed, workspace_id=workspace_id)
+        )
 
     async def detail(self, content_id: UUID) -> ReviewDetail:
         """One item in full for the reading pane, with the open reports against it."""
