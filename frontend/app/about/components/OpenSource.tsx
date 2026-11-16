@@ -94,7 +94,7 @@ export default function OpenSource() {
 
         <div className={styles.linksSection}>
           <a
-            href="https://github.com/halldorvalberg/slodi"
+            href="https://github.com/slodi-dev/slodi"
             className={styles.link}
             target="_blank"
             rel="noopener noreferrer"

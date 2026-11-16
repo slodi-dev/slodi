@@ -25,7 +25,7 @@ export async function GET() {
     }
 
     // Fetch fresh data from GitHub
-    const response = await fetch("https://api.github.com/repos/halldorvalberg/slodi/contributors", {
+    const response = await fetch("https://api.github.com/repos/slodi-dev/slodi/contributors", {
       headers: {
         Accept: "application/vnd.github.v3+json",
         "User-Agent": "Slodi-Website",
@@ -63,7 +63,7 @@ export async function GET() {
       });
     }
 
-    // Return error response
-    return NextResponse.json({ error: "Failed to fetch contributors" }, { status: 500 });
+    // GitHub often rate-limits unauthenticated calls; the page shows the message, not a 500.
+    return NextResponse.json({ contributors: [], error: "Gat ekki sótt upplýsingar um framlög" });
   }
 }
