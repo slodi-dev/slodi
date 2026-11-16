@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +20,7 @@ from app.schemas.placement import (
     PlacementOut,
     PlacementUpdate,
 )
+from app.services.content import copy_content
 from app.utils import get_current_datetime
 
 
@@ -123,6 +124,81 @@ class PlacementService:
             await self._apply(await self._get(item.id), item)
         await self._commit()
         return await self._out(await self.repo.get_many([i.id for i in items]))
+
+    async def get_many(self, placement_ids: Sequence[UUID]) -> list[PlacementOut]:
+        return await self._out(await self.repo.get_many(placement_ids))
+
+    async def clone(
+        self,
+        rows: Sequence[Placement],
+        *,
+        workspace_id: UUID,
+        delta: dt.timedelta,
+        parent_id: UUID | None,
+        content_ids: dict[UUID, UUID] | None = None,
+        keep_units: bool = True,
+    ) -> UUID:
+        """A new copy of a subtree (parents first); returns the new top placement's id."""
+        new_ids: dict[UUID, UUID] = {}
+        units = await self.repo.unit_ids([p.id for p in rows]) if keep_units else {}
+        top = rows[0]
+        for p in rows:
+            copy = Placement(
+                id=uuid4(),
+                workspace_id=workspace_id,
+                content_id=(content_ids or {}).get(p.content_id, p.content_id),
+                content_level=p.content_level,
+                starts_at=p.starts_at + delta,
+                ends_at=p.ends_at + delta,
+                time_set=p.time_set,
+                created_at=get_current_datetime(),
+            )
+            if p is top:
+                if parent_id is not None:
+                    await self._attach(copy, parent_id)
+            elif p.parent_id is not None:
+                copy.parent_id, copy.parent_level = new_ids[p.parent_id], p.parent_level
+            new_ids[p.id] = copy.id
+            self.session.add(copy)
+            await self.session.flush()
+            if units.get(p.id):
+                await self.repo.set_units(copy.id, units[p.id])
+        return new_ids[top.id]
+
+    async def copy(
+        self,
+        placement_id: UUID,
+        starts: Sequence[dt.datetime],
+        parent_id: UUID | None,
+        *,
+        same_parent: bool,
+    ) -> list[PlacementOut]:
+        rows = await self.repo.subtree_rows(placement_id)
+        if not rows:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Placement not found")
+        top = rows[0]
+        target_parent = top.parent_id if same_parent else parent_id
+        new_ids = [
+            await self.clone(
+                rows,
+                workspace_id=top.workspace_id,
+                delta=start - top.starts_at,
+                parent_id=target_parent,
+            )
+            for start in starts
+        ]
+        await self._commit()
+        return await self.get_many(new_ids)
+
+    async def own_version(self, placement_id: UUID, author_id: UUID) -> PlacementOut:
+        placement = await self._get(placement_id)
+        source = await self.repo.get_content(placement.content_id)
+        if source is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content not found")
+        copy = await copy_content(self.session, source, placement.workspace_id, author_id)
+        placement.content_id = copy.id
+        await self._commit()
+        return (await self.get_many([placement_id]))[0]
 
     async def delete(self, placement_id: UUID) -> None:
         await self.repo.delete(await self._get(placement_id))

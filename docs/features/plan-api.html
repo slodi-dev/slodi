@@ -136,7 +136,9 @@ content and, if it has one, its structure (the content's own placement and every
 }
 → 201 { content: ContentOut; placements: Placement[] }</code></pre>
 <p>Copy, and optionally place. Without <code>parent_id</code> the copy sits on its own in the workspace, keeping its
-layout. With it, the copy goes straight inside that placement, in one call, so a failed drag never leaves half a copy.</p></div></div>
+layout. With it, the copy goes straight inside that placement, in one call, so a failed drag never leaves half a copy.</p>
+<p>Pieces a moderator has hidden are left out, with what they hold. Units belong to a workspace, so a copy into
+another workspace comes without <code>unit_ids</code>.</p></div></div>
 
 <h2>Placements</h2>
 

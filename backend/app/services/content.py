@@ -12,6 +12,7 @@ from app.models.content import Content
 from app.models.event import Event
 from app.models.program import Program
 from app.models.season import Season
+from app.models.tag import ContentTag
 from app.models.task import Task
 from app.repositories.content import ContentRepository
 from app.repositories.tags import TagRepository
@@ -48,6 +49,42 @@ _MODEL_OF_LEVEL: dict[ContentLevel, type[Content]] = {
     ContentLevel.program: Program,
     ContentLevel.season: Season,
 }
+
+
+_COPIED_FIELDS = (
+    "name",
+    "description",
+    "equipment",
+    "instructions",
+    "duration_min",
+    "duration_max",
+    "age",
+    "location",
+    "count_min",
+    "count_max",
+    "price",
+    "prep_time_min",
+    "prep_time_max",
+    "image",
+    "media",
+)
+
+
+async def copy_content(
+    session: AsyncSession, source: Content, workspace_id: UUID, author_id: UUID
+) -> Content:
+    """A new item in the workspace with the source's fields and tags, remembering where it came from."""
+    copy = _MODEL_OF_LEVEL[ContentLevel(min(source.level, ContentLevel.season))](
+        workspace_id=workspace_id,
+        author_id=author_id,
+        created_at=get_current_datetime(),
+        copied_from_id=source.id,
+        **{field: getattr(source, field) for field in _COPIED_FIELDS},
+    )
+    session.add(copy)
+    await session.flush()
+    session.add_all(ContentTag(content_id=copy.id, tag_id=ct.tag_id) for ct in source.content_tags)
+    return copy
 
 
 class ContentService:

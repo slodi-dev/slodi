@@ -2,6 +2,7 @@
 from app.routers import comments as comments_router
 from app.routers import content as content_router
 from app.routers import content_reports as content_reports_router
+from app.routers import copies as copies_router
 from app.routers import email_list as email_list_router
 from app.routers import events as events_router
 from app.routers import game_saves as game_saves_router
