@@ -77,6 +77,8 @@ type ContentSummary = {
   duration_max: number | null;
   location: string | null;
   tags: string[];
+  equipment: string[];               // summed per week for the Rist's Innkaup column
+  times_used: number;                // placements of it plus copies made from it
   hidden: boolean;                   // hidden by a moderator: draw a greyed gap
 };
 
@@ -105,7 +107,8 @@ type Unit = {
 
 <div class="ep"><span class="m GET">GET</span><span class="path">/workspaces/{id}/content</span>
   <div class="d"><p>Exists. The bank grid and search, with every filter it has today. New: a <code>level</code> filter, a list like
-  <code>age</code> and <code>tags</code>, so <code>?level=0&amp;level=1</code> gives only verkefni and fundir.</p></div></div>
+  <code>age</code> and <code>tags</code>, so <code>?level=0&amp;level=1</code> gives only verkefni and fundir. Each item gets <code>times_used</code>:
+  placements of it plus copies made from it („Notað N sinnum“).</p></div></div>
 <div class="ep"><span class="m POST">POST</span><span class="path">/workspaces/{id}/content</span>
   <div class="d"><p>Body as today plus <code>level</code>, with <code>tag_names</code> for tags. Replaces the three create routes for programs, events and tasks.</p></div></div>
 <div class="ep"><span class="m GET">GET</span><span class="path">/content/{id}</span>
@@ -167,6 +170,11 @@ starfsár 36 weeks.</p>
   <div class="d"><p>Any of <code>starts_at</code>, <code>ends_at</code>, <code>time_set</code>, <code>parent_id</code>, <code>unit_ids</code>.
   A new <code>starts_at</code> moves everything under it by the same amount; a new <code>ends_at</code> alone resizes and moves nothing.
   Returns the placement and everything under it.</p></div></div>
+<div class="ep"><span class="m PATCH">PATCH</span><span class="path">/placements</span>
+  <div class="d">
+<pre><code>[{ id: string; starts_at?: string; ends_at?: string; parent_id?: string; time_set?: boolean; unit_ids?: string[] }]
+→ 200 Placement[]</code></pre>
+<p>Several changes as one: all or none. Reordering a fundur moves one verkefni and shifts the ones after it in one call.</p></div></div>
 <div class="ep"><span class="m DELETE">DELETE</span><span class="path">/placements/{id}</span>
   <div class="d"><p>Removes it and everything under it. The content stays.</p></div></div>
 <div class="ep"><span class="m POST">POST</span><span class="path">/placements/{id}/copies</span>

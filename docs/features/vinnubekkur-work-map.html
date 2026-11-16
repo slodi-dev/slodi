@@ -1,0 +1,149 @@
+<title>Vinnubekkur work map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: one reading column; one table per view, a status chip per row, then the build order. */
+  :root {
+    --bg: #fbfcfd; --fg: #1d2731; --muted: #566573; --line: #d8e0e8; --soft: #eef2f6;
+    --have: #2f7a4f; --have-bg: #e2f3e8; --new: #2d5ea8; --new-bg: #e3ecfa;
+    --fe: #5d6b78; --fe-bg: #eceff2; --gone: #9a3b3b; --gone-bg: #f8e4e4; --gap: #8a5d0a; --gap-bg: #fbefd4;
+    --body: "Inter", system-ui, sans-serif; --head: "Space Grotesk", "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #12181e; --fg: #e3e9ef; --muted: #9aa8b5; --line: #2b3640; --soft: #1b232b;
+    --have: #7fd3a1; --have-bg: #18352a; --new: #94b8f2; --new-bg: #1c2b45;
+    --fe: #b3bec9; --fe-bg: #27313a; --gone: #f29a9a; --gone-bg: #3d2224; --gap: #edc373; --gap-bg: #3a2f17; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #12181e; --fg: #e3e9ef; --muted: #9aa8b5; --line: #2b3640; --soft: #1b232b;
+    --have: #7fd3a1; --have-bg: #18352a; --new: #94b8f2; --new-bg: #1c2b45;
+    --fe: #b3bec9; --fe-bg: #27313a; --gone: #f29a9a; --gone-bg: #3d2224; --gap: #edc373; --gap-bg: #3a2f17; color-scheme: dark }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body);
+         padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 980px; margin: 0 auto; padding-block: 2rem 4rem; }
+  h1, h2, h3 { font-family: var(--head); text-wrap: balance; line-height: 1.25; }
+  h1 { font-size: 1.7rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 .6rem; padding-bottom: .3rem; border-bottom: 1px solid var(--line); }
+  p, li { max-width: 72ch; }
+  .muted { color: var(--muted); }
+  code { font-family: var(--mono); font-size: .84em; background: var(--soft); padding: .05em .3em; border-radius: 3px; overflow-wrap: anywhere; }
+  .tw { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: .9rem; width: 100%; }
+  th, td { border-bottom: 1px solid var(--line); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: .8rem; letter-spacing: .03em; text-transform: uppercase; }
+  td:first-child { width: 28%; } td:last-child { width: 8.5rem; }
+  .chip { display: inline-block; font-size: .74rem; font-weight: 600; padding: .1rem .5rem; border-radius: 999px; white-space: nowrap; }
+  .have { color: var(--have); background: var(--have-bg); }
+  .new { color: var(--new); background: var(--new-bg); }
+  .fe { color: var(--fe); background: var(--fe-bg); }
+  .gone { color: var(--gone); background: var(--gone-bg); }
+  .gap { color: var(--gap); background: var(--gap-bg); }
+  .legend { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: .75rem 0; font-size: .88rem; color: var(--muted); align-items: center; }
+  ol, ul { padding-left: 1.3rem; } li { margin-bottom: .35rem; }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600&display=swap">
+
+<main>
+<h1>Vinnubekkur work map</h1>
+<p class="muted">Every action in the Vinnubekkur stories (<code>feature/sc-426-vinnubekkur-storybook</code>), matched against the
+new model and API: <code>data-model.html</code> and <code>plan-api.html</code>. Replaces Halldór's
+<code>vinnubekkur-backend-gaps.html</code> of 14. nóvember. Written 16. nóvember 2026.</p>
+
+<div class="legend">
+  <span class="chip have">Exists</span> on main today
+  <span class="chip new">New API</span> in plan-api.html, to build
+  <span class="chip fe">Frontend</span> needs no backend
+  <span class="chip gone">Dropped</span> not in the new model
+  <span class="chip gap">Open</span> not settled yet
+</div>
+
+<h2>Frame and season switcher</h2>
+<div class="tw"><table>
+  <tr><th>Action</th><th>How</th><th>Status</th></tr>
+  <tr><td>Find the workspace</td><td><code>GET /users/me/workspaces</code></td><td><span class="chip have">Exists</span></td></tr>
+  <tr><td>Pick what to open (was: list seasons)</td><td><code>GET /workspaces/{id}/placements?top=true</code>. Any level, not only starfsár.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Create a starfsár</td><td><code>POST /workspaces/{id}/content</code> with <code>level: 3</code>, then <code>POST /workspaces/{id}/placements</code> with its dates.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Create a krassblað</td><td>A new workspace: <code>POST /users/me/workspaces</code>.</td><td><span class="chip have">Exists</span></td></tr>
+  <tr><td>Switch view: Bekkur, Rist, Dagatal</td><td>All three draw the same opened placement.</td><td><span class="chip fe">Frontend</span></td></tr>
+</table></div>
+
+<h2>Rist</h2>
+<div class="tw"><table>
+  <tr><th>Action</th><th>How</th><th>Status</th></tr>
+  <tr><td>Load the grid</td><td><code>GET /placements/{id}?level=1</code> on the opened placement. Weeks come from the dates; no grid endpoint.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Flokkar as columns</td><td><code>GET /workspaces/{id}/units</code>. A placement goes in the column of its unit; with none, it spans the row.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Which units are columns</td><td>By default the units the placements are for. The leader can pick others; the choice is remembered in the browser.</td><td><span class="chip fe">Frontend</span></td></tr>
+  <tr><td>Innkaup column</td><td>Equipment of everything under each fundur, summed per week, from <code>equipment</code> in <code>ContentSummary</code>.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>ATH column (week note)</td><td>No field. „Vetrarfrí“ can be content placed in that week, like anything else.</td><td><span class="chip gone">Dropped</span></td></tr>
+  <tr><td>Click an entry to open the fundur</td><td><code>onSelectEvent</code> isn't passed from <code>PlanShell</code> yet; then <code>GET /placements/{id}</code>.</td><td><span class="chip fe">Frontend</span></td></tr>
+  <tr><td>Create an event in a cell</td><td>New content (<code>POST /workspaces/{id}/content</code>) and a placement with the week's date and the column's unit.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Move or rename an event</td><td><code>PATCH /placements/{id}</code> (date, unit) or <code>PATCH /content/{id}</code> (name).</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Event type, scope, status, „?“</td><td>Type is a tag, scope comes from <code>unit_ids</code>, status is parked.</td><td><span class="chip gone">Dropped</span></td></tr>
+</table></div>
+
+<h2>Dagatal, timeline and window</h2>
+<div class="tw"><table>
+  <tr><th>Action</th><th>How</th><th>Status</th></tr>
+  <tr><td>Entries on their day</td><td>Every placement has <code>starts_at</code>, so the „Skráð á viku, ekki á dag“ list goes away.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Flip months, pick a flokkur</td><td><code>from</code>/<code>to</code> on the opened placement; filter by <code>unit_ids</code> in the browser.</td><td><span class="chip fe">Frontend</span></td></tr>
+</table></div>
+
+<h2>Dagskrárbankinn rail</h2>
+<div class="tw"><table>
+  <tr><th>Action</th><th>How</th><th>Status</th></tr>
+  <tr><td>Load blocks</td><td><code>GET /workspaces/{id}/content</code> for the bank and for your own workspace. The hook still reads fixtures.</td><td><span class="chip have">Exists</span></td></tr>
+  <tr><td>Filter by level</td><td>The new <code>level</code> filter.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Folders: Sveitin, Félagið, Færnimerki</td><td>This workspace's content, the bank, and the user's other workspaces (<code>GET /users/me/workspaces</code>), so a
+  workspace kept as someone's own „bank“ shows here too. Each is <code>GET /workspaces/{id}/content</code>; dragging from any of
+  them is a copy. A sveit is a unit, not a folder. „Félagið“ waits for groups (parked); Færnimerki are tags.</td><td><span class="chip have">Exists</span></td></tr>
+  <tr><td>„Notað N sinnum“</td><td><code>times_used</code> on content lists and in <code>ContentSummary</code>: placements of it plus copies made from it.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Search</td><td>The existing <code>search</code> filter.</td><td><span class="chip have">Exists</span></td></tr>
+</table></div>
+
+<h2>Bekkurinn</h2>
+<div class="tw"><table>
+  <tr><th>Action</th><th>How</th><th>Status</th></tr>
+  <tr><td>Load the fundir of a period</td><td><code>GET /placements/{id}?from=…&amp;to=…</code> on the opened placement.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Select, grab, open the editor</td><td>Local state.</td><td><span class="chip fe">Frontend</span></td></tr>
+  <tr><td>Drag a block in from the bank</td><td><code>POST /workspaces/{id}/copies</code> with <code>parent_id</code> and <code>starts_at</code>: copy and place in one call.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Add a new verkefni</td><td><code>POST /workspaces/{id}/content</code>, then <code>POST /workspaces/{id}/placements</code>.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Rename, venue</td><td><code>PATCH /content/{id}</code>. Changes it everywhere it is placed, so show „notað á N stöðum“ in the editor.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Kind (Setning, Slit…), theme</td><td>Tags through <code>tag_names</code>.</td><td><span class="chip have">Exists</span></td></tr>
+  <tr><td>Length</td><td><code>PATCH /placements/{id}</code> with <code>ends_at</code>.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Reorder within a fundur</td><td>Order is time. Moving one and shifting the ones after it is one <code>PATCH /placements</code> batch, all or none.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Move to another fundur</td><td><code>PATCH /placements/{id}</code> with <code>parent_id</code> and <code>starts_at</code>.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Duplicate</td><td><code>POST /placements/{id}/copies</code> (same content), or <code>own-version</code> afterwards to edit it apart.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Remove</td><td><code>DELETE /placements/{id}</code>. The content stays in the workspace.</td><td><span class="chip new">New API</span></td></tr>
+  <tr><td>Split a section across flokkar, lanes</td><td>No bands or lanes: parallel verkefni are placements at the same time with different <code>unit_ids</code>.</td><td><span class="chip gone">Dropped</span></td></tr>
+  <tr><td>Status: Óákveðið … Staðfest</td><td>Parked.</td><td><span class="chip gone">Dropped</span></td></tr>
+  <tr><td>Endurmat from last time</td><td><code>GET /content/{id}/comments</code>; endurmat is a comment on the content.</td><td><span class="chip have">Exists</span></td></tr>
+  <tr><td>Save</td><td>Autosave: every action is its own call, saved at once, and the page shows „Vistað“. No save button. The reducer keeps only what's on screen.</td><td><span class="chip new">New API</span></td></tr>
+</table></div>
+
+<h2>Open: several people in one workspace</h2>
+<ul>
+  <li><strong>v1:</strong> the last change wins. The page reloads the opened structure every so often and when the window
+    gets focus.</li>
+  <li><strong>Later:</strong> a <code>version</code> on Placement and Content. A PATCH sends the version it saw and gets 409 if
+    someone changed it in between; the frontend says „someone changed this, reload“.</li>
+</ul>
+
+<h2>Build order</h2>
+<h3>Backend</h3>
+<ol>
+  <li>The migration: <code>level</code>, <code>copied_from_id</code>, <code>placements</code>, <code>units</code>,
+    <code>unit_participation</code>; events' dates and parent pointers become placements; troops become units; the
+    subtype tables and the workspace meeting fields go.</li>
+  <li>Content routes as one (<code>level</code> on create, the <code>level</code> filter) and Yfirferð reading only the bank.</li>
+  <li>Placements: list, open, create, move, delete.</li>
+  <li>Units.</li>
+  <li>Copies: copy with preview, copy weekly, own version.</li>
+</ol>
+<h3>Frontend</h3>
+<ol>
+  <li>Rewrite <code>plan.service.ts</code> against <code>plan-api.html</code>; drop <code>Season</code>, the grid endpoint, status, bands and lanes.</li>
+  <li>The bank rail reads <code>GET /workspaces/{id}/content</code>. It can do this today.</li>
+  <li>Build each view from one opened placement.</li>
+  <li>Bench actions call the API instead of only the reducer.</li>
+  <li>Wire <code>onSelectEvent</code> in the Rist.</li>
+</ol>
+</main>
