@@ -9,11 +9,14 @@ from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
     Index,
+    SmallInteger,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.engine.default import DefaultExecutionContext
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import DateTime as SADateTime
 from sqlalchemy.types import Integer
@@ -27,7 +30,7 @@ from app.domain.content_constraints import (
     NAME_MIN,
     REVIEW_NOTE_MAX,
 )
-from app.domain.enums import AgeGroup, ContentType, ReviewState
+from app.domain.enums import AgeGroup, ContentLevel, ContentType, ReviewState
 
 from .base import Base, SoftDeleteMixin
 
@@ -40,6 +43,17 @@ if TYPE_CHECKING:
     from .workspace import Workspace
 
 logger = logging.getLogger(__name__)
+
+_LEVEL_OF_TYPE = {
+    ContentType.task: ContentLevel.task,
+    ContentType.event: ContentLevel.event,
+    ContentType.program: ContentLevel.program,
+}
+
+
+def _level_from_type(context: DefaultExecutionContext) -> int:
+    """Until content_type goes, a new item takes its level from its type."""
+    return int(_LEVEL_OF_TYPE[ContentType(context.get_current_parameters()["content_type"])])
 
 
 class Content(SoftDeleteMixin, Base):
@@ -73,6 +87,9 @@ class Content(SoftDeleteMixin, Base):
         Index("ix_content_review_state_created_at", "review_state", "created_at"),
         Index("ix_content_hidden_at", "hidden_at"),
         Index("ix_content_author_id_review_state", "author_id", "review_state"),
+        CheckConstraint("level >= 0", name="ck_content_level_nonneg"),
+        UniqueConstraint("id", "level", "workspace_id", name="uq_content_id_level_workspace"),
+        Index("ix_content_copied_from_id", "copied_from_id"),
     )
 
     # Columns
@@ -85,6 +102,12 @@ class Content(SoftDeleteMixin, Base):
     content_type: Mapped[ContentType] = mapped_column(
         SAEnum(ContentType, name="content_type_enum"),
         nullable=False,
+    )
+    level: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=_level_from_type)
+    copied_from_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("content.id", ondelete="SET NULL", name="fk_content_copied_from_id_content"),
+        nullable=True,
     )
     name: Mapped[str] = mapped_column(String(NAME_MAX), nullable=False)
     description: Mapped[str | None] = mapped_column(String(DESC_MAX), nullable=True)
