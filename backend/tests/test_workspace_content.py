@@ -21,6 +21,7 @@ pytestmark = pytest.mark.usefixtures("content_access")
 def _make_program(workspace_id):
     return ProgramOut(
         content_type="program",
+        level=2,
         id=uuid4(),
         workspace_id=workspace_id,
         name="Test Program",
@@ -184,6 +185,7 @@ def test_get_group_not_found(client):
 def _make_task(workspace_id):
     return TaskOut(
         content_type="task",
+        level=0,
         id=uuid4(),
         workspace_id=workspace_id,
         name="Kaðlabrautin",

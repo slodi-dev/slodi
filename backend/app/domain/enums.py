@@ -71,6 +71,7 @@ class ContentType(str, Enum):
     program = "program"
     event = "event"
     task = "task"
+    season = "season"
 
 
 class ContentLevel(IntEnum):

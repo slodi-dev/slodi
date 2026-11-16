@@ -23,6 +23,7 @@ def _make_program(workspace_id, name="Test Program"):
     author_id = uuid4()
     return ProgramOut(
         content_type="program",
+        level=2,
         id=uuid4(),
         workspace_id=workspace_id,
         name=name,

@@ -49,6 +49,7 @@ def member_client(mock_db_session, viewer_user):
 def _make_task(workspace_id, author_id, created_at=None):
     return TaskOut(
         content_type="task",
+        level=0,
         id=uuid4(),
         workspace_id=workspace_id,
         name="Kveikjuleikur",
@@ -65,6 +66,7 @@ def _make_task(workspace_id, author_id, created_at=None):
 def _make_event(workspace_id, author_id, start_dt=None):
     return EventOut(
         content_type="event",
+        level=1,
         id=uuid4(),
         workspace_id=workspace_id,
         name="Vetrarútilega",

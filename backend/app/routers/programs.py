@@ -30,7 +30,7 @@ from app.schemas.program import (
 )
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceRole
-from app.services.content import authored_by
+from app.services.content import ContentService, authored_by
 from app.services.events import EventService
 from app.services.programs import ProgramService
 from app.services.tasks import TaskService
@@ -67,6 +67,7 @@ async def list_workspace_content(
     "/workspaces/{workspace_id}/programs",
     response_model=ProgramOut,
     status_code=status.HTTP_201_CREATED,
+    deprecated=True,
 )
 async def create_program_under_workspace(
     session: SessionDep,
@@ -131,15 +132,17 @@ async def get_content(
             include_hidden=True,
             include_hidden_children=is_content_moderator(current_user),
         )
-    else:
+    elif content_type == ContentType.task:
         item = await TaskService(session).get(content_id, current_user.id, include_hidden=True)
+    else:
+        item = await ContentService(session).get(content_id, current_user.id, include_hidden=True)
 
     # no-cache, not max-age: otherwise a new comment, like or edit seems to vanish on reload.
     response.headers["Cache-Control"] = "private, no-cache"
     return strip_review_fields(item, current_user)
 
 
-@router.patch("/programs/{program_id}", response_model=ProgramOut)
+@router.patch("/programs/{program_id}", response_model=ProgramOut, deprecated=True)
 async def update_program(
     session: SessionDep,
     program_id: UUID,
@@ -152,7 +155,7 @@ async def update_program(
     return strip_review_fields(await svc.update(program_id, body, current_user.id), current_user)
 
 
-@router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT, deprecated=True)
 async def delete_program(
     session: SessionDep, program_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:

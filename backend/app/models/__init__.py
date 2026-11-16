@@ -15,6 +15,7 @@ from .placement import Placement
 from .posting_suspension import PostingSuspension
 from .program import Program
 from .review_comment import ReviewComment
+from .season import Season
 from .tag import ContentTag, Tag
 from .task import Task
 from .troop import Troop, TroopParticipation

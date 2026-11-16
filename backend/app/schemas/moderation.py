@@ -69,6 +69,7 @@ class ReviewFilters(BaseModel):
 
     review_state: ReviewState | None = None
     content_type: ContentType | None = None
+    workspace_id: UUID | None = None
     reported: bool | None = None
     search: str | None = None
     author: str | None = None

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.domain.enums import AgeGroup, ContentType, ProgramSortBy
+from app.domain.enums import AgeGroup, ContentLevel, ContentType, ProgramSortBy
 
 from .content import ContentCreate, ContentOut, ContentUpdate
 from .event import EventListOut
@@ -29,6 +29,9 @@ class ProgramFilters(BaseModel):
     author_id: UUID | None = None
     author: str | None = Field(default=None, description="Author name contains, any case")
     sort_by: ProgramSortBy | None = Field(default=None, description="Default: by name")
+    level: list[ContentLevel] | None = Field(
+        default=None, description="0 task, 1 event, 2 program, 3 season"
+    )
 
 
 class BankQuery(ProgramFilters):

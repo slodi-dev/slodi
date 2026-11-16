@@ -22,6 +22,7 @@ from app.repositories.content import (
     like_count_subq,
     liked_by_me_subq,
     listable,
+    times_used_subq,
 )
 from app.schemas.program import ProgramFilters
 
@@ -114,6 +115,8 @@ class ProgramRepository(Repository):
                         .where(func.lower(Tag.name).in_(wanted), Tag.deleted_at.is_(None))
                     )
                 )
+        if filters.level:
+            stmt = stmt.where(Content.level.in_(filters.level))
         if filters.author_id is not None:
             stmt = stmt.where(Content.author_id == filters.author_id)
         if filters.author:
@@ -212,7 +215,13 @@ class ProgramRepository(Repository):
         resolved_filters = filters or ProgramFilters()
         lc_subq = like_count_subq()
         stmt = (
-            select(Content, lc_subq, comment_count_subq(), liked_by_me_subq(current_user_id))
+            select(
+                Content,
+                lc_subq,
+                comment_count_subq(),
+                liked_by_me_subq(current_user_id),
+                times_used_subq(),
+            )
             .options(
                 selectinload(Content.author),
                 selectinload(Content.workspace),
@@ -225,8 +234,16 @@ class ProgramRepository(Repository):
         stmt = stmt.limit(limit).offset(offset)
         rows = (await self.session.execute(stmt)).all()
         return [
-            (item, ContentStats(like_count=int(lc), comment_count=int(cc), liked_by_me=bool(lm)))
-            for item, lc, cc, lm in rows
+            (
+                item,
+                ContentStats(
+                    like_count=int(lc),
+                    comment_count=int(cc),
+                    liked_by_me=bool(lm),
+                    times_used=int(tu),
+                ),
+            )
+            for item, lc, cc, lm, tu in rows
         ]
 
     async def create(self, program: Program) -> Program:

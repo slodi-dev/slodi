@@ -29,6 +29,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     "/workspaces/{workspace_id}/tasks",
     response_model=TaskOut,
     status_code=status.HTTP_201_CREATED,
+    deprecated=True,
 )
 async def create_workspace_task(
     session: SessionDep,
@@ -47,7 +48,7 @@ async def create_workspace_task(
     return task
 
 
-@router.patch("/tasks/{task_id}", response_model=TaskOut)
+@router.patch("/tasks/{task_id}", response_model=TaskOut, deprecated=True)
 async def update_task(
     session: SessionDep,
     task_id: UUID,
@@ -60,7 +61,7 @@ async def update_task(
     return strip_review_fields(task, current_user)
 
 
-@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, deprecated=True)
 async def delete_task(
     session: SessionDep, task_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:

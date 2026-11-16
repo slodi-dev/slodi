@@ -15,7 +15,7 @@ from app.domain.content_constraints import (
     NAME_MAX,
     NAME_MIN,
 )
-from app.domain.enums import AgeGroup, ContentType, ReviewState
+from app.domain.enums import AgeGroup, ContentLevel, ContentType, ReviewState
 from app.repositories.content import ContentStats
 from app.schemas.comment import CommentOut
 from app.schemas.tag import TagOut
@@ -71,6 +71,10 @@ class ContentCreate(ContentBase):
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
 
+class ContentCreateAtLevel(ContentCreate):
+    level: ContentLevel
+
+
 class ContentUpdate(ContentBase):
     # No `author_id`: the update services `setattr` every field in the patch.
     name: NameStr | None = None
@@ -84,6 +88,9 @@ class ContentListOut(BaseModel):
     id: UUID
     name: NameStr
     content_type: ContentType
+    level: int
+    copied_from_id: UUID | None = None
+    times_used: int = 0
     author_id: UUID
     author_name: str
     created_at: dt.datetime
