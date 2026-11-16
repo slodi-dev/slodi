@@ -99,6 +99,7 @@ type Unit = {
   parent_id: string | null;          // the unit that holds this one
   name: string;
   color: string;                     // "#rrggbb", always set
+  deleted_at: string | null;         // set on deleted units, which older placements may still name
 };</code></pre>
 <p>Full content (<code>ContentOut</code>) is as today with <code>level</code> in place of <code>content_type</code>, and a new
 <code>copied_from_id: string | null</code>.</p>
@@ -191,15 +192,17 @@ starfsár 36 weeks.</p>
 <p>A placement has no colour of its own. The frontend shows its unit's colour: with one unit, that unit's; with
 several or none, the nearest parent placement's, or neutral.</p>
 
-<div class="ep"><span class="m GET">GET</span><span class="path">/workspaces/{id}/units</span>
-  <div class="d"><p>All units, flat.</p></div></div>
+<div class="ep"><span class="m GET">GET</span><span class="path">/workspaces/{id}/units?include_deleted=…</span>
+  <div class="d"><p>All units, flat. <code>include_deleted=true</code> adds deleted ones, so an older plan can still show who it
+  was for.</p></div></div>
 <div class="ep"><span class="m POST">POST</span><span class="path">/workspaces/{id}/units</span>
   <div class="d"><pre><code>{ name: string; parent_id?: string; color?: string }   // color defaults from a palette
 → 201 Unit</code></pre></div></div>
 <div class="ep"><span class="m PATCH">PATCH</span><span class="path">/units/{id}</span>
   <div class="d"><p>Any of <code>name</code>, <code>parent_id</code>, <code>color</code>. 409 if the move would put a unit inside itself.</p></div></div>
 <div class="ep"><span class="m DELETE">DELETE</span><span class="path">/units/{id}</span>
-  <div class="d"><p>Removes the unit, the units under it, and their participation.</p></div></div>
+  <div class="d"><p>Soft delete: the unit and the units under it disappear from lists and can't be put on new
+  placements, but placements that already name them keep them.</p></div></div>
 
 <h2>Unchanged</h2>
 <p>Comments, likes, tags (<code>tag_names</code> on create and edit), reports, Yfirferð, workspaces and members. Yfirferð

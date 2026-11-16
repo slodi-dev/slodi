@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 from typing import Annotated
 from uuid import UUID
 
@@ -33,3 +34,4 @@ class UnitOut(BaseModel):
     parent_id: UUID | None
     name: str
     color: str
+    deleted_at: dt.datetime | None

@@ -98,3 +98,5 @@ async def test_deleting_a_unit_deletes_the_units_under_it(db):
     db.expunge_all()
 
     assert [u.id for u in await svc.list_for_workspace(workspace.id)] == [other.id]
+    kept = await svc.list_for_workspace(workspace.id, include_deleted=True)
+    assert [u.name for u in kept if u.deleted_at is not None] == ["Sveitin", "Fálkar"]
