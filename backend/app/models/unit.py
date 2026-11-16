@@ -15,6 +15,8 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import DateTime as SADateTime
 
+from app.domain.unit_constraints import NAME_MAX
+
 from .base import Base
 
 
@@ -46,7 +48,7 @@ class Unit(Base):
         nullable=False,
     )
     parent_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(String(NAME_MAX), nullable=False)
     color: Mapped[str] = mapped_column(String(7), nullable=False)
     created_at: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
 
