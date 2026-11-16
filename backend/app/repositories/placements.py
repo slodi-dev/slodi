@@ -25,7 +25,32 @@ class PlacementRepository(Repository):
 
     async def get_content(self, content_id: UUID) -> Content | None:
         return await self.session.scalar(
-            select(Content).where(Content.id == content_id, Content.deleted_at.is_(None))
+            select(Content)
+            .options(selectinload(Content.content_tags))
+            .where(Content.id == content_id, Content.deleted_at.is_(None))
+        )
+
+    async def top_of(self, content_id: UUID) -> Placement | None:
+        """The content's own structure: its first placement with no parent."""
+        return await self.session.scalar(
+            select(Placement)
+            .where(Placement.content_id == content_id, Placement.parent_id.is_(None))
+            .order_by(Placement.created_at, Placement.id)
+            .limit(1)
+        )
+
+    async def copies_in_workspace(
+        self, source_ids: Sequence[UUID], workspace_id: UUID
+    ) -> Sequence[Content]:
+        """The workspace's copies of the sources, newest first."""
+        return await self.scalars(
+            select(Content)
+            .where(
+                Content.copied_from_id.in_(source_ids),
+                Content.workspace_id == workspace_id,
+                Content.deleted_at.is_(None),
+            )
+            .order_by(Content.created_at.desc())
         )
 
     async def list_for_workspace(
@@ -131,3 +156,17 @@ class PlacementRepository(Repository):
             .selectinload(Content.content_tags)
             .selectinload(ContentTag.tag)
         ).execution_options(populate_existing=True)
+
+    async def subtree_rows(self, root_id: UUID) -> Sequence[Placement]:
+        """The subtree, parents before children."""
+        rows = await self.subtree(root_id)
+        depth: dict[UUID, int] = {root_id: 0}
+        by_id = {p.id: p for p in rows}
+
+        def depth_of(p: Placement) -> int:
+            if p.id not in depth:
+                parent = by_id[p.parent_id] if p.parent_id is not None else None
+                depth[p.id] = 0 if parent is None else depth_of(parent) + 1
+            return depth[p.id]
+
+        return sorted(rows, key=depth_of)

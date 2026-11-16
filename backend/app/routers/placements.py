@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import check_workspace_access, get_current_user
 from app.core.db import get_session
 from app.domain.enums import WorkspaceRole
+from app.schemas.copy import PlacementCopies
 from app.schemas.placement import (
     PlacementBatchItem,
     PlacementCreate,
@@ -117,6 +118,50 @@ async def update_placement(
         hide_from_non_members=True,
     )
     return await svc.update(placement_id, body)
+
+
+@router.post(
+    "/placements/{placement_id}/copies",
+    response_model=list[PlacementOut],
+    status_code=status.HTTP_201_CREATED,
+)
+async def copy_placement(
+    session: SessionDep,
+    placement_id: UUID,
+    body: PlacementCopies,
+    current_user: UserOut = Depends(get_current_user),
+) -> list[PlacementOut]:
+    """Copy weekly: the same content again at each start, each with its own placements."""
+    svc = PlacementService(session)
+    await check_workspace_access(
+        await svc.workspace_of(placement_id),
+        current_user,
+        session,
+        WorkspaceRole.editor,
+        hide_from_non_members=True,
+    )
+    return await svc.copy(
+        placement_id,
+        body.starts_at,
+        body.parent_id,
+        same_parent="parent_id" not in body.model_fields_set,
+    )
+
+
+@router.post("/placements/{placement_id}/own-version", response_model=PlacementOut)
+async def own_version(
+    session: SessionDep, placement_id: UUID, current_user: UserOut = Depends(get_current_user)
+) -> PlacementOut:
+    """Copies this placement's content, so editing it no longer changes the other places."""
+    svc = PlacementService(session)
+    await check_workspace_access(
+        await svc.workspace_of(placement_id),
+        current_user,
+        session,
+        WorkspaceRole.editor,
+        hide_from_non_members=True,
+    )
+    return await svc.own_version(placement_id, current_user.id)
 
 
 @router.delete("/placements/{placement_id}", status_code=status.HTTP_204_NO_CONTENT)
