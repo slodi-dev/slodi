@@ -30,6 +30,10 @@
 <h1>Slóði data model</h1>
 <p class="muted">Draft, built up in discussion. Started 16. nóvember 2026.</p>
 
+<p><strong>The principle:</strong> Slóði is a tool leaders use however suits them, as flexible as a spreadsheet. The
+model gives building blocks, not a fixed way to plan. Views open any structure, at any level, rather than assuming a
+starfsár at the top.</p>
+
 <h2>The model so far</h2>
 
 <div class="legend">
@@ -278,6 +282,8 @@ the same way a bank idea is.</p>
   <li><strong>Every unit has a colour.</strong> It gets a default from a palette when it's created,
     and the user can change it. Stored as <code>#rrggbb</code>, checked on write. The frontend picks
     white or dark text from its lightness so it stays readable in both themes.</li>
+  <li><strong>A placement shows its unit's colour.</strong> It stores none: with one unit it shows that unit's
+    colour, with several or none the nearest parent placement's, or neutral.</li>
   <li><strong>UnitParticipation</strong> says which units a placement is for, so the same verkefni
     can be for Ernir in one fundur and for Fálkar in another. A placement with none is for whoever
     its parent is for. It replaces <code>troop_participation</code>.</li>
@@ -317,6 +323,14 @@ the same way a bank idea is.</p>
     content it holds is still waiting.</li>
   <li><strong>Unit order.</strong> No <code>position</code> for now; add one if the frontend needs
     to order columns by hand.</li>
+  <li><strong>Plan status.</strong> Staðfest, Drög, Óvíst and the „?“ marker from ADR-002 are left out of v1.
+    A placement named „?“ already says „something goes here“. If leaders miss it, it becomes a
+    nullable <code>Placement.status</code>, since the same content can be settled in one fundur and not
+    in another.</li>
+  <li><strong>No highest level.</strong> 3 need not be the top; the rule „a child's level is lower than its
+    parent's“ works for any number, and only the labels would need to grow.</li>
+  <li><strong><code>Placement.color</code></strong>: a highlight the user sets by hand, overriding the unit's colour.
+    Add it if leaders ask.</li>
   <li><strong>Groups.</strong> A group lets users be in a group, and a group can own workspaces.
     <code>Workspace.group_id</code> and the <code>groups</code> and <code>group_memberships</code>
     tables stay as they are; nothing here builds on them.</li>

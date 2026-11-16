@@ -1,0 +1,218 @@
+<title>Slóði plan API</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: one reading column; endpoints as compact method/path rows, shapes in code blocks. */
+  :root {
+    --bg: #fbfcfd; --fg: #1d2731; --muted: #566573; --line: #d8e0e8; --soft: #eef2f6;
+    --accent: #2f6f5e; --get: #2f6f5e; --post: #2d5ea8; --patch: #9a6a12; --del: #b23b3b;
+    --body: "Inter", system-ui, sans-serif; --head: "Space Grotesk", "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #12181e; --fg: #e3e9ef; --muted: #9aa8b5; --line: #2b3640; --soft: #1b232b;
+    --accent: #6cc3a8; --get: #6cc3a8; --post: #85adf0; --patch: #e0b25a; --del: #f08a8a; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #12181e; --fg: #e3e9ef; --muted: #9aa8b5; --line: #2b3640; --soft: #1b232b;
+    --accent: #6cc3a8; --get: #6cc3a8; --post: #85adf0; --patch: #e0b25a; --del: #f08a8a; color-scheme: dark }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body);
+         padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 860px; margin: 0 auto; padding-block: 2rem 4rem; }
+  h1, h2, h3 { font-family: var(--head); text-wrap: balance; line-height: 1.25; }
+  h1 { font-size: 1.7rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 .5rem; padding-bottom: .3rem; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1rem; margin: 1.5rem 0 .4rem; }
+  p, li { max-width: 68ch; }
+  .muted { color: var(--muted); }
+  code { font-family: var(--mono); font-size: .86em; background: var(--soft); padding: .05em .3em; border-radius: 3px; }
+  pre { font-family: var(--mono); font-size: .82rem; background: var(--soft); border: 1px solid var(--line);
+        border-radius: 6px; padding: .8rem 1rem; overflow-x: auto; line-height: 1.5; margin: .5rem 0 1rem; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .ep { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: .1rem .75rem; padding: .55rem 0; border-top: 1px solid var(--line); }
+  .ep:last-of-type { border-bottom: 1px solid var(--line); }
+  .m { font: 600 .74rem var(--mono); letter-spacing: .04em; padding-top: .2rem; }
+  .GET { color: var(--get); } .POST { color: var(--post); } .PATCH { color: var(--patch); } .DELETE { color: var(--del); }
+  .path { font-family: var(--mono); font-size: .9rem; overflow-wrap: anywhere; }
+  .ep .d { grid-column: 2; color: var(--muted); font-size: .92rem; }
+  .ep .d p { margin: .2rem 0; }
+  table { border-collapse: collapse; font-size: .9rem; }
+  .tw { overflow-x: auto; }
+  th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--soft); font-weight: 600; }
+  ul { padding-left: 1.2rem; } li { margin-bottom: .3rem; }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600&display=swap">
+
+<main>
+<h1>Slóði plan API</h1>
+<p class="muted">The endpoints the frontend can build the Vinnubekkur on. Draft, 16. nóvember 2026. Built on the data model in
+<code>docs/features/data-model.html</code>. Nothing here exists yet unless it says so.</p>
+
+<h2>The idea in four lines</h2>
+<ul>
+  <li><strong>Content</strong> is the thing itself (Slit, Ratleikur, Fundur um hnúta). It has a <code>level</code>: 0 verkefni, 1 viðburður/fundur, 2 dagskrá, 3 starfsár.</li>
+  <li><strong>Placement</strong> puts content inside another placement at a time. Slit is one content placed in 30 fundir. Editing Slit changes it in all of them.</li>
+  <li><strong>Workspace</strong> holds content, placements and units. The bank, a plan and a scratchpad are all workspaces.</li>
+  <li><strong>Unit</strong> is any group (deild, sveit, flokkur…). A placement can be for some units.</li>
+</ul>
+
+<h2>Conventions</h2>
+<ul>
+  <li>Times are ISO 8601 with an offset, e.g. <code>2026-10-14T18:00:00Z</code>. Iceland has no daylight saving, so it is always <code>Z</code>.</li>
+  <li>Lists are flat and carry <code>parent_id</code>. The frontend builds the structure.</li>
+  <li>An empty list is <code>[]</code> with 200, never 404.</li>
+  <li>Errors: <code>404</code> not found or no access, <code>403</code> can read but not edit, <code>409</code> the change breaks a rule (the message says which), <code>422</code> invalid body.</li>
+  <li>Reading needs workspace membership (the bank: any signed-in user). Changing anything needs the editor role or above.</li>
+  <li>Creating returns <code>201</code> and a <code>Location</code> header.</li>
+</ul>
+
+<h2>Shapes</h2>
+<pre><code>type ContentLevel = 0 | 1 | 2 | 3;   // task, event, program, season
+
+// Short form, embedded in every placement so a fundur draws in one call.
+type ContentSummary = {
+  id: string;
+  level: ContentLevel;
+  name: string;
+  duration_min: number | null;      // the bank's estimate, minutes
+  duration_max: number | null;
+  location: string | null;
+  tags: string[];
+  hidden: boolean;                   // hidden by a moderator: draw a greyed gap
+};
+
+type Placement = {
+  id: string;
+  workspace_id: string;
+  parent_id: string | null;          // the placement that holds this one
+  content: ContentSummary;
+  starts_at: string;                 // always set
+  ends_at: string;                   // always set
+  time_set: boolean;                 // false: the frontend chose it, hide the time
+  unit_ids: string[];                // empty: for whoever the parent is for
+};
+
+type Unit = {
+  id: string;
+  workspace_id: string;
+  parent_id: string | null;          // the unit that holds this one
+  name: string;
+  color: string;                     // "#rrggbb", always set
+};</code></pre>
+<p>Full content (<code>ContentOut</code>) is as today with <code>level</code> in place of <code>content_type</code>, and a new
+<code>copied_from_id: string | null</code>.</p>
+
+<h2>Content</h2>
+
+<div class="ep"><span class="m GET">GET</span><span class="path">/workspaces/{id}/content</span>
+  <div class="d"><p>Exists. The bank grid and search, with every filter it has today. New: a <code>level</code> filter, a list like
+  <code>age</code> and <code>tags</code>, so <code>?level=0&amp;level=1</code> gives only verkefni and fundir.</p></div></div>
+<div class="ep"><span class="m POST">POST</span><span class="path">/workspaces/{id}/content</span>
+  <div class="d"><p>Body as today plus <code>level</code>, with <code>tag_names</code> for tags. Replaces the three create routes for programs, events and tasks.</p></div></div>
+<div class="ep"><span class="m GET">GET</span><span class="path">/content/{id}</span>
+  <div class="d"><p>Exists. Full content with comments.</p></div></div>
+<div class="ep"><span class="m PATCH">PATCH</span><span class="path">/content/{id}</span>
+  <div class="d"><p>Any field. Changing <code>level</code> while the content is placed gives 409 if it would break the level rule.</p></div></div>
+<div class="ep"><span class="m DELETE">DELETE</span><span class="path">/content/{id}</span>
+  <div class="d"><p>Also removes its placements and everything placed under them.</p></div></div>
+
+<h3>Copying into a workspace</h3>
+<p>Used for “take this from the bank” and for moving a plan from a scratchpad to another workspace. Copying brings the
+content and, if it has one, its structure (the content's own placement and everything under it).</p>
+
+<div class="ep"><span class="m GET">GET</span><span class="path">/workspaces/{id}/copies/preview?source_id=…</span>
+  <div class="d"><p>Which pieces you already have copies of, so the frontend can ask „Nota þitt eða nýtt afrit?“ per piece.</p>
+<pre><code>{ already_have: { source_id: string; existing_id: string; name: string }[] }</code></pre></div></div>
+<div class="ep"><span class="m POST">POST</span><span class="path">/workspaces/{id}/copies</span>
+  <div class="d">
+<pre><code>{
+  source_id: string;
+  reuse: Record&lt;string, string&gt;;   // source_id → your existing_id; anything not listed is copied fresh
+  parent_id?: string;               // place it inside this placement
+  starts_at?: string;               // shifted in whole weeks to this date, keeping weekdays
+}
+→ 201 { content: ContentOut; placements: Placement[] }</code></pre>
+<p>Copy, and optionally place. Without <code>parent_id</code> the copy sits on its own in the workspace, keeping its
+layout. With it, the copy goes straight inside that placement, in one call, so a failed drag never leaves half a copy.</p></div></div>
+
+<h2>Placements</h2>
+
+<p>Every view opens one structure: one placement and the content under it. Nothing is drawn from „everything in the
+workspace on these dates“. Content that isn't inside the structure you opened is simply not in that view, so an
+unplanned copy needs no flag. The views don't assume a starfsár at the top: any level can be opened.</p>
+
+<div class="ep"><span class="m GET">GET</span><span class="path">/workspaces/{id}/placements?top=…&amp;level=…&amp;from=…&amp;to=…</span>
+  <div class="d"><p>For finding something to open, not for drawing. All filters optional: <code>top=true</code> only placements
+  with no parent, <code>level=1</code> only fundir, <code>from</code>–<code>to</code> what overlaps the range. Each carries its
+  content summary and <code>parent_id</code>, so the frontend can show where it sits.</p></div></div>
+<div class="ep"><span class="m GET">GET</span><span class="path">/placements/{id}?from=…&amp;to=…&amp;level=…</span>
+  <div class="d"><p>Opens any placement, wherever it sits: a fundur inside a dagskrá inside a starfsár opens on its own.
+  Returns the placement and everything under it, flat. Filters optional: <code>from</code>–<code>to</code> keeps what
+  overlaps the range (with what it holds), <code>level=1</code> only the fundir. One fundur sheet, a bank idea's layout, or a
+  whole starfsár for Bekkurinn, Rist, Dagatal, the timeline and the window.</p></div></div>
+<div class="ep"><span class="m POST">POST</span><span class="path">/workspaces/{id}/placements</span>
+  <div class="d">
+<pre><code>{
+  content_id: string;               // content in this workspace
+  parent_id?: string;
+  starts_at: string;
+  ends_at?: string;                 // default: starts_at + duration_min, else a default by level
+  time_set?: boolean;               // default false
+  unit_ids?: string[];
+}
+→ 201 Placement</code></pre>
+<p>Default lengths when the content has no <code>duration_min</code>: verkefni 15 min, fundur 90 min, dagskrá 4 weeks,
+starfsár 36 weeks.</p>
+<p>409 if the content's level isn't lower than the parent's, or the content or parent is in another workspace.</p></div></div>
+<div class="ep"><span class="m PATCH">PATCH</span><span class="path">/placements/{id}</span>
+  <div class="d"><p>Any of <code>starts_at</code>, <code>ends_at</code>, <code>time_set</code>, <code>parent_id</code>, <code>unit_ids</code>.
+  A new <code>starts_at</code> moves everything under it by the same amount; a new <code>ends_at</code> alone resizes and moves nothing.
+  Returns the placement and everything under it.</p></div></div>
+<div class="ep"><span class="m DELETE">DELETE</span><span class="path">/placements/{id}</span>
+  <div class="d"><p>Removes it and everything under it. The content stays.</p></div></div>
+<div class="ep"><span class="m POST">POST</span><span class="path">/placements/{id}/copies</span>
+  <div class="d">
+<pre><code>{ starts_at: string[]; parent_id?: string }   // e.g. every Tuesday until May
+→ 201 Placement[]   // the new top placements</code></pre>
+<p>“Copy weekly”. Each copy gets its own placements under it; the content is shared, not copied.</p></div></div>
+<div class="ep"><span class="m POST">POST</span><span class="path">/placements/{id}/own-version</span>
+  <div class="d"><p>Copies this placement's content and points the placement at the copy, so editing it no longer changes
+  the other places. Returns the placement.</p></div></div>
+
+<h2>Units</h2>
+
+<p>A placement has no colour of its own. The frontend shows its unit's colour: with one unit, that unit's; with
+several or none, the nearest parent placement's, or neutral.</p>
+
+<div class="ep"><span class="m GET">GET</span><span class="path">/workspaces/{id}/units</span>
+  <div class="d"><p>All units, flat.</p></div></div>
+<div class="ep"><span class="m POST">POST</span><span class="path">/workspaces/{id}/units</span>
+  <div class="d"><pre><code>{ name: string; parent_id?: string; color?: string }   // color defaults from a palette
+→ 201 Unit</code></pre></div></div>
+<div class="ep"><span class="m PATCH">PATCH</span><span class="path">/units/{id}</span>
+  <div class="d"><p>Any of <code>name</code>, <code>parent_id</code>, <code>color</code>. 409 if the move would put a unit inside itself.</p></div></div>
+<div class="ep"><span class="m DELETE">DELETE</span><span class="path">/units/{id}</span>
+  <div class="d"><p>Removes the unit, the units under it, and their participation.</p></div></div>
+
+<h2>Unchanged</h2>
+<p>Comments, likes, tags (<code>tag_names</code> on create and edit), reports, Yfirferð, workspaces and members. Yfirferð
+will only show content from the bank workspace.</p>
+
+<h2>Removed</h2>
+<div class="tw"><table>
+  <tr><th>Route</th><th>Use instead</th></tr>
+  <tr><td><code>POST /workspaces/{id}/programs</code>, <code>/events</code>, <code>/tasks</code></td><td><code>POST /workspaces/{id}/content</code> with <code>level</code></td></tr>
+  <tr><td><code>PATCH</code>/<code>DELETE /programs/{id}</code>, <code>/events/{id}</code>, <code>/tasks/{id}</code></td><td><code>PATCH</code>/<code>DELETE /content/{id}</code></td></tr>
+  <tr><td><code>event_id</code>, <code>program_id</code>, <code>start_dt</code>, <code>end_dt</code> on content</td><td>Placements</td></tr>
+</table></div>
+
+<h2>What the frontend contract on release/vinnubekkur-v1 should drop</h2>
+<ul>
+  <li><code>Season</code> and its <code>kind</code>: a starfsár is level-3 content, a scratchpad is a workspace.</li>
+  <li><code>GET /seasons/{id}/grid</code>: use the placements list.</li>
+  <li><code>EventType</code>, <code>scope</code>, <code>status</code> and the “?” marker: type is a tag, scope comes from <code>unit_ids</code>, status is not in v1.</li>
+  <li><code>week_index</code>, <code>span_weeks</code>, <code>planned_minutes</code>: every placement has real times.</li>
+  <li>Fixed bands (opnun, kjarni, lok) and slot kinds: tags, ordered by time.</li>
+  <li>Endurmat as a field: it is a comment on the content.</li>
+  <li><code>Patrol.accent</code>: <code>Unit.color</code>.</li>
+</ul>
+</main>
