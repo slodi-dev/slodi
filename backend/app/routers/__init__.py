@@ -12,6 +12,7 @@ from app.routers import moderation as moderation_router
 from app.routers import programs as programs_router
 from app.routers import tags as tags_router
 from app.routers import tasks as tasks_router
+from app.routers import units as units_router
 from app.routers import uploads as uploads_router
 from app.routers import users as users_router
 from app.routers import workspaces as workspaces_router

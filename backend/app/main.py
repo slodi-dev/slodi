@@ -24,6 +24,7 @@ from app.routers import (
     programs_router,
     tags_router,
     tasks_router,
+    units_router,
     uploads_router,
     users_router,
     workspaces_router,
@@ -67,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(events_router.router)
     app.include_router(tasks_router.router)
     app.include_router(tags_router.router)
+    app.include_router(units_router.router)
     app.include_router(comments_router.router)
     app.include_router(likes_router.router)
     if settings.heidursordla_enabled:
