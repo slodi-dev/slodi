@@ -17,10 +17,10 @@ from sqlalchemy.types import DateTime as SADateTime
 
 from app.domain.unit_constraints import NAME_MAX
 
-from .base import Base
+from .base import Base, SoftDeleteMixin
 
 
-class Unit(Base):
+class Unit(SoftDeleteMixin, Base):
     __tablename__ = "units"
     __table_args__ = (
         UniqueConstraint("id", "workspace_id", name="uq_units_id_workspace"),

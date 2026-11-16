@@ -17,8 +17,10 @@ class UnitService:
         self.session = session
         self.repo = UnitRepository(session)
 
-    async def list_for_workspace(self, workspace_id: UUID) -> list[UnitOut]:
-        rows = await self.repo.list_for_workspace(workspace_id)
+    async def list_for_workspace(
+        self, workspace_id: UUID, *, include_deleted: bool = False
+    ) -> list[UnitOut]:
+        rows = await self.repo.list_for_workspace(workspace_id, include_deleted=include_deleted)
         return [UnitOut.model_validate(r) for r in rows]
 
     async def workspace_of(self, unit_id: UUID) -> UUID:
@@ -58,7 +60,7 @@ class UnitService:
         return UnitOut.model_validate(unit)
 
     async def delete(self, unit_id: UUID) -> None:
-        await self.repo.delete(await self._get(unit_id))
+        await self.repo.soft_delete((await self._get(unit_id)).id)
         await self.session.commit()
 
     async def _get(self, unit_id: UUID) -> Unit:

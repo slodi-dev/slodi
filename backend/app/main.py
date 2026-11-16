@@ -22,6 +22,7 @@ from app.routers import (
     heidursordla_router,
     likes_router,
     moderation_router,
+    placements_router,
     programs_router,
     tags_router,
     tasks_router,
@@ -67,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(workspaces_router.router)
     app.include_router(programs_router.router)
     app.include_router(content_router.router)
+    app.include_router(placements_router.router)
     app.include_router(events_router.router)
     app.include_router(tasks_router.router)
     app.include_router(tags_router.router)

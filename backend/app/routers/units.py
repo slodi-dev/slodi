@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import check_workspace_access, get_current_user
@@ -20,12 +20,19 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 @router.get("/workspaces/{workspace_id}/units", response_model=list[UnitOut])
 async def list_units(
-    session: SessionDep, workspace_id: UUID, current_user: UserOut = Depends(get_current_user)
+    session: SessionDep,
+    workspace_id: UUID,
+    include_deleted: bool = Query(
+        False, description="Also deleted units, which older placements may still name"
+    ),
+    current_user: UserOut = Depends(get_current_user),
 ) -> list[UnitOut]:
     await check_workspace_access(
         workspace_id, current_user, session, WorkspaceRole.viewer, hide_from_non_members=True
     )
-    return await UnitService(session).list_for_workspace(workspace_id)
+    return await UnitService(session).list_for_workspace(
+        workspace_id, include_deleted=include_deleted
+    )
 
 
 @router.post(
