@@ -6,7 +6,7 @@ import styles from "./header.module.css";
 import { useUser } from "@auth0/nextjs-auth0";
 import { useDrawerFocus } from "@/hooks/useDrawerFocus";
 
-const GITHUB_URL = "https://github.com/halldorvalberg/slodi";
+const GITHUB_URL = "https://github.com/slodi-dev/slodi";
 
 export default function Header() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
