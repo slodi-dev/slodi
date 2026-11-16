@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slóði data model</title>
+<style>
+  :root { --ink:#1f2933; --muted:#52606d; --line:#d9e2ec; --soft:#f5f7fa;
+          --have:#e3f5e8; --have-b:#2f8f4e; --part:#fff4d6; --part-b:#b7791f;
+          --miss:#fde8e8; --miss-b:#c53030; }
+  body { font-family: system-ui, sans-serif; color: var(--ink); background: #fff; margin: 2rem auto; max-width: 1100px; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.5rem; margin-bottom: .2rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.5rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+  .muted { color: var(--muted); }
+  code { background: var(--soft); padding: 0 .3em; border-radius: 3px; font-size: .92em; }
+  .diagram { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; padding: 1rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: .75rem 0; font-size: .92rem; }
+  .legend span::before { content: ""; display: inline-block; width: .9em; height: .9em; margin-right: .4em; vertical-align: -.1em; border-radius: 2px; border: 2px solid; }
+  .l-have::before { background: var(--have); border-color: var(--have-b); }
+  .l-part::before { background: var(--part); border-color: var(--part-b); }
+  .l-miss::before { background: var(--miss); border-color: var(--miss-b); }
+  table { border-collapse: collapse; margin-top: .75rem; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  ul li { margin-bottom: .35rem; }
+</style>
+</head>
+<body>
+
+<h1>Slóði data model</h1>
+<p class="muted">Draft, built up in discussion. Started 16. nóvember 2026.</p>
+
+<h2>The model so far</h2>
+
+<div class="legend">
+  <span class="l-have">Exists, no change</span>
+  <span class="l-part">Exists, fields change (✚ added, ✖ removed)</span>
+  <span class="l-miss">New</span>
+</div>
+
+<div class="diagram">
+<pre class="mermaid">
+classDiagram
+    direction TB
+    class Workspace {
+        id: UUID
+        name: str
+        ✖ default_meeting_weekday
+        ✖ default_start_time
+        ✖ default_end_time
+        ✖ default_interval
+        ✖ season_start
+    }
+    class Content {
+        id: UUID
+        workspace_id: UUID
+        author_id: UUID
+        name: str
+        description, instructions: str null
+        image: str null
+        media: json null
+        location: str null
+        duration_min, duration_max: int null
+        count_min, count_max: int null
+        prep_time_min, prep_time_max: int null
+        price: int null
+        review_state: ReviewState
+        reviewed_by_id, reviewed_at, review_note
+        hidden_at: datetime null
+        created_at: datetime
+        deleted_at: datetime null
+        ✚ level: ContentLevel
+        ✚ copied_from_id: UUID null
+        ✖ content_type
+    }
+    class ContentLevel {
+        <<enumeration>>
+        3 season
+        2 program
+        1 event
+        0 task
+    }
+    class Placement {
+        id: UUID
+        content_id: UUID
+        parent_id: UUID null
+        starts_at: datetime
+        ends_at: datetime
+        time_set: bool
+    }
+    class Unit {
+        id: UUID
+        workspace_id: UUID
+        parent_id: UUID null
+        name: str
+        color: hex str
+    }
+    class UnitParticipation {
+        unit_id: UUID
+        placement_id: UUID
+    }
+    class User {
+        id: UUID
+        name: str
+        email: str
+        permissions: Permissions
+    }
+    class WorkspaceMembership {
+        workspace_id: UUID
+        user_id: UUID
+        role: WorkspaceRole
+    }
+    class Tag {
+        id: UUID
+        name: str
+    }
+    class ContentTag {
+        content_id: UUID
+        tag_id: UUID
+    }
+    class Comment {
+        id: UUID
+        content_id: UUID
+        user_id: UUID
+        body: str
+        created_at: datetime
+    }
+    class Like {
+        user_id: UUID
+        content_id: UUID
+    }
+    class ContentReport {
+        id: UUID
+        content_id: UUID
+        comment_id: UUID null
+        reporter_id: UUID
+        reason: ReportReason
+        status: ReportStatus
+    }
+    class ReviewComment {
+        id: UUID
+        content_id: UUID
+        author_id: UUID null
+        body: str
+        visibility: ReviewCommentVisibility
+    }
+    note for Placement "parent_id points at the placement that holds it"
+    note for Unit "parent_id points at the unit that holds it"
+    Workspace "1" --> "*" Content
+    Workspace "1" --> "*" Unit
+    Content ..> ContentLevel
+    Content "1" --> "*" Placement : is placed
+    Unit "1" --> "*" UnitParticipation
+    Placement "1" --> "*" UnitParticipation : who it is for
+    Workspace "1" --> "*" WorkspaceMembership
+    User "1" --> "*" WorkspaceMembership
+    Content "1" --> "*" ContentTag
+    Tag "1" --> "*" ContentTag
+    Content "1" --> "*" Comment
+    Content "1" --> "*" Like
+    Content "1" --> "*" ContentReport
+    Content "1" --> "*" ReviewComment
+    style User fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style WorkspaceMembership fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style Tag fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style ContentTag fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style Comment fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style Like fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style ContentReport fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style ReviewComment fill:#e3f5e8,stroke:#2f8f4e,color:#1f2933
+    style Workspace fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style Content fill:#fff4d6,stroke:#b7791f,color:#1f2933
+    style ContentLevel fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style Placement fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style Unit fill:#fde8e8,stroke:#c53030,color:#1f2933
+    style UnitParticipation fill:#fde8e8,stroke:#c53030,color:#1f2933
+</pre>
+</div>
+
+<h2>1. Content is the thing itself</h2>
+
+<p>Content is what something is: its name, description, instructions and the rest of today's bank
+fields. It says nothing about when it happens or what holds it. The <code>programs</code>,
+<code>events</code> and <code>tasks</code> tables go, and Content becomes one table with a
+<code>level</code>.</p>
+
+<table>
+  <tr><th>Level</th><th>Name in code</th><th>In the app</th><th>Can hold</th></tr>
+  <tr><td>3</td><td><code>season</code></td><td>Starfsár</td><td>2, 1, 0</td></tr>
+  <tr><td>2</td><td><code>program</code></td><td>Dagskrá, dagskrárhringur</td><td>1, 0</td></tr>
+  <tr><td>1</td><td><code>event</code></td><td>Viðburður, fundur</td><td>0</td></tr>
+  <tr><td>0</td><td><code>task</code></td><td>Verkefni</td><td>nothing</td></tr>
+</table>
+
+<ul>
+  <li><strong>A number in the database, names in the code.</strong> The column is a small integer;
+    Python and TypeScript use <code>ContentLevel.event</code>, never <code>1</code>. The Icelandic
+    labels live in one frontend map.</li>
+  <li><strong>The level is a label, not a shape.</strong> Every level has the same fields. The bank
+    filters by it and the frontend draws each level its own way.</li>
+  <li><strong>A starfsár is just the top level.</strong> There is no Season table.</li>
+</ul>
+
+<h2>2. Placements: where and when</h2>
+
+<p>A Placement puts content inside another placement, at a time. Slit is one Content placed in 30
+fundir, at 19:20 in one and 19:25 in another. Editing Slit changes it in all of them.</p>
+
+<ul>
+  <li><strong>A placement always has a time.</strong> <code>starts_at</code> and
+    <code>ends_at</code> are never empty, so the frontend can always draw where something sits in its
+    parent.</li>
+  <li><strong><code>time_set</code> says whether the user chose the time.</strong> While it is false,
+    the frontend placed it and the time is hidden: dragging moves it but keeps it hidden. Typing a
+    time sets it to true and shows it. A scratchpad is mostly hidden times, a plan mostly set ones;
+    they are the same table.</li>
+  <li><strong>The parent is a placement, not content.</strong> A fundur placed on two dates has its
+    own verkefni on each, so moving Setning on one date leaves the other alone.</li>
+  <li><strong>One rule on levels:</strong> a placement's content has a lower level than its parent's
+    content. A level may be skipped (a starfsár can hold a fundur directly), but nothing holds its
+    own level, so nothing can end up holding itself. The database enforces it with composite
+    foreign keys and a check constraint, no trigger; the service checks first so the error is
+    readable.</li>
+  <li><strong>Moving something moves what it holds.</strong> Moving a fundur shifts its verkefni;
+    moving a starfsár shifts its fundir. The service does this as one update.</li>
+  <li><strong>Children may run over their parent.</strong> Patrols can run verkefni side by side, and
+    a plan is a draft. The frontend warns („15 mín umfram“) instead of refusing.</li>
+  <li><strong>A placement stays in one workspace.</strong> Its content and its parent placement belong
+    to the same workspace. Content from another workspace, the bank included, is copied in before it
+    is placed.</li>
+  <li><strong>Placing an item fills its length from <code>duration_min</code></strong>, the bank's
+    estimate. The leader can change it.</li>
+  <li><strong>Deleting</strong> a placement takes the item out of its parent, with the placements it
+    holds, and leaves the content. Deleting content deletes its placements.</li>
+</ul>
+
+<h2>3. Workspaces</h2>
+
+<p>A workspace holds content, placements and units. The bank, a plan and a scratchpad are all
+workspaces; they differ in purpose and members, not in structure. Any editor in a workspace can
+edit all of its content and placements. A plan made in a scratchpad is copied to another workspace
+the same way a bank idea is.</p>
+
+<ul>
+  <li><strong>An idea with structure is content with one placement at the top.</strong>
+    „Dagskrárhringur um rötun“ is a Content whose placement in the bank holds three fundir, each
+    holding its verkefni. Its hidden times only give the layout: fundur 1 in week 1, Setning before
+    Verkefni. A different layout is a copy with its own name, so an idea has one structure.</li>
+  <li><strong>A single idea needs no placement.</strong> A verkefni on its own is just content in the
+    bank, as today.</li>
+  <li><strong>The bank's times start from a fixed day</strong>, Monday 3 January 2000, so weeks and
+    weekdays mean something („vika 2, þriðjudagur“).</li>
+  <li><strong>Using a bank idea copies it</strong>, its content and its structure, into your
+    workspace, shifted in whole weeks to the date you pick so the weekdays stay. A copy means the
+    author's edits, or a moderator hiding the item, never change someone's plan.</li>
+  <li><strong><code>copied_from_id</code> remembers where a copy came from.</strong> When an idea
+    holds content you already have a copy of, the user chooses: „Nota þitt eða nýtt afrit?“,
+    defaulting to yours. Copying an idea you already have works the same way: using yours places it
+    again with its own placements; a new copy gets the bank's current version. Deleting the original
+    leaves the copy (<code>ON DELETE SET NULL</code>).</li>
+  <li><strong>Inside the bank, ideas share content.</strong> When B holds A, edits to A show in B. If
+    A is hidden, B shows a greyed gap where A was. B's author can make their own version of A to
+    freeze it.</li>
+  <li><strong>No stored meeting schedule.</strong> The workspace's <code>default_meeting_weekday</code>,
+    <code>default_start_time</code>, <code>default_end_time</code>, <code>default_interval</code> and
+    <code>season_start</code> are dropped; nothing reads them. Repeating a fundur is a frontend tool
+    („copy weekly until …“) that creates placements once, not a rule in the data.</li>
+</ul>
+
+<h2>4. Units</h2>
+
+<ul>
+  <li><strong>Unit</strong> is any group of people in a workspace. It has no type: a unit holds other
+    units, and the user decides what each level means (deild, sveit, flokkur, or something else).
+    A workspace can have as many units as it needs.</li>
+  <li><strong>Units have nothing to do with users.</strong> A unit is who the content is for, not who
+    can edit it; editing rights come from workspace membership.</li>
+  <li><strong>Every unit has a colour.</strong> It gets a default from a palette when it's created,
+    and the user can change it. Stored as <code>#rrggbb</code>, checked on write. The frontend picks
+    white or dark text from its lightness so it stays readable in both themes.</li>
+  <li><strong>UnitParticipation</strong> says which units a placement is for, so the same verkefni
+    can be for Ernir in one fundur and for Fálkar in another. A placement with none is for whoever
+    its parent is for. It replaces <code>troop_participation</code>.</li>
+</ul>
+
+<h2>5. Comments, tags, likes and moderation</h2>
+
+<ul>
+  <li><strong>Comments stay on content</strong>, as today. Endurmat written after a fundur is a
+    comment on the content, so whoever runs it next time sees how it went.</li>
+  <li><strong>Tags, likes, reports and review comments stay on content</strong>, unchanged.</li>
+  <li><strong>Yfirferð only reads the bank.</strong> The moderation queue filters on the bank
+    workspace, so content in plans and scratchpads never lands there. Today it reads every
+    workspace, so this has to ship with placements.</li>
+</ul>
+
+<h2>6. What goes</h2>
+
+<ul>
+  <li>The <code>programs</code>, <code>events</code> and <code>tasks</code> tables,
+    <code>content_type</code>, <code>Event.program_id</code>, <code>Task.event_id</code>,
+    <code>Event.start_dt</code> and <code>end_dt</code>. The migration sets <code>level</code> from
+    <code>content_type</code> and turns each old parent pointer and event date into a placement.</li>
+  <li>The <code>troops</code> and <code>troop_participation</code> tables, replaced by units.</li>
+  <li>The polymorphic models and the <code>ProgramOut</code>/<code>EventOut</code>/<code>TaskOut</code>
+    schemas and routes collapse into one. A separate PR from the bench.</li>
+</ul>
+
+<h2>Parked</h2>
+
+<ul>
+  <li><strong>Collection</strong>: a Pinterest-style board of content, with no times and no order.
+    It only references content and holds no structure.</li>
+  <li><strong>Whether editing content changes past fundir.</strong> For now it does; later the
+    leader may choose, and set a default.</li>
+  <li><strong>Yfirferð for ideas with structure.</strong> Leaning towards: B can be approved while
+    content it holds is still waiting.</li>
+  <li><strong>Unit order.</strong> No <code>position</code> for now; add one if the frontend needs
+    to order columns by hand.</li>
+  <li><strong>Groups.</strong> A group lets users be in a group, and a group can own workspaces.
+    <code>Workspace.group_id</code> and the <code>groups</code> and <code>group_memberships</code>
+    tables stay as they are; nothing here builds on them.</li>
+</ul>
+
+<p class="muted">Left out of the diagram on purpose: posting suspensions, email drafts and the email
+list, and the games. They don't touch content.</p>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: false, theme: "neutral", class: { hideEmptyMembersBox: true } });
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+</body>
+</html>
