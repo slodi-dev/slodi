@@ -31,6 +31,7 @@
 </head>
 <body>
 <h1>Vinnubekkurinn: the data model it needs</h1>
+<p><strong>Replaced (16. nóvember 2026):</strong> this was the starting point. The current model is in <code>data-model.html</code> and the endpoints are in <code>plan-api.html</code>.</p>
 <p class="lede">A proposal: the smallest set of tables and fields that would let Season, the Rist, the Dagatal, the Bekkur and the bank rail run on real data. It starts from the backend on <code>origin/main</code>. A liður is a <strong>Task</strong>: Content is already a Program, an Event or a Task, and a Program holds Events and Tasks while an Event holds Tasks. So the bench needs new fields on Task rather than a new table. This is the follow-up to <a href="vinnubekkur-backend-gaps.html">vinnubekkur-backend-gaps.html</a>.</p>
 <p class="meta">Sources: <code>frontend/services/plan.service.ts</code> and <code>components/plan/bench/benchState.ts</code> on <code>feature/sc-426-vinnubekkur-storybook</code>; <code>docs/frontend/plan-api-contract.md</code> on <code>release/vinnubekkur-v1</code>; <code>backend/app/models/*</code> and <code>repositories/moderation.py</code> on <code>origin/main</code>. Written 14. nóvember 2026. Draft for discussion.</p>
 
