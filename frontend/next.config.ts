@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 
+// Slóði never needs the visitor's local network. With these denied, Chrome
+// fails a request to localhost or a private address instead of asking the
+// visitor for "local network access". `local-network-access` is the older
+// name the other two replaced.
+const PERMISSIONS_POLICY = "local-network=(), loopback-network=(), local-network-access=()";
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      { source: "/:path*", headers: [{ key: "Permissions-Policy", value: PERMISSIONS_POLICY }] },
+    ];
+  },
   async redirects() {
     return [
       // The old /skatathing game hub moved to /leikir; keep bookmarks working.
