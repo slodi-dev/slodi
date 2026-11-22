@@ -44,9 +44,9 @@ jobs:
         env:
           # Required by Pydantic Settings at import time — dummy values are fine here
           ENV: ci
-          DB_NAME: ci
-          DB_USER: ci
-          DB_PASSWORD: ci
+          POSTGRES_DB: ci
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
           DB_HOST: localhost
           DB_PORT: "5432"
           AUTH0_DOMAIN: ci.auth0.com
@@ -82,9 +82,9 @@ jobs:
         env:
           # Required by Pydantic Settings at import time — dummy values are fine here
           ENV: ci
-          DB_NAME: ci
-          DB_USER: ci
-          DB_PASSWORD: ci
+          POSTGRES_DB: ci
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
           DB_HOST: localhost
           DB_PORT: "5432"
           AUTH0_DOMAIN: ci.auth0.com
@@ -121,9 +121,9 @@ jobs:
           --health-retries 15
     env:
       ENV: ci
-      DB_NAME: ci
-      DB_USER: ci
-      DB_PASSWORD: ci
+      POSTGRES_DB: ci
+      POSTGRES_USER: ci
+      POSTGRES_PASSWORD: ci
       DB_HOST: localhost
       DB_PORT: "5432"
       AUTH0_DOMAIN: ci.auth0.com

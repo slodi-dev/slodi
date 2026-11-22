@@ -26,9 +26,9 @@ from app.core import auth
 from app.settings import Settings
 
 BASE_ENV: dict[str, str] = {
-    "DB_NAME": "x",
-    "DB_USER": "x",
-    "DB_PASSWORD": "x",
+    "POSTGRES_DB": "x",
+    "POSTGRES_USER": "x",
+    "POSTGRES_PASSWORD": "x",
     "DB_HOST": "localhost",
     "DB_PORT": "5432",
     "AUTH0_DOMAIN": "e2e.slodi.invalid",
