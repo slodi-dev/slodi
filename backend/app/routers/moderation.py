@@ -43,13 +43,7 @@ async def unreviewed_count(
     session: SessionDep,
     current_user: UserOut = ModeratorDep,
 ) -> UnreviewedCount:
-    """The sidebar badge, without fetching the board.
-
-    `/queue` reports the same number in `X-Unreviewed-Total`, which is the
-    right shape for the Yfirferð page: it already has the response in hand and
-    can move the badge after a review without asking again. The sidebar has no
-    such response, renders on every authenticated page, and wants one number.
-    """
+    """The sidebar's count, without fetching a page of the board."""
     return UnreviewedCount(count=await ModerationService(session).count_unreviewed())
 
 

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnreviewedCount } from "@/contexts/UnreviewedCountContext";
 import { hasPermission } from "@/services/users.service";
 import {
   ALL_STATES,
@@ -59,6 +60,7 @@ const VIEWS: { id: ReviewState | typeof ALL_STATES; label: string }[] = [
 
 export default function YfirferdPage() {
   const { user, getToken, isLoading, error: authError, refetch } = useAuth();
+  const { refresh: refreshUnreviewed } = useUnreviewedCount();
   const router = useRouter();
 
   const [tab, setTab] = useState<Tab>("content");
@@ -246,7 +248,8 @@ export default function YfirferdPage() {
 
         // The count goes in the announcement, because the pile going down is
         // the one thing a reviewer cannot see when their eyes are on the pane.
-        const left = filters.review_state === "unreviewed" ? queue.length - 1 : queue.length;
+        const waiting = queueTotal ?? queue.length;
+        const left = filters.review_state === "unreviewed" ? waiting - 1 : waiting;
         setAnnouncement(
           `${
             {
@@ -262,16 +265,18 @@ export default function YfirferdPage() {
         // in the audit views it stays, with its new state.
         if (filters.review_state === "unreviewed") {
           setQueue((q) => q.filter((x) => x.id !== item.id));
+          setQueueTotal((t) => (t === null ? t : t - 1));
         } else {
           void load();
         }
+        void refreshUnreviewed();
       } catch {
         setAnnouncement(`Ekki tókst að vista ákvörðun um „${item.name}“.`);
       } finally {
         setBusyId(null);
       }
     },
-    [getToken, filters.review_state, load, queue.length]
+    [getToken, filters.review_state, load, queue.length, queueTotal, refreshUnreviewed]
   );
 
   const undo = useCallback(async () => {
@@ -283,14 +288,17 @@ export default function YfirferdPage() {
       setAnnouncement(`Afturkallað: „${item.name}“ er aftur í yfirferð.`);
       setDoneThisSession((n) => Math.max(0, n - 1));
       setUndoable(null);
-      if (filters.review_state === "unreviewed") setQueue((q) => [item, ...q]);
-      else void load();
+      if (filters.review_state === "unreviewed") {
+        setQueue((q) => [item, ...q]);
+        setQueueTotal((t) => (t === null ? t : t + 1));
+      } else void load();
+      void refreshUnreviewed();
     } catch {
       setAnnouncement("Ekki tókst að afturkalla.");
     } finally {
       setBusyId(null);
     }
-  }, [undoable, getToken, filters.review_state, load]);
+  }, [undoable, getToken, filters.review_state, load, refreshUnreviewed]);
 
   const loadMore = useCallback(async () => {
     setLoadingMore(true);
@@ -359,6 +367,7 @@ export default function YfirferdPage() {
       try {
         await resolveReport(report.id, status, undefined, getToken);
         setReports((rs) => rs.filter((x) => x.id !== report.id));
+        setReportsTotal((t) => (t === null ? t : t - 1));
         setAnnouncement(status === "resolved" ? "Tilkynning afgreidd." : "Tilkynning felld niður.");
       } catch {
         setAnnouncement("Ekki tókst að loka tilkynningunni.");
@@ -388,6 +397,7 @@ export default function YfirferdPage() {
         );
         const closed = new Set(same.map((r) => r.id));
         setReports((rs) => rs.filter((x) => !closed.has(x.id)));
+        setReportsTotal((t) => (t === null ? t : t - closed.size));
         setAnnouncement("Athugasemd fjarlægð og tilkynning afgreidd.");
       } catch {
         setAnnouncement("Ekki tókst að fjarlægja athugasemdina.");

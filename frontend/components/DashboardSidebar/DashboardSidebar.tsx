@@ -40,7 +40,7 @@ import {
   type UserPermissions,
   hasPermission as hasPlatformPermission,
 } from "@/services/users.service";
-import { useUnreviewedCount } from "@/hooks/useUnreviewedCount";
+import { useUnreviewedCount } from "@/contexts/UnreviewedCountContext";
 
 /**
  * Navigation item configuration
@@ -206,8 +206,7 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps & { "data-open"?: string }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
-  // Gated on `moderator` inside the hook: for anyone else this never fetches.
-  const unreviewedCount = useUnreviewedCount(userPermissions);
+  const { count: unreviewedCount } = useUnreviewedCount();
 
   /*
    * Permissions arrive from an async fetch, so the server renders the sidebar
