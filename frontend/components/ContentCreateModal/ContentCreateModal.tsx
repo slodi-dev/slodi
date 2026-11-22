@@ -1148,6 +1148,7 @@ export default function ContentCreateModal({
       {form}
       <DocumentViewer
         doc={previewDoc}
+        contentId={initial?.id}
         open={previewDoc !== null}
         onClose={() => setPreviewDoc(null)}
       />

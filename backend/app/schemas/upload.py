@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,6 +31,8 @@ class DownloadSasRequest(BaseModel):
     blob_name: str = Field(..., max_length=255)
     # Optional display name for the downloaded file (shown in the save dialog).
     filename: str | None = Field(default=None, max_length=255)
+    # The item the document is on; not needed for your own upload.
+    content_id: UUID | None = None
 
 
 class DownloadSasResponse(BaseModel):

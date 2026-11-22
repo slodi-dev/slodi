@@ -8,8 +8,10 @@ import {
   CONTENT_TYPE_LABEL,
   REVIEW_STATE_LABEL,
   VISIBILITY_LABEL,
+  type Attachment,
   type ReviewDetail,
 } from "@/services/moderation.service";
+import DocumentViewer from "@/components/DocumentViewer/DocumentViewer";
 import { REPORT_REASON_LABEL } from "@/services/reports.service";
 import styles from "./yfirferd.module.css";
 import { cn } from "@/lib/util";
@@ -88,6 +90,7 @@ export default function ReviewDetailPane({
   shareUrl: string | null;
 }) {
   const [copied, setCopied] = useState(false);
+  const [openDoc, setOpenDoc] = useState<Attachment | null>(null);
   const hasNote = note.trim() !== "";
 
   async function copyLink() {
@@ -197,11 +200,9 @@ export default function ReviewDetailPane({
           <ul className={styles.documents}>
             {documents.map((doc) => (
               <li key={doc.url}>
-                {/* New tab: a reviewer opening a PDF should not lose their
-                    place in a fifty-item sweep. */}
-                <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                <button type="button" className={styles.linkBtn} onClick={() => setOpenDoc(doc)}>
                   {doc.name}
-                </a>
+                </button>
                 {doc.content_type && <span className={styles.docType}>{doc.content_type}</span>}
               </li>
             ))}
@@ -348,6 +349,12 @@ export default function ReviewDetailPane({
           Opna í bankanum →
         </Link>
       </footer>
+      <DocumentViewer
+        doc={openDoc}
+        contentId={detail.id}
+        open={openDoc !== null}
+        onClose={() => setOpenDoc(null)}
+      />
     </article>
   );
 }

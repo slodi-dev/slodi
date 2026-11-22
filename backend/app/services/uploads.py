@@ -10,12 +10,15 @@ from uuid import UUID, uuid4
 
 from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
 from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.upload_constraints import (
     ALLOWED_MIME_TYPES,
     MAX_UPLOAD_BYTES,
     SAS_TTL_MINUTES,
 )
+from app.models.content import Content
 from app.schemas.upload import DownloadSasResponse, SasResponse, UploadPurpose
 from app.settings import settings
 
@@ -23,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # The blob names we issue: uploads/{purpose}s/{user_uuid}/{file_uuid}
 _BLOB_NAME_RE = re.compile(
-    r"^uploads/(?P<kind>images|documents)/[0-9a-fA-F-]{36}/[0-9a-fA-F-]{36}$"
+    r"^uploads/(?P<kind>images|documents)/(?P<owner>[0-9a-fA-F-]{36})/[0-9a-fA-F-]{36}$"
 )
 
 
@@ -143,6 +146,19 @@ class UploadService:
         return DownloadSasResponse(
             download_url=f"{self._blob_url(container, blob_name)}?{sas_token}",
             expires_at=expires_at,
+        )
+
+    @staticmethod
+    def uploaded_by(blob_name: str, user_id: UUID) -> bool:
+        match = _BLOB_NAME_RE.match(blob_name)
+        return match is not None and match.group("owner").lower() == str(user_id)
+
+    async def is_document_of(self, session: AsyncSession, content_id: UUID, blob_name: str) -> bool:
+        media = await session.scalar(select(Content.media).where(Content.id == content_id))
+        documents = (media or {}).get("documents")
+        url = self._blob_url(settings.azure_storage_container_documents, blob_name)
+        return isinstance(documents, list) and any(
+            isinstance(d, dict) and str(d.get("url", "")).split("?", 1)[0] == url for d in documents
         )
 
 

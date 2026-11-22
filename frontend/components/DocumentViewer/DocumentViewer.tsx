@@ -46,10 +46,13 @@ function previewKind(type: string, name: string): "pdf" | "image" | "text" | "no
  */
 export default function DocumentViewer({
   doc,
+  contentId,
   open,
   onClose,
 }: {
   doc: ViewableDocument | null;
+  /** The item the document is on; your own upload needs none. */
+  contentId?: string;
   open: boolean;
   onClose: () => void;
 }) {
@@ -76,7 +79,7 @@ export default function DocumentViewer({
         const blobName = documentBlobName(doc.url);
         if (!blobName) throw new Error("Slóðin á skjalið er ógild.");
 
-        const { download_url } = await getDownloadUrl(blobName, doc.name, getToken);
+        const { download_url } = await getDownloadUrl(blobName, doc.name, getToken, contentId);
         const res = await fetch(download_url);
         if (!res.ok) throw new Error(`Skjalið svaraði með ${res.status}.`);
 
@@ -100,7 +103,7 @@ export default function DocumentViewer({
       cancelled = true;
       if (created) URL.revokeObjectURL(created);
     };
-  }, [open, doc, getToken]);
+  }, [open, doc, contentId, getToken]);
 
   if (!doc) return null;
 

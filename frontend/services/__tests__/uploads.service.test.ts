@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from "vitest";
-import { getUploadUrl, putToBlob, uploadFile, documentBlobName } from "../uploads.service";
+import {
+  getUploadUrl,
+  getDownloadUrl,
+  putToBlob,
+  uploadFile,
+  documentBlobName,
+} from "../uploads.service";
 
 const FAKE_TOKEN = "fake-token";
 const BLOB_URL = "https://acct.blob.core.windows.net/content-images/uploads/images/u1/f1";
@@ -220,5 +226,39 @@ describe("documentBlobName", () => {
 
   it("refuses a path with extra segments appended", () => {
     expect(documentBlobName(`${url}/../../secret`)).toBeNull();
+  });
+});
+
+describe("uploads service — getDownloadUrl", () => {
+  let fetchSpy: MockInstance<typeof fetch>;
+
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch");
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  it("names the item the document is on", async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(200, { download_url: "u", expires_at: "t" }));
+
+    await getDownloadUrl("uploads/documents/u1/f1", "kort.pdf", getToken, "item-1");
+
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({
+      blob_name: "uploads/documents/u1/f1",
+      filename: "kort.pdf",
+      content_id: "item-1",
+    });
+  });
+
+  it("sends no item for your own upload", async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(200, { download_url: "u", expires_at: "t" }));
+
+    await getDownloadUrl("uploads/documents/u1/f1", "kort.pdf", getToken);
+
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string).content_id).toBeNull();
   });
 });

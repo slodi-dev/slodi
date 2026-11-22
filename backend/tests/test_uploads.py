@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 from urllib.parse import parse_qs, urlsplit
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException, status
@@ -120,8 +120,8 @@ def test_create_sas_rejects_disallowed_content_type(purpose, content_type):
 # ---------------------------------------------------------------------------
 
 
-def _valid_blob_name() -> str:
-    return f"uploads/documents/{uuid4()}/{uuid4()}"
+def _valid_blob_name(owner: UUID | None = None) -> str:
+    return f"uploads/documents/{owner or uuid4()}/{uuid4()}"
 
 
 def test_create_download_sas_is_read_only_https_attachment():
@@ -219,10 +219,15 @@ def test_post_sas_rejects_invalid_purpose(client):
     assert resp.status_code == 422  # Literal validation
 
 
-def test_post_download_sas_returns_attachment_url(client):
-    resp = client.post("/uploads/sas/download", json={"blob_name": _valid_blob_name()})
+def test_post_download_sas_returns_attachment_url_for_your_own_upload(client, admin_user):
+    resp = client.post("/uploads/sas/download", json={"blob_name": _valid_blob_name(admin_user.id)})
     assert resp.status_code == 200
     assert "rscd=attachment" in resp.json()["download_url"]
+
+
+def test_post_download_sas_needs_an_item_for_someone_elses_upload(client):
+    resp = client.post("/uploads/sas/download", json={"blob_name": _valid_blob_name()})
+    assert resp.status_code == 404
 
 
 def test_post_download_sas_rejects_bad_blob_name(client):
