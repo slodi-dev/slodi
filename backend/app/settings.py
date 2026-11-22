@@ -1,4 +1,4 @@
-from pydantic import AliasChoices, Field, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,10 +13,10 @@ class Settings(BaseSettings):
     env: str = Field(..., alias="ENV")
 
     # Production database configuration. The POSTGRES_* names are the ones the
-    # Postgres container reads too; DB_* still works until every .env is renamed.
-    db_name: str = Field(..., validation_alias=AliasChoices("POSTGRES_DB", "DB_NAME"))
-    db_user: str = Field(..., validation_alias=AliasChoices("POSTGRES_USER", "DB_USER"))
-    db_password: str = Field(..., validation_alias=AliasChoices("POSTGRES_PASSWORD", "DB_PASSWORD"))
+    # Postgres container reads too.
+    db_name: str = Field(..., alias="POSTGRES_DB")
+    db_user: str = Field(..., alias="POSTGRES_USER")
+    db_password: str = Field(..., alias="POSTGRES_PASSWORD")
     db_port: str = Field(..., alias="DB_PORT")
     db_host: str = Field(..., alias="DB_HOST")
     logger_level: str = Field("INFO", alias="LOGGER_LEVEL")

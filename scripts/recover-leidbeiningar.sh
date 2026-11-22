@@ -37,8 +37,8 @@ set -euo pipefail
 main() {
 
 DB_CONTAINER="${DB_CONTAINER:-slodi-postgres}"
-DB_USER="${DB_USER:-slodi_user}"
-PROD_DB="${PROD_DB:-slodi_db}"
+DB_USER="${DB_USER:-$(docker exec "$DB_CONTAINER" printenv POSTGRES_USER)}"
+PROD_DB="${PROD_DB:-$(docker exec "$DB_CONTAINER" printenv POSTGRES_DB)}"
 SCRATCH_DB="slodi_recover"
 BACKUP_DIR="${BACKUP_DIR:-/opt/slodi/backups}"
 BUG_SHIPPED="2026-09-13_23-22-00"  # backup names are slodi_YYYY-MM-DD_HH-MM-SS

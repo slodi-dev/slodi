@@ -19,10 +19,7 @@ on_error() {
 trap on_error ERR
 
 # ── Config ───────────────────────────────────────────────────────────────────
-# Reads DB credentials from docker-compose environment so they stay in sync.
 DB_CONTAINER="slodi-postgres"
-DB_NAME="slodi_db"
-DB_USER="slodi_user"
 BACKUP_DIR="/opt/slodi/backups"
 RETENTION_DAYS=30
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
@@ -33,6 +30,11 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
   echo "[$(date)] ERROR: Container '$DB_CONTAINER' is not running" >&2
   exit 1
 fi
+
+# The database and user the container was set up with (backend/.env), so they
+# stay in sync with the backend.
+DB_NAME=$(docker exec "$DB_CONTAINER" printenv POSTGRES_DB)
+DB_USER=$(docker exec "$DB_CONTAINER" printenv POSTGRES_USER)
 
 mkdir -p "$BACKUP_DIR"
 

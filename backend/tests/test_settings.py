@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.settings import Settings
 
@@ -35,13 +36,6 @@ def test_reads_the_postgres_names(monkeypatch: pytest.MonkeyPatch) -> None:
     assert s.db_url == "postgresql+psycopg://u:p@db:5432/d"
 
 
-def test_still_reads_the_old_names(monkeypatch: pytest.MonkeyPatch) -> None:
-    s = _settings(monkeypatch, DB_NAME="d", DB_USER="u", DB_PASSWORD="p")
-    assert s.db_url == "postgresql+psycopg://u:p@db:5432/d"
-
-
-def test_the_postgres_names_win(monkeypatch: pytest.MonkeyPatch) -> None:
-    s = _settings(
-        monkeypatch, POSTGRES_DB="d", POSTGRES_USER="u", POSTGRES_PASSWORD="p", DB_PASSWORD="old"
-    )
-    assert s.db_password == "p"
+def test_the_old_names_are_not_read(monkeypatch: pytest.MonkeyPatch) -> None:
+    with pytest.raises(ValidationError, match="POSTGRES_PASSWORD"):
+        _settings(monkeypatch, DB_NAME="d", DB_USER="u", DB_PASSWORD="p")
