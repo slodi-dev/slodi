@@ -92,6 +92,8 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "jsdom",
+          // Dates format in the machine's time zone; CI and Iceland are UTC
+          env: { TZ: "UTC" },
           globals: true,
           setupFiles: ["./vitest.setup.ts"],
           css: {

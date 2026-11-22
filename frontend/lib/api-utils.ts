@@ -11,7 +11,7 @@ const getApiBase = (): string => {
   }
 
   // On server side, prefer internal Docker URL for SSR, then public URL
-  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
+  return process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
 };
 
 const API_BASE = getApiBase();
