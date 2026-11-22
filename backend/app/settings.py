@@ -12,8 +12,7 @@ class Settings(BaseSettings):
     # Environment configuration
     env: str = Field(..., alias="ENV")
 
-    # Production database configuration. The POSTGRES_* names are the ones the
-    # Postgres container reads too.
+    # Production database configuration
     db_name: str = Field(..., alias="POSTGRES_DB")
     db_user: str = Field(..., alias="POSTGRES_USER")
     db_password: str = Field(..., alias="POSTGRES_PASSWORD")

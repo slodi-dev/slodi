@@ -3,9 +3,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: slodi-postgres
-    # POSTGRES_DB, POSTGRES_USER and POSTGRES_PASSWORD come from backend/.env,
-    # the same values the backend connects with. Postgres only reads them when
-    # it creates a new volume; an existing database keeps what it was made with.
+    # POSTGRES_* from backend/.env, read only when the volume is created
     env_file:
       - ./backend/.env
     # Published on loopback only. Docker writes its own iptables rules, so a

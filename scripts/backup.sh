@@ -31,8 +31,7 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
   exit 1
 fi
 
-# The database and user the container was set up with (backend/.env), so they
-# stay in sync with the backend.
+# As the container was set up, from backend/.env
 DB_NAME=$(docker exec "$DB_CONTAINER" printenv POSTGRES_DB)
 DB_USER=$(docker exec "$DB_CONTAINER" printenv POSTGRES_USER)
 
