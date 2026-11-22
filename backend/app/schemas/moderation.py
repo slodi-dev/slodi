@@ -87,6 +87,10 @@ class ReportSummary(BaseModel):
     created_at: dt.datetime
 
 
+class UnreviewedCount(BaseModel):
+    count: int
+
+
 class ReviewCommentCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
