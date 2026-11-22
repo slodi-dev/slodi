@@ -20,6 +20,7 @@ from app.schemas.moderation import (
     ReviewDetail,
     ReviewFilters,
     ReviewQueueItem,
+    UnreviewedCount,
 )
 from app.schemas.posting_suspension import (
     AuthorStanding,
@@ -38,6 +39,15 @@ _BANK_WORKSPACE_ID = get_default_workspace_id()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 router = APIRouter(prefix="/moderation", tags=["moderation"], dependencies=[ModeratorDep])
+
+
+@router.get("/unreviewed-count", response_model=UnreviewedCount)
+async def unreviewed_count(
+    session: SessionDep,
+    current_user: UserOut = ModeratorDep,
+) -> UnreviewedCount:
+    """The sidebar's count, without fetching a page of the board."""
+    return UnreviewedCount(count=await ModerationService(session).count_unreviewed())
 
 
 @router.get("/queue", response_model=list[ReviewQueueItem])

@@ -7,6 +7,7 @@ import ThemeProvider from "@/components/ThemeProvider";
 import ThemeKeyboardShortcuts from "@/components/ThemeKeyboardShortcuts";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { LikesProvider } from "@/contexts/LikesContext";
+import { UnreviewedCountProvider } from "@/contexts/UnreviewedCountContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -110,7 +111,9 @@ export default function RootLayout({
                 <ThemeKeyboardShortcuts />
 
                 {/* Conditional Layout: decides whether to show header/footer or dashboard layout */}
-                <ConditionalLayout>{children}</ConditionalLayout>
+                <UnreviewedCountProvider>
+                  <ConditionalLayout>{children}</ConditionalLayout>
+                </UnreviewedCountProvider>
 
                 {/* Toast Notifications Container - for future expansion */}
                 <div

@@ -3,10 +3,11 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: slodi-postgres
-    environment:
-      POSTGRES_DB: slodi_db
-      POSTGRES_USER: slodi_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-slodi_password}
+    # POSTGRES_DB, POSTGRES_USER and POSTGRES_PASSWORD come from backend/.env,
+    # the same values the backend connects with. Postgres only reads them when
+    # it creates a new volume; an existing database keeps what it was made with.
+    env_file:
+      - ./backend/.env
     # Published on loopback only. Docker writes its own iptables rules, so a
     # port bound to 0.0.0.0 is open to the internet whatever ufw says; on the
     # VM nginx is the only thing that should reach these. Set BIND_ADDRESS=0.0.0.0

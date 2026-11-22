@@ -88,6 +88,35 @@ def test_who_can_open_the_board(mock_db_session, permissions, expected):
         assert client.get("/moderation/queue").status_code == expected
 
 
+@pytest.mark.parametrize(
+    "permissions,expected",
+    [
+        (Permissions.viewer, status.HTTP_403_FORBIDDEN),
+        (Permissions.member, status.HTTP_403_FORBIDDEN),
+        (Permissions.moderator, status.HTTP_200_OK),
+        (Permissions.admin, status.HTTP_200_OK),
+    ],
+)
+def test_the_badge_count_is_behind_the_same_gate_as_the_board(
+    mock_db_session, permissions, expected
+):
+    client = _client(mock_db_session, _user(permissions))
+    with patch(
+        "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
+    ) as c:
+        c.return_value = 3
+        assert client.get("/moderation/unreviewed-count").status_code == expected
+
+
+def test_the_badge_count_reports_the_number(mock_db_session):
+    client = _client(mock_db_session, _user(Permissions.moderator))
+    with patch(
+        "app.services.moderation.ModerationService.count_unreviewed", new_callable=AsyncMock
+    ) as c:
+        c.return_value = 12
+        assert client.get("/moderation/unreviewed-count").json() == {"count": 12}
+
+
 # ── Decisions ────────────────────────────────────────────────────────────────
 
 

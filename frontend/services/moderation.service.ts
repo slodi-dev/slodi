@@ -199,6 +199,16 @@ export async function reviewContent(
   );
 }
 
+/** The sidebar's count, without fetching a page of the board. */
+export async function fetchUnreviewedCount(getToken: GetToken): Promise<number> {
+  const r = await fetchWithAuth<{ count: number }>(
+    buildApiUrl("/moderation/unreviewed-count"),
+    {},
+    getToken
+  );
+  return r.count;
+}
+
 export async function resolveReport(
   reportId: string,
   status: "resolved" | "dismissed",

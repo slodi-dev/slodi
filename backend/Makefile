@@ -69,7 +69,7 @@ docker-shell:
 	docker exec -it slodi-backend /bin/bash
 
 docker-db-shell:
-	docker exec -it slodi-postgres psql -U slodi -d slodi
+	docker exec -it slodi-postgres sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
 
 
 # Example usage:
