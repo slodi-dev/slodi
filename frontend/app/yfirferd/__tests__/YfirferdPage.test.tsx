@@ -572,10 +572,7 @@ describe("sharing what is on screen", () => {
     render(<YfirferdPage />);
 
     await waitFor(() => expect(pane().getByText("Mynd")).toBeInTheDocument());
-    expect(pane().getByRole("link", { name: "Leiðbeiningar.pdf" })).toHaveAttribute(
-      "target",
-      "_blank"
-    );
+    expect(pane().getByRole("button", { name: "Leiðbeiningar.pdf" })).toBeInTheDocument();
   });
 });
 

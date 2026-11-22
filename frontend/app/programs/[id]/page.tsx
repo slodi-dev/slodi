@@ -258,7 +258,12 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           </aside>
         )}
       </div>
-      <DocumentViewer doc={openDoc} open={openDoc !== null} onClose={() => setOpenDoc(null)} />
+      <DocumentViewer
+        doc={openDoc}
+        contentId={program.id}
+        open={openDoc !== null}
+        onClose={() => setOpenDoc(null)}
+      />
 
       {/* The item's report dialog, pointed at a comment: its own title, a
           quote of the comment, and the reasons that fit a comment. */}

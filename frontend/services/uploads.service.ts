@@ -75,14 +75,15 @@ export function documentBlobName(url: string): string | null {
 export async function getDownloadUrl(
   blobName: string,
   filename: string | null,
-  getToken: () => Promise<string | null>
+  getToken: () => Promise<string | null>,
+  contentId?: string
 ): Promise<DownloadSasResponse> {
   return fetchWithAuth<DownloadSasResponse>(
     buildApiUrl("/uploads/sas/download"),
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blob_name: blobName, filename }),
+      body: JSON.stringify({ blob_name: blobName, filename, content_id: contentId ?? null }),
     },
     getToken
   );
