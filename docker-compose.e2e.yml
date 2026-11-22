@@ -12,9 +12,9 @@
 
 x-backend-env: &backend-env
   ENV: e2e
-  DB_NAME: slodi_e2e
-  DB_USER: slodi_e2e
-  DB_PASSWORD: slodi_e2e
+  POSTGRES_DB: slodi_e2e
+  POSTGRES_USER: slodi_e2e
+  POSTGRES_PASSWORD: slodi_e2e
   DB_HOST: postgres
   DB_PORT: "5432"
   # Never contacted: tokens carry `email`, and keys come from the file below.
