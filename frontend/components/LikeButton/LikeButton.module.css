@@ -11,7 +11,7 @@
   background: transparent;
   border: 1px solid hsl(var(--color-border));
   border-radius: var(--radius-md, 0.5rem);
-  color: hsl(var(--color-text-secondary));
+  color: hsl(var(--sl-color-text-secondary));
   font-family: var(--font-sans);
   font-weight: 500;
   cursor: pointer;
@@ -21,7 +21,7 @@
 
 .likeButton:hover {
   background: hsl(var(--color-background-secondary));
-  border-color: hsl(var(--color-border-hover, var(--color-border)));
+  border-color: hsl(var(--sl-color-border-hover));
   transform: translateY(-1px);
 }
 

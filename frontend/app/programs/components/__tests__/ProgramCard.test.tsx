@@ -163,7 +163,7 @@ describe("ProgramCard", () => {
 
     // Overflow indicator should have aria-label
     const overflow = screen.getByText("+2");
-    expect(overflow.closest("[aria-label]")).toHaveAttribute("aria-label", "2 fleiri flokkar");
+    expect(overflow.closest("[aria-label]")).toHaveAttribute("aria-label", "2 flokkar í viðbót");
   });
 
   it("hides edit/delete buttons when canEdit and canDelete are false", () => {
@@ -239,5 +239,37 @@ describe("ProgramCard", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     const article = screen.getByRole("article");
     expect(article).toBeInTheDocument();
+  });
+});
+
+describe("ProgramCard — hidden items (moderator view)", () => {
+  it("marks a hidden item with a 'Falið' chip and greys it out", () => {
+    render(<ProgramCard {...createProps({ hidden_at: "2026-10-01T12:00:00Z" })} />);
+
+    expect(screen.getByText("Falið")).toBeInTheDocument();
+    const article = screen.getByRole("article", { name: "Test Program (falið)" });
+    expect(article).toHaveAttribute("data-hidden", "true");
+  });
+
+  it("shows no hidden marking on a live item", () => {
+    render(<ProgramCard {...createProps({ hidden_at: null })} />);
+
+    expect(screen.queryByText("Falið")).not.toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "Test Program" })).not.toHaveAttribute(
+      "data-hidden"
+    );
+  });
+
+  it("hides the favourite button by default while FAVOURITES_ENABLED is off (UX-01)", () => {
+    render(<ProgramCard {...createProps()} />);
+    expect(screen.queryByRole("button", { name: /í möppu/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the favourite button when showFavourite is set", () => {
+    render(<ProgramCard {...createProps({ showFavourite: true })} />);
+    const button = screen.getByRole("button", { name: "Vista Test Program í möppu" });
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    button.click();
+    expect(mockToggleFavorite).toHaveBeenCalledTimes(1);
   });
 });

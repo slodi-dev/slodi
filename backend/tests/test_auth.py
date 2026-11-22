@@ -138,6 +138,8 @@ async def test_workspace_add_failure_doesnt_block_login(new_user, mock_credentia
 
         assert result == new_user
         mock_logger.warning.assert_called_once()
+        # A failed commit leaves the session unusable for the rest of the request
+        mock_session.rollback.assert_awaited_once()
 
 
 # ── Existing accounts, not just new ones ─────────────────────────────────────

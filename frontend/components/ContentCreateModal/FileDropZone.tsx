@@ -1,10 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import React, { useRef, useState } from "react";
 import styles from "./ContentCreateModal.module.css";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import { cn } from "@/lib/util";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadFile } from "@/services/uploads.service";
+import { countIs } from "@/lib/format";
 
 export type Attachment = { name: string; url: string; content_type?: string };
 
@@ -180,8 +183,8 @@ export default function FileDropZone({
     if (added.length) onAddDocuments(added);
 
     const parts = [
-      pictures.length ? `${pictures.length} mynd${pictures.length === 1 ? "" : "ir"}` : null,
-      added.length ? `${added.length} skjal${added.length === 1 ? "" : "i"}` : null,
+      pictures.length ? countIs(pictures.length, "mynd", "myndir") : null,
+      added.length ? countIs(added.length, "skjal", "skjöl") : null,
     ].filter(Boolean);
     if (parts.length) setSaid(`${parts.join(" og ")} komin inn.`);
 
@@ -226,6 +229,8 @@ export default function FileDropZone({
             accept={ACCEPT}
             className="sl-sr-only"
             id="drop-input"
+            aria-label="Velja skrár"
+            tabIndex={-1}
             onChange={(e) => void take(e.target.files)}
           />
           {/* Dragging is unreachable from a keyboard, so the picker is the
@@ -266,8 +271,17 @@ export default function FileDropZone({
                     setDragOver(null);
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- blob URL, not optimisable */}
-                  <img className={styles.shotImg} src={img.url} alt="" />
+                  {/* Tiles are minmax(140px, 1fr) in the modal; width/height
+                      only fix the 4:3 box, the CSS sizes it. */}
+                  <Image
+                    className={styles.shotImg}
+                    src={img.url}
+                    alt=""
+                    width={200}
+                    height={150}
+                    sizes="200px"
+                    unoptimized={!isOptimisableImageUrl(img.url)}
+                  />
                   {/*
                     Every image carries its position, not just the first. A
                     lone „Forsíðumynd" badge says which one leads but leaves

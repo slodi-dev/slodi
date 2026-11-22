@@ -116,7 +116,7 @@
   font-family: var(--sl-font-family-body);
   color: hsl(var(--sl-color-text-primary));
   background: hsl(var(--sl-color-background));
-  border: 2px solid hsl(var(--sl-color-border));
+  border: 2px solid hsl(var(--sl-input-border));
   border-radius: var(--sl-radius-input);
   transition:
     border-color var(--sl-transition-fast),
@@ -124,7 +124,7 @@
 }
 
 .input:hover {
-  border-color: hsl(var(--sl-color-border-hover));
+  border-color: hsl(var(--sl-input-border-hover));
 }
 
 .input:focus {
@@ -247,15 +247,17 @@
   margin: 0;
 }
 
+/* Underlined: a link inside a sentence must not be told apart by colour
+   alone (WCAG 1.4.1, axe link-in-text-block). */
 .unsubscribeLink {
   color: hsl(var(--sl-color-primary));
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   transition: color var(--sl-transition-fast);
 }
 
 .unsubscribeLink:hover {
   color: hsl(var(--sl-color-primary-hover));
-  text-decoration: underline;
 }
 
 .unsubscribeLink:focus-visible {

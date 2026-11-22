@@ -2,23 +2,35 @@
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useState } from "react";
-import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
+import type { BadgeContentType } from "@/components/TypeBadge/TypeBadge";
 import DocumentViewer, { type ViewableDocument } from "@/components/DocumentViewer/DocumentViewer";
 import ContentCreateModal from "@/components/ContentCreateModal/ContentCreateModal";
-import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
+import {
+  DeleteConfirmModal,
+  DELETE_FAILED_MESSAGE,
+} from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 import ReportContentModal from "@/components/ReportContent/ReportContentModal";
 import { ProgramDetailError } from "@/app/programs/components/ProgramDetailError";
 import { ProgramDetailSkeleton } from "@/app/programs/components/ProgramDetailSkeleton";
+import { HiddenChip, hiddenDimClass, isHidden } from "@/components/HiddenMark/HiddenMark";
 import { ROUTES } from "@/constants/routes";
 import { useLikes } from "@/contexts/LikesContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useDefaultWorkspaceId } from "@/hooks/useDefaultWorkspaceId";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramActions } from "@/hooks/useProgramActions";
 import { useWorkspaceRole } from "@/hooks/useWorkspaceRole";
-import { canDeleteProgram, canEditProgram } from "@/lib/permissions";
+import { formatIcelandicNumber } from "@/lib/format";
+import {
+  canDeleteComment,
+  canDeleteProgram,
+  canEditComment,
+  canEditProgram,
+  isOwner,
+} from "@/lib/permissions";
 import { cn } from "@/lib/util";
-import { createComment, deleteComment } from "@/services/comments.service";
-import { deleteProgram, type ContentComment } from "@/services/programs.service";
+import { createComment, deleteComment, updateComment } from "@/services/comments.service";
+import { deleteBankContent, type ContentComment } from "@/services/programs.service";
 import ItemFacts from "./components/ItemFacts";
 import ItemHero, { type HeroImage } from "./components/ItemHero";
 import ItemSections from "./components/ItemSections";
@@ -46,22 +58,28 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [extraComments, setExtraComments] = useState<ContentComment[]>([]);
-  const [openDoc, setOpenDoc] = useState<ViewableDocument | null>(null);
+  /* Comments edited in this session, by id, so an edit shows in place without
+     a refetch of the whole item. */
+  const [editedComments, setEditedComments] = useState<Record<string, ContentComment>>({});
   const [reportingComment, setReportingComment] = useState<ContentComment | null>(null);
+  const [openDoc, setOpenDoc] = useState<ViewableDocument | null>(null);
   /* Comments removed in this session, so the list reflects the removal
      without a refetch of the whole item. */
   const [removedComments, setRemovedComments] = useState<string[]>([]);
   const { program, isLoading, error, setProgram } = useProgram(id);
+  // Undefined until the item loads, so the loading render registers nothing.
   const { likeCount, isLiked, toggleLike } = useLikes(
     id,
-    program?.like_count || 0,
-    program?.liked_by_me ?? false
+    program?.like_count,
+    program?.liked_by_me
   );
   const { handleShare, handleAddToWorkspace } = useProgramActions(program);
   const { role: workspaceRole } = useWorkspaceRole(program?.workspace_id ?? null);
+  const defaultWorkspaceId = useDefaultWorkspaceId();
   const handleSubmitComment = useCallback(
     async (body: string) => {
       const created = await createComment(id, body, getToken);
@@ -69,6 +87,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
       setExtraComments((prev) => [...prev, created]);
     },
     [id, getToken]
+  );
+  const handleEditComment = useCallback(
+    async (c: ContentComment, body: string) => {
+      const updated = await updateComment(c.id, body, getToken);
+      setEditedComments((prev) => ({ ...prev, [c.id]: updated }));
+    },
+    [getToken]
   );
   const images: HeroImage[] = useMemo(() => {
     /* `media.images` is the ordered list and its first entry is the hero.
@@ -81,13 +106,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   if (error) return <ProgramDetailError error={error} />;
   if (isLoading) return <ProgramDetailSkeleton />;
   if (!program) notFound();
-  const canEdit = canEditProgram(user, program, workspaceRole);
-  const canDelete = canDeleteProgram(user, program, workspaceRole);
+  const canEdit = canEditProgram(user, program, workspaceRole, defaultWorkspaceId);
+  const canDelete = canDeleteProgram(user, program, workspaceRole, defaultWorkspaceId);
   const type = (program.content_type ?? "task") as BadgeContentType;
   const copy = kindCopy(type);
-  const comments = [...(program.comments ?? []), ...extraComments].filter(
-    (c) => !removedComments.includes(c.id)
-  );
+  const comments = [...(program.comments ?? []), ...extraComments]
+    .filter((c) => !removedComments.includes(c.id))
+    .map((c) => editedComments[c.id] ?? c);
   const handleRemoveComment = async (c: ContentComment) => {
     try {
       await deleteComment(c.id, getToken);
@@ -104,12 +129,14 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
     if (!canDelete) return;
     try {
       setIsDeleting(true);
-      await deleteProgram(program.id, getToken);
+      setDeleteError(null);
+      await deleteBankContent(program.content_type, program.id, getToken);
       router.push(ROUTES.PROGRAMS);
     } catch (err) {
       console.error("Failed to delete program:", err);
+      // Keep the modal open so the failure is visible, not silently swallowed.
       setIsDeleting(false);
-      setShowDeleteConfirm(false);
+      setDeleteError(DELETE_FAILED_MESSAGE);
     }
   };
   return (
@@ -128,8 +155,14 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         </span>
       </nav>
       <div className={styles.titleblock}>
-        <TypeBadge type={type} size="md" />
-        <h1 className={styles.title}>{program.name}</h1>
+        {/* Only moderators and the author are ever sent a hidden item. The
+            type is in the Upplýsingar box with the other facts. */}
+        {isHidden(program) && (
+          <div className={styles.badges}>
+            <HiddenChip />
+          </div>
+        )}
+        <h1 className={cn(styles.title, isHidden(program) && hiddenDimClass)}>{program.name}</h1>
       </div>
       <div className={styles.actions}>
         <button
@@ -137,13 +170,14 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           className={cn(styles.btn, isLiked && styles.liked)}
           onClick={toggleLike}
           disabled={!isAuthenticated}
-          title={isAuthenticated ? undefined : "Skráðu þig inn til að líka við"}
-          aria-label={isLiked ? "Fjarlægja líkar" : "Líkar við"}
+          title={isAuthenticated ? undefined : "Skráðu þig inn til að gefa rokkstig"}
+          aria-label={`${isLiked ? "Taka rokkstig til baka" : "Gefa rokkstig"}, ${formatIcelandicNumber(likeCount)} rokkstig`}
+          aria-pressed={isLiked}
         >
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 21.2 3.9 13a5.4 5.4 0 0 1 0-7.7 5.4 5.4 0 0 1 7.7 0l.4.4.4-.4a5.4 5.4 0 0 1 7.7 0 5.4 5.4 0 0 1 0 7.7z" />
           </svg>
-          {likeCount}
+          {formatIcelandicNumber(likeCount)}
         </button>
         <button type="button" className={styles.btn} onClick={handleShare}>
           Deila {copy.dative}
@@ -191,10 +225,23 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
             canComment={isAuthenticated}
             onSubmitComment={handleSubmitComment}
             currentUserName={user?.name ?? null}
-            heroSlot={<ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />}
+            heroSlot={
+              isHidden(program) && images.length > 0 ? (
+                <div className={hiddenDimClass}>
+                  <ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />
+                </div>
+              ) : (
+                <ItemHero images={images} index={heroIndex} onIndexChange={setHeroIndex} />
+              )
+            }
             onOpenDocument={setOpenDoc}
             onReportComment={setReportingComment}
             onRemoveComment={(c) => void handleRemoveComment(c)}
+            onEditComment={handleEditComment}
+            canEditComment={(c) => canEditComment(user, c)}
+            canRemoveComment={(c) =>
+              canDeleteComment(user, c, program, workspaceRole, defaultWorkspaceId)
+            }
           />
         )}
         {!isEditMode && (
@@ -203,20 +250,24 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
               program={program}
               typeLabel={copy.definite}
               onPrint={() => window.print()}
-              onReport={isAuthenticated ? () => setShowReport(true) : undefined}
+              // Not on your own item, as with your own comments.
+              onReport={
+                isAuthenticated && !isOwner(user, program) ? () => setShowReport(true) : undefined
+              }
             />
           </aside>
         )}
       </div>
       <DocumentViewer doc={openDoc} open={openDoc !== null} onClose={() => setOpenDoc(null)} />
 
-      {/* Same modal as the item's own report, pointed at a comment. */}
+      {/* The item's report dialog, pointed at a comment: its own title, a
+          quote of the comment, and the reasons that fit a comment. */}
       <ReportContentModal
         open={reportingComment !== null}
         onClose={() => setReportingComment(null)}
         contentId={program.id}
         contentName={program.name}
-        commentId={reportingComment?.id}
+        comment={reportingComment ?? undefined}
       />
       <ReportContentModal
         open={showReport}
@@ -228,7 +279,11 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         open={showDeleteConfirm}
         programName={program.name}
         isDeleting={isDeleting}
-        onClose={() => setShowDeleteConfirm(false)}
+        error={deleteError}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDeleteError(null);
+        }}
         onConfirm={handleDeleteConfirm}
       />
     </div>

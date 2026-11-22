@@ -49,13 +49,21 @@
     width: 280px; /* Full drawer width */
     z-index: var(--sl-z-fixed);
     transform: translateX(-100%);
-    transition: transform var(--sl-transition-base);
+    /* Closed, the drawer is off screen and also hidden: `visibility: hidden`
+       takes its links out of the tab order and the accessibility tree. The
+       visibility flips only after the slide-out, so the animation still shows. */
+    visibility: hidden;
+    transition:
+      transform var(--sl-transition-base),
+      visibility 0s linear var(--sl-primitive-duration-base);
     box-shadow: var(--sl-shadow-modal);
   }
 
   /* Show sidebar when open */
   .sidebarWrapper[data-open="true"] {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform var(--sl-transition-base);
   }
 }
 

@@ -1,0 +1,7 @@
+/* Greys out a hidden item for the moderators who can still see it. Applied to
+   imagery and headings, not to the whole item, so the text stays readable
+   while it is being reviewed. Always paired with the "Falið" chip. */
+.dimmed {
+  opacity: var(--sl-primitive-opacity-60);
+  filter: grayscale(1);
+}

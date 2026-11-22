@@ -5,7 +5,7 @@
  * Four classes of mistake, every one of which has actually shipped here:
  *
  *  1. `var(--sl-color-…)` without `hsl()`. The colour tokens hold bare HSL
- *     triplets ("142 50% 42%"), so an unwrapped reference is not a colour —
+ *     triplets ("142 50% 32%"), so an unwrapped reference is not a colour —
  *     the declaration is dropped and the element renders invisible or
  *     inherits. Completely silent: no build error, no lint error.
  *  2. A token that does not exist. `var()` on an undefined property makes the

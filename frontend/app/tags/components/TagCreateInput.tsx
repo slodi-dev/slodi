@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createTag, type Tag } from "@/services/tags.service";
+import { useAuth } from "@/contexts/AuthContext";
 import styles from "./TagCreateInput.module.css";
 
 interface TagCreateInputProps {
@@ -9,6 +10,7 @@ interface TagCreateInputProps {
 }
 
 export default function TagCreateInput({ onCreated }: TagCreateInputProps) {
+  const { getToken } = useAuth();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +31,7 @@ export default function TagCreateInput({ onCreated }: TagCreateInputProps) {
 
     setIsLoading(true);
     try {
-      const tag = await createTag({ name: trimmed });
+      const tag = await createTag({ name: trimmed }, getToken);
       setName("");
       onCreated(tag);
     } catch (err) {

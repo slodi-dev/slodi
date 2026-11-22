@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
 
-from app.domain.content_report_constraints import NOTE_MAX, RESOLUTION_NOTE_MAX
+from app.domain.content_report_constraints import (
+    COMMENT_REPORT_REASONS,
+    NOTE_MAX,
+    RESOLUTION_NOTE_MAX,
+)
 from app.domain.enums import ReportReason, ReportStatus
 
 NoteStr = Annotated[str, StringConstraints(max_length=NOTE_MAX, strip_whitespace=True)]
@@ -29,12 +33,24 @@ class ContentReportCreate(BaseModel):
     note: NoteStr | None = None
 
 
+class CommentReportCreate(ContentReportCreate):
+    """A report on a comment, which can only be for the reasons that fit one."""
+
+    @field_validator("reason")
+    @classmethod
+    def reason_fits_a_comment(cls, reason: ReportReason) -> ReportReason:
+        # `use_enum_values` may hand this the plain string, so compare as members.
+        if ReportReason(reason) not in COMMENT_REPORT_REASONS:
+            raise ValueError("a comment cannot be reported for this reason")
+        return reason
+
+
 class ContentReportResolve(BaseModel):
     """A reviewer closing a report."""
 
     model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
 
-    status: ReportStatus
+    status: Literal[ReportStatus.resolved, ReportStatus.dismissed]
     resolution_note: ResolutionStr | None = None
 
 

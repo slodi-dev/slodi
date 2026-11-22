@@ -11,6 +11,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.types import DateTime as SADateTime
 
+from app.domain.enums import DraftStatus
+
 from .base import Base
 
 
@@ -25,10 +27,11 @@ class EmailDraft(Base):
     subject: Mapped[str] = mapped_column(String(200), nullable=False)
     preheader: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template: Mapped[str] = mapped_column(String(100), nullable=False)
-    blocks: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
-    recipient_list_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+    blocks: Mapped[list[dict[str, Any]] | dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True
+    )
     manual_recipients: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=DraftStatus.draft)
     scheduled_at: Mapped[dt.datetime | None] = mapped_column(
         SADateTime(timezone=True), nullable=True
     )

@@ -9,9 +9,11 @@ import ConditionalLayout from "@/components/ConditionalLayout";
 import { LikesProvider } from "@/contexts/LikesContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
+  // Relative og/twitter image URLs are resolved against this. Without it Next
+  // falls back to http://localhost:3000, which is what production served.
+  metadataBase: new URL("https://slodi.is"),
   title: {
     default: "Slóði - Meira en bara dagskrárvefur",
     template: "%s | Slóði",
@@ -133,7 +135,6 @@ export default function RootLayout({
             </LikesProvider>
           </ThemeProvider>
         </AuthProvider>
-        <Analytics />
       </body>
     </html>
   );

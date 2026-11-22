@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { safeLocalStorage } from "@/lib/safe-storage";
 
-type Theme = "light" | "dark" | "forest-night" | "campfire" | "northern-lights";
+type Theme = "light" | "dark";
 type PatrolColor = "drekar" | "falkar" | "drott" | "rekkar" | "rover" | "adrir";
 
 interface ThemeContextType {
@@ -41,10 +41,12 @@ export default function ThemeProvider({
 
   // Load saved theme on mount
   useEffect(() => {
-    const savedTheme = safeLocalStorage.getItem(storageKey) as Theme;
+    const savedTheme = safeLocalStorage.getItem(storageKey);
     const savedPatrol = safeLocalStorage.getItem("slodi-patrol") as PatrolColor;
 
-    if (savedTheme) {
+    // Anything but light or dark (e.g. a retired named theme left in storage)
+    // falls through to the OS preference.
+    if (savedTheme === "light" || savedTheme === "dark") {
       setThemeState(savedTheme);
     } else {
       // Check system preference
@@ -65,16 +67,9 @@ export default function ThemeProvider({
 
     const root = document.documentElement;
 
-    // Remove all theme classes/attributes
-    root.classList.remove("dark");
+    root.classList.toggle("dark", theme === "dark");
+    // Clears a data-theme left by a retired named theme.
     root.removeAttribute("data-theme");
-
-    // Apply new theme
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else if (theme !== "light") {
-      root.setAttribute("data-theme", theme);
-    }
 
     // Save to localStorage
     safeLocalStorage.setItem(storageKey, theme);

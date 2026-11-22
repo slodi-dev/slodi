@@ -1,34 +1,43 @@
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
+
+// Slóði never needs the visitor's local network. With these denied, Chrome
+// fails a request to localhost or a private address instead of asking the
+// visitor for "local network access". `local-network-access` is the older
+// name the other two replaced.
+const PERMISSIONS_POLICY = "local-network=(), loopback-network=(), local-network-access=()";
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      { source: "/:path*", headers: [{ key: "Permissions-Policy", value: PERMISSIONS_POLICY }] },
+    ];
+  },
   async redirects() {
     return [
-      // Permanent redirects for the old /skatathing game hub and its sub-routes.
-      // These exist so that any bookmarked or shared links continue to work after
-      // the hub moved to /leikir.
+      // The old /skatathing game hub moved to /leikir; keep bookmarks working.
+      // Its Heiðursorðla sub-routes are gone with the game (hidden, a 404).
       { source: "/skatathing", destination: "/leikir", permanent: true },
-      {
-        source: "/skatathing/heidursordla",
-        destination: "/leikir/heidursordla",
-        permanent: true,
-      },
-      {
-        source: "/skatathing/heidursordla/:puzzleId",
-        destination: "/leikir/heidursordla/:puzzleId",
-        permanent: true,
-      },
     ];
   },
   images: {
     // Only the public blob container. Content images are uploaded straight to
     // Azure and stored as blob URLs, so nothing else needs optimizing — and a
     // wildcard here would expose the Next.js image endpoint to SSRF and
-    // bandwidth abuse.
+    // bandwidth abuse. Components ask `isOptimisableImageUrl`
+    // (lib/image-hosts.ts) whether a URL may go through the optimiser; foreign
+    // URLs stay `unoptimized` and load straight from their host.
+    //
+    // Keep this a literal: the production Docker stage copies only
+    // next.config.* (no lib/), so an import here crashes `next start`.
+    // lib/image-hosts.test.ts holds the two in step.
     remotePatterns: [
       {
         protocol: "https",
         hostname: "slodiblobstorage.blob.core.windows.net",
+        port: "",
         pathname: "/content-images/**",
+        search: "",
       },
     ],
     // Limit cached variants to common screen widths — reduces cache storage per image.
@@ -39,4 +48,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// NEXT_PUBLIC_API_URL is baked into the client bundle by `next build`. If it
+// is missing the browser has no API to talk to, and older code silently fell
+// back to http://localhost:8000 — which on a public site makes Chrome prompt
+// visitors for local-network access. Fail the build instead.
+export default function config(phase: string): NextConfig {
+  // `storybook build` loads this config with the same phase but never talks to
+  // the API, so it is exempt (Storybook sets STORYBOOK=true).
+  const isStorybook = process.env.STORYBOOK === "true";
+  if (phase === PHASE_PRODUCTION_BUILD && !isStorybook && !process.env.NEXT_PUBLIC_API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL must be set for `next build` (it is inlined into the client bundle). " +
+        "Production: https://api.slodi.is. Local builds: http://localhost:8000."
+    );
+  }
+  return nextConfig;
+}

@@ -18,18 +18,7 @@ if TYPE_CHECKING:
 
 
 class PostingSuspension(Base):
-    """A timed pause on someone's ability to submit — the skammarkrókur.
-
-    **A table, not columns on `User`, because the history is the point.** "Third
-    time this year" is exactly what a reviewer needs to know before deciding,
-    and a boolean or a single expiry date loses it the moment the second one
-    starts.
-
-    `expires_at` is nullable, and null means **open-ended** — it runs until
-    somebody lifts it. That is a heavy thing to do to an adult volunteer, so the
-    UI confirms it separately; but it is reversible and recorded like any other,
-    which is what makes it safe to offer at all.
-    """
+    """A pause on posting (skammarkrókur). `expires_at` null means open-ended."""
 
     __tablename__ = "posting_suspensions"
     __table_args__ = (
@@ -37,7 +26,6 @@ class PostingSuspension(Base):
             "expires_at IS NULL OR expires_at > starts_at",
             name="ck_posting_suspensions_ends_after_start",
         ),
-        # "Is this person suspended right now?" runs on every write they attempt.
         Index("ix_posting_suspensions_user_id_expires_at", "user_id", "expires_at"),
     )
 
@@ -50,11 +38,8 @@ class PostingSuspension(Base):
 
     starts_at: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
     expires_at: Mapped[dt.datetime | None] = mapped_column(SADateTime(timezone=True), nullable=True)
-    """When it ends. **Null means open-ended** — it runs until lifted."""
 
     reason: Mapped[str] = mapped_column(String(REASON_MAX), nullable=False)
-    """Required. Someone told they cannot contribute deserves to know why, and a
-    reviewer who cannot articulate it probably should not be doing it."""
 
     issued_by_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
@@ -65,8 +50,6 @@ class PostingSuspension(Base):
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     lift_reason: Mapped[str | None] = mapped_column(String(REASON_MAX), nullable=True)
-    """Lifting early is a separate act from issuing, and the record should show
-    both — a suspension that was reconsidered is not the same as one that ran."""
 
     created_at: Mapped[dt.datetime] = mapped_column(SADateTime(timezone=True), nullable=False)
 
@@ -75,15 +58,8 @@ class PostingSuspension(Base):
     issued_by: Mapped[User | None] = relationship(foreign_keys=[issued_by_id])
     lifted_by: Mapped[User | None] = relationship(foreign_keys=[lifted_by_id])
 
+    # Not `is_active`: the output schema has a field by that name.
     def active_at(self, now: dt.datetime) -> bool:
-        """Running at `now`: started, not lifted, and not yet expired.
-
-        An open-ended suspension has no expiry to be past, so it is active until
-        somebody lifts it.
-
-        Not named `is_active`: the output schema has a field by that name, and
-        validating straight off the model read the bound method instead.
-        """
         if self.lifted_at is not None or self.starts_at > now:
             return False
         return self.expires_at is None or now < self.expires_at

@@ -19,7 +19,7 @@ The frontend is responsible for delivering a modern, responsive, and user-friend
 - **Language:** TypeScript
 - **Styling:** CSS
 - **Testing:** Jest + React Testing Library
-- **Deployment:** Vercel
+- **Deployment:** Docker on an Azure VM, via GitHub Actions
 
 ## Getting Started
 

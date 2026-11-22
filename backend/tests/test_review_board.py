@@ -11,16 +11,15 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
-from fastapi import status
+from fastapi import BackgroundTasks, status
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 
 from app import models as m
 from app.core.auth import _PERMISSION_RANK, get_current_user
 from app.core.db import get_session
 from app.domain.enums import Permissions, ReportStatus, ReviewState
 from app.main import create_app
-from app.schemas.moderation import HideDecision, ReviewDecision, ReviewFilters
+from app.schemas.moderation import ReviewDecision, ReviewFilters
 from app.schemas.user import UserOut
 from app.services.moderation import ModerationService
 from app.utils import get_current_datetime
@@ -154,6 +153,11 @@ def test_a_rejection_must_say_why():
         ReviewDecision(review_state=ReviewState.rejected)
 
 
+def test_sending_back_must_say_why():
+    with pytest.raises(ValueError, match="af hverju"):
+        ReviewDecision(review_state=ReviewState.needs_changes)
+
+
 def test_a_rejection_with_a_reason_is_fine():
     assert ReviewDecision(review_state=ReviewState.rejected, note="Of hættulegt").note
 
@@ -208,38 +212,46 @@ async def test_new_content_is_unreviewed_and_visible(db):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_rejecting_does_not_hide(db):
-    """Rejecting says "we looked and this is not right". Hiding says "and it
-    should not be in the bank" — a stronger claim, and not always the right one."""
+async def test_rejecting_hides(db):
     _, _, task = await _bank(db)
     reviewer = m.User(name="Yfirferð", auth0_id="auth0|mod", email="mod@t.is")
     db.add(reviewer)
     await db.flush()
 
     result = await ModerationService(db).review(
-        task.id, reviewer.id, ReviewDecision(review_state=ReviewState.rejected, note="Of hættulegt")
+        task.id,
+        reviewer.id,
+        ReviewDecision(review_state=ReviewState.rejected, note="Of hættulegt"),
+        BackgroundTasks(),
     )
 
     assert result.review_state == ReviewState.rejected
-    assert result.hidden_at is None
+    assert result.hidden_at is not None
     assert result.review_note == "Of hættulegt"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_hiding_also_counts_as_having_looked(db):
-    """Otherwise it stays in the queue for someone else to look at and hide again."""
+async def test_sending_back_hides_and_approving_restores(db):
     _, _, task = await _bank(db)
     reviewer = m.User(name="Yfirferð", auth0_id="auth0|mod2", email="mod2@t.is")
     db.add(reviewer)
     await db.flush()
+    svc = ModerationService(db)
 
-    result = await ModerationService(db).set_hidden(
-        task.id, reviewer.id, HideDecision(hidden=True, note="Ekki við hæfi")
+    sent_back = await svc.review(
+        task.id,
+        reviewer.id,
+        ReviewDecision(review_state=ReviewState.needs_changes, note="Vantar leiðbeiningar"),
+        BackgroundTasks(),
     )
+    assert sent_back.hidden_at is not None
 
-    assert result.hidden_at is not None
-    assert result.review_state == ReviewState.rejected
+    approved = await svc.review(
+        task.id, reviewer.id, ReviewDecision(review_state="approved"), BackgroundTasks()
+    )
+    assert approved.hidden_at is None
+    assert approved.review_state == ReviewState.approved
 
 
 @pytest.mark.integration
@@ -287,9 +299,7 @@ async def test_the_queue_shows_how_many_people_flagged_an_item(db):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_un_hiding_takes_the_strike_with_it(db):
-    """Strikes are derived, never a stored counter. A moderator who changes their
-    mind must see the number change too — an integer column would drift."""
+async def test_only_a_rejection_is_a_strike(db):
     author, _, task = await _bank(db)
     reviewer = m.User(name="Yfirferð", auth0_id="auth0|mod3", email="mod3@t.is")
     db.add(reviewer)
@@ -298,15 +308,26 @@ async def test_un_hiding_takes_the_strike_with_it(db):
 
     assert await svc.strikes_for_author(author.id) == 0
 
-    await svc.set_hidden(task.id, reviewer.id, HideDecision(hidden=True))
+    await svc.review(
+        task.id,
+        reviewer.id,
+        ReviewDecision(review_state=ReviewState.needs_changes, note="Laga"),
+        BackgroundTasks(),
+    )
+    assert await svc.strikes_for_author(author.id) == 0
+
+    await svc.review(
+        task.id,
+        reviewer.id,
+        ReviewDecision(review_state=ReviewState.rejected, note="Nei"),
+        BackgroundTasks(),
+    )
     assert await svc.strikes_for_author(author.id) == 1
 
-    await svc.set_hidden(task.id, reviewer.id, HideDecision(hidden=False))
-    # The rejection from hiding still stands, so the strike stands with it —
-    # un-hiding is not the same as un-rejecting.
-    reloaded = await db.scalar(select(m.Content).where(m.Content.id == task.id))
-    assert reloaded.hidden_at is None
-    assert reloaded.review_state is ReviewState.rejected
+    await svc.review(
+        task.id, reviewer.id, ReviewDecision(review_state=ReviewState.unreviewed), BackgroundTasks()
+    )
+    assert await svc.strikes_for_author(author.id) == 0
 
 
 @pytest.mark.integration
@@ -349,18 +370,69 @@ async def test_the_queue_says_why_something_was_flagged(db):
 async def test_the_queue_shows_an_authors_history_in_place(db):
     """A first-time contributor and a repeat one should not look identical."""
     author, ws, task = await _bank(db)
-    already_hidden = m.Task(
-        name="Falið áður",
+    already_rejected = m.Task(
+        name="Hafnað áður",
         created_at=get_current_datetime(),
         author_id=author.id,
         workspace_id=ws.id,
+        review_state=ReviewState.rejected,
         hidden_at=get_current_datetime(),
     )
-    db.add(already_hidden)
+    db.add(already_rejected)
     await db.flush()
 
     item = next(i for i in await ModerationService(db).queue(UNREVIEWED, 10, 0) if i.id == task.id)
     assert item.author_strikes == 1
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_reports_against_an_author_follow_who_wrote_the_reported_thing(db):
+    author, ws, task = await _bank(db)
+    commenter = m.User(name="Annar", auth0_id=f"auth0|{uuid4()}", email=f"{uuid4()}@t.is")
+    db.add(commenter)
+    await db.flush()
+    their_item = m.Task(
+        name="Annað verkefni",
+        created_at=get_current_datetime(),
+        author_id=commenter.id,
+        workspace_id=ws.id,
+    )
+    db.add(their_item)
+    await db.flush()
+    on_author_item = m.Comment(
+        body="Ljótt", user_id=commenter.id, content_id=task.id, created_at=get_current_datetime()
+    )
+    by_author = m.Comment(
+        body="Líka ljótt",
+        user_id=author.id,
+        content_id=their_item.id,
+        created_at=get_current_datetime(),
+    )
+    db.add_all([on_author_item, by_author])
+    await db.flush()
+    spam = m.ContentReport.__table__.c.reason.type.enum_class.spam
+    for content_id, comment_id in [
+        (task.id, None),
+        (task.id, on_author_item.id),
+        (their_item.id, by_author.id),
+    ]:
+        db.add(
+            m.ContentReport(
+                content_id=content_id,
+                comment_id=comment_id,
+                reporter_id=commenter.id if comment_id is None else author.id,
+                reason=spam,
+                status=ReportStatus.open,
+                created_at=get_current_datetime(),
+            )
+        )
+    await db.flush()
+    svc = ModerationService(db)
+
+    # Their item and their own comment, not someone else's comment under their item.
+    assert await svc.reports_against_author(author.id) == 2
+    assert await svc.reports_against_author(commenter.id) == 1
 
 
 # ── Filtering and the record of what was done ────────────────────────────────
@@ -377,7 +449,9 @@ async def test_the_board_records_who_decided_and_when(db):
     await db.flush()
     svc = ModerationService(db)
 
-    await svc.review(task.id, reviewer.id, ReviewDecision(review_state=ReviewState.approved))
+    await svc.review(
+        task.id, reviewer.id, ReviewDecision(review_state=ReviewState.approved), BackgroundTasks()
+    )
 
     approved = await svc.queue(ReviewFilters(review_state=ReviewState.approved), limit=10, offset=0)
     row = next(i for i in approved if i.id == task.id)
@@ -400,7 +474,10 @@ async def test_filtering_by_state_separates_the_queue_from_the_record(db):
     await db.flush()
     svc = ModerationService(db)
     await svc.review(
-        approved_item.id, reviewer.id, ReviewDecision(review_state=ReviewState.approved)
+        approved_item.id,
+        reviewer.id,
+        ReviewDecision(review_state=ReviewState.approved),
+        BackgroundTasks(),
     )
 
     queue = await svc.queue(UNREVIEWED, 10, 0)
@@ -731,12 +808,8 @@ async def test_approval_says_nothing(db):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_hiding_tells_the_author_and_unhiding_does_not(db):
-    """Hiding removes it from every listing, including the author's own view, so
-    they have to be told. Putting it back is good news they will see."""
+async def test_sending_back_tells_the_author_and_undoing_does_not(db):
     from fastapi import BackgroundTasks
-
-    from app.schemas.moderation import HideDecision
 
     _, _, task = await _bank(db)
     reviewer = m.User(name="Yfirferð", auth0_id="auth0|mod-hide", email="mod-h@t.is")
@@ -744,12 +817,38 @@ async def test_hiding_tells_the_author_and_unhiding_does_not(db):
     await db.flush()
     svc = ModerationService(db)
 
-    hiding = BackgroundTasks()
-    await svc.set_hidden(
-        task.id, reviewer.id, HideDecision(hidden=True, note="Ekki við hæfi"), hiding
+    sending_back = BackgroundTasks()
+    await svc.review(
+        task.id,
+        reviewer.id,
+        ReviewDecision(review_state=ReviewState.needs_changes, note="Vantar leiðbeiningar"),
+        sending_back,
     )
-    assert len(hiding.tasks) == 1
+    assert len(sending_back.tasks) == 1
 
-    restoring = BackgroundTasks()
-    await svc.set_hidden(task.id, reviewer.id, HideDecision(hidden=False), restoring)
-    assert restoring.tasks == []
+    undoing = BackgroundTasks()
+    await svc.review(
+        task.id, reviewer.id, ReviewDecision(review_state=ReviewState.unreviewed), undoing
+    )
+    assert undoing.tasks == []
+
+
+def test_author_emails_escape_the_name_and_note(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.services.moderation import _DECISION_EMAILS, _email_author
+
+    sent: dict[str, str] = {}
+    monkeypatch.setattr(
+        "app.services.moderation.send_email_background",
+        lambda _tasks, _to, subject, body: sent.update(subject=subject, body=body),
+    )
+    content = SimpleNamespace(
+        id=uuid4(), name="<b>Leikur</b>", author=SimpleNamespace(email="a@t.is")
+    )
+
+    _email_author(BackgroundTasks(), content, _DECISION_EMAILS[ReviewState.rejected], "<script>")
+
+    assert "&lt;b&gt;Leikur&lt;/b&gt;" in sent["body"]
+    assert "&lt;script&gt;" in sent["body"]
+    assert "<script>" not in sent["body"]

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ImagePlus, Loader2, X } from "lucide-react";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
 import styles from "./ImageUpload.module.css";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadFile } from "@/services/uploads.service";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,6 +102,7 @@ export default function ImageUpload({
               className={styles.preview}
               width={600}
               height={300}
+              unoptimized={!isOptimisableImageUrl(value)}
               onError={() => setPreviewFailed(true)}
             />
           ) : (

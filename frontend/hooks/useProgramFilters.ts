@@ -367,40 +367,76 @@ function extractUniqueEquipment(programs: Program[]): string[] {
 
 // ── Hook ────────────────────────────────────────────────────────────────────────
 
+/** The page number in a URL: a positive whole number, or the first page. */
+export function parsePage(raw: string | null): number {
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 1 ? n : 1;
+}
+
+/** The bank's URL for a set of filters and a page. Page 1 is left out. */
+export function bankUrl(pathname: string, f: FilterState, page: number): string {
+  const params = filtersToParams(f);
+  if (page > 1) params.set("page", String(page));
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
+type BankView = { filters: FilterState; page: number };
+
 export function useProgramFilters(allPrograms: Program[]) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Initialise from URL on mount
-  const [filters, setFiltersState] = useState<FilterState>(() => paramsToFilters(searchParams));
+  /* Filters and the page live together, and both start from the URL, so a
+     refresh or a shared link opens the same page of the same results. They
+     are one state so that narrowing the bank and going back to its first page
+     are one render, and so one fetch, never a fetch of page 7 of the new
+     results followed by page 1. */
+  const [view, setView] = useState<BankView>(() => ({
+    filters: paramsToFilters(searchParams),
+    page: parsePage(searchParams.get("page")),
+  }));
+  const { filters, page } = view;
 
-  // Track whether this is the initial mount to avoid writing URL on first render
-  const isInitialMount = useRef(true);
-
-  // Sync URL when filters change (but skip initial mount)
+  /* Written with `replace`, so the bank's own changes do not fill the Back
+     history. Only a real change is written: the search box echoes its value
+     back on mount and after every external change, and StrictMode runs this
+     effect twice, neither of which should touch the URL. */
+  const lastUrl = useRef<string | null>(null);
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
+    const url = bankUrl(pathname, filters, page);
+    if (lastUrl.current === null) {
+      lastUrl.current = url;
       return;
     }
-
-    const params = filtersToParams(filters);
-    const qs = params.toString();
-    const url = qs ? `${pathname}?${qs}` : pathname;
+    if (url === lastUrl.current) return;
+    lastUrl.current = url;
     router.replace(url, { scroll: false });
-  }, [filters, pathname, router]);
+  }, [filters, page, pathname, router]);
 
-  // Merge partial updates
+  /* Merge partial updates. A change that leaves the filters as they were is
+     no change at all; anything else goes back to the first page, because
+     staying on page seven of a result set that now holds four items shows an
+     empty grid and reads as "nothing matched". */
   const setFilters = useCallback((next: Partial<FilterState>) => {
-    setFiltersState((prev) => ({ ...prev, ...next }));
+    setView((prev) => {
+      const merged = { ...prev.filters, ...next };
+      if (filtersToParams(merged).toString() === filtersToParams(prev.filters).toString()) {
+        return prev;
+      }
+      return { filters: merged, page: 1 };
+    });
   }, []);
 
-  // Clear all filters and URL
+  const setPage = useCallback((next: number) => {
+    setView((prev) => (prev.page === next ? prev : { ...prev, page: next }));
+  }, []);
+
+  // Clear all filters, and with them the page; the URL follows.
   const clearAll = useCallback(() => {
-    setFiltersState(DEFAULT_FILTERS);
-    router.replace(pathname, { scroll: false });
-  }, [pathname, router]);
+    setView({ filters: DEFAULT_FILTERS, page: 1 });
+  }, []);
 
   // Memoised filtered + sorted result
   const filtered = useMemo(() => applyFilters(allPrograms, filters), [allPrograms, filters]);
@@ -417,6 +453,8 @@ export function useProgramFilters(allPrograms: Program[]) {
   return {
     filters,
     setFilters,
+    page,
+    setPage,
     filtered,
     activeChips,
     clearAll,

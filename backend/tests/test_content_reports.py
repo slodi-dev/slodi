@@ -141,16 +141,13 @@ def test_only_a_moderator_can_close_a_report(member_client):
 
 
 def test_a_report_cannot_be_closed_as_open(admin_client):
-    """ "Closing" a report by setting it back to open would leave `resolved_at`
-    null against a non-open status, which the table forbids anyway."""
+    """Only `resolved` or `dismissed` close a report; the schema refuses `open`."""
     with patch(
         "app.repositories.content_reports.ContentReportRepository.get", new_callable=AsyncMock
     ) as get:
         response = admin_client.patch(f"/moderation/reports/{uuid4()}", json={"status": "open"})
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    # Rejected before the lookup — a nonsensical request does not deserve a
-    # database round trip.
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     get.assert_not_awaited()
 
 
@@ -243,6 +240,50 @@ async def test_reporting_an_item_does_not_block_reporting_a_comment_under_it(db)
     )
 
     await db.flush()  # both stand
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_a_comment_report_is_judged_apart_from_the_item(db):
+    """Moderating a comment is not moderating the item it hangs under.
+
+    The item's detail lists only its own reports; a comment report goes to the
+    board with the comment's words, author and date, so it can be judged on its
+    own pane rather than read as a complaint about the item.
+    """
+    from app.services.content_reports import ContentReportService
+    from app.services.moderation import ModerationService
+
+    user, task = await _content(db)
+    comment = m.Comment(
+        body="Þetta á ekki heima hér",
+        user_id=user.id,
+        content_id=task.id,
+        created_at=get_current_datetime(),
+    )
+    db.add(comment)
+    await db.flush()
+    for comment_id, reason in ((None, ReportReason.spam), (comment.id, ReportReason.unsafe)):
+        db.add(
+            m.ContentReport(
+                content_id=task.id,
+                comment_id=comment_id,
+                reporter_id=user.id,
+                reason=reason,
+                status=ReportStatus.open,
+                created_at=get_current_datetime(),
+            )
+        )
+    await db.flush()
+
+    detail = await ModerationService(db).detail(task.id)
+    assert [r.reason for r in detail.reports] == ["spam"]
+
+    queue = await ContentReportService(db).list_open(limit=10, offset=0)
+    on_comment = next(r for r in queue if r.comment_id == comment.id)
+    assert on_comment.comment_body == "Þetta á ekki heima hér"
+    assert on_comment.comment_author_name == "Foringi"
+    assert on_comment.comment_created_at == comment.created_at
 
 
 @pytest.mark.integration
@@ -421,6 +462,20 @@ def test_a_comment_can_be_reported(member_client, viewer_user):
     assert report.await_args.kwargs["comment_id"] == comment_id
 
 
+@pytest.mark.parametrize("reason", ["duplicate", "wrong_type"])
+def test_a_comment_cannot_be_reported_for_an_item_only_reason(member_client, reason):
+    """`duplicate` and `wrong_type` describe an item in the bank, not a comment.
+
+    Refused before anything is looked up, so the answer says nothing about
+    whether the comment exists.
+    """
+    with patch("app.services.comments.CommentService.get_model", new_callable=AsyncMock) as get_c:
+        response = member_client.post(f"/comments/{uuid4()}/reports", json={"reason": reason})
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    get_c.assert_not_awaited()
+
+
 def test_reporting_a_comment_you_cannot_reach_is_hidden(member_client):
     """The workspace check runs before anything else here too, so a comment
     report cannot be used to probe for content in a workspace you are not in."""
@@ -454,3 +509,22 @@ def test_reporting_a_comment_is_separate_from_reporting_its_item():
     src = inspect.getsource(ContentReportRepository.find_by_reporter)
     assert "comment_id" in src
     assert "is_(None)" in src
+
+
+def test_the_escalation_email_escapes_what_users_wrote():
+    """The item name and the note are written by users; neither may become markup."""
+    from fastapi import BackgroundTasks
+
+    from app.services.content_reports import ContentReportService
+
+    report = m.ContentReport(id=uuid4(), note='<a href="https://x.is">smelltu</a>')
+    with (
+        patch("app.services.content_reports.settings") as cfg,
+        patch("app.services.content_reports.send_email_background") as send,
+    ):
+        cfg.moderation_email_list = ["dagskra@slodi.is"]
+        ContentReportService(AsyncMock())._escalate(BackgroundTasks(), report, "<b>Heiti</b>")
+
+    html = send.call_args.args[3]
+    assert "<b>Heiti</b>" not in html and "&lt;b&gt;Heiti&lt;/b&gt;" in html
+    assert "<a href" not in html

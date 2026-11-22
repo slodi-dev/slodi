@@ -51,6 +51,21 @@
    HERO IMAGE
    ═══════════════════════════════════════════════════════════ */
 
+/* A hidden item, as only moderators see it. Dashed edge plus the "Falið" chip
+   and dimmed imagery (see components/HiddenMark). */
+.cardHidden,
+.cardHidden:hover {
+  border-style: dashed;
+  border-color: hsl(var(--sl-color-border-strong));
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-spacing-gap-xs);
+}
+
 .media {
   position: relative;
   aspect-ratio: 16 / 9;
@@ -341,10 +356,19 @@
   border-color: hsl(var(--sl-color-error) / var(--sl-primitive-opacity-60));
 }
 
+/* Room for two digits, so 9 → 10 does not nudge the button beside it; a third
+   digit grows the button, since this is only the floor. 1.5em held nearly three
+   and left a gap on the right of every count. */
 .likeCount {
   font-variant-numeric: tabular-nums;
-  min-width: 1.5em;
+  min-width: 2ch;
   text-align: left;
+}
+
+/* ── Comment count ────────────────────────────────────────── */
+
+.commentLink {
+  text-decoration: none;
 }
 
 /* ── Favorite button ──────────────────────────────────────── */
@@ -357,7 +381,7 @@
 .favoriteButton.favorited {
   background: hsl(var(--sl-color-warning-subtle));
   border-color: hsl(var(--sl-color-warning) / var(--sl-primitive-opacity-40));
-  color: hsl(var(--sl-color-warning));
+  color: hsl(var(--sl-color-warning-text));
 }
 
 .favoriteButton.favorited:hover {
@@ -370,6 +394,24 @@
 .editButton {
   min-width: var(--sl-primitive-height-sm);
   justify-content: center;
+}
+
+/* Fetching the whole item before the editor opens (sc-530). */
+.editButton[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .editButton[aria-busy="true"] .actionIcon {
+    animation: editPulse 0.9s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes editPulse {
+  to {
+    opacity: 0.3;
+  }
 }
 
 /* ── Delete button ────────────────────────────────────────── */

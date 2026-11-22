@@ -16,16 +16,18 @@ from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.core.auth import check_content_edit_access, get_current_user
+from app.core.auth import check_content_edit, get_current_user
 from app.core.db import get_session
 from app.domain.enums import EventInterval, Permissions, Weekday, WorkspaceRole
 from app.main import create_app
+from app.repositories.content import ContentAccess
 from app.schemas.event import EventOut
 from app.schemas.task import TaskOut
 from app.schemas.user import UserOut
 from app.schemas.workspace import WorkspaceNested
 
 ROLE_LOOKUP = "app.core.auth._get_workspace_role"
+ACCESS = "app.repositories.content.ContentRepository.get_access"
 
 
 @pytest.fixture
@@ -78,8 +80,8 @@ def _make_event(workspace_id, author_id, start_dt=None):
     )
 
 
-async def _edit_access(role, *, is_author, permissions=Permissions.viewer, hide=False):
-    """Run check_content_edit_access with a fixed workspace role."""
+async def _edit_access(role, *, is_author, permissions=Permissions.viewer):
+    """Run check_content_edit with a fixed workspace role."""
     author_id = uuid4()
     user = UserOut(
         id=author_id if is_author else uuid4(),
@@ -88,11 +90,15 @@ async def _edit_access(role, *, is_author, permissions=Permissions.viewer, hide=
         name="T",
         permissions=permissions,
     )
-    with patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup:
+    with (
+        patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
+        patch(ACCESS, new_callable=AsyncMock) as access,
+    ):
         lookup.return_value = role
-        await check_content_edit_access(
-            uuid4(), author_id, user, AsyncMock(), hide_from_non_members=hide
+        access.return_value = ContentAccess(
+            workspace_id=uuid4(), author_id=author_id, hidden_at=None
         )
+        await check_content_edit(uuid4(), user, AsyncMock())
 
 
 # ── Who may change content ───────────────────────────────────────────────────
@@ -137,9 +143,9 @@ async def test_viewer_may_not_edit_someone_elses_content():
 
 
 @pytest.mark.asyncio
-async def test_non_member_is_hidden_rather_than_refused_when_asked():
+async def test_non_member_is_hidden_rather_than_refused():
     with pytest.raises(HTTPException) as exc:
-        await _edit_access(None, is_author=False, hide=True)
+        await _edit_access(None, is_author=False)
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -216,26 +222,28 @@ def test_non_member_cannot_create(member_client, bank):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_attaching_a_task_to_someone_elses_event_still_needs_editor(member_client, bank):
-    """Submitting to the bank is not the same as editing another leader's plan.
-
-    Every account is a `viewer` in the bank, so if the parent-scoped create
-    routes were open at `viewer` too, anyone could graft liðir onto anyone
-    else's fundur — and `check_content_edit_access` would then let only the
-    child's own author remove them again.
-    """
-    event = _make_task(bank, author_id=uuid4())
+@pytest.mark.parametrize(
+    "kind,field", [("tasks", "event_id"), ("events", "program_id")], ids=["task", "event"]
+)
+def test_attaching_to_an_event_or_program_needs_editor(member_client, viewer_user, kind, field):
+    """Every account is a `viewer` in the bank; attaching an item changes someone's plan."""
+    item = _make_task(uuid4(), author_id=viewer_user.id)
     with (
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
-        patch("app.services.events.EventService.get", new_callable=AsyncMock) as get,
+        patch(ACCESS, new_callable=AsyncMock) as access,
+        patch(f"app.services.{kind}.{kind[:-1].title()}Service.update", new_callable=AsyncMock),
     ):
         lookup.return_value = WorkspaceRole.viewer
-        get.return_value = event
-        response = member_client.post(f"/events/{event.id}/tasks", json={"name": "Nei"})
+        access.return_value = _access_for(item)
+        response = member_client.patch(f"/{kind}/{item.id}", json={field: str(uuid4())})
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 # ── Editing and deleting through the router ──────────────────────────────────
+
+
+def _access_for(item):
+    return ContentAccess(workspace_id=item.workspace_id, author_id=item.author_id, hidden_at=None)
 
 
 @pytest.mark.parametrize("method", ["patch", "delete"])
@@ -243,9 +251,11 @@ def test_viewer_cannot_change_another_users_task(method, member_client):
     task = _make_task(uuid4(), author_id=uuid4())  # someone else's
     with (
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
+        patch(ACCESS, new_callable=AsyncMock) as access,
         patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as get,
     ):
         lookup.return_value = WorkspaceRole.viewer
+        access.return_value = _access_for(task)
         get.return_value = task
         call = getattr(member_client, method)
         response = call(
@@ -264,11 +274,13 @@ def test_author_can_change_their_own_task_at_viewer_role(method, member_client, 
     task = _make_task(uuid4(), author_id=viewer_user.id)
     with (
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
+        patch(ACCESS, new_callable=AsyncMock) as access,
         patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as get,
         patch("app.services.tasks.TaskService.update", new_callable=AsyncMock) as update,
         patch("app.services.tasks.TaskService.delete", new_callable=AsyncMock),
     ):
         lookup.return_value = WorkspaceRole.viewer
+        access.return_value = _access_for(task)
         get.return_value = task
         update.return_value = task
         call = getattr(member_client, method)
@@ -296,10 +308,12 @@ def test_patch_cannot_reassign_authorship(member_client, viewer_user):
 
     with (
         patch(ROLE_LOOKUP, new_callable=AsyncMock) as lookup,
+        patch(ACCESS, new_callable=AsyncMock) as access,
         patch("app.services.tasks.TaskService.get", new_callable=AsyncMock) as get,
         patch("app.services.tasks.TaskService.update", new_callable=AsyncMock) as update,
     ):
         lookup.return_value = WorkspaceRole.viewer
+        access.return_value = _access_for(task)
         get.return_value = task
         update.return_value = task
 

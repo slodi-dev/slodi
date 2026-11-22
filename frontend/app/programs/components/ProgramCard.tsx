@@ -5,18 +5,35 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLikes } from "@/contexts/LikesContext";
 import { useFavorite } from "@/contexts/FavoritesContext";
+import { FAVOURITES_ENABLED } from "@/lib/feature-flags";
 import {
   formatDuration,
   formatDurationLabel,
-  formatParticipants,
+  formatParticipantRange,
   formatParticipantsLabel,
   formatPrice,
   formatPriceLabel,
   formatAgeGroup,
+  countIs,
   getAgeGroupPatrol,
   formatIcelandicDate,
+  formatIcelandicNumber,
 } from "@/lib/format";
+import { HiddenChip, hiddenDimClass } from "@/components/HiddenMark/HiddenMark";
+import TypeBadge, { type BadgeContentType } from "@/components/TypeBadge/TypeBadge";
+import { isOptimisableImageUrl } from "@/lib/image-hosts";
+import { cn } from "@/lib/util";
 import styles from "./ProgramCard.module.css";
+
+/**
+ * The card's rendered width, so the optimiser serves a card-sized variant.
+ * Follows the bank layout (ProgramsPage + ProgramGrid CSS): one column to
+ * 640px, two to 1024px beside a 240px filter rail, then three beside a 268px
+ * rail inside a 1600px page, which caps a card at about 412px. The old
+ * "33vw" made a 1440px laptop at 2x fetch the 1080px variant for a ~360px card.
+ */
+const CARD_IMAGE_SIZES =
+  "(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 36vw, (max-width: 1600px) 25vw, 412px";
 
 export interface ProgramCardProps {
   id: string;
@@ -30,6 +47,9 @@ export interface ProgramCardProps {
   tags?: Array<{ id: string; name: string }>;
   like_count?: number;
   liked_by_me?: boolean;
+  comment_count?: number;
+  /** Verkefni, Viðburður or Dagskrá, shown as a badge above the title. */
+  content_type?: BadgeContentType;
   className?: string;
   /** Show an edit option in the card action menu. */
   canEdit?: boolean;
@@ -37,6 +57,8 @@ export interface ProgramCardProps {
   canDelete?: boolean;
   /** Called when the user selects "Edit" in the menu. */
   onEdit?: () => void;
+  /** The item is being fetched for editing; the edit button shows it is busy. */
+  editLoading?: boolean;
   /** Called when the user selects "Delete" in the menu. */
   onDelete?: () => void;
   /** ISO date string for when the program was created. */
@@ -53,6 +75,16 @@ export interface ProgramCardProps {
   location?: string | null;
   /** Age group enum values. */
   age?: string[] | null;
+  /**
+   * Set when a moderator has hidden the item. Only moderators (and the item's
+   * author) are ever sent one; the card greys out and says "Falið".
+   */
+  hidden_at?: string | null;
+  /**
+   * Show the "Vista í möppu" bookmark button. Defaults to FAVOURITES_ENABLED,
+   * which is off until favourites have a backend (UX-01).
+   */
+  showFavourite?: boolean;
 }
 
 const MAX_VISIBLE_TAGS = 4;
@@ -64,12 +96,15 @@ export default function ProgramCard({
   image,
   author,
   tags = [],
-  like_count = 0,
-  liked_by_me = false,
+  like_count,
+  liked_by_me,
+  comment_count = 0,
+  content_type,
   className,
   canEdit,
   canDelete,
   onEdit,
+  editLoading = false,
   onDelete,
   created_at,
   duration_min,
@@ -79,6 +114,8 @@ export default function ProgramCard({
   price,
   location,
   age,
+  hidden_at,
+  showFavourite = FAVOURITES_ENABLED,
 }: ProgramCardProps) {
   const { likeCount, isLiked, toggleLike } = useLikes(id, like_count, liked_by_me);
   const { isFavorite, toggleFavorite } = useFavorite(id);
@@ -129,6 +166,7 @@ export default function ProgramCard({
     e.stopPropagation();
     e.preventDefault();
     setMenuOpen(false);
+    if (editLoading) return;
     onEdit?.();
   };
 
@@ -166,7 +204,8 @@ export default function ProgramCard({
     duration_min ?? undefined,
     duration_max ?? undefined
   );
-  const participantsStr = formatParticipants(count_min ?? undefined, count_max ?? undefined);
+  // Numbers only: the people icon says what they count, and the label reads it out.
+  const participantsStr = formatParticipantRange(count_min ?? undefined, count_max ?? undefined);
   const participantsLabelStr = formatParticipantsLabel(
     count_min ?? undefined,
     count_max ?? undefined
@@ -182,17 +221,25 @@ export default function ProgramCard({
 
   // Icelandic writes "14. september 2026", month lowercase.
   const dateFormatted = created_at ? formatIcelandicDate(created_at) : null;
+  const hidden = Boolean(hidden_at);
 
   return (
-    <article className={`${styles.card} ${className || ""}`} aria-label={name} data-program-id={id}>
+    <article
+      className={cn(styles.card, hidden && styles.cardHidden, className)}
+      aria-label={hidden ? `${name} (falið)` : name}
+      data-program-id={id}
+      data-hidden={hidden || undefined}
+    >
       {/* ── Hero image ──────────────────────────────────────────── */}
-      <div className={styles.media}>
+      <div className={cn(styles.media, hidden && hiddenDimClass)}>
         {image ? (
+          // Pasted URLs from other hosts skip the optimiser (lib/image-hosts).
           <Image
             src={image}
             alt={name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes={CARD_IMAGE_SIZES}
+            unoptimized={!isOptimisableImageUrl(image)}
             className={styles.image}
           />
         ) : (
@@ -223,8 +270,17 @@ export default function ProgramCard({
 
       {/* ── Content body ────────────────────────────────────────── */}
       <div className={styles.body}>
+        {/* What it is, and whether it is hidden — the same pair the item page
+            shows above its title. */}
+        {(content_type || hidden) && (
+          <div className={styles.badges}>
+            {content_type && <TypeBadge type={content_type} variant="plain" />}
+            {hidden && <HiddenChip />}
+          </div>
+        )}
+
         {/* Title */}
-        <h2 className={styles.title}>{name}</h2>
+        <h2 className={cn(styles.title, hidden && hiddenDimClass)}>{name}</h2>
 
         {/* Author + date */}
         {(author || dateFormatted) && (
@@ -361,7 +417,10 @@ export default function ProgramCard({
               </li>
             ))}
             {overflowTagCount > 0 && (
-              <li className={styles.tagMore} aria-label={`${overflowTagCount} fleiri flokkar`}>
+              <li
+                className={styles.tagMore}
+                aria-label={countIs(overflowTagCount, "flokkur í viðbót", "flokkar í viðbót")}
+              >
                 +{overflowTagCount}
               </li>
             )}
@@ -376,7 +435,7 @@ export default function ProgramCard({
           type="button"
           className={`${styles.actionButton} ${styles.likeButton} ${isLiked ? styles.liked : ""}`}
           onClick={handleLike}
-          aria-label={`${isLiked ? "Taka rokkstig til baka" : "Gefa rokkstig"} ${name}, ${likeCount} rokkstig`}
+          aria-label={`${isLiked ? "Taka rokkstig til baka" : "Gefa rokkstig"} ${name}, ${formatIcelandicNumber(likeCount)} rokkstig`}
           aria-pressed={isLiked}
         >
           <svg
@@ -394,33 +453,55 @@ export default function ProgramCard({
               d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
             />
           </svg>
-          <span className={styles.likeCount}>{likeCount}</span>
+          <span className={styles.likeCount}>{formatIcelandicNumber(likeCount)}</span>
         </button>
 
-        {/* Favorite button */}
-        <button
-          type="button"
-          className={`${styles.actionButton} ${styles.favoriteButton} ${isFavorite ? styles.favorited : ""}`}
-          onClick={handleFavorite}
-          aria-label={isFavorite ? `Fjarlægja ${name} úr möppu` : `Vista ${name} í möppu`}
-          aria-pressed={isFavorite}
+        {/* Comment count — a way in to the thread, not just a number */}
+        <Link
+          href={`/programs/${id}#ef-athugasemdir`}
+          className={`${styles.actionButton} ${styles.commentLink}`}
+          aria-label={`${countIs(comment_count, "athugasemd", "athugasemdir")} við ${name}`}
         >
           <svg
             className={styles.actionIcon}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
-            fill={isFavorite ? "currentColor" : "none"}
+            fill="none"
             stroke="currentColor"
             strokeWidth="2"
             aria-hidden="true"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
           </svg>
-        </button>
+          <span className={styles.likeCount}>{formatIcelandicNumber(comment_count)}</span>
+        </Link>
+
+        {/* Favorite button (hidden behind FAVOURITES_ENABLED, UX-01) */}
+        {showFavourite && (
+          <button
+            type="button"
+            className={`${styles.actionButton} ${styles.favoriteButton} ${isFavorite ? styles.favorited : ""}`}
+            onClick={handleFavorite}
+            aria-label={isFavorite ? `Fjarlægja ${name} úr möppu` : `Vista ${name} í möppu`}
+            aria-pressed={isFavorite}
+          >
+            <svg
+              className={styles.actionIcon}
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill={isFavorite ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+              />
+            </svg>
+          </button>
+        )}
 
         {/* Spacer pushes edit/delete to the right */}
         <div className={styles.footerSpacer} />
@@ -432,6 +513,8 @@ export default function ProgramCard({
             className={`${styles.actionButton} ${styles.editButton}`}
             onClick={handleEdit}
             aria-label={`Breyta ${name}`}
+            aria-busy={editLoading || undefined}
+            aria-disabled={editLoading || undefined}
           >
             <svg
               className={styles.actionIcon}

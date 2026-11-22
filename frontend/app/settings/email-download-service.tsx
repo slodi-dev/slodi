@@ -83,7 +83,11 @@ export default function EmailListDownloadButton({ allowed }: { allowed: boolean 
       <Button onClick={handleDownload} disabled={loading} aria-label="Download emaillist">
         {loading ? "Sæki..." : "Sækja póstlista (.txt)"}
       </Button>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && (
+        <p className="sl-text-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

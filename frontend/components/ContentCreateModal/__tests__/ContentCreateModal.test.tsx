@@ -4,6 +4,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ContentCreateModal from "../ContentCreateModal";
+import type { Program } from "@/services/programs.service";
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ getToken: async () => "t" }),
@@ -12,8 +13,10 @@ vi.mock("@/hooks/useTags", () => ({
   useTags: () => ({ tagNames: ["Leikir", "Útivist", "Samfélagsverkefni"] }),
 }));
 const created = vi.fn();
+const updated = vi.fn();
 vi.mock("@/services/programs.service", () => ({
   createBankContent: (...a: unknown[]) => created(...a),
+  updateBankContent: (...a: unknown[]) => updated(...a),
 }));
 
 /**
@@ -78,6 +81,7 @@ const props = {
 beforeEach(() => {
   window.localStorage.clear();
   created.mockReset();
+  updated.mockReset();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -517,5 +521,175 @@ describe("a long vocabulary", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("listbox", { name: "Merkimiðar" })).not.toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Valdir merkimiðar" })).toBeInTheDocument();
+  });
+});
+
+/**
+ * sc-530: editing from a bank card wiped the leiðbeiningar and documents.
+ *
+ * The card's row is a list summary with no `instructions` and no `media`; the
+ * form sent every field, so those went back as cleared. An edit now sends only
+ * what changed, and drafts no longer outlive a closed editor.
+ */
+describe("editing sends only what changed", () => {
+  /** What the bank list returns: no `instructions`, no `media`. */
+  const row: Program = {
+    id: "item-1",
+    content_type: "task",
+    name: "Fánaleikur í myrkri",
+    description: "Leikur í myrkri",
+    public: true,
+    like_count: 3,
+    liked_by_me: false,
+    created_at: "2026-09-01T12:00:00Z",
+    author_id: "u-1",
+    author_name: "Sigurður",
+    image: "https://example.test/hero.jpg",
+    workspace_id: "ws-1",
+    author: { id: "u-1", name: "Sigurður", email: "s@test.is" },
+    workspace: { id: "ws-1", name: "Dagskrárbankinn" },
+    tags: [{ id: "t-1", name: "Leikir" }],
+  };
+  /** The same item as `/content/{id}` returns it. */
+  const full: Program = {
+    ...row,
+    instructions: "1. Slökkvið ljósin.\n2. Felið fánann.",
+    media: {
+      images: [{ name: "Forsíða", url: "https://example.test/hero.jpg" }],
+      documents: [{ name: "Leikreglur.pdf", url: "https://example.test/leikreglur.pdf" }],
+    },
+  };
+  const editProps = (initial: Program) => ({ ...props, initial });
+  const save = () => userEvent.click(screen.getByRole("button", { name: "Vista breytingar" }));
+  const sent = () => updated.mock.calls[0][2] as Record<string, unknown>;
+
+  beforeEach(() => {
+    updated.mockResolvedValue(full);
+  });
+
+  it("sends a new title alone, even from a row without instructions or media", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...editProps(row)} />);
+    const title = screen.getByLabelText(/Heiti hugmyndar/);
+
+    await userEvent.clear(title);
+    await userEvent.type(title, "Fánaleikur (uppfært)");
+    await save();
+
+    await waitFor(() => expect(updated).toHaveBeenCalledTimes(1));
+    expect(updated.mock.calls[0][0]).toBe("task");
+    expect(updated.mock.calls[0][1]).toBe("item-1");
+    expect(sent()).toEqual({ name: "Fánaleikur (uppfært)" });
+    expect(sent()).not.toHaveProperty("instructions");
+    expect(sent()).not.toHaveProperty("media");
+  });
+
+  it("still sends a cleared field as null, so clearing keeps working", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...editProps(full)} />);
+
+    await userEvent.clear(screen.getByLabelText("Hvernig gengur þetta fyrir sig?"));
+    await save();
+
+    await waitFor(() => expect(updated).toHaveBeenCalledTimes(1));
+    expect(sent()).toEqual({ instructions: null });
+  });
+
+  it("sends media only when the attachments changed, keeping the rest of it", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...editProps(full)} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Fjarlægja Leikreglur.pdf" }));
+    await save();
+
+    await waitFor(() => expect(updated).toHaveBeenCalledTimes(1));
+    expect(sent()).toEqual({
+      media: { images: [{ name: "Forsíða", url: "https://example.test/hero.jpg" }], documents: [] },
+    });
+  });
+});
+
+describe("edit drafts", () => {
+  const item: Program = {
+    id: "item-2",
+    content_type: "task",
+    name: "Kveikjuleikur",
+    description: null,
+    public: true,
+    like_count: 0,
+    liked_by_me: false,
+    created_at: "2026-09-01T12:00:00Z",
+    author_id: "u-1",
+    author_name: "Sigurður",
+    image: null,
+    workspace_id: "ws-1",
+    author: { id: "u-1", name: "Sigurður", email: "s@test.is" },
+    workspace: { id: "ws-1", name: "Dagskrárbankinn" },
+    instructions: "Kveikið eld.",
+  };
+  const key = "bank-edit-item-2";
+
+  it("leaves nothing behind when the form is only opened", async () => {
+    atWidth(1400);
+    const { unmount } = render(<ContentCreateModal {...props} initial={item} />);
+    await new Promise((r) => setTimeout(r, 500));
+    expect(window.localStorage.getItem(key)).toBeNull();
+    unmount();
+  });
+
+  it("clears the draft when closed with ×", async () => {
+    atWidth(1400);
+    const onClose = vi.fn();
+    render(<ContentCreateModal {...props} initial={item} onClose={onClose} />);
+
+    await userEvent.type(screen.getByLabelText(/Heiti hugmyndar/), " í myrkri");
+    await waitFor(() => expect(window.localStorage.getItem(key)).not.toBeNull());
+
+    await userEvent.click(screen.getByRole("button", { name: "Loka" }));
+    expect(onClose).toHaveBeenCalled();
+    expect(window.localStorage.getItem(key)).toBeNull();
+  });
+
+  it("clears the draft when closed with Escape", async () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} initial={item} />);
+
+    await userEvent.type(screen.getByLabelText(/Heiti hugmyndar/), "!");
+    await waitFor(() => expect(window.localStorage.getItem(key)).not.toBeNull());
+
+    await userEvent.keyboard("{Escape}");
+    expect(window.localStorage.getItem(key)).toBeNull();
+  });
+
+  it("offers a stored draft instead of silently applying it", async () => {
+    // What a card-opened editor used to leave behind: the instructions blank.
+    window.localStorage.setItem(key, JSON.stringify({ name: "Kveikjuleikur", instructions: "" }));
+    atWidth(1400);
+    render(<ContentCreateModal {...props} initial={item} />);
+
+    expect(screen.getByText(/óvistaðar breytingar/)).toBeInTheDocument();
+    // The form shows the item as stored until the leader chooses the draft.
+    expect(screen.getByLabelText("Hvernig gengur þetta fyrir sig?")).toHaveValue("Kveikið eld.");
+
+    await userEvent.click(screen.getByRole("button", { name: "Byrja frá því sem er vistað" }));
+    expect(window.localStorage.getItem(key)).toBeNull();
+    expect(screen.queryByText(/óvistaðar breytingar/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Hvernig gengur þetta fyrir sig?")).toHaveValue("Kveikið eld.");
+  });
+
+  it("applies the stored draft when the leader asks for it", async () => {
+    window.localStorage.setItem(key, JSON.stringify({ name: "Kveikjuleikur 2" }));
+    atWidth(1400);
+    render(<ContentCreateModal {...props} initial={item} />);
+
+    expect(screen.getByLabelText(/Heiti hugmyndar/)).toHaveValue("Kveikjuleikur");
+    await userEvent.click(screen.getByRole("button", { name: "Halda áfram með þær" }));
+    expect(screen.getByLabelText(/Heiti hugmyndar/)).toHaveValue("Kveikjuleikur 2");
+  });
+
+  it("does not offer anything when there is no stored draft", () => {
+    atWidth(1400);
+    render(<ContentCreateModal {...props} initial={item} />);
+    expect(screen.queryByText(/óvistaðar breytingar/)).not.toBeInTheDocument();
   });
 });

@@ -13,7 +13,7 @@ interface ProgramSortProps {
 const SORT_OPTIONS: Record<SortOption, string> = {
   newest: "Nýjast fyrst",
   oldest: "Elst fyrst",
-  "most-liked": "Vinsælast",
+  "most-liked": "Flest rokkstig",
   alphabetical: "Stafrófsröð",
 };
 

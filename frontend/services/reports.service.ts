@@ -29,6 +29,8 @@ export type ReportStatus = "open" | "resolved" | "dismissed";
 export type ContentReport = {
   id: string;
   content_id: string;
+  /** Set when the report is about a comment under the item, not the item. */
+  comment_id?: string | null;
   reporter_id: string;
   reason: ReportReason;
   note: string | null;
@@ -60,6 +62,40 @@ export const REPORT_REASONS: ReportReason[] = [
   "other",
 ];
 
+/**
+ * What a comment can be reported for. `duplicate` and `wrong_type` describe an
+ * item and the backend refuses them on a comment (`COMMENT_REPORT_REASONS`);
+ * the other four keep their values, so escalation and the board are unchanged,
+ * and only the wording moves.
+ */
+export type CommentReportReason = Extract<
+  ReportReason,
+  "inappropriate" | "unsafe" | "spam" | "other"
+>;
+
+export const COMMENT_REPORT_REASON_LABEL: Record<CommentReportReason, string> = {
+  inappropriate: "Dónalegt eða særandi",
+  unsafe: "Getur verið hættulegt",
+  spam: "Auglýsing eða rusl",
+  other: "Annað",
+};
+
+/** Same order rule as `REPORT_REASONS`: `unsafe` second. */
+export const COMMENT_REPORT_REASONS: CommentReportReason[] = [
+  "inappropriate",
+  "unsafe",
+  "spam",
+  "other",
+];
+
+/** A reason as the reader of a report should see it, for an item or a comment. */
+export function reportReasonLabel(report: Pick<ContentReport, "reason" | "comment_id">): string {
+  if (report.comment_id && report.reason in COMMENT_REPORT_REASON_LABEL) {
+    return COMMENT_REPORT_REASON_LABEL[report.reason as CommentReportReason];
+  }
+  return REPORT_REASON_LABEL[report.reason];
+}
+
 export const REPORT_NOTE_MAX = 500;
 
 type GetToken = () => Promise<string | null>;
@@ -89,7 +125,7 @@ export async function reportContent(
  */
 export async function reportComment(
   commentId: string,
-  reason: ReportReason,
+  reason: CommentReportReason,
   note: string | undefined,
   getToken: GetToken
 ): Promise<ContentReport> {

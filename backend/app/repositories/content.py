@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.enums import ReviewState
 from app.models.comment import Comment
 from app.models.content import Content
 from app.models.like import UserLikedContent
@@ -16,11 +17,12 @@ from app.repositories.base import Repository
 
 @dataclass
 class ContentAccess:
-    """The three facts an access check needs about an item, in one query."""
+    """What an access check needs about an item, in one query."""
 
     workspace_id: UUID
     author_id: UUID
     hidden_at: dt.datetime | None
+    review_state: ReviewState = ReviewState.unreviewed
 
 
 @dataclass
@@ -30,7 +32,7 @@ class ContentStats:
     liked_by_me: bool
 
 
-def listable(model: Any) -> Any:
+def listable(model: Any, *, include_hidden: bool = False) -> Any:
     """
     The conditions every listing of bank content has to carry.
 
@@ -44,7 +46,15 @@ def listable(model: Any) -> Any:
 
     Take this rather than writing the pair by hand, so "list content" cannot be
     written without answering both.
+
+    `include_hidden=True` keeps hidden items and still drops deleted ones. It is
+    for Dagskrárstjórnarteymið only: decide it with `is_content_moderator()` at
+    the route, never from anything the caller sends. The response then carries
+    `hidden_at` so the frontend can mark those items instead of presenting them
+    as live.
     """
+    if include_hidden:
+        return model.deleted_at.is_(None)
     return (model.deleted_at.is_(None)) & (model.hidden_at.is_(None))
 
 
@@ -89,14 +99,6 @@ class ContentRepository(Repository):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 
-    async def get_author_id(self, content_id: UUID) -> UUID | None:
-        return await self.session.scalar(select(Content.author_id).where(Content.id == content_id))
-
-    async def get_workspace_id(self, content_id: UUID) -> UUID | None:
-        return await self.session.scalar(
-            select(Content.workspace_id).where(Content.id == content_id)
-        )
-
     async def get_name(self, content_id: UUID) -> str | None:
         return await self.session.scalar(select(Content.name).where(Content.id == content_id))
 
@@ -108,9 +110,9 @@ class ContentRepository(Repository):
         """
         row = (
             await self.session.execute(
-                select(Content.workspace_id, Content.author_id, Content.hidden_at).where(
-                    Content.id == content_id, Content.deleted_at.is_(None)
-                )
+                select(
+                    Content.workspace_id, Content.author_id, Content.hidden_at, Content.review_state
+                ).where(Content.id == content_id, Content.deleted_at.is_(None))
             )
         ).first()
-        return ContentAccess(row[0], row[1], row[2]) if row else None
+        return ContentAccess(row[0], row[1], row[2], row[3]) if row else None

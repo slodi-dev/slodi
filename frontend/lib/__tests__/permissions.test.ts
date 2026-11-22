@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { canCreateProgram, canDeleteProgram, canEditProgram } from "@/lib/permissions";
+import {
+  canCreateProgram,
+  canDeleteComment,
+  canDeleteProgram,
+  canEditComment,
+  canEditProgram,
+} from "@/lib/permissions";
 import { hasPermission, type User } from "@/services/users.service";
-import type { Program } from "@/services/programs.service";
+import type { ContentComment, Program } from "@/services/programs.service";
 import type { WorkspaceRole } from "@/services/workspaces.service";
 
 /**
@@ -16,7 +22,10 @@ const OTHER_ID = "22222222-2222-2222-2222-222222222222";
 const user = (id: string, permissions: User["permissions"] = "viewer") =>
   ({ id, permissions, name: "T", email: "t@test.com" }) as User;
 
-const item = (authorId: string) => ({ id: "c1", author_id: authorId }) as Program;
+const BANK_ID = "44444444-4444-4444-4444-444444444444";
+
+const item = (authorId: string, workspaceId = BANK_ID) =>
+  ({ id: "c1", author_id: authorId, workspace_id: workspaceId }) as Program;
 
 describe("who may change a bank item", () => {
   const cases: [string, string, WorkspaceRole | null, boolean][] = [
@@ -43,6 +52,12 @@ describe("who may change a bank item", () => {
     expect(canDeleteProgram(admin, item(AUTHOR_ID), null)).toBe(true);
   });
 
+  it("lets the author delete, but not edit, a rejected item", () => {
+    const rejected = { ...item(AUTHOR_ID), review_state: "rejected" } as Program;
+    expect(canEditProgram(user(AUTHOR_ID), rejected, "viewer")).toBe(false);
+    expect(canDeleteProgram(user(AUTHOR_ID), rejected, "viewer")).toBe(true);
+  });
+
   it("refuses a signed-out visitor", () => {
     expect(canEditProgram(null, item(AUTHOR_ID), "admin")).toBe(false);
   });
@@ -51,16 +66,56 @@ describe("who may change a bank item", () => {
 describe("what the moderation team may change", () => {
   const moderator = (id: string): User => ({ id, permissions: "moderator" }) as User;
 
-  it("lets a moderator edit and delete anybody's item", () => {
-    // Mirrors the backend's fourth clause in `check_content_edit_access`.
-    expect(canEditProgram(moderator("m1"), item(AUTHOR_ID), "viewer")).toBe(true);
-    expect(canDeleteProgram(moderator("m1"), item(AUTHOR_ID), "viewer")).toBe(true);
+  it("lets a moderator edit and delete anybody's item in the bank", () => {
+    expect(canEditProgram(moderator("m1"), item(AUTHOR_ID), "viewer", BANK_ID)).toBe(true);
+    expect(canDeleteProgram(moderator("m1"), item(AUTHOR_ID), "viewer", BANK_ID)).toBe(true);
+  });
+
+  it("does not let a moderator change someone else's item outside the bank", () => {
+    const elsewhere = item(AUTHOR_ID, OTHER_ID);
+    expect(canEditProgram(moderator("m1"), elsewhere, "viewer", BANK_ID)).toBe(false);
+    expect(canDeleteProgram(moderator("m1"), elsewhere, "viewer", BANK_ID)).toBe(false);
   });
 
   it("does not extend that to a plain member", () => {
     expect(
       canEditProgram({ id: "m2", permissions: "member" } as User, item(AUTHOR_ID), "viewer")
     ).toBe(false);
+  });
+});
+
+/** Mirrors `PATCH` and `DELETE /comments/{id}` in `backend/app/routers/comments.py`. */
+describe("who may edit or remove a comment", () => {
+  const COMMENTER_ID = "33333333-3333-3333-3333-333333333333";
+  const comment = { id: "k1", user_id: COMMENTER_ID } as ContentComment;
+
+  it("lets the commenter edit and remove their own comment", () => {
+    const commenter = user(COMMENTER_ID);
+    expect(canEditComment(commenter, comment)).toBe(true);
+    expect(canDeleteComment(commenter, comment, item(AUTHOR_ID), "viewer")).toBe(true);
+  });
+
+  it("lets the item's author remove, but not rewrite, a comment under it", () => {
+    const author = user(AUTHOR_ID);
+    expect(canEditComment(author, comment)).toBe(false);
+    expect(canDeleteComment(author, comment, item(AUTHOR_ID), "viewer")).toBe(true);
+  });
+
+  it("lets a moderator remove, but not rewrite, anybody's comment", () => {
+    const moderator = user(OTHER_ID, "moderator");
+    expect(canEditComment(moderator, comment)).toBe(false);
+    expect(canDeleteComment(moderator, comment, item(AUTHOR_ID), "viewer", BANK_ID)).toBe(true);
+  });
+
+  it("gives another member neither", () => {
+    const other = user(OTHER_ID);
+    expect(canEditComment(other, comment)).toBe(false);
+    expect(canDeleteComment(other, comment, item(AUTHOR_ID), "viewer")).toBe(false);
+  });
+
+  it("gives a signed-out visitor neither", () => {
+    expect(canEditComment(null, comment)).toBe(false);
+    expect(canDeleteComment(null, comment, item(AUTHOR_ID), "admin")).toBe(false);
   });
 });
 

@@ -1,6 +1,9 @@
 """
 Heiðursorðla HTTP routes for the Saturday-only Skátaþing 2026 event.
 
+Hidden behind ``HEIDURSORDLA_ENABLED`` (user decision 2026-10-11): app/main.py
+only registers this router when the setting is true, and it defaults to false.
+
 All four endpoints are auth-required (Auth0 JWT via :func:`get_current_user`).
 The hard login wall is also enforced one layer up by the Next.js Auth0
 middleware on ``/skatathing/*``, but the backend belt-and-braces it.

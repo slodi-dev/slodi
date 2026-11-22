@@ -5,6 +5,7 @@ import SkeletonCard from "@/components/ui/SkeletonCard";
 import ProgramCard from "./ProgramCard";
 import type { Program } from "@/services/programs.service";
 import styles from "./ProgramGrid.module.css";
+import { countIs, pluralIs } from "@/lib/format";
 
 interface ProgramGridProps {
   programs: Program[];
@@ -13,6 +14,8 @@ interface ProgramGridProps {
   onRetry?: () => void;
   /** Called when the user selects "Edit" on a card. */
   onEdit?: (program: Program) => void;
+  /** The card whose item is being fetched for editing; its edit button waits. */
+  loadingEditId?: string | null;
   /** Called when the user selects "Delete" on a card. */
   onDelete?: (program: Program) => void;
   /** Returns true if the user can edit the given program. */
@@ -35,6 +38,7 @@ export default function ProgramGrid({
   error,
   onRetry,
   onEdit,
+  loadingEditId = null,
   onDelete,
   canEdit,
   canDelete,
@@ -126,7 +130,8 @@ export default function ProgramGrid({
   return (
     <>
       <div role="status" aria-live="polite" aria-atomic="true" className="sl-sr-only">
-        {programs.length} atriði fundust
+        {countIs(programs.length, "atriði", "atriði")}{" "}
+        {pluralIs(programs.length, "fannst", "fundust")}
       </div>
       <ul className={styles.grid} aria-label="Dagskrá">
         {programs.map((program) => (
@@ -140,7 +145,10 @@ export default function ProgramGrid({
               author={program.author}
               like_count={program.like_count}
               liked_by_me={program.liked_by_me}
+              comment_count={program.comment_count}
+              content_type={program.content_type}
               created_at={program.created_at}
+              hidden_at={program.hidden_at}
               duration_min={program.duration_min}
               duration_max={program.duration_max}
               count_min={program.count_min}
@@ -151,6 +159,7 @@ export default function ProgramGrid({
               canEdit={canEdit ? canEdit(program) : false}
               canDelete={canDelete ? canDelete(program) : false}
               onEdit={onEdit ? () => onEdit(program) : undefined}
+              editLoading={loadingEditId === program.id}
               onDelete={onDelete ? () => onDelete(program) : undefined}
             />
           </li>

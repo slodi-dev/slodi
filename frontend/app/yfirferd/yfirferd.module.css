@@ -701,6 +701,8 @@
   color: hsl(var(--sl-color-text-tertiary));
 }
 .image {
+  width: auto;
+  height: auto;
   max-width: 100%;
   max-height: 18rem;
   border-radius: var(--sl-radius-card);
@@ -777,6 +779,19 @@
 }
 .reasonUrgent {
   color: hsl(var(--sl-color-error-text));
+}
+/* The reported comment's own words — the thing being judged. */
+.commentQuote {
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  border-left: 3px solid hsl(var(--sl-color-border));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-background-secondary));
+  font-size: var(--sl-text-body);
+  line-height: var(--sl-line-height-body);
+  color: hsl(var(--sl-color-text-primary));
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .reviewNote {
   margin: 0;
@@ -1191,4 +1206,16 @@
   font-size: var(--sl-text-body-sm);
   color: hsl(var(--sl-color-text-tertiary));
   font-variant-numeric: tabular-nums;
+}
+
+/* A button with a smaller second line under its label. */
+.btnStacked {
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.15;
+}
+.btnSub {
+  font-size: 0.75em;
+  font-weight: 400;
+  opacity: 0.85;
 }

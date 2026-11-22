@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { DevlogMeta } from "@/lib/devlogs";
+import { formatIcelandicDate } from "@/lib/format";
 import styles from "./devlog.module.css";
 
 type Props = {
@@ -139,14 +140,8 @@ export default function DevlogClient({ initialItems, total, pageSize }: Props) {
   );
 }
 
-const DATE_FORMATTER = new Intl.DateTimeFormat("is-IS", { dateStyle: "long" });
-
+// Not Intl: Chrome has no is-IS data, so the browser and the server (which
+// rendered this page) would print different dates and hydration would fail.
 function formatDate(d: string) {
-  try {
-    const dt = new Date(d);
-    if (isNaN(dt.getTime())) return d;
-    return DATE_FORMATTER.format(dt);
-  } catch {
-    return d;
-  }
+  return formatIcelandicDate(d) || d;
 }

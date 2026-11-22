@@ -1,0 +1,51 @@
+{
+  // ── Python (backend/) ─────────────────────────────────────────────────────
+  // Testing panel runs pytest from backend/, which picks up the markers and
+  // asyncio settings in backend/pyproject.toml and the dev backend/.env.
+  // Integration tests need Docker running (testcontainers).
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.cwd": "${workspaceFolder}/backend",
+  "python.testing.pytestArgs": ["tests"],
+  "python.envFile": "${workspaceFolder}/backend/.env",
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
+  },
+  "ruff.nativeServer": "on",
+  "mypy-type-checker.cwd": "${workspaceFolder}/backend",
+  "mypy-type-checker.args": ["app"],
+
+  // ── TypeScript (frontend/) ────────────────────────────────────────────────
+  // Vitest extension: unit tests (and, once added, Storybook story tests) from
+  // frontend/vitest.config.ts. Playwright extension: journeys from
+  // frontend/playwright.config.ts — they need the e2e stack, so start it with
+  // "Journeys: all, keep stack up" in Run and Debug first.
+  "vitest.rootConfig": "frontend/vitest.config.ts",
+  "playwright.reuseBrowser": true,
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "eslint.workingDirectories": ["frontend"],
+  "prettier.prettierPath": "frontend/node_modules/prettier",
+  "[typescript][typescriptreact][javascript][json][jsonc][css][markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ── Workspace ─────────────────────────────────────────────────────────────
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "frontend/.next": true,
+    "frontend/storybook-static": true,
+    "frontend/e2e-results": true,
+    "backend/.venv": true,
+    ".claude/worktrees": true
+  },
+  "cSpell.words": ["Slodi", "Slóði"]
+}

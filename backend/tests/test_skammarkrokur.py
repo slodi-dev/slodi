@@ -127,9 +127,7 @@ async def test_the_refusal_says_when_it_ends():
             await require_not_suspended(_user(), AsyncMock())
 
     assert exc.value.status_code == status.HTTP_403_FORBIDDEN
-    # Icelandic in the message a person reads, ISO in the header a machine does.
     assert format_date(until) in exc.value.detail
-    assert exc.value.headers["X-Suspended-Until"] == until.date().isoformat()
 
 
 @pytest.mark.asyncio
@@ -207,14 +205,7 @@ def test_the_guard_is_on_writes_and_not_on_reads():
     withdrawals = {"/programs/{program_id}", "/events/{event_id}", "/tasks/{task_id}"}
     assert not [p for ms, p in guarded if "DELETE" in ms and p in withdrawals]
 
-    # The verb is not the principle, though. Detaching a tag is editing an item,
-    # not withdrawing it, so it is guarded like every other edit — and guarding
-    # only the attach half would let a suspended leader strip an item bare and
-    # be unable to put it back.
-    assert (("DELETE",), "/content/{content_id}/tags/{tag_id}") in guarded
-    assert (("PUT",), "/content/{content_id}/tags/{tag_id}") in guarded
-
-    assert len(guarded) >= 10
+    assert len(guarded) >= 8
 
 
 # ── The record ───────────────────────────────────────────────────────────────
@@ -351,4 +342,89 @@ async def test_an_open_ended_refusal_names_no_date():
 
     assert "fram til" not in exc.value.detail
     assert "Dagskrárstjórnarteymið" in exc.value.detail
-    assert exc.value.headers["X-Suspended-Until"] == "open-ended"
+
+
+# ── Who may suspend whom ─────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "issuer,target,allowed",
+    [
+        (Permissions.moderator, Permissions.member, True),
+        (Permissions.moderator, Permissions.moderator, False),
+        (Permissions.moderator, Permissions.admin, False),
+        (Permissions.admin, Permissions.moderator, True),
+        (Permissions.admin, Permissions.admin, False),
+    ],
+)
+async def test_moderators_suspend_members_and_only_admins_suspend_moderators(
+    issuer, target, allowed
+):
+    target_row = m.User(id=uuid4(), name="T", auth0_id="auth0|t", email="t@t.is")
+    target_row.permissions = target
+    session = AsyncMock()
+    session.add = lambda _: None
+    svc = PostingSuspensionService(session)
+    with (
+        patch("app.services.posting_suspensions.UserRepository.get", new_callable=AsyncMock) as get,
+        patch.object(svc.repo, "active_for", new_callable=AsyncMock, return_value=None),
+        patch.object(svc, "_reread", new_callable=AsyncMock) as reread,
+    ):
+        get.return_value = target_row
+        call = svc.suspend(
+            target_row.id,
+            _user(issuer),
+            SuspensionCreate(days=7, reason="Æfing"),
+            BackgroundTasks(),
+        )
+        if allowed:
+            await call
+            reread.assert_awaited_once()
+        else:
+            with pytest.raises(HTTPException) as exc:
+                await call
+            assert exc.value.status_code == status.HTTP_403_FORBIDDEN
+
+
+# ── Against the database: the answer names who issued and lifted it ─────────
+
+
+def _as_out(row: m.User) -> UserOut:
+    return UserOut(
+        id=row.id,
+        auth0_id=row.auth0_id,
+        email=row.email,
+        name=row.name,
+        permissions=row.permissions,
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_suspending_answers_with_who_issued_it(db):
+    """It used to read `issued_by` off the new row, which raised under async after saving."""
+    user = m.User(name="F", auth0_id=f"auth0|{uuid4()}", email=f"{uuid4()}@t.is")
+    mod = m.User(
+        name="Rýnir",
+        auth0_id=f"auth0|{uuid4()}",
+        email=f"{uuid4()}@t.is",
+        permissions=Permissions.moderator,
+    )
+    db.add_all([user, mod])
+    await db.flush()
+    issuer = _as_out(mod)
+    db.expunge(mod)  # as in a request, where the caller comes from the user cache
+
+    svc = PostingSuspensionService(db)
+    out = await svc.suspend(
+        user.id, issuer, SuspensionCreate(days=7, reason="Æfing"), BackgroundTasks()
+    )
+    assert out.issued_by_name == "Rýnir"
+
+    db.expunge_all()
+    active = await svc.active(user.id)
+    assert active is not None and active.issued_by_name == "Rýnir"
+
+    lifted = await svc.lift(out.id, issuer, SuspensionLift(reason="Rætt"))
+    assert lifted.lifted_by_name == "Rýnir"

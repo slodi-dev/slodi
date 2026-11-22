@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,7 +19,13 @@ class Tag(SoftDeleteMixin, Base):
     __tablename__ = "tags"
     __table_args__ = (
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_tag_name_min"),
-        UniqueConstraint("name", name="uq_tag_name"),
+        # Unique among live tags only, so a deleted tag's name can be reused.
+        Index(
+            "uq_tag_name_active",
+            "name",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
     )
 
     # Columns

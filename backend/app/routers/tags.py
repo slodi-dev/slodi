@@ -7,32 +7,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import (
-    check_content_edit_access,
-    get_current_user,
-    require_not_suspended,
-    require_permission,
-)
+from app.core.auth import require_permission
 from app.core.cache import tags_cache
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
-from app.schemas.content import ContentListOut
-from app.schemas.tag import (
-    ContentTagOut,
-    TagCreate,
-    TagOut,
-    TagUpdate,
-)
-from app.schemas.user import Permissions, UserOut
-from app.services.content import ContentService
+from app.domain.enums import Permissions
+from app.schemas.tag import TagCreate, TagOut, TagUpdate
+from app.schemas.user import UserOut
 from app.services.tags import TagService
 
 router = APIRouter(tags=["tags"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-
-DEFAULT_Q = Query(None, min_length=2, description="Case-insensitive search in tag names")
-
-# ----- tags -----
+# The vocabulary is shared by the whole bank, so changing it is Dagskrárstjórnarteymið's job.
+Moderator = Annotated[UserOut, Depends(require_permission(Permissions.moderator))]
 
 
 @router.get("/tags", response_model=list[TagOut])
@@ -40,197 +27,43 @@ async def list_tags(
     session: SessionDep,
     request: Request,
     response: Response,
-    q: str | None = DEFAULT_Q,
+    q: str | None = Query(None, min_length=2, description="Search tag names, any case"),
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[TagOut]:
-    svc = TagService(session)
-
-    # Serve unfiltered requests from cache (apply pagination in-memory)
-    if q is None:
-        cached = await tags_cache.get()
-        if cached is not None:
-            total = len(cached)
-            sliced = cached[offset : offset + limit]
-            add_pagination_headers(
-                response=response, request=request, total=total, limit=limit, offset=offset
-            )
-            return sliced
-
-    # DB path — filtered query or cache miss
-    total = await svc.count(q=q)
-    items = await svc.list(q=q, limit=limit, offset=offset)
-
-    # Populate cache when we fetched the full unfiltered list
-    if q is None and offset == 0 and len(items) == total:
-        await tags_cache.set(items)
-
+    # The full list is cached and paged in memory; a search goes to the database.
+    cached = await tags_cache.get() if q is None else None
+    if cached is not None:
+        total, items = len(cached), cached[offset : offset + limit]
+    else:
+        svc = TagService(session)
+        total = await svc.count(q=q)
+        items = await svc.list_all(q=q, limit=limit, offset=offset)
+        if q is None and offset == 0 and len(items) == total:
+            await tags_cache.set(items)
     add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
+        response=response, request=request, total=total, limit=limit, offset=offset
     )
     return items
 
 
 @router.post("/tags", response_model=TagOut, status_code=status.HTTP_201_CREATED)
-async def create_tag(
-    session: SessionDep,
-    body: TagCreate,
-    response: Response,
-    current_user: UserOut = Depends(require_permission(Permissions.member)),
-) -> TagOut:
-    svc = TagService(session)
-    tag = await svc.create(body)
-    response.headers["Location"] = f"/tags/{tag.id}"
+async def create_tag(session: SessionDep, body: TagCreate, _moderator: Moderator) -> TagOut:
+    tag = await TagService(session).create(body)
     await tags_cache.invalidate()
     return tag
 
 
-@router.get("/tags/{tag_id}", response_model=TagOut)
-async def get_tag(
-    session: SessionDep,
-    tag_id: UUID,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
-) -> TagOut:
-    svc = TagService(session)
-    result = await svc.get(tag_id)
-    response.headers["Cache-Control"] = "private, max-age=300"
-    return result
-
-
 @router.patch("/tags/{tag_id}", response_model=TagOut)
 async def update_tag(
-    session: SessionDep,
-    tag_id: UUID,
-    body: TagUpdate,
-    current_user: UserOut = Depends(require_permission(Permissions.member)),
+    session: SessionDep, tag_id: UUID, body: TagUpdate, _moderator: Moderator
 ) -> TagOut:
-    svc = TagService(session)
-    updated = await svc.update(tag_id, body)
+    updated = await TagService(session).update(tag_id, body)
     await tags_cache.invalidate()
     return updated
 
 
 @router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_tag(
-    session: SessionDep,
-    tag_id: UUID,
-    current_user: UserOut = Depends(require_permission(Permissions.member)),
-) -> None:
-    svc = TagService(session)
-    await svc.delete(tag_id)
+async def delete_tag(session: SessionDep, tag_id: UUID, _moderator: Moderator) -> None:
+    await TagService(session).delete(tag_id)
     await tags_cache.invalidate()
-    return None
-
-
-# ----- associations -----
-
-
-@router.get("/content/{content_id}/tags", response_model=list[TagOut])
-async def list_content_tags(
-    session: SessionDep,
-    request: Request,
-    response: Response,
-    content_id: UUID,
-    current_user: UserOut = Depends(get_current_user),
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[TagOut]:
-    svc = TagService(session)
-    total = await svc.count_content_tags(content_id)
-    items = await svc.list_content_tags(content_id, limit=limit, offset=offset)
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
-
-
-@router.get("/tags/{tag_id}/content", response_model=list[ContentListOut])
-async def list_tagged_content(
-    session: SessionDep,
-    request: Request,
-    response: Response,
-    tag_id: UUID,
-    current_user: UserOut = Depends(get_current_user),
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[ContentListOut]:
-    svc = TagService(session)
-    total = await svc.count_tagged_content(tag_id)
-    items = await svc.list_tagged_content(tag_id, current_user.id, limit=limit, offset=offset)
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
-
-
-async def _assert_may_retag(content_id: UUID, current_user: UserOut, session: AsyncSession) -> None:
-    """
-    Changing an item's tags is changing the item, so it uses the item's rule.
-
-    This used to be `author or platform admin`, spelled out here and nowhere
-    else. It disagreed with `check_content_edit_access` in both directions that
-    mattered: a **moderator** was refused, because the check compared
-    `permissions != Permissions.admin` and a moderator is a rank below — so
-    Dagskrárstjórnarteymið could hide an item and suspend its author but not fix
-    a mis-tag, which is the curation the rank exists for — and a **workspace
-    admin** was refused on content in their own workspace.
-    """
-    svc = ContentService(session)
-    await check_content_edit_access(
-        await svc.get_workspace_id(content_id),
-        await svc.get_author_id(content_id),
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
-
-
-@router.put(
-    "/content/{content_id}/tags/{tag_id}",
-    response_model=ContentTagOut,
-    status_code=status.HTTP_201_CREATED,
-)
-async def add_content_tag(
-    session: SessionDep,
-    content_id: UUID,
-    tag_id: UUID,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
-    _suspension: UserOut = Depends(require_not_suspended),
-) -> ContentTagOut:
-    await _assert_may_retag(content_id, current_user, session)
-
-    svc = TagService(session)
-    created, tag = await svc.add_content_tag(content_id, tag_id)
-    if not created:
-        response.status_code = status.HTTP_200_OK
-    response.headers["Location"] = f"/content/{content_id}/tags/{tag_id}"
-    return tag
-
-
-@router.delete("/content/{content_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_content_tag(
-    session: SessionDep,
-    content_id: UUID,
-    tag_id: UUID,
-    current_user: UserOut = Depends(get_current_user),
-    _suspension: UserOut = Depends(require_not_suspended),
-) -> None:
-    await _assert_may_retag(content_id, current_user, session)
-
-    svc = TagService(session)
-    await svc.remove_content_tag(content_id, tag_id)
-    return None

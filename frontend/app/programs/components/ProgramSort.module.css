@@ -36,7 +36,7 @@
   font-family: inherit;
   color: hsl(var(--sl-color-text-primary));
   background: hsl(var(--sl-color-surface));
-  border: 1px solid hsl(var(--sl-color-border) / var(--sl-primitive-opacity-30));
+  border: 1px solid hsl(var(--sl-input-border));
   border-radius: var(--sl-radius-input);
   cursor: pointer;
   outline: none;
@@ -47,7 +47,7 @@
 }
 
 .sortSelect:hover {
-  border-color: hsl(var(--sl-color-border));
+  border-color: hsl(var(--sl-input-border-hover));
   background: hsl(var(--sl-color-background-secondary));
 }
 

@@ -57,7 +57,7 @@
 }
 
 .filterToggle:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 42%));
+  outline: 2px solid hsl(var(--sl-color-primary, 142 50% 32%));
   outline-offset: 2px;
 }
 
@@ -78,7 +78,7 @@
   font-weight: var(--sl-font-weight-semibold, 600);
   line-height: 1;
   color: hsl(var(--sl-color-text-inverse, 0 0% 100%));
-  background: hsl(var(--sl-color-primary, 142 50% 42%));
+  background: hsl(var(--sl-color-primary, 142 50% 32%));
   border-radius: var(--sl-radius-pill, 9999px);
   margin-left: var(--sl-spacing-gap-xs, 4px);
 }
@@ -149,6 +149,10 @@
 
   .page {
     padding: var(--sl-spacing-inset-md, 12px) var(--sl-spacing-inset-sm, 8px);
+    /* The "Bæta við" button is fixed full-width along the bottom here
+       (ProgramsHeader's .fabAnchor): 56px tall, 16px off the edge. Without
+       room to scroll past it, it sat on top of the page buttons. */
+    padding-bottom: calc(56px + 16px + 24px + env(safe-area-inset-bottom));
   }
 }
 
@@ -176,5 +180,15 @@
   border-left: 4px solid hsl(var(--sl-color-warning));
   border-radius: var(--sl-radius-sm);
   background: hsl(var(--sl-color-warning-subtle));
+  color: hsl(var(--sl-color-text-primary));
+}
+
+/* The card's item could not be fetched, so the editor did not open. */
+.editLoadError {
+  margin: 0 0 var(--sl-spacing-md);
+  padding: var(--sl-spacing-sm) var(--sl-spacing-md);
+  border-left: 4px solid hsl(var(--sl-color-error));
+  border-radius: var(--sl-radius-sm);
+  background: hsl(var(--sl-color-error-subtle));
   color: hsl(var(--sl-color-text-primary));
 }

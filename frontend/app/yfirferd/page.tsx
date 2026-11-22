@@ -20,30 +20,39 @@ import {
   fetchReviewQueue,
   resolveReport,
   reviewContent,
-  setContentHidden,
 } from "@/services/moderation.service";
-import { REPORT_REASON_LABEL } from "@/services/reports.service";
+import { reportReasonLabel } from "@/services/reports.service";
+import { deleteComment } from "@/services/comments.service";
+import CommentReportPane from "./CommentReportPane";
+import DecisionModal, { type AuthorAction } from "./DecisionModal";
 import ReviewDetailPane from "./ReviewDetailPane";
 import QueueProgress from "./QueueProgress";
 import QueueEmpty from "./QueueEmpty";
 import styles from "./yfirferd.module.css";
 import { cn } from "@/lib/util";
-import { formatIcelandicDateShort } from "@/lib/format";
+import { countIs, formatIcelandicDateShort, formatIcelandicNumber, pluralIs } from "@/lib/format";
 
 type Tab = "content" | "reports";
-type Action = "approve" | "reject" | "hide" | "unhide";
+type Action = "approve" | "needs_changes" | "reject";
+
+const ACTION_STATE: Record<Action, ReviewState> = {
+  approve: "approved",
+  needs_changes: "needs_changes",
+  reject: "rejected",
+};
 
 /**
  * One decision a reviewer can take back. A sweep at one keystroke per item will
  * mis-key sooner or later, and without a way back the only remedy is
  * remembering what the previous state was.
  */
-type UndoableAction = { item: ReviewQueueItem; hadBeenHidden: boolean };
+type UndoableAction = { item: ReviewQueueItem };
 
 /** The views, in the order the segmented control offers them. */
 const VIEWS: { id: ReviewState | typeof ALL_STATES; label: string }[] = [
   { id: "unreviewed", label: REVIEW_STATE_LABEL.unreviewed },
   { id: "approved", label: REVIEW_STATE_LABEL.approved },
+  { id: "needs_changes", label: REVIEW_STATE_LABEL.needs_changes },
   { id: "rejected", label: REVIEW_STATE_LABEL.rejected },
   { id: ALL_STATES, label: "Allt" },
 ];
@@ -75,6 +84,12 @@ export default function YfirferdPage() {
   const [error, setError] = useState<string | null>(null);
   const [cursor, setCursor] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // The note in the pane's composer, which every email to the author sends.
+  const [note, setNote] = useState("");
+  const [deciding, setDeciding] = useState<{ item: ReviewQueueItem; action: AuthorAction } | null>(
+    null
+  );
+  const [sending, setSending] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   // The item named in the URL on arrival. Read once: after that the cursor
   // owns the selection, and re-reading would fight it.
@@ -150,10 +165,17 @@ export default function YfirferdPage() {
   // on the new last row, not jump to the top of a fifty-item sweep.
   const index = Math.min(cursor, Math.max(rows.length - 1, 0));
   const active = rows[index];
+  // A comment report is judged on its own pane, so it loads no item.
+  const activeCommentReport =
+    tab === "reports" && (active as ReportQueueItem | undefined)?.comment_id
+      ? (active as ReportQueueItem)
+      : null;
   const cursorContentId =
     tab === "content"
       ? (active as ReviewQueueItem | undefined)?.id
-      : (active as ReportQueueItem | undefined)?.content_id;
+      : activeCommentReport
+        ? undefined
+        : (active as ReportQueueItem | undefined)?.content_id;
   const activeContentId = linkedId ?? cursorContentId;
 
   useEffect(() => {
@@ -184,6 +206,11 @@ export default function YfirferdPage() {
     window.history.replaceState(null, "", `?${params}`);
   }, [activeContentId]);
 
+  // A note is about one item, so it never carries over to the next.
+  useEffect(() => {
+    setNote("");
+  }, [activeContentId]);
+
   // The reading pane follows the cursor.
   useEffect(() => {
     if (!activeContentId) {
@@ -212,30 +239,10 @@ export default function YfirferdPage() {
   }, [activeContentId, getToken]);
 
   const act = useCallback(
-    async (item: ReviewQueueItem, action: Action) => {
-      let note: string | undefined;
-      if (action === "reject" || action === "hide") {
-        const answer =
-          window.prompt(
-            action === "reject"
-              ? `Af hverju er „${item.name}“ hafnað? Höfundur sér þetta.`
-              : `Af hverju er „${item.name}“ falið?`
-          ) ?? undefined;
-        // A rejection needs a reason — the backend refuses one without.
-        if (action === "reject" && !answer?.trim()) return;
-        note = answer;
-      }
+    async (item: ReviewQueueItem, action: Action, note?: string) => {
       setBusyId(item.id);
       try {
-        if (action === "hide") await setContentHidden(item.id, true, note, getToken);
-        else if (action === "unhide") await setContentHidden(item.id, false, note, getToken);
-        else
-          await reviewContent(
-            item.id,
-            action === "approve" ? "approved" : "rejected",
-            note,
-            getToken
-          );
+        await reviewContent(item.id, ACTION_STATE[action], note, getToken);
 
         // The count goes in the announcement, because the pile going down is
         // the one thing a reviewer cannot see when their eyes are on the pane.
@@ -244,14 +251,13 @@ export default function YfirferdPage() {
           `${
             {
               approve: `„${item.name}“ samþykkt.`,
+              needs_changes: `„${item.name}“ sent til lagfæringar.`,
               reject: `„${item.name}“ hafnað.`,
-              hide: `„${item.name}“ falið.`,
-              unhide: `„${item.name}“ birt aftur.`,
             }[action]
-          } ${left} bíða.`
+          } ${formatIcelandicNumber(left)} ${pluralIs(left, "bíður", "bíða")}.`
         );
         setDoneThisSession((n) => n + 1);
-        setUndoable({ item, hadBeenHidden: item.hidden_at !== null });
+        setUndoable({ item });
         // The row leaves the list only when it no longer matches the view —
         // in the audit views it stays, with its new state.
         if (filters.review_state === "unreviewed") {
@@ -270,12 +276,9 @@ export default function YfirferdPage() {
 
   const undo = useCallback(async () => {
     if (!undoable) return;
-    const { item, hadBeenHidden } = undoable;
+    const { item } = undoable;
     setBusyId(item.id);
     try {
-      // Both halves, because hiding also marks something reviewed — undoing one
-      // and not the other leaves it out of the queue *and* out of the bank.
-      if (!hadBeenHidden) await setContentHidden(item.id, false, undefined, getToken);
       await reviewContent(item.id, "unreviewed", undefined, getToken);
       setAnnouncement(`Afturkallað: „${item.name}“ er aftur í yfirferð.`);
       setDoneThisSession((n) => Math.max(0, n - 1));
@@ -317,7 +320,7 @@ export default function YfirferdPage() {
         // timestamp, and the pane should show what was actually stored.
         setDetail(await fetchReviewDetail(detail.id, getToken));
         setAnnouncement(
-          visibility === "to_author" ? "Ábending send höfundi." : "Athugasemd vistuð innanhúss."
+          visibility === "to_author" ? "Ábending send höfundi." : "Athugasemd vistuð."
         );
       } catch {
         setAnnouncement("Ekki tókst að vista athugasemdina.");
@@ -325,6 +328,30 @@ export default function YfirferdPage() {
     },
     [detail, getToken]
   );
+
+  const askToSend = useCallback(
+    (item: ReviewQueueItem, action: AuthorAction) => {
+      if (!note.trim()) {
+        setAnnouncement("Skrifaðu athugasemd til höfundar fyrst.");
+        return;
+      }
+      setDeciding({ item, action });
+    },
+    [note]
+  );
+
+  const confirmSend = useCallback(async () => {
+    if (!deciding) return;
+    setSending(true);
+    try {
+      if (deciding.action === "to_author") await comment(note, "to_author");
+      else await act(deciding.item, deciding.action, note);
+      setNote("");
+      setDeciding(null);
+    } finally {
+      setSending(false);
+    }
+  }, [deciding, note, comment, act]);
 
   const closeReport = useCallback(
     async (report: ReportQueueItem, status: "resolved" | "dismissed") => {
@@ -340,6 +367,35 @@ export default function YfirferdPage() {
       }
     },
     [getToken]
+  );
+
+  /* Takes the comment down and closes the report in one step. Removing is a
+     soft delete, so the report would otherwise stay open on a comment nobody
+     can see. Every loaded report on the same comment closes with it — three
+     people flagging one remark is one decision, not three. */
+  const removeReportedComment = useCallback(
+    async (report: ReportQueueItem) => {
+      if (!report.comment_id) return;
+      if (!window.confirm("Fjarlægja athugasemdina? Það er ekki hægt að afturkalla það héðan.")) {
+        return;
+      }
+      setBusyId(report.id);
+      try {
+        await deleteComment(report.comment_id, getToken);
+        const same = reports.filter((r) => r.comment_id === report.comment_id);
+        await Promise.all(
+          same.map((r) => resolveReport(r.id, "resolved", "Athugasemd fjarlægð", getToken))
+        );
+        const closed = new Set(same.map((r) => r.id));
+        setReports((rs) => rs.filter((x) => !closed.has(x.id)));
+        setAnnouncement("Athugasemd fjarlægð og tilkynning afgreidd.");
+      } catch {
+        setAnnouncement("Ekki tókst að fjarlægja athugasemdina.");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [getToken, reports]
   );
 
   const onKeyDown = useCallback(
@@ -363,11 +419,11 @@ export default function YfirferdPage() {
       } else if (active && tab === "content") {
         const item = active as ReviewQueueItem;
         if (key === "s") void act(item, "approve");
-        else if (key === "h") void act(item, "reject");
-        else if (key === "f") void act(item, item.hidden_at ? "unhide" : "hide");
+        else if (key === "h") askToSend(item, "reject");
+        else if (key === "l") askToSend(item, "needs_changes");
       }
     },
-    [rows.length, active, tab, act, undo, undoable]
+    [rows.length, active, tab, act, askToSend, undo, undoable]
   );
 
   if (isLoading) return <p className={styles.state}>Hleð…</p>;
@@ -397,8 +453,8 @@ export default function YfirferdPage() {
           {[
             { keys: ["j", "k"], label: "hreyfa" },
             { keys: ["s"], label: "samþykkja" },
+            { keys: ["l"], label: "þarfnast lagfæringar" },
             { keys: ["h"], label: "hafna" },
-            { keys: ["f"], label: "fela" },
             { keys: ["z"], label: "afturkalla" },
           ].map(({ keys, label }) => (
             <span key={label} className={styles.shortcutsItem}>
@@ -610,9 +666,8 @@ export default function YfirferdPage() {
                     stamp={formatIcelandicDateShort(item.created_at)}
                     flags={[
                       item.open_report_count > 0
-                        ? `${item.open_report_count} tilkynning${item.open_report_count === 1 ? "" : "ar"}`
+                        ? countIs(item.open_report_count, "tilkynning", "tilkynningar")
                         : null,
-                      item.hidden_at ? "Falið" : null,
                       // Only once there is a decision behind the name — a
                       // stale reviewer on an unreviewed item reads as done.
                       item.review_state !== "unreviewed" && item.reviewed_by_name
@@ -633,11 +688,25 @@ export default function YfirferdPage() {
                       setLinkedId(null);
                       setCursor(i);
                     }}
-                    label={`Tilkynning um ${report.content_name}`}
-                    title={report.content_name}
-                    line={REPORT_REASON_LABEL[report.reason]}
+                    // A comment report names the comment, not the item: titled
+                    // with the item, it read as a complaint about the item.
+                    label={
+                      report.comment_id
+                        ? `Tilkynning um athugasemd frá ${report.comment_author_name ?? "óþekktum"} við ${report.content_name}`
+                        : `Tilkynning um ${report.content_name}`
+                    }
+                    title={
+                      report.comment_id
+                        ? `Athugasemd frá ${report.comment_author_name ?? "óþekktum"}`
+                        : report.content_name
+                    }
+                    line={reportReasonLabel(report)}
                     stamp={formatIcelandicDateShort(report.created_at)}
-                    flags={[report.content_author_name]}
+                    flags={
+                      report.comment_id
+                        ? [`við „${report.content_name}“`]
+                        : [report.content_author_name]
+                    }
                   />
                 ))}
           </ul>
@@ -664,23 +733,46 @@ export default function YfirferdPage() {
         </div>
 
         <div className={styles.detailPane}>
-          <ReviewDetailPane
-            detail={detail}
-            loading={detailLoading}
-            failed={detailError}
-            busy={busyId !== null}
-            onComment={comment}
-            shareUrl={
-              activeContentId && typeof window !== "undefined"
-                ? `${window.location.origin}${window.location.pathname}?efni=${activeContentId}`
-                : null
-            }
-            onAct={(action) => {
-              if (!detail) return;
-              void act(detail as ReviewQueueItem, action);
-            }}
+          {activeCommentReport ? (
+            <CommentReportPane
+              report={activeCommentReport}
+              busy={busyId !== null}
+              onRemove={() => void removeReportedComment(activeCommentReport)}
+              onDismiss={() => void closeReport(activeCommentReport, "dismissed")}
+            />
+          ) : (
+            <ReviewDetailPane
+              detail={detail}
+              loading={detailLoading}
+              failed={detailError}
+              busy={busyId !== null}
+              note={note}
+              onNoteChange={setNote}
+              onSaveNote={() => {
+                void comment(note, "internal").then(() => setNote(""));
+              }}
+              shareUrl={
+                activeContentId && typeof window !== "undefined"
+                  ? `${window.location.origin}${window.location.pathname}?efni=${activeContentId}`
+                  : null
+              }
+              onAct={(action) => {
+                if (!detail) return;
+                if (action === "approve") void act(detail as ReviewQueueItem, action);
+                else askToSend(detail as ReviewQueueItem, action);
+              }}
+            />
+          )}
+          <DecisionModal
+            action={deciding?.action ?? null}
+            authorName={deciding?.item.author_name ?? ""}
+            note={note}
+            sending={sending}
+            onClose={() => setDeciding(null)}
+            onConfirm={() => void confirmSend()}
           />
-          {tab === "reports" && active && (
+
+          {tab === "reports" && active && !activeCommentReport && (
             <div className={styles.reportActions}>
               {/* Labelled, because two unlabelled action rows leave a reviewer
                   guessing which one closes the report and which one judges the

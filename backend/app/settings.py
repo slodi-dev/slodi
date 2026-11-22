@@ -1,11 +1,13 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _split_emails(raw: str) -> list[str]:
+    return [e.strip().lower() for e in raw.split(",") if e.strip()]
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=(".env", ".env.docker"), env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Environment configuration
     env: str = Field(..., alias="ENV")
@@ -26,32 +28,20 @@ class Settings(BaseSettings):
     auth0_algorithms: list[str] = Field(["RS256"], alias="AUTH0_ALGORITHMS")
     auth_debug: bool = Field(False, alias="AUTH0_DEBUG")
 
-    # Seed: emails that are always promoted to admin on `make seed`
-    admin_emails: str = Field("", alias="ADMIN_EMAILS")
-    # Where an `unsafe` report is escalated to. Falls back to ADMIN_EMAILS when
-    # unset, because a safeguarding report with nowhere to go is the one failure
-    # mode this must not have.
-    moderation_emails: str = Field("", alias="MODERATION_EMAILS")
-    # Seed: emails promoted to `moderator` on `make seed` — Dagskrárstjórnarteymið.
-    moderator_emails: str = Field("", alias="MODERATOR_EMAILS")
+    # Journey tests only: replaces Auth0's signing keys, allowed only when ENV is e2e
+    auth_test_jwks_file: str | None = Field(None, alias="AUTH_TEST_JWKS_FILE")
 
-    # HMAC key for signed game run tokens. REQUIRED outside development —
-    # run_tokens._secret() raises when it is unset and ENV is not a dev value.
-    #
-    # It is deliberately NOT derived from another credential. An earlier version
-    # derived it from DB_PASSWORD, which made every token handed out by the
-    # unauthenticated /games/{slug}/runs endpoint a free offline oracle for
-    # brute-forcing the database password. See run_tokens._secret().
-    #
-    # Production sets itself: deploy-backend.yml generates a value into
-    # backend/.env.docker when that file has none, and never overwrites one.
-    #
-    # Changing it invalidates every run token still parked in a player's
-    # sessionStorage, up to the 12h TTL. Those runs come back as a rejected
-    # signature and are retried rather than lost, but the players affected will
-    # see an error. The same applies mid-rolling-deploy if one worker has the
-    # variable and another does not, so set it everywhere in the same release.
+    # Seed: emails promoted to admin / moderator on `make seed`
+    admin_emails: str = Field("", alias="ADMIN_EMAILS")
+    moderator_emails: str = Field("", alias="MODERATOR_EMAILS")
+    # Unsafe-report escalation; falls back to ADMIN_EMAILS
+    moderation_emails: str = Field("", alias="MODERATION_EMAILS")
+
+    # Game run token signing key, required outside development
     game_token_secret: str = Field("", alias="GAME_TOKEN_SECRET")
+
+    # Feature flags
+    heidursordla_enabled: bool = Field(False, alias="HEIDURSORDLA_ENABLED")
 
     # CORS configuration
     cors_origins: list[str] = Field(["http://localhost:3000"], alias="CORS_ORIGINS")
@@ -59,7 +49,10 @@ class Settings(BaseSettings):
     # Resend (email) configuration
     resend_api_key: str | None = Field(None, alias="RESEND_API_KEY")
     resend_from_email: str = Field("Slóði <noreply@slodi.is>", alias="RESEND_FROM_EMAIL")
-    resend_max_recipients: int = Field(50, alias="RESEND_MAX_RECIPIENTS")
+
+    # Public base URLs for links in outgoing email
+    public_site_url: str = Field("https://slodi.is", alias="PUBLIC_SITE_URL")
+    public_api_url: str = Field("https://api.slodi.is", alias="PUBLIC_API_URL")
 
     # Cache configuration
     cache_backend: str = Field("memory", alias="CACHE_BACKEND")  # "memory" or "redis"
@@ -80,21 +73,23 @@ class Settings(BaseSettings):
 
     @property
     def admin_email_list(self) -> list[str]:
-        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
+        return _split_emails(self.admin_emails)
 
     @property
     def moderator_email_list(self) -> list[str]:
-        return [e.strip().lower() for e in self.moderator_emails.split(",") if e.strip()]
+        return _split_emails(self.moderator_emails)
 
     @property
     def moderation_email_list(self) -> list[str]:
-        """Who hears about an `unsafe` report, within the day.
+        return _split_emails(self.moderation_emails) or self.admin_email_list
 
-        Falls back to the admins rather than to nothing: an escalation that
-        silently goes nowhere is worse than one that reaches the wrong inbox.
-        """
-        addresses = [e.strip().lower() for e in self.moderation_emails.split(",") if e.strip()]
-        return addresses or self.admin_email_list
+    @model_validator(mode="after")
+    def _test_jwks_only_in_e2e(self) -> "Settings":
+        if self.auth_test_jwks_file and self.env != "e2e":
+            raise ValueError(
+                f"AUTH_TEST_JWKS_FILE is only accepted when ENV is 'e2e' (ENV is {self.env!r})"
+            )
+        return self
 
     def model_post_init(self, __context: object) -> None:
         # Production database URL

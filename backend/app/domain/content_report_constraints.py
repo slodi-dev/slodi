@@ -1,12 +1,9 @@
-"""Length limits for a content report.
+from app.domain.enums import ReportReason
 
-Shared by the model and the schemas so the database and the API cannot disagree
-about what fits.
-"""
+# `duplicate` and `wrong_type` only make sense for an item.
+COMMENT_REPORT_REASONS = frozenset(
+    {ReportReason.inappropriate, ReportReason.unsafe, ReportReason.spam, ReportReason.other}
+)
 
 NOTE_MAX = 500
-"""What the reporter writes. Long enough to explain, short enough to read in a
-sweep of fifty."""
-
 RESOLUTION_NOTE_MAX = 500
-"""What the reviewer writes when closing it."""

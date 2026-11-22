@@ -38,7 +38,7 @@
 }
 
 .clearAllButton:focus-visible {
-  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 42%));
+  outline: 2px solid hsl(var(--sl-color-border-focus, 142 50% 32%));
   outline-offset: 2px;
 }
 

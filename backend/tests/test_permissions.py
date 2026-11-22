@@ -1,6 +1,6 @@
 """Tests for permission enforcement on admin-only endpoints."""
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user
 from app.core.db import get_session
+from app.domain.enums import Permissions
 from app.main import create_app
 
 
@@ -31,36 +32,20 @@ def viewer_client(mock_db_session, viewer_user):
 # ── Platform admin permission checks ─────────────────────────────────────────
 
 
-def test_viewer_cannot_create_user(viewer_client):
-    response = viewer_client.post(
-        "/users",
-        json={"auth0_id": "auth0|123", "email": "new@example.com", "name": "New User"},
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
 def test_viewer_cannot_list_admin_users(viewer_client):
     response = viewer_client.get("/users/admin/list")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_viewer_cannot_send_email(viewer_client):
+def test_viewer_cannot_create_an_email_draft(viewer_client):
     response = viewer_client.post(
-        "/emails/send",
-        json={
-            "recipients": ["someone@example.com"],
-            "subject": "Hello",
-            "html": "<p>Hi</p>",
-        },
+        "/emails/drafts", json={"subject": "Halló", "template": "newsletter"}
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_viewer_cannot_broadcast(viewer_client):
-    response = viewer_client.post(
-        "/emails/broadcast",
-        json={"subject": "Newsletter", "html": "<p>Content</p>"},
-    )
+def test_viewer_cannot_send_an_email_draft(viewer_client):
+    response = viewer_client.post(f"/emails/drafts/{uuid4()}/send")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -177,3 +162,96 @@ def test_the_self_update_schema_has_no_permissions_field():
     parsed = UserUpdateSelf.model_validate({"name": "Ný", "permissions": "admin"})
     assert not hasattr(parsed, "permissions")
     assert "permissions" not in parsed.model_dump(exclude_unset=True)
+
+
+# ── Platform admin is never granted or removed through the API ───────────────
+
+
+def _user_row(permissions):
+    from types import SimpleNamespace
+
+    from app.domain.enums import Permissions
+
+    return SimpleNamespace(id=uuid4(), permissions=Permissions(permissions))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("current", "requested"),
+    [("member", "admin"), ("moderator", "admin"), ("admin", "member"), ("admin", "viewer")],
+)
+async def test_an_admin_cannot_grant_or_remove_platform_admin(current, requested):
+    """Platform admin comes from ADMIN_EMAILS only, so one admin can't mint or demote another."""
+    from fastapi import HTTPException
+
+    from app.schemas.user import UserUpdateAdmin
+    from app.services.users import UserService
+
+    session = AsyncMock()
+    svc = UserService(session)
+    row = _user_row(current)
+    svc.repo.get = AsyncMock(return_value=row)
+
+    with pytest.raises(HTTPException) as exc:
+        await svc.update(row.id, UserUpdateAdmin(permissions=requested))
+
+    assert exc.value.status_code == status.HTTP_403_FORBIDDEN
+    assert row.permissions.value == current
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_an_admin_can_still_change_other_ranks():
+    from app.schemas.user import UserUpdateAdmin
+    from app.services.users import UserService
+
+    session = AsyncMock()
+    svc = UserService(session)
+    row = _user_row("member")
+    svc.repo.get = AsyncMock(return_value=row)
+
+    with patch("app.services.users.UserOut.model_validate", return_value=row):
+        await svc.update(row.id, UserUpdateAdmin(permissions="moderator"))
+
+    assert row.permissions.value == "moderator"
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_a_user_cannot_be_created_as_platform_admin():
+    from fastapi import HTTPException
+
+    from app.schemas.user import UserCreate
+    from app.services.users import UserService
+
+    session = AsyncMock()
+    with pytest.raises(HTTPException) as exc:
+        await UserService(session).create(
+            UserCreate(auth0_id="auth0|123", email="ny@test.is", name="Ný", permissions="admin")
+        )
+
+    assert exc.value.status_code == status.HTTP_403_FORBIDDEN
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "method,path", [("post", "/tags"), ("patch", "/tags/{id}"), ("delete", "/tags/{id}")]
+)
+def test_only_moderators_change_the_shared_tag_vocabulary(
+    mock_db_session, viewer_user, method, path
+):
+    member = viewer_user.model_copy(update={"permissions": Permissions.member})
+    app = create_app()
+
+    async def override_get_session():
+        yield mock_db_session
+
+    async def override_get_current_user():
+        return member
+
+    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    call = getattr(TestClient(app), method)
+    kwargs = {} if method == "delete" else {"json": {"name": "Nýtt"}}
+    response = call(path.format(id=uuid4()), **kwargs)
+    assert response.status_code == status.HTTP_403_FORBIDDEN

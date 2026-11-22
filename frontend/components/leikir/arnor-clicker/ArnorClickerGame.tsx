@@ -62,6 +62,7 @@ import {
 } from "./gameData";
 import { safeLocalStorage, safeSessionStorage } from "@/lib/safe-storage";
 import styles from "./arnorClicker.module.css";
+import { formatIcelandicDecimal, formatIcelandicNumber } from "@/lib/format";
 
 const GAME = "arnor-clicker";
 const SCORES_URL = `/api/leikir/${GAME}/scores`;
@@ -810,7 +811,7 @@ export default function ArnorClickerGame() {
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="m12 2 3 6.9 7.6.6-5.8 5 1.8 7.4L12 18l-6.4 3.9 1.8-7.4-5.8-5 7.6-.6z" />
                 </svg>
-                <span className={styles.pkN}>{tsCur.toLocaleString("is-IS")}</span>
+                <span className={styles.pkN}>{formatIcelandicNumber(tsCur)}</span>
                 <small>Þingstig</small>
               </div>
             )}
@@ -853,10 +854,7 @@ export default function ArnorClickerGame() {
             )}
             {combo > 0 && (
               <span className={styles.comboChip} style={{ "--chair-c": chair.color } as Vars}>
-                Samfella ×
-                {comboMult(combo, comboCfg.step).toLocaleString("is-IS", {
-                  maximumFractionDigits: 1,
-                })}
+                Samfella ×{formatIcelandicDecimal(comboMult(combo, comboCfg.step), 1)}
                 <small>
                   {combo}/{comboCfg.cap}
                 </small>
@@ -930,7 +928,7 @@ export default function ArnorClickerGame() {
                     >
                       <span className={styles.rk}>{i + 1}</span>
                       <span className={styles.who}>{s.user_name}</span>
-                      <span className={styles.sc}>{s.score.toLocaleString("is-IS")}</span>
+                      <span className={styles.sc}>{formatIcelandicNumber(s.score)}</span>
                     </li>
                   );
                 })}
@@ -988,7 +986,7 @@ export default function ArnorClickerGame() {
                   </li>
                   <li>
                     <span>Varanleg uppörvun</span>
-                    <span>+{Math.round(prestigeBonusPct(tsCur)).toLocaleString("is-IS")}%</span>
+                    <span>+{formatIcelandicNumber(Math.round(prestigeBonusPct(tsCur)))}%</span>
                   </li>
                 </ol>
               </div>
@@ -1141,7 +1139,7 @@ export default function ArnorClickerGame() {
             </button>
             <div className={styles.sub}>
               {canPrestige
-                ? `Þú færð ${prestigeGain} Þingstig · +${Math.round(prestigeBonusGainPct(tsCur, prestigeGain)).toLocaleString("is-IS")}% varanlega`
+                ? `Þú færð ${prestigeGain} Þingstig · +${formatIcelandicNumber(Math.round(prestigeBonusGainPct(tsCur, prestigeGain)))}% varanlega`
                 : "Safnaðu fleiri fundarstig til að fresta þinginu"}
             </div>
           </div>

@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import type { ScoreEntry } from "@/lib/leikir-games";
 import styles from "./GamePodium.module.css";
+import { formatIcelandicNumber } from "@/lib/format";
 
 type State =
   | { status: "loading" }
   | { status: "empty" }
   | { status: "error" }
   | { status: "ready"; entries: ScoreEntry[] };
-
-const numberFormatter = new Intl.NumberFormat("is-IS");
 
 /**
  * Compact top-3 podium for a scored game, fed by the public
@@ -69,7 +68,7 @@ export default function GamePodium({ slug }: { slug: string }) {
             >
               <span className={styles.medal}>{i + 1}</span>
               <span className={styles.name}>{entry.user_name}</span>
-              <span className={styles.score}>{numberFormatter.format(entry.score)}</span>
+              <span className={styles.score}>{formatIcelandicNumber(entry.score)}</span>
             </li>
           ))}
         </ol>

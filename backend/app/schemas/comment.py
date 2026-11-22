@@ -15,14 +15,6 @@ BodyStr = Annotated[
 ]
 
 
-class CommentBase(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    body: BodyStr
-    user_id: UUID
-    content_id: UUID
-
-
 class CommentCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -37,9 +29,12 @@ class CommentUpdate(BaseModel):
     body: BodyStr
 
 
-class CommentOut(CommentBase):
+class CommentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    body: BodyStr
+    user_id: UUID
+    content_id: UUID
     id: UUID
     created_at: dt.datetime
     author_name: str

@@ -4,14 +4,7 @@ import datetime as dt
 from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    StringConstraints,
-    ValidationInfo,
-    field_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from typing_extensions import Self
 
 from app.domain.content_constraints import (
@@ -48,6 +41,7 @@ LocationStr = Annotated[
 ImageStr = Annotated[
     str, StringConstraints(min_length=0, max_length=IMG_MAX, strip_whitespace=True)
 ]
+NonNegInt = Annotated[int, Field(ge=0)]
 
 
 class ContentBase(BaseModel):
@@ -56,68 +50,29 @@ class ContentBase(BaseModel):
     description: DescStr | None = None
     equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
-    duration_min: int | None = None
-    duration_max: int | None = None
+    duration_min: NonNegInt | None = None
+    duration_max: NonNegInt | None = None
     age: list[AgeGroup] | None = None
     location: LocationStr | None = None
-    count_min: int | None = None
-    count_max: int | None = None
-    price: int | None = None
-    prep_time_min: int | None = None
-    prep_time_max: int | None = None
+    count_min: NonNegInt | None = None
+    count_max: NonNegInt | None = None
+    price: NonNegInt | None = None
+    prep_time_min: NonNegInt | None = None
+    prep_time_max: NonNegInt | None = None
     image: ImageStr | None = None
     media: dict[str, Any] | None = None
     tag_names: list[str] | None = None
 
-    @field_validator(
-        "count_min",
-        "count_max",
-        "duration_min",
-        "duration_max",
-        "prep_time_min",
-        "prep_time_max",
-        "price",
-    )
-    @classmethod
-    def validate_non_negative_ints(cls, v: int | None, info: ValidationInfo) -> int | None:
-        if v is not None and v < 0:
-            raise ValueError(f"{info.field_name} must be >= 0")
-        return v
-
 
 class ContentCreate(ContentBase):
-    """Fields accepted when creating content.
-
-    `author_id` and `created_at` are **server-owned**: every create route
-    overwrites whatever the body carried. The default_factory below is for
-    internal callers (seeding, copies), not a promise that a client may set it.
-
-    `created_at` matters now that anyone with an account can submit to the bank.
-    The review queue is ordered oldest-first, so a backdated item would jump
-    ahead of everything a moderator has not yet looked at.
-    """
-
-    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
-
     name: NameStr
+    # Server-owned: create routes set both through `authored_by`.
     author_id: UUID | None = None
     created_at: dt.datetime = Field(default_factory=get_current_datetime)
 
 
 class ContentUpdate(ContentBase):
-    """Fields a PATCH may change.
-
-    Deliberately carries **no `author_id`**. `ContentUpdate` used to inherit it
-    from `ContentBase`, and the update services apply the patch with `setattr`
-    over `model_dump(exclude_unset=True)` — so a body could hand an item's
-    authorship to any other user. That was reachable only by an editor while the
-    bank was closed; now that anyone with an account can create and edit their
-    own submissions, it would let someone launder a submission, and its strikes,
-    onto another leader.
-    """
-
-    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
-
+    # No `author_id`: the update services `setattr` every field in the patch.
     name: NameStr | None = None
 
 
@@ -128,8 +83,6 @@ class ContentListOut(BaseModel):
 
     id: UUID
     name: NameStr
-    # Which kind it is. The bank lists all three now, so a card cannot tell a
-    # Verkefni from a Viðburður without being told.
     content_type: ContentType
     author_id: UUID
     author_name: str
@@ -152,6 +105,8 @@ class ContentListOut(BaseModel):
     comment_count: int = 0
     like_count: int = 0
     liked_by_me: bool = False
+    # Non-null only where a moderator's listing keeps hidden items in.
+    hidden_at: dt.datetime | None = None
 
     @classmethod
     def from_row(cls, obj: Any, stats: ContentStats) -> Self:
@@ -162,22 +117,9 @@ class ContentOut(ContentListOut):
     """Full content details, including author info and comments."""
 
     author: UserOutLimited
-    #: Only ever filled in for the item's own author and for moderators. A
-    #: leader needs to know whether their submission was looked at; nobody else
-    #: needs to know how the team judged somebody else's idea. The route strips
-    #: these rather than the schema, because the schema cannot see who is asking.
+    # Only for the item's author and moderators; routes strip them via `strip_review_fields`.
     review_state: ReviewState | None = None
     review_note: str | None = None
-    #: Set when a moderator has unlisted the item. Carried on the same terms as
-    #: the review fields: the author is told their item was hidden, so the item
-    #: has to be able to say so, and a stranger is not shown the timestamp of a
-    #: decision about somebody else.
-    hidden_at: dt.datetime | None = None
-    equipment: list[str] | None = None
     instructions: InstructionsStr | None = None
     media: dict[str, Any] | None = None
     comments: list[CommentOut] = []
-
-
-UserOutLimited.model_rebuild()
-TagOut.model_rebuild()

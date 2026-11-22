@@ -1,115 +1,28 @@
 # ruff: noqa: B008
 from __future__ import annotations
 
-import datetime as dt
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
-    apply_review_visibility,
-    assert_hidden_item_readable,
-    check_content_create_access,
-    check_content_edit_access,
-    check_workspace_access,
+    check_content_create,
+    check_content_edit,
     get_current_user,
     require_not_suspended,
+    strip_review_fields,
 )
 from app.core.db import get_session
-from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
-from app.schemas.event import EventCreate, EventListOut, EventOut, EventUpdate
+from app.schemas.event import EventCreate, EventOut, EventUpdate
 from app.schemas.user import UserOut
-from app.schemas.workspace import WorkspaceRole
+from app.services.content import authored_by
 from app.services.events import EventService
-from app.utils import get_current_datetime
 
 router = APIRouter(tags=["events"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-
-DEFAULT_DATE_FROM = Query(None)
-DEFAULT_DATE_TO = Query(None)
-
-# ----- collections -----
-
-
-@router.get("/workspaces/{workspace_id}/events", response_model=list[EventListOut])
-async def list_workspace_events(
-    session: SessionDep,
-    workspace_id: UUID,
-    request: Request,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
-    date_from: dt.datetime | None = DEFAULT_DATE_FROM,
-    date_to: dt.datetime | None = DEFAULT_DATE_TO,
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[EventListOut]:
-    await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
-    )
-    svc = EventService(session)
-    total = await svc.count_events_for_workspace(workspace_id, date_from=date_from, date_to=date_to)
-    items = await svc.list_for_workspace(
-        workspace_id,
-        current_user.id,
-        date_from=date_from,
-        date_to=date_to,
-        limit=limit,
-        offset=offset,
-    )
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
-
-
-@router.get(
-    "/workspaces/{workspace_id}/programs/{program_id}/events",
-    response_model=list[EventListOut],
-)
-async def list_program_events(
-    session: SessionDep,
-    workspace_id: UUID,
-    program_id: UUID,
-    request: Request,
-    response: Response,
-    current_user: UserOut = Depends(get_current_user),
-    date_from: dt.datetime | None = DEFAULT_DATE_FROM,
-    date_to: dt.datetime | None = DEFAULT_DATE_TO,
-    limit: Limit = 50,
-    offset: Offset = 0,
-) -> list[EventListOut]:
-    await check_workspace_access(
-        workspace_id, current_user, session, minimum_role=WorkspaceRole.viewer
-    )
-    svc = EventService(session)
-    total = await svc.count_events_for_program(
-        workspace_id, program_id, date_from=date_from, date_to=date_to
-    )
-    items = await svc.list_for_program(
-        workspace_id,
-        program_id,
-        current_user.id,
-        date_from=date_from,
-        date_to=date_to,
-        limit=limit,
-        offset=offset,
-    )
-    add_pagination_headers(
-        response=response,
-        request=request,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-    return items
 
 
 @router.post(
@@ -119,77 +32,19 @@ async def list_program_events(
 )
 async def create_workspace_event(
     session: SessionDep,
-    response: Response,
     workspace_id: UUID,
     body: EventCreate,
-    current_user: UserOut = Depends(get_current_user),
-    _suspension: UserOut = Depends(require_not_suspended),
-    _: None = Depends(user_rate_limit(20, 60)),
-) -> EventOut:
-    await check_content_create_access(workspace_id, current_user, session)
-    svc = EventService(session)
-    # author_id and created_at are server-owned — see ContentCreate.
-    event_data = body.model_copy(
-        update={"author_id": current_user.id, "created_at": get_current_datetime()}
-    )
-    event = await svc.create_under_workspace(workspace_id, event_data)
-    response.headers["Location"] = f"/events/{event.id}"
-    return event
-
-
-@router.post(
-    "/programs/{program_id}/events",
-    response_model=EventOut,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_program_event(
-    session: SessionDep,
     response: Response,
-    program_id: UUID,
-    body: EventCreate,
     current_user: UserOut = Depends(get_current_user),
     _suspension: UserOut = Depends(require_not_suspended),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> EventOut:
-    from app.services.programs import ProgramService  # Avoid circular import
-
-    prg_svc = ProgramService(session)
-    program = await prg_svc.get(program_id, current_user.id)
-    await check_workspace_access(
-        program.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.editor,
-        hide_from_non_members=True,
+    await check_content_create(workspace_id, current_user, session)
+    event = await EventService(session).create_under_workspace(
+        workspace_id, authored_by(body, current_user.id)
     )
-    svc = EventService(session)
-    # author_id and created_at are server-owned — see ContentCreate.
-    event_data = body.model_copy(
-        update={"author_id": current_user.id, "created_at": get_current_datetime()}
-    )
-    event = await svc.create_under_program(program_id, event_data)
-    response.headers["Location"] = f"/events/{event.id}"
+    response.headers["Location"] = f"/content/{event.id}"
     return event
-
-
-# ----- item endpoints -----
-
-
-@router.get("/events/{event_id}", response_model=EventOut)
-async def get_event(
-    session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
-) -> EventOut:
-    svc = EventService(session)
-    event = await svc.get(event_id, current_user.id, include_hidden=True)
-    await check_workspace_access(
-        event.workspace_id,
-        current_user,
-        session,
-        minimum_role=WorkspaceRole.viewer,
-        hide_from_non_members=True,
-    )
-    assert_hidden_item_readable(event, current_user)
-    return apply_review_visibility(event, current_user)
 
 
 @router.patch("/events/{event_id}", response_model=EventOut)
@@ -200,30 +55,14 @@ async def update_event(
     current_user: UserOut = Depends(get_current_user),
     _suspension: UserOut = Depends(require_not_suspended),
 ) -> EventOut:
-    svc = EventService(session)
-    event = await svc.get(event_id, current_user.id)
-    await check_content_edit_access(
-        event.workspace_id,
-        event.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
-    return apply_review_visibility(await svc.update(event_id, body, current_user.id), current_user)
+    await check_content_edit(event_id, current_user, session, attaching=body.program_id is not None)
+    event = await EventService(session).update(event_id, body, current_user.id)
+    return strip_review_fields(event, current_user)
 
 
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_event(
     session: SessionDep, event_id: UUID, current_user: UserOut = Depends(get_current_user)
 ) -> None:
-    svc = EventService(session)
-    event = await svc.get(event_id, current_user.id)
-    await check_content_edit_access(
-        event.workspace_id,
-        event.author_id,
-        current_user,
-        session,
-        hide_from_non_members=True,
-    )
-    await svc.delete(event_id)
-    return None
+    await check_content_edit(event_id, current_user, session, deleting=True)
+    await EventService(session).delete(event_id)

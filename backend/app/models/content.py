@@ -10,7 +10,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    text,
 )
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -71,23 +70,9 @@ class Content(SoftDeleteMixin, Base):
         ),
         CheckConstraint("price >= 0", name="ck_content_price_nonneg"),
         CheckConstraint(f"char_length(name) >= {NAME_MIN}", name="ck_content_name_min"),
-        # Declared here, not only in their migrations, so autogenerate does not
-        # propose dropping them and create_all builds them for tests.
-        # The review board's query: the unreviewed queue, oldest first.
         Index("ix_content_review_state_created_at", "review_state", "created_at"),
-        # Every bank listing filters hidden rows out, the same way it filters deleted.
         Index("ix_content_hidden_at", "hidden_at"),
-        # Counting an author's strikes reads these two together.
         Index("ix_content_author_id_review_state", "author_id", "review_state"),
-        # Only content somebody acted against; serves the board's per-row
-        # strike count, which the index above cannot (see b52f8c1a94d7).
-        Index(
-            "ix_content_author_strikes",
-            "author_id",
-            postgresql_where=text(
-                "deleted_at IS NULL AND (hidden_at IS NOT NULL OR review_state = 'rejected')"
-            ),
-        ),
     )
 
     # Columns
@@ -143,8 +128,7 @@ class Content(SoftDeleteMixin, Base):
         nullable=False,
         default=ReviewState.unreviewed,
     )
-    """Whether Dagskrárstjórnarteymið has looked at this. **Not a visibility
-    flag** — see `hidden_at`."""
+    """`needs_changes` and `rejected` items are hidden; see `HIDDEN_REVIEW_STATES`."""
 
     reviewed_by_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
@@ -153,17 +137,10 @@ class Content(SoftDeleteMixin, Base):
         SADateTime(timezone=True), nullable=True
     )
     review_note: Mapped[str | None] = mapped_column(String(REVIEW_NOTE_MAX), nullable=True)
-    """Why it was rejected, in words the author can act on."""
+    """What the author needs to fix, or why it was rejected."""
 
     hidden_at: Mapped[dt.datetime | None] = mapped_column(SADateTime(timezone=True), nullable=True)
-    """Set when a moderator takes something out of the bank.
-
-    Deliberately the same shape as `deleted_at` on `SoftDeleteMixin`, because it
-    means the same thing: not listed, not gone. Kept **separate from
-    `review_state`** — the bank publishes on submit and reviews afterwards, so
-    an unreviewed item is live and a rejected one is not automatically hidden.
-    Fusing them would make approving the only way to make something visible,
-    which turns a 3-person queue into a bottleneck on every submission."""
+    """When the item left the bank; set together with a hidden `review_state`."""
     author_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("users.id"),
@@ -176,15 +153,8 @@ class Content(SoftDeleteMixin, Base):
     )
 
     # Relationships
-    author: Mapped[User] = relationship(
-        back_populates="authored_content",
-        foreign_keys=[author_id],
-        primaryjoin="Content.author_id == User.id",
-    )
-    reviewed_by: Mapped[User | None] = relationship(
-        foreign_keys=[reviewed_by_id],
-        primaryjoin="Content.reviewed_by_id == User.id",
-    )
+    author: Mapped[User] = relationship(back_populates="authored_content", foreign_keys=[author_id])
+    reviewed_by: Mapped[User | None] = relationship(foreign_keys=[reviewed_by_id])
     workspace: Mapped[Workspace] = relationship(
         "Workspace",
         back_populates="content_items",
@@ -240,5 +210,5 @@ class Content(SoftDeleteMixin, Base):
 
     @property
     def tags(self) -> list[Tag]:
-        """Return list of Tag objects from content_tags relationship"""
-        return [ct.tag for ct in self.content_tags]
+        """Return the live (not deleted) Tag objects from content_tags"""
+        return [ct.tag for ct in self.content_tags if ct.tag.deleted_at is None]

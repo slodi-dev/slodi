@@ -10,7 +10,7 @@ import type { ContentReport, ReportReason } from "@/services/reports.service";
  * objected to. An item can be in both.
  */
 
-export type ReviewState = "unreviewed" | "approved" | "rejected";
+export type ReviewState = "unreviewed" | "approved" | "needs_changes" | "rejected";
 export type ContentType = "program" | "event" | "task";
 
 export type ReviewQueueItem = {
@@ -94,7 +94,6 @@ export const ALL_STATES = "all";
 
 export type ReviewFilters = {
   review_state?: ReviewState | typeof ALL_STATES;
-  hidden?: boolean;
   content_type?: ContentType;
   reported?: boolean;
   search?: string;
@@ -108,6 +107,7 @@ export type ReviewFilters = {
 export const REVIEW_STATE_LABEL: Record<ReviewState, string> = {
   unreviewed: "Óyfirfarið",
   approved: "Samþykkt",
+  needs_changes: "Þarfnast lagfæringar",
   rejected: "Hafnað",
 };
 
@@ -137,7 +137,6 @@ export async function fetchReviewQueue(
   // it. Omitting it entirely gets the unreviewed default, which is not the
   // same thing either.
   params.set("review_state", filters.review_state ?? "unreviewed");
-  if (filters.hidden !== undefined) params.set("hidden", String(filters.hidden));
   if (filters.content_type) params.set("content_type", filters.content_type);
   if (filters.reported) params.set("reported", "true");
   if (filters.search?.trim()) params.set("search", filters.search.trim());
@@ -165,6 +164,10 @@ export async function fetchReviewDetail(
 export type ReportQueueItem = ContentReport & {
   content_name: string;
   content_author_name: string;
+  /** Set when the report is about a comment: the board shows its words. */
+  comment_body?: string | null;
+  comment_author_name?: string | null;
+  comment_created_at?: string | null;
 };
 
 export async function fetchOpenReports(
@@ -196,41 +199,7 @@ export async function reviewContent(
   );
 }
 
-export async function setContentHidden(
-  contentId: string,
-  hidden: boolean,
-  note: string | undefined,
-  getToken: GetToken
-): Promise<ReviewQueueItem> {
-  return fetchWithAuth<ReviewQueueItem>(
-    buildApiUrl(`/moderation/content/${contentId}/hidden`),
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hidden, note: note?.trim() || null }),
-    },
-    getToken
-  );
-}
-
-export async function fetchAuthorStrikes(authorId: string, getToken: GetToken): Promise<number> {
-  const r = await fetchWithAuth<{ strikes: number }>(
-    buildApiUrl(`/moderation/authors/${authorId}/strikes`),
-    {},
-    getToken
-  );
-  return r.strikes;
-}
-
-/**
- * How much is waiting on the board — the sidebar badge.
- *
- * `/moderation/queue` reports the same number in `X-Unreviewed-Total`, and the
- * Yfirferð page should keep reading it from there: it already has the response
- * and can move the badge after a review without another round trip. The sidebar
- * renders on every authenticated page and has no such response, so it asks for
- * the number on its own rather than pulling a page of rows to count them.
- */
+/** The sidebar's count, without fetching a page of the board. */
 export async function fetchUnreviewedCount(getToken: GetToken): Promise<number> {
   const r = await fetchWithAuth<{ count: number }>(
     buildApiUrl("/moderation/unreviewed-count"),

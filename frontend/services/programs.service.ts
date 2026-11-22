@@ -55,7 +55,7 @@ export type Program = {
    * submission was looked at; nobody else needs to know how the team judged
    * somebody else's idea.
    */
-  review_state?: "unreviewed" | "approved" | "rejected" | null;
+  review_state?: "unreviewed" | "approved" | "needs_changes" | "rejected" | null;
   review_note?: string | null;
   /**
    * Set when a moderator has unlisted the item. Carried on the same terms as
@@ -193,12 +193,12 @@ function buildContentParams(query: ContentQuery, limit: number, offset: number):
 export async function fetchPrograms(
   workspaceId: string,
   getToken: () => Promise<string | null>,
-  options: { query?: ContentQuery; limit?: number; offset?: number } = {}
+  options: { query?: ContentQuery; limit?: number; offset?: number; signal?: AbortSignal } = {}
 ): Promise<{ items: Program[]; total: number | null }> {
-  const { query = {}, limit = 24, offset = 0 } = options;
+  const { query = {}, limit = 24, offset = 0, signal } = options;
   const params = buildContentParams(query, limit, offset);
   const url = buildApiUrl(`/workspaces/${workspaceId}/content?${params.toString()}`);
-  return fetchPageWithAuth<Program>(url, { method: "GET" }, getToken);
+  return fetchPageWithAuth<Program>(url, { method: "GET", signal }, getToken);
 }
 
 /**
@@ -227,7 +227,8 @@ export async function fetchContentFacets(
  */
 export async function fetchProgramById(
   id: string,
-  getToken: () => Promise<string | null>
+  getToken: () => Promise<string | null>,
+  { fresh = false, refreshCache = false }: { fresh?: boolean; refreshCache?: boolean } = {}
 ): Promise<Program> {
   // `/content/{id}`, not `/programs/{id}`, for the same reason the listing
   // moved: the latter selects `Program`, which under joined-table inheritance
@@ -238,6 +239,15 @@ export async function fetchProgramById(
     url,
     {
       method: "GET",
+      // The endpoint is cacheable for a minute (`private, max-age=60`). An
+      // editor must start from what is stored *now*, and must not leave a
+      // pre-edit copy in the browser cache for the item page to show after
+      // the save — so `fresh` neither reads nor writes the HTTP cache.
+      ...(fresh ? { cache: "no-store" as const } : {}),
+      // `refreshCache` skips the cached copy but stores the new one, so the
+      // next ordinary read (a new tab, a back button) sees it — used after a
+      // like, which changes `like_count` and `liked_by_me` under the cache.
+      ...(refreshCache && !fresh ? { cache: "reload" as const } : {}),
     },
     getToken
   );
@@ -354,44 +364,28 @@ export async function updateBankContent(
   );
 }
 
-/** @deprecated Pass the content type — use `updateBankContent`. */
-export async function updateProgram(
+/**
+ * Delete a bank item of any kind.
+ *
+ * Same trap as `updateBankContent`: `/programs/{id}` only finds rows whose
+ * content_type is "program", so deleting a Verkefni or Viðburður through it
+ * 404'd. Each subtype is deleted through its own route.
+ */
+export async function deleteBankContent(
+  type: BankContentType,
   id: string,
-  input: ProgramUpdateInput,
   getToken: () => Promise<string | null>
-): Promise<Program> {
-  const { tagNames, ...rest } = input;
-  const body = tagNames !== undefined ? { ...rest, tag_names: tagNames } : rest;
-  const url = buildApiUrl(`/programs/${id}`);
-  return fetchWithAuth<Program>(
-    url,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    },
-    getToken
-  );
+): Promise<void> {
+  const url = buildApiUrl(`/${CREATE_ROUTE[type]}/${id}`);
+  await fetchWithAuth<void>(url, { method: "DELETE" }, getToken);
 }
 
-/**
- * Delete a program
- * Requires authentication
- */
+/** @deprecated Pass the content type — use `deleteBankContent`. */
 export async function deleteProgram(
   id: string,
   getToken: () => Promise<string | null>
 ): Promise<void> {
-  const url = buildApiUrl(`/programs/${id}`);
-  await fetchWithAuth(
-    url,
-    {
-      method: "DELETE",
-    },
-    getToken
-  );
+  return deleteBankContent("program", id, getToken);
 }
 
 /**

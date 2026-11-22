@@ -49,7 +49,7 @@ const COIN_R = 10;
 const COIN_VALUE = 125; // adds 25 display points (score / 5)
 
 const C = {
-  green500: "hsl(142 50% 42%)",
+  green500: "hsl(142 50% 32%)",
   green400: "hsl(142 50% 55%)",
   green600: "hsl(142 50% 35%)",
   forest500: "hsl(160 42% 32%)",

@@ -1,18 +1,19 @@
 {
   "welcome": {
-    "heading": "Verið velkomin í Slóða, {user_name}",
-    "intro": "Við tökum þér fagnandi í nýja dagskrárbankann, sem er svo miklu meira en bara dagskrárbanki. Gríptu tækifærið og skoðaðu það sem kerfið hefur upp á að bjóða.",
-    "bullet_1": "Skipulegðu dagskrá fyrir fundi og útilegur",
-    "bullet_2": "Deildu og skipulagðu með samforingjunum þínum",
-    "bullet_3": "HEIMSYFIRRÁÐ!",
+    "heading": "Hæ, {user_name}!",
+    "intro": "Gaman að sjá þig á Slóða! Við erum spennt að fá þig í hópinn og hlökkum til að hjálpa þér að nýta Slóða til fulls.",
+    "bullet_1": "Fáðu hugmyndir að dagskrá fyrir fundi og útilegur",
+    "bullet_2": "Skipuleggðu dagskrá fyrir fundi og útilegur með samforingjunum þínum",
+    "bullet_3": "Settu saman fundi, dagskrárhringi, útilegur eða jafnvel Landsmót í vinnubekknum",
+    "bullet_4": "Skrifaðu niður endurmat á sama stað og dagskráin er geymd",
     "cta_label": "Byrja",
-    "closing": "Ef upp vakna einhverjar spurningar ekki hika við að heyra í okkur slodi@slodi.is"
+    "closing": "Endilega sendu okkur póst á slodi@slodi.is ef þú hefur einhverjar spurningar eða ábendingar. Við hlökkum til að heyra frá þér!"
   },
   "workspace_invite": {
-    "heading": "Þú hefur fengið boð!",
+    "heading": "Þú hefur fengið boð í vinnusvæði!",
     "intro": "{inviter_name} hefur boðið þér í vinnusvæðið <strong>{workspace_name}</strong> á Slóða.",
     "cta_label": "Samþykkja boð",
-    "disclaimer": "Ef þú áttir ekki von á þessu pósti geturðu hunsað hann."
+    "disclaimer": "Ef þú áttir ekki von á þessum pósti geturðu hundsað hann."
   },
   "newsletter": {
     "unsubscribe_label": "Segja upp póstlista"
@@ -22,6 +23,6 @@
     "unsubscribe_label": "Segja upp póstlista"
   },
   "footer": {
-    "copyright": "2026 Slodi ehf."
+    "copyright": "2026 Slóði"
   }
 }

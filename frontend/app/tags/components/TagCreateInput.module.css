@@ -17,7 +17,7 @@
   flex: 1;
   min-width: 0;
   padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
-  border: 1px solid hsl(var(--sl-color-border));
+  border: 1px solid hsl(var(--sl-input-border));
   border-radius: var(--sl-radius-input);
   background: hsl(var(--sl-color-surface));
   color: hsl(var(--sl-color-text-primary));

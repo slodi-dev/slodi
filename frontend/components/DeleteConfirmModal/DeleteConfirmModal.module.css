@@ -12,6 +12,15 @@
   margin: 0;
 }
 
+.error {
+  margin: 0;
+  padding: var(--sl-spacing-inset-xs) var(--sl-spacing-inset-sm);
+  font-size: var(--sl-primitive-font-size-sm);
+  color: hsl(var(--sl-color-error));
+  background: hsl(var(--sl-color-error-subtle));
+  border-radius: var(--sl-radius-input);
+}
+
 .actions {
   display: flex;
   gap: var(--sl-spacing-inset-sm);

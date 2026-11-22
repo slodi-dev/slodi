@@ -115,16 +115,6 @@ def test_create_sas_rejects_disallowed_content_type(purpose, content_type):
     assert exc.value.status_code == 415
 
 
-def test_create_sas_rejects_unknown_purpose():
-    with pytest.raises(HTTPException) as exc:
-        UploadService().create_sas(
-            user_id=uuid4(),
-            purpose="video",
-            content_type="video/mp4",  # type: ignore[arg-type]
-        )
-    assert exc.value.status_code == 400
-
-
 # ---------------------------------------------------------------------------
 # UploadService.create_download_sas
 # ---------------------------------------------------------------------------

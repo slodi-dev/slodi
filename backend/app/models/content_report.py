@@ -21,24 +21,9 @@ if TYPE_CHECKING:
 
 
 class ContentReport(Base):
-    """One person flagging one item.
-
-    Not soft-deletable: a resolved report is closed, not removed. The record is
-    what lets a reviewer see that an item has been flagged before, and — once
-    the review board lands — how often a given author's work has been.
-    """
-
     __tablename__ = "content_reports"
     __table_args__ = (
-        # One report per person per target. Without this a single account can
-        # stack a queue against something it dislikes, and the count a reviewer
-        # reads stops meaning "how many people" and starts meaning "how
-        # determined was one person".
-        #
-        # Two partial indexes rather than one constraint over three columns:
-        # in Postgres NULL is distinct from NULL, so a plain
-        # UNIQUE(content_id, comment_id, reporter_id) would stop deduplicating
-        # item reports the moment `comment_id` was allowed to be null.
+        # One report per person per item or comment; two indexes because NULL != NULL.
         Index(
             "uq_content_reports_item_reporter",
             "content_id",
@@ -53,9 +38,7 @@ class ContentReport(Base):
             unique=True,
             postgresql_where=text("comment_id IS NOT NULL"),
         ),
-        # The review board's query: open reports, newest first.
         Index("ix_content_reports_status_created_at", "status", "created_at"),
-        # Counting an author's reports means joining through content.
         Index("ix_content_reports_content_id", "content_id"),
         CheckConstraint(
             "status = 'open' OR resolved_at IS NOT NULL",
@@ -69,15 +52,10 @@ class ContentReport(Base):
     content_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("content.id", ondelete="CASCADE"), nullable=False
     )
+    # Set for a comment report; `content_id` is then the comment's item.
     comment_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
     )
-    """Set when the report is about a comment rather than the item itself.
-
-    `content_id` stays populated either way: a comment always hangs under an
-    item, and the board needs to say which one without a second join.
-    """
-
     reporter_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -85,9 +63,6 @@ class ContentReport(Base):
         SAEnum(ReportReason, name="report_reason_enum"), nullable=False
     )
     note: Mapped[str | None] = mapped_column(String(NOTE_MAX), nullable=True)
-    """What the reporter added in their own words. Optional — asking for a
-    reason and a paragraph is how a report does not get filed at all."""
-
     status: Mapped[ReportStatus] = mapped_column(
         SAEnum(ReportStatus, name="report_status_enum"),
         nullable=False,

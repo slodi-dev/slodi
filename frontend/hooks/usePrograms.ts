@@ -40,10 +40,10 @@ type UseProgramsResult = {
  */
 export default function usePrograms(
   workspaceId: string | null,
-  options: { query?: ContentQuery; page?: number; pageSize?: number; debounceMs?: number } = {}
+  options: { query?: ContentQuery; page?: number; pageSize?: number } = {}
 ): UseProgramsResult {
   const { getToken } = useAuth();
-  const { query = {}, page = 1, pageSize = 24, debounceMs = 300 } = options;
+  const { query = {}, page = 1, pageSize = 24 } = options;
 
   const [programs, setPrograms] = useState<Program[] | null>(null);
   const [total, setTotal] = useState<number | null>(null);
@@ -55,45 +55,60 @@ export default function usePrograms(
      fresh object identity every render. */
   const queryKey = JSON.stringify(query);
 
-  /* A late response from an abandoned keystroke must not overwrite a newer
-     one. Requests are numbered and only the newest is allowed to land. */
+  /* A late response for a page the reader has already left must not overwrite
+     the newer one. Requests are numbered and only the newest is allowed to
+     land. The effect's request is also aborted when it is left behind. */
   const requestId = useRef(0);
 
-  const load = useCallback(async () => {
-    if (!workspaceId) {
-      setLoading(false);
-      return;
-    }
-    const id = ++requestId.current;
-    setLoading(true);
-    setError(null);
-    try {
-      const { items, total: count } = await fetchPrograms(workspaceId, getToken, {
-        query: JSON.parse(queryKey) as ContentQuery,
-        limit: pageSize,
-        offset: Math.max(0, (page - 1) * pageSize),
-      });
-      if (id !== requestId.current) return;
-      setPrograms(items);
-      setTotal(count);
-    } catch (err) {
-      if (id !== requestId.current) return;
-      setError(new Error(handleApiError(err, "Failed to fetch programs")));
-      setPrograms([]);
-      setTotal(0);
-    } finally {
-      if (id === requestId.current) setLoading(false);
-    }
-  }, [workspaceId, getToken, queryKey, page, pageSize]);
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!workspaceId) {
+        setLoading(false);
+        return;
+      }
+      const id = ++requestId.current;
+      const stale = () => id !== requestId.current || signal?.aborted === true;
+      setLoading(true);
+      setError(null);
+      try {
+        const { items, total: count } = await fetchPrograms(workspaceId, getToken, {
+          query: JSON.parse(queryKey) as ContentQuery,
+          limit: pageSize,
+          offset: Math.max(0, (page - 1) * pageSize),
+          signal,
+        });
+        if (stale()) return;
+        setPrograms(items);
+        setTotal(count);
+      } catch (err) {
+        if (stale()) return;
+        setError(new Error(handleApiError(err, "Failed to fetch programs")));
+        setPrograms([]);
+        setTotal(0);
+      } finally {
+        if (!stale()) setLoading(false);
+      }
+    },
+    [workspaceId, getToken, queryKey, page, pageSize]
+  );
 
+  /* No debounce here. The first load and a page click start their request at
+     once. The one input that changes on every keystroke, the search box,
+     already debounces itself before the query moves; a second delay here made
+     typed search wait twice and everything else wait once for nothing
+     (sc-615). */
   useEffect(() => {
-    /* Typing in the search box changes the query on every keystroke; without a
-       debounce that is one request per character. Paging is not debounced —
-       a click should feel immediate — so the delay only applies when the query
-       itself moved. */
-    const handle = setTimeout(() => void load(), debounceMs);
-    return () => clearTimeout(handle);
-  }, [load, debounceMs]);
+    /* Aborted by a newer page or query, an unmount, or StrictMode's rehearsal
+       unmount in development. The real call awaits the token before it
+       fetches, so a request abandoned in the same tick never reaches the
+       network. */
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+
+  // Not `load` itself: a retry button would hand it its click event.
+  const refetch = useCallback(() => load(), [load]);
 
   /* Facets describe the bank, not the page, so they are fetched once per
      workspace rather than with every filter change. */
@@ -114,7 +129,7 @@ export default function usePrograms(
     };
   }, [workspaceId, getToken]);
 
-  return { programs, total, facets, loading, error, refetch: load };
+  return { programs, total, facets, loading, error, refetch };
 }
 
 export type { Program };

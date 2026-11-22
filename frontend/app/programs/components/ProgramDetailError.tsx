@@ -12,11 +12,8 @@ interface ProgramDetailErrorProps {
  * Shows a friendly, scout-themed error message with navigation options
  */
 export function ProgramDetailError({ error }: ProgramDetailErrorProps) {
-  // Check if it's a "not found" type error
-  const isNotFound =
-    error.message.includes("not found") ||
-    error.message.includes("404") ||
-    error.message.includes("Invalid program ID");
+  // Check if it's a "not found" type error. The backend says "Not found".
+  const isNotFound = /not found|404|invalid program id/i.test(error.message);
 
   return (
     <div className={styles.container}>

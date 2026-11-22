@@ -33,6 +33,10 @@ INSERT INTO troops (id, name, workspace_id) VALUES
 INSERT INTO tags (id, name) VALUES
   ('00000000-0000-4000-8000-000000000401', 'Útivera'),
   ('00000000-0000-4000-8000-000000000402', 'Leikir');
+-- A deleted tag whose name has been reused: the downgrade restoring the full
+-- unique constraint on tags.name has to cope with it.
+INSERT INTO tags (id, name, deleted_at) VALUES
+  ('00000000-0000-4000-8000-000000000403', 'Útivera', now());
 
 -- One of each content type, across review states, with every range filled.
 INSERT INTO content (id, content_type, name, description, instructions, created_at, author_id, workspace_id,
@@ -46,10 +50,17 @@ INSERT INTO content (id, content_type, name, description, instructions, created_
    'rejected', NULL, ARRAY['Dróttskátar']::age_group_enum[], 4, 12, 180, 300, 30, 60, '["Nesti", "Regnföt"]', 500, 'Esja'),
   ('00000000-0000-4000-8000-000000000503', 'task', 'Kveikjuleikur', 'Hlaupaleikur', 'Myndið hring',
    now(), '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000201',
-   'unreviewed', now(), ARRAY['Hrefnuskátar']::age_group_enum[], 6, 40, 15, 25, 0, 5, '["Spottar"]', 0, NULL);
+   'unreviewed', now(), ARRAY['Hrefnuskátar']::age_group_enum[], 6, 40, 15, 25, 0, 5, '["Spottar"]', 0, NULL),
+  ('00000000-0000-4000-8000-000000000504', 'task', 'Nafnaleikur', 'Kynningarleikur', NULL,
+   now(), '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000201',
+   'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO programs (id) VALUES ('00000000-0000-4000-8000-000000000501');
 INSERT INTO events (id, program_id) VALUES ('00000000-0000-4000-8000-000000000502', '00000000-0000-4000-8000-000000000501');
-INSERT INTO tasks (id, event_id) VALUES ('00000000-0000-4000-8000-000000000503', '00000000-0000-4000-8000-000000000502');
+INSERT INTO tasks (id, event_id) VALUES
+  ('00000000-0000-4000-8000-000000000503', '00000000-0000-4000-8000-000000000502'),
+  ('00000000-0000-4000-8000-000000000504', NULL);
+-- A bank item the sc-129 migration filed as a task; its downgrade turns it back.
+INSERT INTO reclassified_programs (content_id) VALUES ('00000000-0000-4000-8000-000000000504');
 INSERT INTO troop_participation (troop_id, event_id) VALUES
   ('00000000-0000-4000-8000-000000000301', '00000000-0000-4000-8000-000000000502');
 

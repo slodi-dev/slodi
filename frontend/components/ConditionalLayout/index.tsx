@@ -13,7 +13,6 @@ import DashboardLayout from "@/components/DashboardLayout";
  * 1. Marketing Layout (Header + Content + Footer)
  *    - Home page: /
  *    - About page: /about
- *    - Palette showcase: /palette
  *    - Dev logs: /dev
  *    - Any other public/marketing pages
  *
@@ -34,7 +33,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 const PUBLIC_ROUTES = [
   "/",
   "/about",
-  "/palette",
   "/dev",
   "/login",
   "/signup",

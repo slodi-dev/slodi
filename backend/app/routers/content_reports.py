@@ -7,12 +7,13 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import check_content_workspace_access, get_current_user, require_permission
+from app.core.auth import check_content_read, get_current_user, require_permission
 from app.core.db import get_session
 from app.core.pagination import Limit, Offset, add_pagination_headers
 from app.core.rate_limiter import user_rate_limit
 from app.domain.enums import Permissions
 from app.schemas.content_report import (
+    CommentReportCreate,
     ContentReportCreate,
     ContentReportOut,
     ContentReportResolve,
@@ -26,7 +27,6 @@ from app.services.content_reports import ContentReportService
 router = APIRouter(tags=["moderation"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
-# Dagskrárstjórnarteymið. Admins outrank moderators, so they pass this for free.
 ModeratorDep = Depends(require_permission(Permissions.moderator))
 
 
@@ -43,13 +43,8 @@ async def report_content(
     current_user: UserOut = Depends(get_current_user),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ContentReportOut:
-    """Flag something that does not belong.
-
-    Open to any member who can see the item — including someone currently in
-    skammarkrókur. Taking the ability to flag genuinely unsafe content away from
-    someone who is themselves under review helps nobody.
-    """
-    await check_content_workspace_access(content_id, current_user, session)
+    """Report an item. Open to anyone who can read it, even while suspended."""
+    await check_content_read(content_id, current_user, session)
     content = await ContentService(session).get_name(content_id)
     return await ContentReportService(session).report(
         content_id, current_user.id, body, background_tasks, content
@@ -64,25 +59,16 @@ async def report_content(
 async def report_comment(
     session: SessionDep,
     comment_id: UUID,
-    body: ContentReportCreate,
+    body: CommentReportCreate,
     background_tasks: BackgroundTasks,
     current_user: UserOut = Depends(get_current_user),
     _: None = Depends(user_rate_limit(20, 60)),
 ) -> ContentReportOut:
-    """Flag a comment.
-
-    Comments are the bank's only public text surface and could not be flagged at
-    all: reports keyed on the item alone, so the one place a stranger can write
-    free text under someone else's idea had no way to raise a hand.
-
-    The item the comment hangs under is recorded too, so the review board can
-    name it without a second join, and so an `unsafe` comment escalates by the
-    same path an `unsafe` item does.
-    """
+    """Report a comment; the report also records the item it is under."""
     comment = await CommentService(session).get_model(comment_id)
     content_id = comment.content_id
 
-    await check_content_workspace_access(content_id, current_user, session)
+    await check_content_read(content_id, current_user, session)
     content = await ContentService(session).get_name(content_id)
 
     return await ContentReportService(session).report(
@@ -104,11 +90,7 @@ async def list_open_reports(
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> list[ReportQueueItem]:
-    """The open queue — `unsafe` pinned first, then newest.
-
-    Pinned in the query rather than in the board, so the ordering survives
-    paging: an escalation on page two is an escalation nobody sees.
-    """
+    """Open reports, `unsafe` first (in the query, so it holds across pages), then newest."""
     svc = ContentReportService(session)
     total = await svc.count_open()
     items = await svc.list_open(limit=limit, offset=offset)

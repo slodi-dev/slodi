@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Tag } from "@/services/tags.service";
 import styles from "./TagRow.module.css";
+import { countIs } from "@/lib/format";
 
 interface TagRowProps {
   tag: Tag;
@@ -96,12 +97,15 @@ export default function TagRow({
   if (isDeleting) {
     const message =
       contentCount && contentCount > 0
-        ? `Þessi flokkur er á ${contentCount} dagskrám. Ertu viss?`
+        ? `Þessi flokkur er á ${countIs(contentCount, "dagskrá", "dagskrám")}. Ertu viss?`
         : "Ertu viss?";
 
     return (
-      <li className={styles.row} role="alert">
-        <span className={styles.deleteMessage}>{message}</span>
+      <li className={styles.row}>
+        {/* The question is the alert, not the row: an <li> must stay a list item. */}
+        <span className={styles.deleteMessage} role="alert">
+          {message}
+        </span>
         <div className={styles.actions}>
           <button
             type="button"
@@ -162,9 +166,7 @@ export default function TagRow({
     <li className={styles.row}>
       <span className={styles.tagName}>{tag.name}</span>
       {contentCount !== undefined && (
-        <span className={styles.tagCount}>
-          {contentCount} {contentCount === 1 ? "dagskrá" : "dagskrár"}
-        </span>
+        <span className={styles.tagCount}>{countIs(contentCount, "dagskrá", "dagskrár")}</span>
       )}
       <div className={styles.actions}>
         <button

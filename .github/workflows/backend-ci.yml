@@ -1,14 +1,19 @@
 name: Backend CI
 on:
+  # Re-run on main by hand, e.g. to redeploy without a code change.
+  workflow_dispatch:
   push:
     paths:
       - "backend/**"
       - ".github/workflows/backend-ci.yml"
+      # A green run here is what deploys (deploy-backend.yml), so anything
+      # that changes what gets deployed must trigger it too.
+      - ".github/workflows/deploy-backend.yml"
+      - "docker-compose.yml"
+  # No path filter on pull requests: these jobs are required checks on main,
+  # and a required check whose workflow never starts blocks the PR forever.
   pull_request:
     branches: [main]
-    paths:
-      - "backend/**"
-      - ".github/workflows/backend-ci.yml"
 
 defaults:
   run:

@@ -8,8 +8,13 @@ const fetchReviewDetail = vi.fn();
 const fetchOpenReports = vi.fn();
 const addReviewComment = vi.fn();
 const reviewContent = vi.fn();
-const setContentHidden = vi.fn();
+const resolveReport = vi.fn();
+const deleteComment = vi.fn();
 const replace = vi.fn();
+
+vi.mock("@/services/comments.service", () => ({
+  deleteComment: (...a: unknown[]) => deleteComment(...a),
+}));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 
@@ -20,9 +25,7 @@ vi.mock("@/services/moderation.service", async (importOriginal) => ({
   fetchOpenReports: (...a: unknown[]) => fetchOpenReports(...a),
   addReviewComment: (...a: unknown[]) => addReviewComment(...a),
   reviewContent: (...a: unknown[]) => reviewContent(...a),
-  setContentHidden: (...a: unknown[]) => setContentHidden(...a),
-  resolveReport: vi.fn(),
-  fetchAuthorStrikes: vi.fn(),
+  resolveReport: (...a: unknown[]) => resolveReport(...a),
 }));
 
 // The author panel fetches its own history. Left unmocked it made a real
@@ -33,10 +36,14 @@ vi.mock("@/services/suspensions.service", async (importOriginal) => ({
 }));
 
 let permissions = "moderator";
+const stableUsers: Record<string, { id: string; permissions: string }> = {};
+const stableGetToken = async () => "t";
 vi.mock("@/contexts/AuthContext", () => ({
+  // Stable between renders, like the real context; a fresh `getToken` each
+  // render reloads the queue and moves focus off whatever is being typed in.
   useAuth: () => ({
-    user: { id: "u1", permissions },
-    getToken: async () => "t",
+    user: (stableUsers[permissions] ??= { id: "u1", permissions }),
+    getToken: stableGetToken,
     isLoading: false,
   }),
 }));
@@ -95,8 +102,9 @@ beforeEach(() => {
   fetchReviewDetail.mockResolvedValue(detail());
   fetchOpenReports.mockResolvedValue({ items: [], total: 0 });
   reviewContent.mockResolvedValue(item({ review_state: "approved" }));
-  setContentHidden.mockResolvedValue(item({ hidden_at: "2026-09-02T10:00:00Z" }));
   addReviewComment.mockResolvedValue({ id: "n1" });
+  resolveReport.mockResolvedValue({ id: "r9" });
+  deleteComment.mockResolvedValue(undefined);
 });
 
 describe("who can open the board", () => {
@@ -126,6 +134,56 @@ describe("the rail and the pane", () => {
 
     expect(await screen.findByText("2 tilkynningar")).toBeInTheDocument();
     await waitFor(() => expect(pane().getByText(/Of hættulegt/)).toBeInTheDocument());
+  });
+
+  const commentReport = {
+    id: "r9",
+    content_id: "c1",
+    comment_id: "k1",
+    reporter_id: "u2",
+    reason: "inappropriate",
+    note: null,
+    status: "open",
+    created_at: "2026-09-01T10:00:00Z",
+    content_name: "Kveikjuleikur",
+    content_author_name: "Foringi",
+    comment_body: "Þú ert asni",
+    comment_author_name: "Aron",
+    comment_created_at: "2026-08-31T10:00:00Z",
+  };
+
+  it("judges a reported comment as a comment, not as the item", async () => {
+    // Moderating a comment is not moderating the item it hangs under.
+    fetchOpenReports.mockResolvedValue({ items: [commentReport], total: 1 });
+    render(<YfirferdPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: /Tilkynningar/ }));
+
+    expect(await screen.findByText("Athugasemd frá Aron")).toBeInTheDocument();
+    expect(pane().getByText("Tilkynnt athugasemd")).toBeInTheDocument();
+    expect(pane().getByText("Þú ert asni")).toBeInTheDocument();
+    // The comment's own wording for the reason, not "Á ekki heima í bankanum".
+    expect(pane().getByText("Dónalegt eða særandi")).toBeInTheDocument();
+    // No content decisions on a comment.
+    expect(pane().queryByRole("button", { name: /Samþykkja/ })).not.toBeInTheDocument();
+  });
+
+  it("takes the comment down and closes the report in one step", async () => {
+    fetchOpenReports.mockResolvedValue({ items: [commentReport], total: 1 });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<YfirferdPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: /Tilkynningar/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Fjarlægja athugasemd" }));
+
+    await waitFor(() => expect(deleteComment).toHaveBeenCalledWith("k1", expect.anything()));
+    expect(resolveReport).toHaveBeenCalledWith(
+      "r9",
+      "resolved",
+      "Athugasemd fjarlægð",
+      expect.anything()
+    );
+    expect(
+      await screen.findByText("Athugasemd fjarlægð og tilkynning afgreidd.")
+    ).toBeInTheDocument();
   });
 
   it("shows the full text, not the two truncated lines a rail can afford", async () => {
@@ -208,6 +266,66 @@ describe("sweeping the queue", () => {
         expect.anything()
       )
     );
+  });
+
+  it("sends the note in the composer back to the author for changes", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    await userEvent.type(
+      pane().getByPlaceholderText("Athugasemd eða ábending…"),
+      "Vantar leiðbeiningar"
+    );
+
+    await userEvent.click(pane().getByRole("button", { name: /Þarfnast lagfæringar/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Já, senda til lagfæringar" }));
+
+    await waitFor(() =>
+      expect(reviewContent).toHaveBeenCalledWith(
+        "c1",
+        "needs_changes",
+        "Vantar leiðbeiningar",
+        expect.anything()
+      )
+    );
+  });
+
+  it("rejects with the note in the composer", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    await userEvent.type(pane().getByPlaceholderText("Athugasemd eða ábending…"), "Of hættulegt");
+
+    await userEvent.click(pane().getByRole("button", { name: /Hafna/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Já, hafna efninu" }));
+
+    await waitFor(() =>
+      expect(reviewContent).toHaveBeenCalledWith(
+        "c1",
+        "rejected",
+        "Of hættulegt",
+        expect.anything()
+      )
+    );
+  });
+
+  it("cancelling the confirmation decides nothing", async () => {
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    await userEvent.type(pane().getByPlaceholderText("Athugasemd eða ábending…"), "Laga");
+
+    await userEvent.click(pane().getByRole("button", { name: /Þarfnast lagfæringar/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Hætta við" }));
+
+    expect(reviewContent).not.toHaveBeenCalled();
+  });
+
+  it("will not take an item out of the bank without a note", async () => {
+    render(<YfirferdPage />);
+    await screen.findByText("Hlaupaleikur");
+
+    await userEvent.keyboard("h");
+
+    expect(reviewContent).not.toHaveBeenCalled();
+    expect(await screen.findByRole("status")).toHaveTextContent("Skrifaðu athugasemd");
   });
 
   it("says the queue is clear rather than showing nothing at all", async () => {
@@ -313,14 +431,14 @@ describe("reviewer notes", () => {
     render(<YfirferdPage />);
     await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
 
-    expect(pane().getByRole("button", { name: "Vista innanhúss" })).toBeDisabled();
-    expect(pane().getByRole("button", { name: "Senda höfundi" })).toBeDisabled();
+    expect(pane().getByRole("button", { name: "Vista" })).toBeDisabled();
+    expect(pane().getByRole("button", { name: /^Senda höfundi/ })).toBeDisabled();
 
     await userEvent.type(
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    expect(pane().getByRole("button", { name: "Senda höfundi" })).toBeEnabled();
+    expect(pane().getByRole("button", { name: /^Senda höfundi/ })).toBeEnabled();
   });
 
   it("asks before anything leaves the building", async () => {
@@ -333,7 +451,7 @@ describe("reviewer notes", () => {
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+    await userEvent.click(pane().getByRole("button", { name: /^Senda höfundi/ }));
 
     expect(await screen.findByText(/Ekki er hægt að afturkalla hana/)).toBeInTheDocument();
     expect(addReviewComment).not.toHaveBeenCalled();
@@ -346,7 +464,7 @@ describe("reviewer notes", () => {
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+    await userEvent.click(pane().getByRole("button", { name: /^Senda höfundi/ }));
 
     await userEvent.click(await screen.findByRole("button", { name: "Hætta við" }));
 
@@ -361,7 +479,7 @@ describe("reviewer notes", () => {
       pane().getByPlaceholderText("Athugasemd eða ábending…"),
       "Bættu við aldri"
     );
-    await userEvent.click(pane().getByRole("button", { name: "Senda höfundi" }));
+    await userEvent.click(pane().getByRole("button", { name: /^Senda höfundi/ }));
     await userEvent.click(await screen.findByRole("button", { name: "Já, senda höfundi" }));
 
     await waitFor(() =>
@@ -375,12 +493,29 @@ describe("reviewer notes", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Ábending send höfundi");
   });
 
+  it("clears the note when moving to another item, so it cannot reach the wrong author", async () => {
+    fetchReviewQueue.mockResolvedValue({
+      items: [item(), item({ id: "c2", name: "Feluleikur" })],
+      total: 2,
+    });
+    render(<YfirferdPage />);
+    await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
+    const box = pane().getByPlaceholderText("Athugasemd eða ábending…");
+    await userEvent.type(box, "Bættu við aldri");
+
+    await userEvent.click(screen.getByText("Feluleikur"));
+
+    await waitFor(() =>
+      expect(pane().getByPlaceholderText("Athugasemd eða ábending…")).toHaveValue("")
+    );
+  });
+
   it("saves an internal note with no ceremony, because it goes nowhere", async () => {
     render(<YfirferdPage />);
     await waitFor(() => expect(pane().getByText("Athugasemdir yfirferðar")).toBeInTheDocument());
 
     await userEvent.type(pane().getByPlaceholderText("Athugasemd eða ábending…"), "Muna að spyrja");
-    await userEvent.click(pane().getByRole("button", { name: "Vista innanhúss" }));
+    await userEvent.click(pane().getByRole("button", { name: "Vista" }));
 
     await waitFor(() =>
       expect(addReviewComment).toHaveBeenCalledWith(

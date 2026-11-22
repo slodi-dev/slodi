@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { checkResponse } from "@/lib/api-utils";
 import { safeLocalStorage } from "@/lib/safe-storage";
+import { FAVOURITES_ENABLED } from "@/lib/feature-flags";
 
 interface FavoritesContextValue {
   favorites: Set<string>;
@@ -71,6 +72,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       updatedSet.add(programId);
     }
     safeLocalStorage.setItem("favorite-programs", JSON.stringify(Array.from(updatedSet)));
+
+    // Hidden behind FAVOURITES_ENABLED (UX-01): no backend serves these routes
+    // yet, so while the flag is off favourites stay in localStorage only.
+    if (!FAVOURITES_ENABLED) return;
 
     try {
       // TODO: Replace with actual API call when backend is ready

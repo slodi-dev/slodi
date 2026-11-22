@@ -1,0 +1,115 @@
+name: Journeys
+# End-to-end user journeys (docs/journeys/) against a throwaway stack.
+# Design and gates: docs/journey-testing-in-ci.md.
+#
+# Every job runs scripts/e2e.sh, the same script as a local run. It generates
+# a fresh signing key, starts Postgres + migrations + the e2e seed + the backend
+# with docker compose, builds the frontend, runs Playwright (journeys and the
+# route crawler), and writes the story coverage and crawl reports to the job
+# summary.
+#
+# The PR gate runs the @pr journeys and crawls every page as every persona in
+# one form (desktop, light). Pushes to main, nightly and manual runs crawl all
+# four forms (desktop/phone x light/dark).
+#
+# Secrets: none are needed to run the journeys. Auth0 is never contacted; the
+# run signs its own tokens with a key it generates and throws away.
+#   DISCORD_WEBHOOK_URL   (existing) status notification, optional
+
+on:
+  # No path filter on pull requests: these jobs are required checks on main,
+  # and a required check whose workflow never starts blocks the PR forever.
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Nightly, 03:17 UTC (= Reykjavik), all journeys including @nightly, and
+    # the crawl in all four forms.
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: "Playwright --grep (empty = all journeys and the whole crawl)"
+        required: false
+        default: ""
+
+concurrency:
+  group: journeys-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  journeys:
+    name: Journeys (${{ github.event_name == 'pull_request' && 'PR gate' || 'all' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      # PRs run the @pr gate; main, nightly and manual runs run everything.
+      E2E_GREP: ${{ github.event_name == 'pull_request' && '@pr' || inputs.grep }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        working-directory: frontend
+        run: npm ci
+
+      - name: Playwright version
+        id: pw
+        working-directory: frontend
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: |
+          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Run journeys and route crawl
+        run: |
+          args=()
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # One crawl form on PRs; the other three run nightly.
+            args+=(--project chromium --project crawl-desktop-light)
+          fi
+          if [ -n "$E2E_GREP" ]; then
+            args+=(--grep "$E2E_GREP")
+          fi
+          scripts/e2e.sh "${args[@]}"
+
+      - name: Upload report, traces and videos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: journeys-${{ github.run_id }}-${{ github.run_attempt }}
+          path: frontend/e2e-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Notify Discord
+        if: ${{ failure() && github.event_name != 'pull_request' }}
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Journeys — ${{ github.repository }}"
+          description: "Branch: `${{ github.ref_name }}` | Commit: `${{ github.sha }}`"

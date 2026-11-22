@@ -15,6 +15,7 @@ import {
   type TemplateInfo,
 } from "@/services/emails.service";
 import styles from "./EmailManagement.module.css";
+import { countIs, formatIcelandicDateTime } from "@/lib/format";
 
 const STATUS_LABELS: Record<EmailDraft["status"], string> = {
   draft: "Drög",
@@ -80,14 +81,7 @@ function usesBlockEditor(template: string): boolean {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("is-IS", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatIcelandicDateTime(iso) || "—";
 }
 
 export default function EmailManagement() {
@@ -207,7 +201,11 @@ export default function EmailManagement() {
     if (usesBlockEditor(draft.template) && Array.isArray(draft.blocks)) {
       setBlocks(draft.blocks as Block[]);
       setTemplateVars({});
-    } else if (draft.blocks && Array.isArray(draft.blocks) && draft.blocks.length === 1) {
+    } else if (draft.blocks && !Array.isArray(draft.blocks)) {
+      setTemplateVars(draft.blocks as Record<string, string>);
+      setBlocks([]);
+    } else if (Array.isArray(draft.blocks) && draft.blocks.length === 1) {
+      // Drafts saved before the fields were sent as a plain object.
       setTemplateVars(draft.blocks[0] as Record<string, string>);
       setBlocks([]);
     } else {
@@ -287,12 +285,12 @@ export default function EmailManagement() {
         .map((e) => e.trim())
         .filter(Boolean);
       // Newsletter uses block array; other templates use flat key/value dict
-      const blocksData: Record<string, unknown>[] | null = usesBlockEditor(form.template)
+      const blocksData: EmailDraft["blocks"] = usesBlockEditor(form.template)
         ? blocks.length > 0
           ? blocks
           : null
         : Object.keys(templateVars).length > 0
-          ? [templateVars as Record<string, unknown>]
+          ? templateVars
           : null;
       const payload = {
         subject: form.subject,
@@ -338,7 +336,7 @@ export default function EmailManagement() {
       <section className={styles.section}>
         <div className={styles.toolbar}>
           <span className={styles.totalCount}>
-            {templates.length} {templates.length === 1 ? "sniðmát" : "sniðmát"}
+            {countIs(templates.length, "sniðmát", "sniðmát")}
           </span>
         </div>
 
@@ -349,7 +347,8 @@ export default function EmailManagement() {
         )}
         {successMsg && <p className={styles.success}>{successMsg}</p>}
 
-        <div className={styles.tableWrapper}>
+        {/* Scrolls sideways on a phone, so it takes focus: arrow keys scroll it. */}
+        <div className={styles.tableWrapper} role="region" aria-label="Sniðmát" tabIndex={0}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -639,12 +638,11 @@ export default function EmailManagement() {
       {/* Drafts */}
       <section className={styles.section}>
         <div className={styles.toolbar}>
-          <span className={styles.totalCount}>
-            {drafts.length} {drafts.length === 1 ? "póstur" : "póstar"}
-          </span>
+          <span className={styles.totalCount}>{countIs(drafts.length, "póstur", "póstar")}</span>
         </div>
 
-        <div className={styles.tableWrapper}>
+        {/* Scrolls sideways on a phone, so it takes focus: arrow keys scroll it. */}
+        <div className={styles.tableWrapper} role="region" aria-label="Póstar" tabIndex={0}>
           <table className={styles.table}>
             <thead>
               <tr>
